@@ -1,6 +1,6 @@
 import Footer from '@/components/Footer';
 import Navbar from '@/components/navbar/Navbar';
-import '@/assets/styles/global.css';
+import './globals.css';
 
 import { GlobalProvider } from '@/context/GlobalContext';
 import AuthProvider from '@/components/AuthProvider';
