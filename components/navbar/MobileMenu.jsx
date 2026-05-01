@@ -10,7 +10,7 @@ const MobileMenu = ({ closeMobileMenu, isAdmin, isLoggedIn, handleSignIn }) => {
         <Link
           href='/'
           className={`block rounded-md px-3 py-2 text-white text-base font-medium hover:bg-gray-900 ${
-            pathname === '/' ? 'bg-footerBg ' : ''
+            pathname === '/' ? 'bg-footer-bg ' : ''
           }`}
           onClick={closeMobileMenu}
         >
@@ -19,7 +19,7 @@ const MobileMenu = ({ closeMobileMenu, isAdmin, isLoggedIn, handleSignIn }) => {
         <Link
           href='/products'
           className={`block rounded-md px-3 py-2 text-white text-base font-medium hover:bg-gray-900 ${
-            pathname === '/products' ? 'bg-footerBg ' : ''
+            pathname === '/products' ? 'bg-footer-bg ' : ''
           }`}
           onClick={closeMobileMenu}
         >
@@ -29,7 +29,7 @@ const MobileMenu = ({ closeMobileMenu, isAdmin, isLoggedIn, handleSignIn }) => {
           <Link
             href='/dashboard'
             className={`block rounded-md px-3 py-2 text-white text-base font-medium hover:bg-gray-900 ${
-              pathname === '/dashboard' ? 'bg-footerBg ' : ''
+              pathname === '/dashboard' ? 'bg-footer-bg ' : ''
             }`}
             onClick={closeMobileMenu}
           >
@@ -45,7 +45,7 @@ const MobileMenu = ({ closeMobileMenu, isAdmin, isLoggedIn, handleSignIn }) => {
               }}
               href={'/login'}
               className={`block rounded-md px-3 py-2 text-white text-base font-medium hover:bg-gray-900 ${
-                pathname === '/login' ? 'bg-footerBg ' : ''
+                pathname === '/login' ? 'bg-footer-bg ' : ''
               }`}
             >
               <i className='fa-brands fa-google text-white'></i>
@@ -58,7 +58,7 @@ const MobileMenu = ({ closeMobileMenu, isAdmin, isLoggedIn, handleSignIn }) => {
               }}
               href={'/register'}
               className={`block rounded-md px-3 py-2 text-white text-base font-medium hover:bg-gray-900 ${
-                pathname === '/register' ? 'bg-footerBg ' : ''
+                pathname === '/register' ? 'bg-footer-bg ' : ''
               }`}
             >
               <span>Register</span>

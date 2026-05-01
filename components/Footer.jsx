@@ -12,7 +12,7 @@ import {
 
 const Footer = () => {
   return (
-    <footer className='bg-footerBg text-white py-8 reverse-shadow'>
+    <footer className='bg-footer-bg text-white py-8 reverse-shadow'>
       <div className='container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 px-4'>
         {/* Company Information */}
         <div className='mb-4 md:mb-0'>
