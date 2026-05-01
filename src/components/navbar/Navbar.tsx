@@ -127,7 +127,7 @@ const Navbar = () => {
                 />
               </>
             ) : (
-              <AuthLinks handleSignIn={handleSignIn} scrolled={scrolled} />
+              <AuthLinks scrolled={scrolled} />
             ))}
 
           <button
