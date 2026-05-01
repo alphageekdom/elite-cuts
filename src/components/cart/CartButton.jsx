@@ -7,7 +7,7 @@ import CartCount from './CartCount';
 import MobileModal from '../mobile/MobileModal';
 import { useGlobalContext } from '@/context/CartContext';
 
-const CartButton = () => {
+const CartButton = ({ scrolled = false }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { setCartItems, cartCount, setCartCount, loading, setLoading } =
     useGlobalContext();
@@ -55,7 +55,7 @@ const CartButton = () => {
 
   return (
     <>
-      <CartCount onClick={handleCartClick} />
+      <CartCount onClick={handleCartClick} scrolled={scrolled} />
       {isModalOpen && (
         <MobileModal
           isOpen={isModalOpen}

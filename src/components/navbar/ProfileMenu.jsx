@@ -1,4 +1,3 @@
-// components/ProfileMenu.js
 import Link from 'next/link';
 import Image from 'next/image';
 import ProfileImage from '@/assets/images/user-default.png';
@@ -13,24 +12,24 @@ const ProfileMenu = ({
     <div className='relative'>
       <button
         type='button'
-        className='rounded-full bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800'
+        className='rounded-full ring-1 ring-line transition-shadow hover:ring-camel focus:outline-none focus:ring-2 focus:ring-oxblood'
         id='user-menu-button'
-        aria-expanded='false'
+        aria-expanded={isProfileMenuOpen}
         aria-haspopup='true'
         onClick={() => setIsProfileMenuOpen((prev) => !prev)}
       >
         <span className='sr-only'>Open user menu</span>
         <Image
           src={profileImage || ProfileImage}
-          width={40}
-          height={40}
+          width={36}
+          height={36}
           className='rounded-full'
           alt='User profile'
         />
       </button>
       {isProfileMenuOpen && (
         <div
-          className='absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none'
+          className='absolute right-0 z-10 mt-3 w-48 origin-top-right rounded-md border border-line bg-paper py-1 shadow-lg ring-1 ring-black/5'
           role='menu'
           aria-orientation='vertical'
           aria-labelledby='user-menu-button'
@@ -38,7 +37,7 @@ const ProfileMenu = ({
         >
           <Link
             href='/profile'
-            className='block px-4 py-2 text-sm text-gray-700'
+            className='block px-4 py-2 text-sm text-ink-soft transition-colors hover:bg-cream-deep'
             role='menuitem'
             tabIndex='-1'
             id='user-menu-item-0'
@@ -48,7 +47,7 @@ const ProfileMenu = ({
           </Link>
           <Link
             href='/products/saved'
-            className='block px-4 py-2 text-sm text-gray-700'
+            className='block px-4 py-2 text-sm text-ink-soft transition-colors hover:bg-cream-deep'
             role='menuitem'
             tabIndex='-1'
             id='user-menu-item-1'
@@ -56,9 +55,9 @@ const ProfileMenu = ({
           >
             Saved Cuts
           </Link>
-          <Link
-            href='#'
-            className='block px-4 py-2 text-sm text-gray-700'
+          <button
+            type='button'
+            className='block w-full px-4 py-2 text-left text-sm text-ink-soft transition-colors hover:bg-cream-deep'
             role='menuitem'
             tabIndex='-1'
             id='user-menu-item-2'
@@ -68,7 +67,7 @@ const ProfileMenu = ({
             }}
           >
             Sign Out
-          </Link>
+          </button>
         </div>
       )}
     </div>

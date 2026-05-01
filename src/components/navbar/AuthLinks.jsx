@@ -1,30 +1,23 @@
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 
-const AuthLinks = ({ handleSignIn }) => {
-  const pathname = usePathname();
+const AuthLinks = ({ handleSignIn, scrolled = false }) => {
+  const loginColor = scrolled ? 'text-ink' : 'text-cream';
 
   return (
-    <div className='hidden md:block md:ml-6'>
-      <div className='flex items-center gap-4'>
-        <Link
-          href='/login'
-          className={`text-white hover:bg-gray-900 hover:text-white rounded-md px-5 py-2 ${
-            pathname === '/login' ? 'bg-black' : ''
-          }`}
-          onClick={handleSignIn}
-        >
-          Login
-        </Link>
-        <Link
-          href='/register'
-          className={`text-white hover:bg-gray-900 hover:text-white rounded-md px-5 py-2 ${
-            pathname === '/register' ? 'bg-black' : ''
-          }`}
-        >
-          Register
-        </Link>
-      </div>
+    <div className='flex items-center gap-6'>
+      <Link
+        href='/login'
+        onClick={handleSignIn}
+        className={`hidden text-sm font-medium tracking-wide opacity-85 transition-opacity duration-300 hover:opacity-100 md:inline ${loginColor}`}
+      >
+        Login
+      </Link>
+      <Link
+        href='/register'
+        className='inline-flex items-center rounded-full bg-oxblood px-5 py-2.5 text-sm font-medium tracking-wide text-cream transition-all duration-300 hover:-translate-y-px hover:bg-oxblood-deep'
+      >
+        Register
+      </Link>
     </div>
   );
 };

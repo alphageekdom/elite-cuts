@@ -1,16 +1,22 @@
 import Link from 'next/link';
-import { GiSteak } from 'react-icons/gi';
+import { GiMeatCleaver } from 'react-icons/gi';
 
-const Logo = () => {
+const Logo = ({ scrolled = false }) => {
   return (
-    <div className='flex justify-center items-center flex-1'>
-      <Link className='flex flex-shrink-0 items-center' href='/'>
-        <GiSteak className='block text-5xl text-white' />
-        <h3 className='hidden md:block text-white text-2xl font-bold ml-2'>
-          EliteCuts
-        </h3>
-      </Link>
-    </div>
+    <Link
+      href='/'
+      className={`flex items-center gap-2.5 font-display text-[22px] font-semibold tracking-tight transition-colors duration-300 ${
+        scrolled ? 'text-ink' : 'text-cream'
+      }`}
+    >
+      <GiMeatCleaver
+        className={`text-3xl transition-colors duration-300 ${
+          scrolled ? 'text-oxblood' : 'text-cream'
+        }`}
+        aria-hidden='true'
+      />
+      EliteCuts
+    </Link>
   );
 };
 
