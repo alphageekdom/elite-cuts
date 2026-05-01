@@ -11,7 +11,7 @@ import { toast } from 'react-toastify';
 import { useGlobalContext } from '@/context/CartContext';
 import { useSession } from 'next-auth/react';
 
-const CommentSection = dynamic(() => import('../CommentSection'), {
+const CommentSection = dynamic(() => import('./CommentSection'), {
   suspense: true,
 });
 

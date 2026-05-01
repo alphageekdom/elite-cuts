@@ -1,4 +1,4 @@
-import UpdateProfile from '@/components/UpdateProfile';
+import UpdateProfile from '@/components/profile/UpdateProfile';
 
 const UpdatePage = () => {
   return (

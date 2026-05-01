@@ -1,5 +1,5 @@
 import HeroHeaderImage from './HeroHeaderImage';
-import ProductSearchForm from './uielements/ProductSearchForm';
+import ProductSearchForm from '../uielements/ProductSearchForm';
 import Tomahawk from '@/assets/images/tomahawk.jpg';
 
 const Hero = () => {

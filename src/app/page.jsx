@@ -1,8 +1,8 @@
-import About from '@/components/About';
-import FeaturedProducts from '@/components/FeaturedProducts';
-import Hero from '@/components/Hero';
-import Reviews from '@/components/Reviews';
-import Sponsor from '@/components/Sponsor';
+import About from '@/components/home/About';
+import FeaturedProducts from '@/components/home/FeaturedProducts';
+import Hero from '@/components/home/Hero';
+import Reviews from '@/components/home/Reviews';
+import Sponsor from '@/components/home/Sponsor';
 
 const HomePage = async () => {
   return (

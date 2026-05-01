@@ -1,6 +1,6 @@
 'use client';
 
-import CheckoutCard from '@/components/CheckoutCard';
+import CheckoutCard from '@/components/checkout/CheckoutCard';
 import BackButton from '@/components/uielements/BackButton';
 import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
