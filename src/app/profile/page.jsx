@@ -7,7 +7,7 @@ import Link from 'next/link';
 import BackButton from '@/components/uielements/BackButton';
 import User from '@/models/User';
 import Product from '@/models/Product';
-import ProfileBookmarks from '@/components/ProfileBookmarks';
+import ProfileBookmarks from '@/components/profile/ProfileBookmarks';
 
 const ProfilePage = async () => {
   await connectDB();

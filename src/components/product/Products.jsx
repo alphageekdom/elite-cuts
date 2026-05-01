@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import ProductCard from './ProductCard';
-import Spinner from '@/components/Spinner';
+import Spinner from '@/components/uielements/Spinner';
 import Pagination from '@/components/uielements/Pagination';
 
 const Products = () => {

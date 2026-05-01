@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import Spinner from '@/components/Spinner';
+import Spinner from '@/components/uielements/Spinner';
 import Link from 'next/link';
 
 const Dashboard = () => {

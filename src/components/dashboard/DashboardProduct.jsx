@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import Pagination from '../uielements/Pagination';
-import Spinner from '../Spinner';
+import Spinner from '../uielements/Spinner';
 
 const ProductsList = () => {
   const [products, setProducts] = useState([]);

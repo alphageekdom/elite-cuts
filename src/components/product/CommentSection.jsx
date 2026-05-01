@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BsStarFill } from 'react-icons/bs';
 import { useSession } from 'next-auth/react';
 import DOMPurify from 'dompurify';
-import Spinner from './Spinner';
+import Spinner from '../uielements/Spinner';
 
 const CommentSection = ({ product }) => {
   const { data: session, status } = useSession();

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import Spinner from '@/components/Spinner';
+import Spinner from '@/components/uielements/Spinner';
 import { toast } from 'react-toastify';
 import ProductCard from '@/components/product/ProductCard';
 

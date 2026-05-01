@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import Spinner from '../Spinner';
+import Spinner from '../uielements/Spinner';
 import { useState, useEffect } from 'react';
 import CartItem from './CartCardItem';
 
