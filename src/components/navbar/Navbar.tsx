@@ -13,17 +13,17 @@ import CartButton from '../cart/CartButton';
 import Logo from './Logo';
 
 const SCROLL_THRESHOLD = 60;
+const DEFAULT_PROFILE_IMAGE = '/images/user-default.png';
 
 const Navbar = () => {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const pathname = usePathname();
 
+  const isSessionLoading = status === 'loading';
   const isLoggedIn = Boolean(session?.user);
-  const isAdmin = isLoggedIn && session.user.isAdmin;
-  const profileImage = isLoggedIn
-    ? session.user.image
-    : '/images/user-default.png';
+  const isAdmin = Boolean(session?.user?.isAdmin);
+  const profileImage = session?.user?.image ?? DEFAULT_PROFILE_IMAGE;
 
   // Only the home route shows the navbar transparent over a hero;
   // every other route stays in the readable cream/ink state.
@@ -38,10 +38,10 @@ const Navbar = () => {
       setScrolled(true);
       return;
     }
-    const onScroll = () => setScrolled(window.scrollY > SCROLL_THRESHOLD);
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    const handleScroll = () => setScrolled(window.scrollY > SCROLL_THRESHOLD);
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
   }, [isOverHero]);
 
   useEffect(() => {
@@ -52,14 +52,43 @@ const Navbar = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  useEffect(() => {
+    if (!isMobileMenuOpen && !isProfileMenuOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setIsMobileMenuOpen(false);
+      setIsProfileMenuOpen(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isMobileMenuOpen, isProfileMenuOpen]);
+
+  // Close any open menu when the route changes (link clicks, back/forward, etc).
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+    setIsProfileMenuOpen(false);
+  }, [pathname]);
+
+  // Lock body scroll while the mobile menu is open.
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isMobileMenuOpen]);
+
+  const handleSignIn = () => signIn();
+
   const handleSignOut = async () => {
     try {
       await signOut({ redirect: false });
-      toast.success('Signed Out Successfully');
+      toast.success('Signed out successfully');
       router.replace('/');
     } catch (error) {
       console.error(error);
-      toast.error('Failed To Sign Out');
+      toast.error('Failed to sign out');
     }
   };
 
@@ -75,37 +104,40 @@ const Navbar = () => {
 
   return (
     <header
-      className={`fixed inset-x-0 top-0 z-50 transition-[background-color,backdrop-filter,padding,border-color] duration-400 ease-out ${headerToneClass}`}
+      className={`fixed inset-x-0 top-0 z-50 transition-[background-color,backdrop-filter,padding,border-color] duration-300 ease-out motion-reduce:transition-none ${headerToneClass}`}
     >
       <div className='mx-auto flex max-w-7xl items-center justify-between gap-8 px-4 sm:px-6 lg:px-8'>
         <div className='flex items-center gap-10'>
           <Logo scrolled={scrolled} />
-          <DesktopMenu isAdmin={isAdmin} scrolled={scrolled} />
+          <nav aria-label='Primary navigation'>
+            <DesktopMenu isAdmin={isAdmin} scrolled={scrolled} />
+          </nav>
         </div>
 
         <div className='flex items-center gap-4'>
-          {isLoggedIn ? (
-            <>
-              <CartButton scrolled={scrolled} />
-              <ProfileMenu
-                profileImage={profileImage}
-                isProfileMenuOpen={isProfileMenuOpen}
-                setIsProfileMenuOpen={setIsProfileMenuOpen}
-                handleSignOut={handleSignOut}
-              />
-            </>
-          ) : (
-            <AuthLinks handleSignIn={signIn} scrolled={scrolled} />
-          )}
+          {!isSessionLoading &&
+            (isLoggedIn ? (
+              <>
+                <CartButton scrolled={scrolled} />
+                <ProfileMenu
+                  profileImage={profileImage}
+                  isProfileMenuOpen={isProfileMenuOpen}
+                  setIsProfileMenuOpen={setIsProfileMenuOpen}
+                  handleSignOut={handleSignOut}
+                />
+              </>
+            ) : (
+              <AuthLinks handleSignIn={handleSignIn} scrolled={scrolled} />
+            ))}
 
           <button
             type='button'
-            className={`inline-flex items-center justify-center rounded-md p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-oxblood md:hidden ${triggerToneClass}`}
+            className={`inline-flex items-center justify-center rounded-md p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-oxblood focus:ring-offset-2 md:hidden ${triggerToneClass}`}
             aria-controls='mobile-menu'
             aria-expanded={isMobileMenuOpen}
+            aria-label={isMobileMenuOpen ? 'Close main menu' : 'Open main menu'}
             onClick={() => setIsMobileMenuOpen((prev) => !prev)}
           >
-            <span className='sr-only'>Open main menu</span>
             <svg
               className='h-6 w-6'
               xmlns='http://www.w3.org/2000/svg'
@@ -117,7 +149,7 @@ const Navbar = () => {
               <path
                 strokeLinecap='round'
                 strokeLinejoin='round'
-                strokeWidth='2'
+                strokeWidth={2}
                 d={
                   isMobileMenuOpen
                     ? 'M6 18L18 6M6 6l12 12'
@@ -129,12 +161,12 @@ const Navbar = () => {
         </div>
       </div>
 
-      {isMobileMenuOpen && (
+      {isMobileMenuOpen && !isSessionLoading && (
         <MobileMenu
           isAdmin={isAdmin}
           isLoggedIn={isLoggedIn}
           closeMobileMenu={closeMobileMenu}
-          handleSignIn={signIn}
+          handleSignIn={handleSignIn}
         />
       )}
     </header>
