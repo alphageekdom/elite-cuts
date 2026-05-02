@@ -113,18 +113,17 @@ const Navbar = () => {
         </div>
 
         <div className='flex items-center gap-4'>
+          <CartButton scrolled={scrolled} />
+
           {!isSessionLoading &&
             (isLoggedIn ? (
-              <>
-                <CartButton scrolled={scrolled} />
-                <ProfileMenu
-                  profileImage={profileImage}
-                  isOpen={isProfileMenuOpen}
-                  onToggle={() => setIsProfileMenuOpen((prev) => !prev)}
-                  onClose={() => setIsProfileMenuOpen(false)}
-                  onSignOut={handleSignOut}
-                />
-              </>
+              <ProfileMenu
+                profileImage={profileImage}
+                isOpen={isProfileMenuOpen}
+                onToggle={() => setIsProfileMenuOpen((prev) => !prev)}
+                onClose={() => setIsProfileMenuOpen(false)}
+                onSignOut={handleSignOut}
+              />
             ) : (
               <AuthLinks scrolled={scrolled} />
             ))}

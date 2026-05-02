@@ -7,12 +7,16 @@ import CartCount from './CartCount';
 import MobileModal from '../mobile/MobileModal';
 import { useGlobalContext } from '@/context/CartContext';
 
-const CartButton = ({ scrolled = false }) => {
+type CartButtonProps = {
+  scrolled?: boolean;
+};
+
+const CartButton = ({ scrolled = false }: CartButtonProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { setCartItems, cartCount, setCartCount, loading, setLoading } =
     useGlobalContext();
   const { data: session } = useSession();
-  const isLoggedIn = session && session.user;
+  const isLoggedIn = Boolean(session?.user);
   const router = useRouter();
 
   const handleCartClick = () => {
