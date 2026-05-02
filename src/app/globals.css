@@ -95,3 +95,17 @@
     transform: translateY(100%);
   }
 }
+
+/* Marquee animation — referenced via Tailwind arbitrary
+   `animate-[marqueeScroll_35s_linear_infinite]` in
+   src/components/home/Marquee.tsx. -50% lands at the exact loop point
+   because the track contains the 6-item set duplicated to 12 (w-max
+   sizes the flex track to its full content width). */
+@keyframes marqueeScroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
