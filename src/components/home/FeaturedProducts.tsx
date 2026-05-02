@@ -33,7 +33,7 @@ const FeaturedProducts = async () => {
     >
       <div className='mx-auto w-full max-w-7xl px-6 md:px-8'>
         <Reveal>
-          <SectionEyebrow num='03' label='Featured Products' />
+          <SectionEyebrow label='Featured Products' />
         </Reveal>
 
         <Reveal delayMs={80}>

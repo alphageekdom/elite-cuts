@@ -1,10 +1,7 @@
-type SectionEyebrowProps = { num: string; label: string };
+type SectionEyebrowProps = { label: string };
 
-const SectionEyebrow = ({ num, label }: SectionEyebrowProps) => (
+const SectionEyebrow = ({ label }: SectionEyebrowProps) => (
   <div className='mb-16 flex items-baseline gap-6'>
-    <span className='font-display text-sm font-medium tracking-[0.04em] text-camel'>
-      {num}
-    </span>
     <span className='text-xs font-medium tracking-[0.22em] uppercase text-muted'>
       {label}
     </span>

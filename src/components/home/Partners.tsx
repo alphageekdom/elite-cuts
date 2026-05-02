@@ -37,7 +37,7 @@ const Partners = () => {
     >
       <div className='mx-auto w-full max-w-7xl px-6 md:px-8'>
         <Reveal>
-          <SectionEyebrow num='01' label='Featured Partners' />
+          <SectionEyebrow label='Featured Partners' />
         </Reveal>
 
         <Reveal delayMs={80}>
