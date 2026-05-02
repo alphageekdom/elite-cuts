@@ -35,7 +35,7 @@ const FeaturedProducts = async () => {
   return (
     <section
       aria-labelledby='featured-products-heading'
-      className='bg-cream pt-35 pb-30'
+      className='bg-cream pt-35 pb-25'
     >
       <div className='mx-auto w-full max-w-7xl px-6 md:px-8'>
         <Reveal>
