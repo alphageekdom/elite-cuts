@@ -18,9 +18,6 @@
   --font-display: var(--font-fraunces);
   --font-sans: var(--font-instrument);
   --font-mono: var(--font-jetbrains);
-
-  --color-navbar-bg: #b91c1b;
-  --color-footer-bg: #082f49;
 }
 
 @utility custom-shadow {
