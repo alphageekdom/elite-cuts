@@ -11,9 +11,10 @@ import AuthLinks from './AuthLinks';
 import DesktopMenu from './DesktopMenu';
 import CartButton from '../cart/CartButton';
 import Logo from './Logo';
+import { FOCUS_RING } from '@/lib/styles';
 
 const SCROLL_THRESHOLD = 60;
-const DEFAULT_PROFILE_IMAGE = '/images/user-default.png';
+const MD_BREAKPOINT_PX = 768;
 
 const Navbar = () => {
   const { data: session, status } = useSession();
@@ -23,7 +24,7 @@ const Navbar = () => {
   const isSessionLoading = status === 'loading';
   const isLoggedIn = Boolean(session?.user);
   const isAdmin = Boolean(session?.user?.isAdmin);
-  const profileImage = session?.user?.image ?? DEFAULT_PROFILE_IMAGE;
+  const profileImage = session?.user?.image ?? undefined;
 
   // Only the home route shows the navbar transparent over a hero;
   // every other route stays in the readable cream/ink state.
@@ -46,7 +47,7 @@ const Navbar = () => {
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 768) setIsMobileMenuOpen(false);
+      if (window.innerWidth >= MD_BREAKPOINT_PX) setIsMobileMenuOpen(false);
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -107,7 +108,7 @@ const Navbar = () => {
       <div className='mx-auto flex max-w-7xl items-center justify-between gap-8 px-4 sm:px-6 lg:px-8'>
         <div className='flex items-center gap-10'>
           <Logo scrolled={scrolled} />
-          <nav aria-label='Primary navigation'>
+          <nav aria-label='Primary navigation' className='hidden md:block'>
             <DesktopMenu isAdmin={isAdmin} scrolled={scrolled} />
           </nav>
         </div>
@@ -130,7 +131,7 @@ const Navbar = () => {
 
           <button
             type='button'
-            className={`inline-flex items-center justify-center rounded-md p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-oxblood focus:ring-offset-2 md:hidden ${triggerToneClass}`}
+            className={`inline-flex items-center justify-center rounded-md p-2 transition-colors motion-reduce:transition-none md:hidden ${FOCUS_RING} ${triggerToneClass}`}
             aria-controls='mobile-menu'
             aria-expanded={isMobileMenuOpen}
             aria-label={isMobileMenuOpen ? 'Close main menu' : 'Open main menu'}

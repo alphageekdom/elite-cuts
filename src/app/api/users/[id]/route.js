@@ -44,7 +44,7 @@ export const PUT = async (req) => {
       return new Response('Invalid input data', { status: 400 });
     }
 
-    if (sessionUser.user.id !== userId) {
+    if (sessionUser.user.userId !== userId) {
       return new Response('Unauthorized: User ID does not match', {
         status: 401,
       });
