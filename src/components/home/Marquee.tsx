@@ -2,6 +2,7 @@ const ITEMS = [
   { text: 'Dry-aged', italic: false },
   { text: 'Grass-fed', italic: true },
   { text: 'Local farms', italic: false },
+  { text: 'Pickup available', italic: false },
   { text: 'Sustainably sourced', italic: false },
   { text: 'Ethically raised', italic: true },
   { text: 'Hand-cut daily', italic: false },
