@@ -24,8 +24,8 @@ const CTA = () => {
             <em className='font-normal italic text-camel-soft'>your cut?</em>
           </h2>
           <p className='mx-auto mb-11 max-w-[50ch] text-[17px] opacity-85'>
-            Order online, pick up at the shop. Or stop by and let us walk you
-            through what came in fresh today.
+            Order online by 4pm for same-day pickup. Or stop by the counter —
+            we&apos;re open Tuesday through Sunday.
           </p>
           <div className='inline-flex flex-wrap justify-center gap-4'>
             <Link

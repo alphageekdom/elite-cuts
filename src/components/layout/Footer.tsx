@@ -73,9 +73,9 @@ const SOCIALS = [
 ] as const;
 
 const QUICK_LINKS = [
-  { label: 'About Us', href: '#about' },
-  { label: 'Services', href: '#services' },
-  { label: 'Contact', href: '#contact' },
+  { label: 'Shop All Cuts', href: '/products' },
+  { label: 'Featured Cuts', href: '/#featured' },
+  { label: 'Our Story', href: '/#about-heading' },
 ] as const;
 
 const COLUMN_HEADING =
@@ -96,17 +96,24 @@ const Footer = () => {
                 Elite<em className='font-normal italic text-camel'>Cuts</em>
               </div>
               <p className='max-w-[32ch] text-sm leading-[1.6] opacity-80'>
-                A modern butcher shop in Southern California — combining
-                traditional cuts with quality, service, and convenience.
+                Hand-cut meats, butchered fresh in San Diego. Order online for
+                same-day pickup.
               </p>
             </div>
 
             <div>
               <h4 className={COLUMN_HEADING}>Visit</h4>
-              <p className='text-sm leading-[1.7] opacity-85'>
-                123 Carnivore Street
+              <p className='mb-4 text-sm leading-[1.7] opacity-85'>
+                3045 30th Street
                 <br />
-                Grillville, CA 90210
+                San Diego, CA 92104
+              </p>
+              <p className='text-sm leading-[1.7] opacity-75'>
+                Tue–Sat 9am–7pm
+                <br />
+                Sun 10am–4pm
+                <br />
+                Closed Mondays
               </p>
             </div>
 
@@ -114,8 +121,8 @@ const Footer = () => {
               <h4 className={COLUMN_HEADING}>Contact</h4>
               <ul className='flex flex-col gap-3'>
                 <li>
-                  <a href='tel:+15551234567' className={COLUMN_LINK}>
-                    (555) 123-4567
+                  <a href='tel:+16195550142' className={COLUMN_LINK}>
+                    (619) 555-0142
                   </a>
                 </li>
                 <li>

@@ -1,11 +1,11 @@
 const ITEMS = [
-  { text: 'Dry-aged', italic: false },
-  { text: 'Grass-fed', italic: true },
-  { text: 'Local farms', italic: false },
-  { text: 'Pickup available', italic: false },
-  { text: 'Sustainably sourced', italic: false },
-  { text: 'Ethically raised', italic: true },
   { text: 'Hand-cut daily', italic: false },
+  { text: 'Dry-aged beef', italic: true },
+  { text: 'Local farms', italic: false },
+  { text: 'Same-day pickup', italic: false },
+  { text: 'Pasture-raised', italic: true },
+  { text: 'Cut to order', italic: false },
+  { text: 'Custom orders welcome', italic: false },
 ] as const;
 
 // Render the 6-item set as a flat list of [item, separator, item, separator, …]

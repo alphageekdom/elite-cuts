@@ -47,8 +47,8 @@ const Hero = () => {
         </h1>
 
         <p className='mb-10 max-w-[44ch] animate-[heroRise_0.8s_ease_both_0.42s] text-[18px] leading-relaxed text-cream/90 motion-reduce:animate-none'>
-          A modernized butcher shop combining traditional cuts with sustainably
-          sourced, ethically raised meat — and a seamless way to order.
+          Hand-cut beef, pork, poultry, and lamb — pasture-raised, dry-aged
+          in-house, and butchered to order. Ready when you are.
         </p>
 
         <div className='flex animate-[heroRise_0.8s_ease_both_0.5s] flex-wrap items-center gap-3 motion-reduce:animate-none sm:gap-4'>
@@ -56,7 +56,7 @@ const Hero = () => {
             href='#featured'
             className='group/cta inline-flex items-center justify-center gap-2.5 rounded-full bg-oxblood px-7 py-3.5 text-sm font-medium tracking-[0.02em] text-cream transition-[background-color,transform] duration-300 hover:-translate-y-0.5 hover:bg-oxblood-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cream focus-visible:ring-offset-2 focus-visible:ring-offset-ink/40 motion-reduce:hover:translate-y-0 motion-reduce:transition-none'
           >
-            Shop featured cuts
+            Shop best sellers
             <ArrowIcon className='transition-transform duration-300 group-hover/cta:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover/cta:translate-x-0' />
           </Link>
           <Link
@@ -68,7 +68,7 @@ const Hero = () => {
         </div>
 
         <p className='mt-7 animate-[heroRise_0.8s_ease_both_0.58s] text-[12px] font-medium tracking-[0.18em] uppercase text-cream/75 motion-reduce:animate-none'>
-          Pickup ready in 24 hrs · Hand-cut to order
+          Order by 4pm · Same-day pickup
         </p>
       </div>
 
@@ -83,7 +83,7 @@ const Hero = () => {
             />
           </span>
         </span>
-        <span>34.0522° N · 118.2437° W</span>
+        <span>32.7491° N · 117.1294° W</span>
       </div>
     </section>
   );
