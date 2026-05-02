@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-import { FOCUS_RING } from '@/lib/styles';
+import { FOCUS_RING, scrollAwareTone } from '@/lib/styles';
 
 type AuthLinksProps = {
   scrolled?: boolean;
@@ -11,9 +11,7 @@ type AuthLinksProps = {
 
 const AuthLinks = ({ scrolled = false }: AuthLinksProps) => {
   const pathname = usePathname();
-  const loginTone = scrolled
-    ? 'text-ink focus-visible:ring-offset-cream'
-    : 'text-cream focus-visible:ring-offset-transparent';
+  const loginTone = scrollAwareTone(scrolled);
 
   return (
     <div className='flex items-center gap-6'>

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-import { FOCUS_RING } from '@/lib/styles';
+import { FOCUS_RING, scrollAwareTone } from '@/lib/styles';
 import { PRIMARY_LINKS, isActive } from './links';
 
 type DesktopMenuProps = {
@@ -19,9 +19,7 @@ type NavLinkProps = {
 };
 
 const NavLink = ({ href, label, scrolled, active }: NavLinkProps) => {
-  const toneClass = scrolled
-    ? 'text-ink focus-visible:ring-offset-cream'
-    : 'text-cream focus-visible:ring-offset-transparent';
+  const toneClass = scrollAwareTone(scrolled);
 
   return (
     <Link
