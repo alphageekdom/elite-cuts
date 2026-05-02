@@ -14,7 +14,7 @@ import Logo from './Logo';
 import { FOCUS_RING } from '@/lib/styles';
 
 const SCROLL_THRESHOLD = 60;
-const MD_BREAKPOINT_PX = 768;
+const LG_BREAKPOINT_PX = 1024;
 
 const Navbar = () => {
   const { data: session, status } = useSession();
@@ -47,7 +47,7 @@ const Navbar = () => {
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= MD_BREAKPOINT_PX) setIsMobileMenuOpen(false);
+      if (window.innerWidth >= LG_BREAKPOINT_PX) setIsMobileMenuOpen(false);
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -108,7 +108,7 @@ const Navbar = () => {
       <div className='mx-auto flex max-w-7xl items-center justify-between gap-8 px-4 sm:px-6 lg:px-8'>
         <div className='flex items-center gap-10'>
           <Logo scrolled={scrolled} />
-          <nav aria-label='Primary navigation' className='hidden md:block'>
+          <nav aria-label='Primary navigation' className='hidden lg:block'>
             <DesktopMenu isAdmin={isAdmin} scrolled={scrolled} />
           </nav>
         </div>
@@ -116,22 +116,25 @@ const Navbar = () => {
         <div className='flex items-center gap-4'>
           <CartButton scrolled={scrolled} />
 
-          {!isSessionLoading &&
-            (isLoggedIn ? (
-              <ProfileMenu
-                profileImage={profileImage}
-                isOpen={isProfileMenuOpen}
-                onToggle={() => setIsProfileMenuOpen((prev) => !prev)}
-                onClose={() => setIsProfileMenuOpen(false)}
-                onSignOut={handleSignOut}
-              />
-            ) : (
-              <AuthLinks scrolled={scrolled} />
-            ))}
+          {!isSessionLoading && (
+            <div className='hidden items-center gap-4 lg:flex'>
+              {isLoggedIn ? (
+                <ProfileMenu
+                  profileImage={profileImage}
+                  isOpen={isProfileMenuOpen}
+                  onToggle={() => setIsProfileMenuOpen((prev) => !prev)}
+                  onClose={() => setIsProfileMenuOpen(false)}
+                  onSignOut={handleSignOut}
+                />
+              ) : (
+                <AuthLinks scrolled={scrolled} />
+              )}
+            </div>
+          )}
 
           <button
             type='button'
-            className={`inline-flex items-center justify-center rounded-md p-2 transition-colors motion-reduce:transition-none md:hidden ${FOCUS_RING} ${triggerToneClass}`}
+            className={`inline-flex items-center justify-center rounded-md p-2 transition-colors motion-reduce:transition-none lg:hidden ${FOCUS_RING} ${triggerToneClass}`}
             aria-controls='mobile-menu'
             aria-expanded={isMobileMenuOpen}
             aria-label={isMobileMenuOpen ? 'Close main menu' : 'Open main menu'}

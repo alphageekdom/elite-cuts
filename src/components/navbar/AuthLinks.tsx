@@ -18,7 +18,7 @@ const AuthLinks = ({ scrolled = false }: AuthLinksProps) => {
       <Link
         href='/login'
         aria-current={pathname === '/login' ? 'page' : undefined}
-        className={`hidden text-sm font-medium tracking-wide opacity-85 transition-opacity duration-300 hover:opacity-100 motion-reduce:transition-none md:inline ${FOCUS_RING} ${loginTone}`}
+        className={`text-sm font-medium tracking-wide opacity-85 transition-opacity duration-300 hover:opacity-100 motion-reduce:transition-none ${FOCUS_RING} ${loginTone}`}
       >
         Login
       </Link>
