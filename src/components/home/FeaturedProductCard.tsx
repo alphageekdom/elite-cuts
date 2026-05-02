@@ -175,7 +175,7 @@ const FeaturedProductCard = ({ product }: FeaturedProductCardProps) => {
       </div>
 
       <div className='px-1'>
-        <div className='mb-2.5 flex items-center gap-2.5 text-[11px] tracking-[0.22em] uppercase text-muted'>
+        <div className='mb-2.5 flex items-center gap-2.5 text-[11px] tracking-[0.16em] uppercase text-muted'>
           <span>{product.category}</span>
           <span
             aria-hidden='true'
@@ -191,7 +191,7 @@ const FeaturedProductCard = ({ product }: FeaturedProductCardProps) => {
           <Link href={productHref}>{product.name}</Link>
         </h3>
 
-        <p className='mb-5 line-clamp-3 text-sm leading-[1.55] text-ink-soft'>
+        <p className='mb-5 line-clamp-3 text-sm leading-[1.65] text-ink-soft'>
           {product.description}
         </p>
 
