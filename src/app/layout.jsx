@@ -1,4 +1,4 @@
-import { Fraunces, Instrument_Sans } from 'next/font/google';
+import { Fraunces, Instrument_Sans, JetBrains_Mono } from 'next/font/google';
 
 import Footer from '@/components/layout/Footer';
 import Navbar from '@/components/navbar/Navbar';
@@ -25,6 +25,12 @@ const instrument = Instrument_Sans({
   display: 'swap',
 });
 
+const jetbrains = JetBrains_Mono({
+  subsets: ['latin'],
+  variable: '--font-jetbrains',
+  display: 'swap',
+});
+
 export const metadata = {
   title: 'Elite Cuts | Luxury Cuts',
   description: 'Explore your new favorite cut',
@@ -38,7 +44,7 @@ const MainLayout = ({ children }) => {
         <CartProvider>
           <html
             lang='en'
-            className={`${fraunces.variable} ${instrument.variable}`}
+            className={`${fraunces.variable} ${instrument.variable} ${jetbrains.variable}`}
           >
             <body className='bg-cream font-sans text-ink antialiased'>
               <Navbar />
