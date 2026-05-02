@@ -11,9 +11,9 @@ const HomePage = async () => {
     <>
       <Hero />
       <Marquee />
-      <Partners />
-      <About />
       <FeaturedProducts />
+      <About />
+      <Partners />
       <Reviews />
       <CTA />
     </>

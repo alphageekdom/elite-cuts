@@ -42,7 +42,7 @@ const Reviews = () => {
     >
       <div className='mx-auto w-full max-w-7xl px-6 md:px-8'>
         <Reveal>
-          <SectionEyebrow num='04' label='Word from Regulars' />
+          <SectionEyebrow label='Word from Regulars' />
         </Reveal>
 
         <Reveal delayMs={80}>

@@ -30,7 +30,7 @@ const About = () => {
     >
       <div className='mx-auto w-full max-w-7xl px-6 md:px-8'>
         <Reveal>
-          <SectionEyebrow num='02' label='Our Story' />
+          <SectionEyebrow label='Our Story' />
         </Reveal>
 
         <div className='grid grid-cols-1 items-start gap-20 lg:grid-cols-2'>
