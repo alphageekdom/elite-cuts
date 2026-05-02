@@ -44,22 +44,16 @@ const About = () => {
             </h2>
 
             <p className='mb-5.5 max-w-[52ch] text-base leading-[1.75] text-ink-soft first-letter:float-left first-letter:mt-1.5 first-letter:mr-3 first-letter:font-display first-letter:text-[60px] first-letter:leading-[0.9] first-letter:font-medium first-letter:text-oxblood'>
-              EliteCuts is a modernized butcher shop that combines traditional
-              cuts with high-quality meats and exceptional service. Established
-              in 2018, our store is dedicated to offering the finest cuts in
-              Southern California, with a shopping experience that prizes both
-              the quality of our products and the excellence of our service.
+              Tangelo opened EliteCuts in 2018 with a simple rule: every cut
+              should leave the counter looking like the butcher cared about it.
+              Eight years later, we still cut to order, dry-age our beef
+              in-house, and only carry meat from farms we know by name.
             </p>
             <p className='mb-5.5 max-w-[52ch] text-base leading-[1.75] text-ink-soft'>
-              Customers can order online and pick up at our store — a seamless,
-              hassle-free way to shop. Whether you&apos;re a steak connoisseur
-              or simply appreciate the finest cuts, we&apos;re committed to
-              meeting and exceeding expectations every visit.
-            </p>
-            <p className='mb-5.5 max-w-[52ch] text-base leading-[1.75] text-ink-soft'>
-              Our commitment to quality extends beyond our products. We
-              actively support local farmers and producers, ensuring everything
-              we sell is sustainably sourced and ethically raised.
+              Order online by 4pm for same-day pickup. Or stop by the counter
+              and let us walk you through what came in fresh that morning —
+              what to grill, what to roast, and how to handle it once you get
+              it home.
             </p>
 
             <div className='mt-12 flex items-center gap-6 border-t border-line pt-8'>

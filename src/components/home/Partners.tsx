@@ -17,13 +17,13 @@ type Partner = {
 const PARTNERS: readonly Partner[] = [
   {
     title: 'Premium Grills',
-    body: 'Craftsmanship and serious heat from our partner — built for the kind of sear your cuts deserve.',
+    body: 'Heavy-duty grills built for the edge-to-edge sear a thick ribeye actually needs — from a partner we trust on heat.',
     href: 'https://rcsgasgrills.com/collections/bbq-grills',
     image: GrillImage,
   },
   {
     title: 'Kitchen Knives',
-    body: 'Precision blades to honor every cut — sourced from a sponsor known for culinary craftsmanship.',
+    body: 'Sharp, balanced blades from a knife shop we trust — the difference between cutting a roast and fighting it.',
     href: 'https://cutleryandmore.com/collections/kitchen-knives-cutlery',
     image: KnivesImage,
   },
@@ -45,8 +45,8 @@ const Partners = () => {
             id='partners-heading'
             className='mb-12 max-w-[22ch] font-display text-[clamp(28px,3vw,40px)] leading-[1.1] tracking-[-0.02em] font-normal'
           >
-            The tools that make a great cut{' '}
-            <em className='font-normal italic text-oxblood'>even better.</em>
+            Tools that earn their place{' '}
+            <em className='font-normal italic text-oxblood'>on the counter.</em>
           </h2>
         </Reveal>
 
