@@ -66,6 +66,7 @@ const DashboardAddForm = () => {
             <option value='Pork'>Pork</option>
             <option value='Poultry'>Poultry</option>
             <option value='Lamb'>Lamb</option>
+            <option value='Charcuterie'>Charcuterie</option>
             <option value='Other'>Other</option>
           </select>
         </div>
