@@ -52,8 +52,8 @@ const FeaturedProducts = async () => {
               </em>
             </h2>
             <p className='max-w-[34ch] pb-2 text-[15px] leading-relaxed text-ink-soft'>
-              Our most-ordered cuts this month — hand-cut to order and ready
-              for pickup.
+              A small slice of the counter — what regulars keep ordering, week
+              after week.
             </p>
           </div>
         </Reveal>
@@ -86,9 +86,9 @@ const FeaturedProducts = async () => {
         <Reveal delayMs={520}>
           <div className='mt-20 flex flex-wrap items-center justify-between gap-8 border-t border-line-soft pt-12'>
             <p className='max-w-[38ch] font-display text-[clamp(22px,2.2vw,30px)] leading-[1.3] tracking-[-0.015em] font-normal'>
-              These are just the favorites.{' '}
+              These are just a few favorites.{' '}
               <em className='font-normal italic text-oxblood'>
-                The full counter has plenty more.
+                Plenty more behind the counter.
               </em>
             </p>
             <Link
