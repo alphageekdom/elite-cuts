@@ -12,9 +12,12 @@
   --color-ink-soft: #2d2722;
   --color-muted: #8a7f73;
   --color-line: rgba(28, 24, 20, 0.12);
+  --color-line-soft: rgba(28, 24, 20, 0.08);
+  --color-green: #4a6b3a;
 
   --font-display: var(--font-fraunces);
   --font-sans: var(--font-instrument);
+  --font-mono: var(--font-jetbrains);
 
   --color-navbar-bg: #b91c1b;
   --color-footer-bg: #082f49;
