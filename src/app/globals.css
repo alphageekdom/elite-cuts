@@ -59,3 +59,39 @@
     display: none;
   }
 }
+
+/* Hero animations — referenced via Tailwind arbitrary
+   `animate-[heroZoom_…]` / `animate-[heroRise_…]` / `animate-[heroScrollPulse_…]`
+   utilities in src/components/home/Hero.tsx. Keyframes live here because
+   @keyframes can't be expressed inline with Tailwind utilities. */
+@keyframes heroZoom {
+  from {
+    transform: scale(1.05);
+  }
+  to {
+    transform: scale(1.12);
+  }
+}
+
+@keyframes heroRise {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes heroScrollPulse {
+  0% {
+    transform: translateY(-100%);
+  }
+  50% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
