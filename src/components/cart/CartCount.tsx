@@ -2,7 +2,7 @@
 
 import { FaShoppingCart } from 'react-icons/fa';
 import { useGlobalContext } from '@/context/CartContext';
-import { FOCUS_RING } from '@/lib/styles';
+import { FOCUS_RING, scrollAwareTone } from '@/lib/styles';
 
 type CartCountProps = {
   onClick: () => void;
@@ -12,9 +12,10 @@ type CartCountProps = {
 const CartCount = ({ onClick, scrolled = false }: CartCountProps) => {
   const { cartCount } = useGlobalContext();
 
-  const toneClass = scrolled
-    ? 'text-ink hover:text-oxblood focus-visible:ring-offset-cream'
-    : 'text-cream hover:text-camel-soft focus-visible:ring-offset-transparent';
+  const toneClass = scrollAwareTone(scrolled, {
+    hoverScrolled: 'hover:text-oxblood',
+    hoverHero: 'hover:text-camel-soft',
+  });
 
   const ariaLabel =
     cartCount > 0

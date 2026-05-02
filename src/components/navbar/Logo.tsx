@@ -3,16 +3,14 @@
 import Link from 'next/link';
 import { GiMeatCleaver } from 'react-icons/gi';
 
-import { FOCUS_RING } from '@/lib/styles';
+import { FOCUS_RING, scrollAwareTone } from '@/lib/styles';
 
 type LogoProps = {
   scrolled?: boolean;
 };
 
 const Logo = ({ scrolled = false }: LogoProps) => {
-  const wordmarkTone = scrolled
-    ? 'text-ink focus-visible:ring-offset-cream'
-    : 'text-cream focus-visible:ring-offset-transparent';
+  const wordmarkTone = scrollAwareTone(scrolled);
   const iconTone = scrolled ? 'text-oxblood' : 'text-cream';
 
   return (
