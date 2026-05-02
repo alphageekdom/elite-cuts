@@ -7,17 +7,13 @@ import { useState } from 'react';
 import ArrowIcon from '@/components/uielements/ArrowIcon';
 import HeroBg from '@/assets/images/hero-butcher.jpg';
 
-const CATEGORIES = ['All', 'Beef', 'Pork', 'Poultry', 'Specialty'] as const;
-type Category = (typeof CATEGORIES)[number];
-
 const Hero = () => {
   const [product, setProduct] = useState('');
-  const [productType, setProductType] = useState<Category>('All');
   const router = useRouter();
 
   return (
     // -mt-20 cancels the layout's pt-20 so the hero sits *under* the
-    // transparent navbar; pt-30 + min-h-screen reserves space for it inside.
+    // transparent navbar; pt-30 + min-h reserves space for it inside.
     <section className='relative -mt-20 flex min-h-[clamp(640px,100vh,960px)] items-center overflow-hidden pt-30 pb-16 text-cream'>
       <div className='absolute inset-0 -z-10 scale-105 animate-[heroZoom_20s_ease-in-out_infinite_alternate] motion-reduce:animate-none'>
         <Image
@@ -61,14 +57,11 @@ const Hero = () => {
           onSubmit={(e) => {
             e.preventDefault();
             const trimmed = product.trim();
-            if (trimmed === '' && productType === 'All') {
+            if (trimmed === '') {
               router.push('/products');
               return;
             }
-            const params = new URLSearchParams({
-              product: trimmed,
-              productType,
-            });
+            const params = new URLSearchParams({ product: trimmed });
             router.push(`/products/search-results?${params.toString()}`);
           }}
           role='search'
@@ -86,21 +79,6 @@ const Hero = () => {
             placeholder='Search ribeye, brisket, dry-aged…'
             className='w-full flex-1 bg-transparent px-4 py-2.5 text-[15px] text-ink outline-none placeholder:text-muted md:w-auto md:px-0 md:py-3.5'
           />
-          <label htmlFor='hero-product-type' className='sr-only'>
-            Product category
-          </label>
-          <select
-            id='hero-product-type'
-            value={productType}
-            onChange={(e) => setProductType(e.target.value as Category)}
-            className='w-full cursor-pointer bg-transparent px-4 py-2.5 text-sm text-ink-soft outline-none md:w-auto md:appearance-none md:border-x md:border-line md:bg-[url("data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2710%27%20height%3D%276%27%20viewBox%3D%270%200%2010%206%27%20fill%3D%27none%27%20stroke%3D%27%232d2722%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M1%201l4%204%204-4%27%2F%3E%3C%2Fsvg%3E")] md:bg-size-[10px_6px] md:bg-no-repeat md:bg-position-[right_1rem_center] md:py-0 md:pr-10 md:pl-5 md:mr-2'
-          >
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c === 'All' ? 'All cuts' : c}
-              </option>
-            ))}
-          </select>
           <button
             type='submit'
             className='inline-flex w-full items-center justify-center gap-2 rounded-full bg-oxblood px-7 py-3.5 text-sm font-medium tracking-[0.02em] text-cream transition-colors hover:bg-oxblood-deep motion-reduce:transition-none md:w-auto'
