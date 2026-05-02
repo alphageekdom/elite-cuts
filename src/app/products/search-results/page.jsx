@@ -3,7 +3,7 @@ import ProductSearchForm from '@/components/uielements/ProductSearchForm';
 import BackButton from '@/components/uielements/BackButton';
 import connectDB from '@/config/database';
 import Product from '@/models/Product';
-import { convertToSerializeableObject } from '@/utils/convertToObject';
+import { convertToSerializableObject } from '@/utils/convertToObject';
 
 const SearchResultsPage = async ({
   searchParams: { product, productType },
@@ -17,12 +17,12 @@ const SearchResultsPage = async ({
   };
 
   if (productType && productType !== 'All') {
-    const typePattern = new RegExp(productType, 'i');
-    query.type = typePattern;
+    const categoryPattern = new RegExp(productType, 'i');
+    query.category = categoryPattern;
   }
 
   const productsQueryResults = await Product.find(query).lean();
-  const products = convertToSerializeableObject(productsQueryResults);
+  const products = convertToSerializableObject(productsQueryResults);
 
   return (
     <>

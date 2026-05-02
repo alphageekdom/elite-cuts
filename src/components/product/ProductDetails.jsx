@@ -55,7 +55,7 @@ const ProductDetails = React.memo(({ product }) => {
   return (
     <main className='container mx-auto px-4'>
       <div className='bg-white p-6 rounded-lg text-center md:text-left'>
-        <div className='text-gray-500 mb-4 text-left'>{product.type}</div>
+        <div className='text-gray-500 mb-4 text-left'>{product.category}</div>
         <div className='text-3xl font-bold mb-4 flex justify-between items-center'>
           {product.name}
           <span className='ml-2 flex'>
@@ -68,7 +68,7 @@ const ProductDetails = React.memo(({ product }) => {
             <div className='bg-white p-6 rounded-lg mt-6'>
               <h3 className='flex items-center text-lg font-bold mb-2'>
                 <GiMeatCleaver className='mr-2 text-2xl' />
-                {product.title}
+                {product.name}
               </h3>
               <p className='text-gray-500 mb-4 text-left'>
                 {product.description}
@@ -87,7 +87,7 @@ const ProductDetails = React.memo(({ product }) => {
                 </button>
               </div>
               <p className='text-red-900 text-xl font-semibold mb-9'>
-                Current Stock: {product.inStock}
+                Current Stock: {product.stockCount}
               </p>
               <div className='border-t border-gray-500 my-4'></div>
               <BookmarkButton product={product} />

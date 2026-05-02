@@ -1,34 +1,28 @@
 import Link from 'next/link';
 
+import ArrowIcon from '@/components/uielements/ArrowIcon';
 import connectDB from '@/config/database';
 import Reveal from '@/components/uielements/Reveal';
 import Product from '@/models/Product';
-import { convertToSerializeableObject } from '@/utils/convertToObject';
+import { convertToSerializableObject } from '@/utils/convertToObject';
 
 import FeaturedProductCard, { type FeaturedProduct } from './FeaturedProductCard';
-
-const ArrowIcon = () => (
-  <svg
-    width={14}
-    height={14}
-    viewBox='0 0 24 24'
-    fill='none'
-    stroke='currentColor'
-    strokeWidth={2}
-    aria-hidden='true'
-    className='transition-transform duration-300 group-hover/cta:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover/cta:translate-x-0'
-  >
-    <path d='M5 12h14M13 5l7 7-7 7' />
-  </svg>
-);
+import SectionEyebrow from './SectionEyebrow';
 
 const FeaturedProducts = async () => {
   await connectDB();
 
   // Limit to 2 for the editorial homepage grid; .lean() returns plain objects
-  // for serialization across the server/client boundary.
-  const products = await Product.find({ isFeatured: true }).limit(2).lean();
-  const serialized = products.map(convertToSerializeableObject) as FeaturedProduct[];
+  // for serialization across the server/client boundary. Filter out any
+  // featured product without an image so the card never resolves to
+  // /images/products/undefined.
+  const products = await Product.find({
+    isFeatured: true,
+    'images.0': { $exists: true },
+  })
+    .limit(2)
+    .lean();
+  const serialized = products.map(convertToSerializableObject) as FeaturedProduct[];
 
   if (serialized.length === 0) return null;
 
@@ -39,15 +33,7 @@ const FeaturedProducts = async () => {
     >
       <div className='mx-auto w-full max-w-7xl px-6 md:px-8'>
         <Reveal>
-          <div className='mb-16 flex items-baseline gap-6'>
-            <span className='font-display text-sm font-medium tracking-[0.04em] text-camel'>
-              03
-            </span>
-            <span className='text-xs font-medium tracking-[0.22em] uppercase text-muted'>
-              Featured Products
-            </span>
-            <span aria-hidden='true' className='h-px flex-1 bg-line' />
-          </div>
+          <SectionEyebrow num='03' label='Featured Products' />
         </Reveal>
 
         <Reveal delayMs={80}>
@@ -89,7 +75,7 @@ const FeaturedProducts = async () => {
               className='group/cta inline-flex shrink-0 items-center gap-3 rounded-full bg-ink px-8 py-4 text-sm font-medium tracking-[0.02em] text-cream transition-[background-color,transform] duration-300 hover:-translate-y-0.5 hover:bg-oxblood motion-reduce:hover:translate-y-0 motion-reduce:transition-none'
             >
               Browse the full shop
-              <ArrowIcon />
+              <ArrowIcon className='transition-transform duration-300 group-hover/cta:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover/cta:translate-x-0' />
             </Link>
           </div>
         </Reveal>

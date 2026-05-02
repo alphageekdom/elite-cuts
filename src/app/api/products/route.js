@@ -46,17 +46,16 @@ export const POST = async (request) => {
   try {
     const sessionUser = await getSessionUser();
 
-    if (!sessionUser || !sessionUser.userId) {
+    if (!sessionUser?.userId) {
       return new Response('User ID is required', { status: 401 });
     }
 
-    const { userId } = sessionUser;
+    if (!sessionUser.user?.isAdmin) {
+      return new Response('Admin access required', { status: 403 });
+    }
 
     const formData = await request.formData();
 
-    formData.set('rating', '0');
-
-    // Access all values from amenities and images
     const images = formData
       .getAll('images')
       .filter((image) => image.name !== '');
@@ -83,17 +82,13 @@ export const POST = async (request) => {
 
     const uploadedImages = await Promise.all(imageUploadPromises);
 
-    // Create productData object for database
+    // rating defaults to 0 via schema; admin form doesn't collect it.
     const productData = {
-      category: formData.get('category'),
-      type: formData.get('type'),
       name: formData.get('name'),
-      title: formData.get('title'),
+      category: formData.get('category'),
       description: formData.get('description'),
       price: formData.get('price'),
-      inStock: formData.get('inStock'),
-      rating: formData.get('rating'),
-      owner: userId,
+      stockCount: formData.get('stockCount'),
       images: uploadedImages,
     };
 
