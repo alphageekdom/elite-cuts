@@ -124,7 +124,7 @@ const FeaturedProductCard = ({ product }: FeaturedProductCardProps) => {
   };
 
   return (
-    <article className='group relative'>
+    <article className='group relative flex h-full flex-col'>
       <div className='relative mb-6 aspect-4/5 overflow-hidden rounded-sm bg-cream-deep'>
         <Link
           href={productHref}
@@ -174,7 +174,7 @@ const FeaturedProductCard = ({ product }: FeaturedProductCardProps) => {
         </div>
       </div>
 
-      <div className='px-1'>
+      <div className='flex flex-1 flex-col px-1'>
         <div className='mb-2.5 flex items-center gap-2.5 text-[11px] tracking-[0.16em] uppercase text-muted'>
           <span>{product.category}</span>
           <span
@@ -187,7 +187,7 @@ const FeaturedProductCard = ({ product }: FeaturedProductCardProps) => {
           </span>
         </div>
 
-        <h3 className='mb-2.5 font-display text-[22px] font-medium leading-[1.15] tracking-[-0.02em] transition-colors duration-300 group-hover:text-oxblood motion-reduce:transition-none md:text-[26px]'>
+        <h3 className='mb-2.5 line-clamp-2 font-display text-[22px] font-medium leading-[1.15] tracking-[-0.02em] transition-colors duration-300 group-hover:text-oxblood motion-reduce:transition-none md:text-[26px]'>
           <Link href={productHref}>{product.name}</Link>
         </h3>
 
@@ -195,7 +195,7 @@ const FeaturedProductCard = ({ product }: FeaturedProductCardProps) => {
           {product.description}
         </p>
 
-        <div className='flex items-baseline justify-between gap-3 border-t border-line-soft pt-4.5'>
+        <div className='mt-auto flex items-baseline justify-between gap-3 border-t border-line-soft pt-4.5'>
           <div className='font-display text-xl font-medium tracking-[-0.01em] text-ink md:text-2xl'>
             ${product.price.toFixed(2)}
             <em className='ml-1 text-[13px] font-normal not-italic text-muted'>

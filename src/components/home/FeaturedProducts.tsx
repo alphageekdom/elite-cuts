@@ -61,13 +61,13 @@ const FeaturedProducts = async () => {
         <Reveal delayMs={140}>
           <nav
             aria-label='Browse by category'
-            className='mb-16 flex flex-wrap gap-2.5'
+            className='mb-16 grid grid-cols-4 gap-2 sm:flex sm:flex-wrap sm:gap-2.5'
           >
             {CATEGORIES.map((category) => (
               <Link
                 key={category}
                 href={`/products?category=${category}`}
-                className='rounded-full border border-line bg-cream px-5 py-2 text-[12px] font-medium tracking-[0.16em] uppercase text-ink-soft transition-[background-color,border-color,color] duration-300 hover:border-ink hover:bg-ink hover:text-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-cream motion-reduce:transition-none'
+                className='flex items-center justify-center rounded-full border border-line bg-cream px-2 py-1.5 text-[11px] font-medium tracking-[0.12em] uppercase text-ink-soft transition-[background-color,border-color,color] duration-300 hover:border-ink hover:bg-ink hover:text-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-cream motion-reduce:transition-none sm:px-5 sm:py-2 sm:text-[12px] sm:tracking-[0.16em]'
               >
                 {category}
               </Link>
