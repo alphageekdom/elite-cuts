@@ -23,6 +23,10 @@ const Hero = () => {
         aria-hidden='true'
         className='absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(20,16,14,0.55)_0%,rgba(20,16,14,0.4)_40%,rgba(20,16,14,0.7)_100%)]'
       />
+      <div
+        aria-hidden='true'
+        className='absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_20%_50%,rgba(20,16,14,0.5)_0%,transparent_60%)]'
+      />
 
       <div className='relative z-1 mx-auto w-full max-w-7xl px-6 md:px-8'>
         <div className='mb-7 flex animate-[heroRise_0.7s_ease_both_0.1s] items-center gap-3 text-xs font-medium tracking-[0.22em] uppercase motion-reduce:animate-none'>
