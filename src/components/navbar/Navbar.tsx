@@ -121,9 +121,10 @@ const Navbar = () => {
                 <CartButton scrolled={scrolled} />
                 <ProfileMenu
                   profileImage={profileImage}
-                  isProfileMenuOpen={isProfileMenuOpen}
-                  setIsProfileMenuOpen={setIsProfileMenuOpen}
-                  handleSignOut={handleSignOut}
+                  isOpen={isProfileMenuOpen}
+                  onToggle={() => setIsProfileMenuOpen((prev) => !prev)}
+                  onClose={() => setIsProfileMenuOpen(false)}
+                  onSignOut={handleSignOut}
                 />
               </>
             ) : (
