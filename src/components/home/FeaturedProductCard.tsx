@@ -107,7 +107,7 @@ const FeaturedProductCard = ({ product }: FeaturedProductCardProps) => {
   const stockLabel = outOfStock
     ? 'Out of stock'
     : lowStock
-      ? `Only ${product.stockCount} left`
+      ? `${product.stockCount} left`
       : 'In stock';
 
   const onAddClick = (e: MouseEvent<HTMLButtonElement>) => {
@@ -161,22 +161,16 @@ const FeaturedProductCard = ({ product }: FeaturedProductCardProps) => {
           <HeartIcon filled={isBookmarked} />
         </button>
 
-        <div className='absolute right-4 bottom-4 left-4 z-2 flex translate-y-[120%] gap-2 opacity-0 transition-[transform,opacity] duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] max-md:translate-y-0 max-md:opacity-100 md:group-hover:translate-y-0 md:group-hover:opacity-100 motion-reduce:transition-none motion-reduce:max-md:translate-y-0 motion-reduce:max-md:opacity-100'>
+        <div className='absolute right-4 bottom-4 left-4 z-2 translate-y-[120%] opacity-0 transition-[transform,opacity] duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] max-md:translate-y-0 max-md:opacity-100 md:group-hover:translate-y-0 md:group-hover:opacity-100 motion-reduce:transition-none motion-reduce:max-md:translate-y-0 motion-reduce:max-md:opacity-100'>
           <button
             type='button'
             onClick={onAddClick}
             disabled={isAddingToCart || outOfStock}
-            className='flex flex-1 items-center justify-center gap-2.5 rounded-full bg-ink px-5 py-3.5 text-[13px] font-medium tracking-[0.04em] text-cream transition-colors duration-300 hover:bg-oxblood disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none'
+            className='flex w-full items-center justify-center gap-2 rounded-full bg-ink px-4 py-3 text-[13px] font-medium tracking-[0.04em] text-cream transition-colors duration-300 hover:bg-oxblood disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none'
           >
             <CartIcon />
             {isAddingToCart ? 'Adding…' : outOfStock ? 'Sold out' : 'Add to cart'}
           </button>
-          <Link
-            href={productHref}
-            className='rounded-full bg-cream/95 px-5 py-3.5 text-[13px] font-medium tracking-[0.04em] text-ink backdrop-blur-md transition-colors duration-300 hover:bg-cream motion-reduce:transition-none'
-          >
-            View
-          </Link>
         </div>
       </div>
 
@@ -193,18 +187,18 @@ const FeaturedProductCard = ({ product }: FeaturedProductCardProps) => {
           </span>
         </div>
 
-        <h3 className='mb-2.5 font-display text-[28px] font-medium leading-[1.1] tracking-[-0.02em] transition-colors duration-300 group-hover:text-oxblood motion-reduce:transition-none md:text-[32px]'>
+        <h3 className='mb-2.5 font-display text-[22px] font-medium leading-[1.15] tracking-[-0.02em] transition-colors duration-300 group-hover:text-oxblood motion-reduce:transition-none md:text-[26px]'>
           <Link href={productHref}>{product.name}</Link>
         </h3>
 
-        <p className='mb-5 max-w-[38ch] text-sm leading-[1.55] text-ink-soft'>
+        <p className='mb-5 line-clamp-3 text-sm leading-[1.55] text-ink-soft'>
           {product.description}
         </p>
 
-        <div className='flex items-baseline justify-between gap-4 border-t border-line-soft pt-4.5'>
-          <div className='font-display text-2xl font-medium tracking-[-0.01em] text-ink md:text-[28px]'>
+        <div className='flex items-baseline justify-between gap-3 border-t border-line-soft pt-4.5'>
+          <div className='font-display text-xl font-medium tracking-[-0.01em] text-ink md:text-2xl'>
             ${product.price.toFixed(2)}
-            <em className='ml-1 text-sm font-normal not-italic text-muted'>
+            <em className='ml-1 text-[13px] font-normal not-italic text-muted'>
               /lb
             </em>
           </div>

@@ -9,18 +9,21 @@ import { convertToSerializableObject } from '@/utils/convertToObject';
 import FeaturedProductCard, { type FeaturedProduct } from './FeaturedProductCard';
 import SectionEyebrow from './SectionEyebrow';
 
+// Match the Product schema enum exactly so the URL param flows straight
+// through once category filtering lands on /products.
+const CATEGORIES = ['Beef', 'Pork', 'Poultry', 'Lamb'] as const;
+
 const FeaturedProducts = async () => {
   await connectDB();
 
-  // Limit to 2 for the editorial homepage grid; .lean() returns plain objects
-  // for serialization across the server/client boundary. Filter out any
-  // featured product without an image so the card never resolves to
-  // /images/products/undefined.
+  // .lean() returns plain objects for serialization across the
+  // server/client boundary. Filter out featured products without an
+  // image so the card never resolves to /images/products/undefined.
   const products = await Product.find({
     isFeatured: true,
     'images.0': { $exists: true },
   })
-    .limit(2)
+    .limit(4)
     .lean();
   const serialized = products.map(convertToSerializableObject) as FeaturedProduct[];
 
@@ -38,7 +41,7 @@ const FeaturedProducts = async () => {
         </Reveal>
 
         <Reveal delayMs={80}>
-          <div className='mb-20 flex flex-wrap items-end justify-between gap-12'>
+          <div className='mb-12 flex flex-wrap items-end justify-between gap-12'>
             <h2
               id='featured-products-heading'
               className='max-w-[18ch] font-display text-[clamp(40px,5vw,68px)] leading-[1.05] tracking-[-0.025em] font-normal'
@@ -48,22 +51,39 @@ const FeaturedProducts = async () => {
                 keep coming back for.
               </em>
             </h2>
-            <p className='max-w-[32ch] pb-2 text-[15px] leading-relaxed text-ink-soft'>
-              Two of our most-ordered cuts this month — straight from the case.
-              Hand-cut to order.
+            <p className='max-w-[34ch] pb-2 text-[15px] leading-relaxed text-ink-soft'>
+              Our most-ordered cuts this month — hand-cut to order and ready
+              for pickup.
             </p>
           </div>
         </Reveal>
 
-        <div className='grid grid-cols-1 gap-8 md:grid-cols-2'>
+        <Reveal delayMs={140}>
+          <nav
+            aria-label='Browse by category'
+            className='mb-16 flex flex-wrap gap-2.5'
+          >
+            {CATEGORIES.map((category) => (
+              <Link
+                key={category}
+                href={`/products?category=${category}`}
+                className='rounded-full border border-line bg-cream px-5 py-2 text-[12px] font-medium tracking-[0.16em] uppercase text-ink-soft transition-[background-color,border-color,color] duration-300 hover:border-ink hover:bg-ink hover:text-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-cream motion-reduce:transition-none'
+              >
+                {category}
+              </Link>
+            ))}
+          </nav>
+        </Reveal>
+
+        <div className='grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4'>
           {serialized.map((product, i) => (
-            <Reveal key={product._id} delayMs={160 + i * 80}>
+            <Reveal key={product._id} delayMs={200 + i * 70}>
               <FeaturedProductCard product={product} />
             </Reveal>
           ))}
         </div>
 
-        <Reveal delayMs={320}>
+        <Reveal delayMs={520}>
           <div className='mt-20 flex flex-wrap items-center justify-between gap-8 border-t border-line-soft pt-12'>
             <p className='max-w-[38ch] font-display text-[clamp(22px,2.2vw,30px)] leading-[1.3] tracking-[-0.015em] font-normal'>
               These are just the favorites.{' '}
