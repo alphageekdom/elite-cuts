@@ -29,7 +29,7 @@ const Hero = () => {
       />
 
       <div className='relative z-1 mx-auto w-full max-w-7xl px-6 md:px-8'>
-        <div className='mb-7 flex animate-[heroRise_0.7s_ease_both_0.1s] items-center gap-3 text-xs font-medium tracking-[0.22em] uppercase motion-reduce:animate-none'>
+        <div className='mb-7 flex animate-[heroRise_0.7s_ease_both_0.1s] items-center gap-3 text-xs font-medium tracking-[0.16em] uppercase motion-reduce:animate-none'>
           <span aria-hidden='true' className='h-px w-7 bg-current opacity-60' />
           Established 2018 · Southern California
         </div>
@@ -46,7 +46,7 @@ const Hero = () => {
           </span>
         </h1>
 
-        <p className='mb-10 max-w-[44ch] animate-[heroRise_0.8s_ease_both_0.42s] text-[17px] leading-relaxed text-cream/90 motion-reduce:animate-none'>
+        <p className='mb-10 max-w-[44ch] animate-[heroRise_0.8s_ease_both_0.42s] text-[18px] leading-relaxed text-cream/90 motion-reduce:animate-none'>
           A modernized butcher shop combining traditional cuts with sustainably
           sourced, ethically raised meat — and a seamless way to order.
         </p>
