@@ -29,7 +29,7 @@ const MobileMenu = ({
     <nav
       id='mobile-menu'
       aria-label='Mobile navigation'
-      className='border-t border-line bg-paper md:hidden'
+      className='border-t border-line bg-paper lg:hidden'
     >
       <div className='space-y-1 px-4 pt-3 pb-4'>
         {PRIMARY_LINKS.map((link) => (
@@ -54,14 +54,24 @@ const MobileMenu = ({
           </Link>
         )}
         {!isLoggedIn && (
-          <Link
-            href='/login'
-            onClick={closeMobileMenu}
-            aria-current={isActive(pathname, '/login') ? 'page' : undefined}
-            className={`${linkClass('/login')} mt-2`}
-          >
-            Login
-          </Link>
+          <>
+            <Link
+              href='/login'
+              onClick={closeMobileMenu}
+              aria-current={isActive(pathname, '/login') ? 'page' : undefined}
+              className={`${linkClass('/login')} mt-2`}
+            >
+              Login
+            </Link>
+            <Link
+              href='/register'
+              onClick={closeMobileMenu}
+              aria-current={isActive(pathname, '/register') ? 'page' : undefined}
+              className={`mt-2 inline-flex w-full items-center justify-center rounded-full bg-oxblood px-5 py-2.5 text-sm font-medium tracking-wide text-cream transition-colors hover:bg-oxblood-deep motion-reduce:transition-none ${FOCUS_RING}`}
+            >
+              Register
+            </Link>
+          </>
         )}
         <div className='pt-3'>
           <ProductSearchForm />
