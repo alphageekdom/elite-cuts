@@ -1,16 +1,10 @@
-'use client';
-
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import Link from 'next/link';
 
 import ArrowIcon from '@/components/uielements/ArrowIcon';
 import HeroBg from '@/assets/images/hero-butcher.jpg';
 
 const Hero = () => {
-  const [product, setProduct] = useState('');
-  const router = useRouter();
-
   return (
     // -mt-20 cancels the layout's pt-20 so the hero sits *under* the
     // transparent navbar; pt-30 + min-h reserves space for it inside.
@@ -48,45 +42,30 @@ const Hero = () => {
           </span>
         </h1>
 
-        <p className='mb-11 max-w-[44ch] animate-[heroRise_0.8s_ease_both_0.42s] text-[17px] leading-relaxed text-cream/90 motion-reduce:animate-none'>
+        <p className='mb-10 max-w-[44ch] animate-[heroRise_0.8s_ease_both_0.42s] text-[17px] leading-relaxed text-cream/90 motion-reduce:animate-none'>
           A modernized butcher shop combining traditional cuts with sustainably
           sourced, ethically raised meat — and a seamless way to order.
         </p>
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const trimmed = product.trim();
-            if (trimmed === '') {
-              router.push('/products');
-              return;
-            }
-            const params = new URLSearchParams({ product: trimmed });
-            router.push(`/products/search-results?${params.toString()}`);
-          }}
-          role='search'
-          aria-label='Product search'
-          className='flex w-full max-w-155 flex-wrap items-center gap-2 rounded-2xl bg-paper/95 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.25)] animate-[heroRise_0.8s_ease_both_0.5s] motion-reduce:animate-none md:flex-nowrap md:gap-0 md:rounded-full md:py-2 md:pr-2 md:pl-7'
-        >
-          <label htmlFor='hero-product' className='sr-only'>
-            Search for cuts
-          </label>
-          <input
-            id='hero-product'
-            type='text'
-            value={product}
-            onChange={(e) => setProduct(e.target.value)}
-            placeholder='Search ribeye, brisket, dry-aged…'
-            className='w-full flex-1 bg-transparent px-4 py-2.5 text-[15px] text-ink outline-none placeholder:text-muted md:w-auto md:px-0 md:py-3.5'
-          />
-          <button
-            type='submit'
-            className='inline-flex w-full items-center justify-center gap-2 rounded-full bg-oxblood px-7 py-3.5 text-sm font-medium tracking-[0.02em] text-cream transition-colors hover:bg-oxblood-deep motion-reduce:transition-none md:w-auto'
+        <div className='flex animate-[heroRise_0.8s_ease_both_0.5s] flex-wrap items-center gap-3 motion-reduce:animate-none sm:gap-4'>
+          <Link
+            href='#featured'
+            className='group/cta inline-flex items-center justify-center gap-2.5 rounded-full bg-oxblood px-7 py-3.5 text-sm font-medium tracking-[0.02em] text-cream transition-[background-color,transform] duration-300 hover:-translate-y-0.5 hover:bg-oxblood-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cream focus-visible:ring-offset-2 focus-visible:ring-offset-ink/40 motion-reduce:hover:translate-y-0 motion-reduce:transition-none'
           >
-            Search
-            <ArrowIcon />
-          </button>
-        </form>
+            Shop featured cuts
+            <ArrowIcon className='transition-transform duration-300 group-hover/cta:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover/cta:translate-x-0' />
+          </Link>
+          <Link
+            href='/products'
+            className='inline-flex items-center justify-center gap-2.5 rounded-full border border-cream/60 px-7 py-3.5 text-sm font-medium tracking-[0.02em] text-cream transition-[background-color,border-color,color] duration-300 hover:border-cream hover:bg-cream/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cream focus-visible:ring-offset-2 focus-visible:ring-offset-ink/40 motion-reduce:transition-none'
+          >
+            Browse all cuts
+          </Link>
+        </div>
+
+        <p className='mt-7 animate-[heroRise_0.8s_ease_both_0.58s] text-[12px] font-medium tracking-[0.18em] uppercase text-cream/75 motion-reduce:animate-none'>
+          Pickup ready in 24 hrs · Hand-cut to order
+        </p>
       </div>
 
       <div className='absolute right-0 bottom-10 left-0 z-1 mx-auto hidden w-full max-w-7xl items-end justify-between px-6 text-xs tracking-[0.18em] uppercase opacity-70 md:flex md:px-8'>
