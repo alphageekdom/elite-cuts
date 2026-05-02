@@ -8,7 +8,7 @@ import { useSession } from 'next-auth/react';
 import useHandleAddToCart from '@/hooks/useHandleAddToCart';
 import useHandleBookmark from '@/hooks/useHandleBookmark';
 
-export type FeaturedProduct = {
+export type CatalogProduct = {
   _id: string;
   name: string;
   category: string;
@@ -22,8 +22,8 @@ export type FeaturedProduct = {
 
 type TagVariant = 'featured' | 'aged' | 'new';
 
-type FeaturedProductCardProps = {
-  product: FeaturedProduct;
+type ProductCardProps = {
+  product: CatalogProduct;
 };
 
 const TAG_CLASS: Record<TagVariant, string> = {
@@ -41,7 +41,7 @@ const TAG_LABEL: Record<TagVariant, string> = {
 // Derive the chip variant from existing model fields. Today only `featured`
 // fires because the Product schema lacks `aged`/`new` flags — typed up front
 // so future model fields plug in without a card-level refactor.
-const resolveTag = (product: FeaturedProduct): TagVariant | null => {
+const resolveTag = (product: CatalogProduct): TagVariant | null => {
   if (product.isFeatured) return 'featured';
   return null;
 };
@@ -85,7 +85,7 @@ const StarIcon = () => (
   </svg>
 );
 
-const FeaturedProductCard = ({ product }: FeaturedProductCardProps) => {
+const ProductCard = ({ product }: ProductCardProps) => {
   const { data: session } = useSession();
   const userId = session?.user?.userId;
 
@@ -217,4 +217,4 @@ const FeaturedProductCard = ({ product }: FeaturedProductCardProps) => {
   );
 };
 
-export default FeaturedProductCard;
+export default ProductCard;
