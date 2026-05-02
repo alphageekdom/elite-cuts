@@ -146,7 +146,7 @@ const Footer = () => {
             <div className='flex flex-col gap-1.5 text-cream/70'>
               <div>
                 &copy; {year} EliteCuts.{' '}
-                <span className='text-cream/55'>
+                <span className='text-cream/65'>
                   Portfolio project — not a real shop. No orders are processed.
                 </span>
               </div>
