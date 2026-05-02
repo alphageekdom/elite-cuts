@@ -3,6 +3,8 @@ import Image from 'next/image';
 import ShopImage from '@/assets/images/butcher-shop.jpg';
 import Reveal from '@/components/uielements/Reveal';
 
+import SectionEyebrow from './SectionEyebrow';
+
 const SignatureSvg = () => (
   <svg
     width='90'
@@ -28,15 +30,7 @@ const About = () => {
     >
       <div className='mx-auto w-full max-w-7xl px-6 md:px-8'>
         <Reveal>
-          <div className='mb-16 flex items-baseline gap-6'>
-            <span className='font-display text-sm font-medium tracking-[0.04em] text-camel'>
-              02
-            </span>
-            <span className='text-xs font-medium tracking-[0.22em] uppercase text-muted'>
-              Our Story
-            </span>
-            <span aria-hidden='true' className='h-px flex-1 bg-line' />
-          </div>
+          <SectionEyebrow num='02' label='Our Story' />
         </Reveal>
 
         <div className='grid grid-cols-1 items-start gap-20 lg:grid-cols-2'>

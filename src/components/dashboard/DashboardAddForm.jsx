@@ -7,14 +7,12 @@ const DashboardAddForm = () => {
   const [mounted, setMounted] = useState(false);
 
   const [formData, setFormData] = useState({
-    type: '',
+    category: '',
     name: '',
     price: '',
-    inStock: '',
-    title: '',
-    rating: 0,
+    stockCount: '',
+    description: '',
     images: [],
-    reviews: [],
   });
 
   useEffect(() => {
@@ -52,23 +50,23 @@ const DashboardAddForm = () => {
         </h2>
 
         <div className='mb-4'>
-          <label htmlFor='type' className='block text-gray-700 font-bold mb-2'>
-            Type of Meat
+          <label htmlFor='category' className='block text-gray-700 font-bold mb-2'>
+            Category
           </label>
           <select
-            id='type'
-            name='type'
+            id='category'
+            name='category'
             className='border rounded w-full py-2 px-3'
             required
-            value={formData.type}
+            value={formData.category}
             onChange={handleChange}
           >
+            <option value=''>Select a category</option>
             <option value='Beef'>Beef</option>
             <option value='Pork'>Pork</option>
             <option value='Poultry'>Poultry</option>
             <option value='Lamb'>Lamb</option>
-            <option value='Goat'>Goat</option>
-            <option value='Bison'>Bison</option>
+            <option value='Other'>Other</option>
           </select>
         </div>
         <div className='mb-4'>
@@ -85,23 +83,6 @@ const DashboardAddForm = () => {
             value={formData.name}
             onChange={handleChange}
           />
-        </div>
-        <div className='mb-4'>
-          <label
-            htmlFor='title'
-            className='block text-sm font-medium text-gray-700'
-          >
-            Title
-          </label>
-          <input
-            name='title'
-            id='title'
-            required
-            rows={4}
-            className='mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm'
-            value={formData.title}
-            onChange={handleChange}
-          ></input>
         </div>
         <div className='mb-4'>
           <label
@@ -142,18 +123,18 @@ const DashboardAddForm = () => {
 
           <div className='w-full sm:w-1/3'>
             <label
-              htmlFor='inStock'
+              htmlFor='stockCount'
               className='block text-sm font-medium text-gray-700'
             >
               Stock Quantity
             </label>
             <input
               type='number'
-              name='inStock'
-              id='inStock'
+              name='stockCount'
+              id='stockCount'
               required
               className='mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm'
-              value={formData.inStock}
+              value={formData.stockCount}
               onChange={handleChange}
             />
           </div>

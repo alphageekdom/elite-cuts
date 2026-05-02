@@ -1,5 +1,7 @@
 import { Schema, model, models } from 'mongoose';
 
+const PRODUCT_CATEGORIES = ['Beef', 'Pork', 'Poultry', 'Lamb', 'Other'];
+
 const ProductSchema = new Schema(
   {
     name: {
@@ -7,20 +9,11 @@ const ProductSchema = new Schema(
       required: [true, 'Name of the meat cut is required'],
       trim: true,
     },
-    type: {
+    category: {
       type: String,
-      required: [true, 'Type of meat is required'],
-      enum: ['Beef', 'Pork', 'Chicken', 'Lamb', 'Other'], // Enum to specify the type of meats available
+      required: [true, 'Category of meat is required'],
+      enum: PRODUCT_CATEGORIES,
       trim: true,
-    },
-    price: {
-      type: Number,
-      required: [true, 'Price of the meat cut is required'],
-      min: [0, 'Price must be a positive number'],
-    },
-    title: {
-      type: String,
-      required: true,
     },
     description: {
       type: String,
@@ -29,20 +22,23 @@ const ProductSchema = new Schema(
     },
     price: {
       type: Number,
-      required: true,
+      required: [true, 'Price of the meat cut is required'],
+      min: [0, 'Price must be a positive number'],
     },
     rating: {
       type: Number,
-      required: true,
+      default: 0,
+      min: 0,
+      max: 5,
     },
-    images: [
-      {
-        type: String,
-      },
-    ],
-    inStock: {
+    images: {
+      type: [String],
+      default: [],
+    },
+    stockCount: {
       type: Number,
       required: [true, 'Stock count is required'],
+      default: 0,
       min: [0, 'Stock must be a positive number'],
     },
     isFeatured: {
