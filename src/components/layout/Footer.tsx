@@ -142,8 +142,26 @@ const Footer = () => {
         </Reveal>
 
         <Reveal delayMs={120}>
-          <div className='flex flex-wrap items-center justify-between gap-4 pt-8 text-[14px] opacity-70'>
-            <div>&copy; {year} EliteCuts. All rights reserved.</div>
+          <div className='flex flex-wrap items-center justify-between gap-4 pt-8 text-[14px]'>
+            <div className='flex flex-col gap-1.5 text-cream/70'>
+              <div>
+                &copy; {year} EliteCuts.{' '}
+                <span className='text-cream/55'>
+                  Portfolio project — not a real shop. No orders are processed.
+                </span>
+              </div>
+              <div>
+                Created by{' '}
+                <a
+                  href='https://www.alphageekdom.com'
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  className='text-camel transition-colors duration-300 hover:text-cream focus-visible:outline-none focus-visible:text-cream motion-reduce:transition-none'
+                >
+                  AlphaGeekdom
+                </a>
+              </div>
+            </div>
             <div className='flex gap-4'>
               {SOCIALS.map(({ label, href, Icon }) => (
                 <a
