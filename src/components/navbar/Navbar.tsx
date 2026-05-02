@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { signIn, signOut, useSession } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 import { usePathname, useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
 
@@ -78,8 +78,6 @@ const Navbar = () => {
       document.body.style.overflow = previousOverflow;
     };
   }, [isMobileMenuOpen]);
-
-  const handleSignIn = () => signIn();
 
   const handleSignOut = async () => {
     try {
@@ -167,7 +165,6 @@ const Navbar = () => {
           isAdmin={isAdmin}
           isLoggedIn={isLoggedIn}
           closeMobileMenu={closeMobileMenu}
-          handleSignIn={handleSignIn}
         />
       )}
     </header>
