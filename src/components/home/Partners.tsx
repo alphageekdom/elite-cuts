@@ -17,13 +17,13 @@ type Partner = {
 const PARTNERS: readonly Partner[] = [
   {
     title: 'Premium Grills',
-    body: 'Explore premium grills from our esteemed partner — renowned for craftsmanship, durability, and the kind of sear only serious heat can deliver.',
+    body: 'Craftsmanship and serious heat from our partner — built for the kind of sear your cuts deserve.',
     href: 'https://rcsgasgrills.com/collections/bbq-grills',
     image: GrillImage,
   },
   {
     title: 'Kitchen Knives',
-    body: 'Exquisite knife sets from a sponsor recognized for precision and culinary craftsmanship — built to honor every cut you bring home.',
+    body: 'Precision blades to honor every cut — sourced from a sponsor known for culinary craftsmanship.',
     href: 'https://cutleryandmore.com/collections/kitchen-knives-cutlery',
     image: KnivesImage,
   },
@@ -33,29 +33,29 @@ const Partners = () => {
   return (
     <section
       aria-labelledby='partners-heading'
-      className='pt-35 pb-25 bg-cream'
+      className='bg-cream pt-24 pb-20'
     >
       <div className='mx-auto w-full max-w-7xl px-6 md:px-8'>
         <Reveal>
-          <SectionEyebrow label='Featured Partners' />
+          <SectionEyebrow label='Pairings & Tools' />
         </Reveal>
 
         <Reveal delayMs={80}>
           <h2
             id='partners-heading'
-            className='mb-20 max-w-[18ch] font-display text-[clamp(40px,5vw,68px)] leading-[1.05] tracking-[-0.025em] font-normal'
+            className='mb-12 max-w-[22ch] font-display text-[clamp(28px,3vw,40px)] leading-[1.1] tracking-[-0.02em] font-normal'
           >
             The tools that make a great cut{' '}
             <em className='font-normal italic text-oxblood'>even better.</em>
           </h2>
         </Reveal>
 
-        <div className='grid grid-cols-1 gap-8 md:grid-cols-[1.15fr_0.85fr]'>
+        <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
           {PARTNERS.map((p, i) => (
             <Reveal key={p.title} delayMs={i * 80}>
-              <article className='group overflow-hidden rounded-sm bg-paper transition-transform duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:-translate-y-1.5 motion-reduce:hover:translate-y-0 motion-reduce:transition-none'>
-                <div className='relative h-75 overflow-hidden md:h-80 lg:h-95'>
-                  <span className='absolute top-5 left-5 z-2 rounded-full bg-cream px-3.5 py-1.5 text-[11px] font-medium tracking-[0.15em] uppercase text-ink'>
+              <article className='group overflow-hidden rounded-sm bg-paper transition-transform duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:-translate-y-1 motion-reduce:hover:translate-y-0 motion-reduce:transition-none'>
+                <div className='relative h-56 overflow-hidden md:h-64 lg:h-72'>
+                  <span className='absolute top-4 left-4 z-2 rounded-full bg-cream px-3 py-1 text-[10px] font-medium tracking-[0.15em] uppercase text-ink'>
                     Sponsored
                   </span>
                   <Image
@@ -66,18 +66,18 @@ const Partners = () => {
                     className='object-cover transition-transform duration-700 group-hover:scale-105 motion-reduce:group-hover:scale-100'
                   />
                 </div>
-                <div className='px-10 pt-9 pb-10'>
-                  <h3 className='mb-3.5 font-display text-[32px] tracking-[-0.015em] font-medium'>
+                <div className='px-7 pt-6 pb-7'>
+                  <h3 className='mb-2.5 font-display text-[22px] leading-[1.2] tracking-[-0.015em] font-medium'>
                     {p.title}
                   </h3>
-                  <p className='mb-7 max-w-[38ch] text-[15px] leading-relaxed text-ink-soft'>
+                  <p className='mb-5 max-w-[42ch] text-sm leading-relaxed text-ink-soft'>
                     {p.body}
                   </p>
                   <a
                     href={p.href}
                     target='_blank'
                     rel='noopener noreferrer'
-                    className='inline-flex items-center gap-2.5 border-b border-ink pb-1 text-sm font-medium tracking-[0.04em] text-ink transition-[gap,color] duration-300 hover:gap-4 hover:text-oxblood motion-reduce:transition-none'
+                    className='inline-flex items-center gap-2 border-b border-ink pb-0.5 text-[13px] font-medium tracking-[0.04em] text-ink transition-[gap,color] duration-300 hover:gap-3 hover:text-oxblood motion-reduce:transition-none'
                   >
                     Browse the collection
                     <ArrowIcon />
