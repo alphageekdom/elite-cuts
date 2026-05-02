@@ -4,12 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 import { FOCUS_RING } from '@/lib/styles';
-
-const PRIMARY_LINKS = [
-  { href: '/', label: 'Home' },
-  { href: '/products', label: 'Shop' },
-  { href: '/about', label: 'Our Story' },
-] as const;
+import { PRIMARY_LINKS, isActive } from './links';
 
 type DesktopMenuProps = {
   isAdmin?: boolean;
@@ -49,13 +44,6 @@ const DesktopMenu = ({
 }: DesktopMenuProps) => {
   const pathname = usePathname();
 
-  // Match sub-routes too: /products/[id] keeps "Shop" active. Home is
-  // exact-match only (otherwise every route would match it).
-  const isActive = (href: string) => {
-    if (href === '/') return pathname === '/';
-    return pathname === href || pathname.startsWith(`${href}/`);
-  };
-
   return (
     <div className='hidden items-center gap-9 md:flex'>
       {PRIMARY_LINKS.map((link) => (
@@ -64,7 +52,7 @@ const DesktopMenu = ({
           href={link.href}
           label={link.label}
           scrolled={scrolled}
-          active={isActive(link.href)}
+          active={isActive(pathname, link.href)}
         />
       ))}
       {isAdmin && (
@@ -72,7 +60,7 @@ const DesktopMenu = ({
           href='/dashboard'
           label='Dashboard'
           scrolled={scrolled}
-          active={isActive('/dashboard')}
+          active={isActive(pathname, '/dashboard')}
         />
       )}
     </div>

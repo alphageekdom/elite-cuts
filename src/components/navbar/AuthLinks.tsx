@@ -11,14 +11,16 @@ type AuthLinksProps = {
 
 const AuthLinks = ({ scrolled = false }: AuthLinksProps) => {
   const pathname = usePathname();
-  const loginColor = scrolled ? 'text-ink' : 'text-cream';
+  const loginTone = scrolled
+    ? 'text-ink focus-visible:ring-offset-cream'
+    : 'text-cream focus-visible:ring-offset-transparent';
 
   return (
     <div className='flex items-center gap-6'>
       <Link
         href='/login'
         aria-current={pathname === '/login' ? 'page' : undefined}
-        className={`hidden text-sm font-medium tracking-wide opacity-85 transition-opacity duration-300 hover:opacity-100 motion-reduce:transition-none md:inline ${FOCUS_RING} ${loginColor}`}
+        className={`hidden text-sm font-medium tracking-wide opacity-85 transition-opacity duration-300 hover:opacity-100 motion-reduce:transition-none md:inline ${FOCUS_RING} ${loginTone}`}
       >
         Login
       </Link>
