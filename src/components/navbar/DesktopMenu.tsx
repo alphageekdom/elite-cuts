@@ -3,14 +3,13 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+import { FOCUS_RING } from '@/lib/styles';
+
 const PRIMARY_LINKS = [
   { href: '/', label: 'Home' },
   { href: '/products', label: 'Shop' },
   { href: '/about', label: 'Our Story' },
 ] as const;
-
-const FOCUS_RING =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oxblood focus-visible:ring-offset-2';
 
 type DesktopMenuProps = {
   isAdmin?: boolean;
