@@ -49,6 +49,7 @@ export const authOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.userId = user._id.toString();
+        token.isAdmin = Boolean(user.isAdmin);
       }
       return token;
     },

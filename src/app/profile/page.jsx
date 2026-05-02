@@ -2,7 +2,7 @@ import Image from 'next/image';
 import profileDefault from '@/assets/images/user-default.png';
 import connectDB from '@/config/database';
 import { getSessionUser } from '@/utils/getSessionUser';
-import { convertToSerializeableObject } from '@/utils/convertToObject';
+import { convertToSerializableObject } from '@/utils/convertToObject';
 import Link from 'next/link';
 import BackButton from '@/components/uielements/BackButton';
 import User from '@/models/User';
@@ -34,7 +34,7 @@ const ProfilePage = async () => {
   const productIds = bookmarks.map((bookmark) => bookmark._id);
   const products = await Product.find({ _id: { $in: productIds } }).lean();
 
-  const serializedProducts = products.map(convertToSerializeableObject);
+  const serializedProducts = products.map(convertToSerializableObject);
 
   return (
     <>

@@ -32,15 +32,23 @@ export const GET = async (request, { params }) => {
 // DELETE /api/products/:id
 export const DELETE = async (request, { params }) => {
   try {
+    const sessionUser = await getSessionUser();
+
+    if (!sessionUser?.userId) {
+      return new Response('User ID Is Required', { status: 401 });
+    }
+
+    if (!sessionUser.user?.isAdmin) {
+      return new Response('Admin access required', { status: 403 });
+    }
+
     const { id } = params;
 
-    // Check if the product exists
     const existingProduct = await Product.findById(id);
     if (!existingProduct) {
       return new Response('Product not found', { status: 404 });
     }
 
-    // Delete the product
     await Product.findByIdAndDelete(id);
 
     return new Response('Product deleted successfully', { status: 200 });
@@ -55,12 +63,15 @@ export const PUT = async (request, { params }) => {
   try {
     const sessionUser = await getSessionUser();
 
-    if (!sessionUser || !sessionUser.userId) {
+    if (!sessionUser?.userId) {
       return new Response('User ID Is Required', { status: 401 });
     }
 
+    if (!sessionUser.user?.isAdmin) {
+      return new Response('Admin access required', { status: 403 });
+    }
+
     const { id } = params;
-    const { userId } = sessionUser;
 
     const formData = await request.formData();
 
@@ -71,27 +82,16 @@ export const PUT = async (request, { params }) => {
       return new Response('Product Does Not Exist', { status: 404 });
     }
 
-    // Verify ownership
-    if (
-      existingProduct &&
-      existingProduct.owner &&
-      existingProduct.owner.toString() !== userId
-    ) {
-      return new Response('Unauthorized', { status: 401 });
-    }
-
-    // Create productData Object for database
+    // rating preserved from existing doc (it's review-derived, not form-driven).
     const productData = {
       name: formData.get('name'),
-      type: formData.get('type'),
-      title: formData.get('title'),
+      category: formData.get('category'),
       description: formData.get('description'),
       price: Number(formData.get('price')),
-      inStock: parseInt(formData.get('inStock')),
+      stockCount: parseInt(formData.get('stockCount')),
       rating: existingProduct.rating,
       images: existingProduct.images,
       isFeatured: existingProduct.isFeatured,
-      owner: userId,
     };
 
     // Save the updated product

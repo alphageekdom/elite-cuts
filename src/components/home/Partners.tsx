@@ -1,8 +1,11 @@
 import Image, { type StaticImageData } from 'next/image';
 
+import ArrowIcon from '@/components/uielements/ArrowIcon';
 import GrillImage from '@/assets/images/grill.jpg';
 import KnivesImage from '@/assets/images/knives.jpg';
 import Reveal from '@/components/uielements/Reveal';
+
+import SectionEyebrow from './SectionEyebrow';
 
 type Partner = {
   title: string;
@@ -26,20 +29,6 @@ const PARTNERS: readonly Partner[] = [
   },
 ];
 
-const ArrowIcon = () => (
-  <svg
-    width='14'
-    height='14'
-    viewBox='0 0 24 24'
-    fill='none'
-    stroke='currentColor'
-    strokeWidth={2}
-    aria-hidden='true'
-  >
-    <path d='M5 12h14M13 5l7 7-7 7' />
-  </svg>
-);
-
 const Partners = () => {
   return (
     <section
@@ -48,15 +37,7 @@ const Partners = () => {
     >
       <div className='mx-auto w-full max-w-7xl px-6 md:px-8'>
         <Reveal>
-          <div className='mb-16 flex items-baseline gap-6'>
-            <span className='font-display text-sm font-medium tracking-[0.04em] text-camel'>
-              01
-            </span>
-            <span className='text-xs font-medium tracking-[0.22em] uppercase text-muted'>
-              Featured Partners
-            </span>
-            <span aria-hidden='true' className='h-px flex-1 bg-line' />
-          </div>
+          <SectionEyebrow num='01' label='Featured Partners' />
         </Reveal>
 
         <Reveal delayMs={80}>

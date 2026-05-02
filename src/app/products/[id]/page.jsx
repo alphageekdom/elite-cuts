@@ -3,7 +3,7 @@ import BackButton from '@/components/uielements/BackButton';
 import ProductSearchForm from '@/components/uielements/ProductSearchForm';
 import connectDB from '@/config/database';
 import Product from '@/models/Product';
-import { convertToSerializeableObject } from '@/utils/convertToObject';
+import { convertToSerializableObject } from '@/utils/convertToObject';
 
 const ProductPage = async ({ params }) => {
   const PUBLIC_DOMAIN = process.env.VERCEL_URL
@@ -14,7 +14,7 @@ const ProductPage = async ({ params }) => {
 
   const productDoc = await Product.findById(params.id).lean();
 
-  const product = convertToSerializeableObject(productDoc);
+  const product = convertToSerializableObject(productDoc);
 
   if (!product) {
     return (

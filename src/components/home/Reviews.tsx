@@ -3,6 +3,7 @@ import Reveal from '@/components/uielements/Reveal';
 import SoniaImage from '@/assets/images/sonia.jpg';
 
 import ReviewCard, { type ReviewCardProps } from './ReviewCard';
+import SectionEyebrow from './SectionEyebrow';
 
 const REVIEWS: readonly ReviewCardProps[] = [
   {
@@ -41,15 +42,7 @@ const Reviews = () => {
     >
       <div className='mx-auto w-full max-w-7xl px-6 md:px-8'>
         <Reveal>
-          <div className='mb-16 flex items-baseline gap-6'>
-            <span className='font-display text-sm font-medium tracking-[0.04em] text-camel'>
-              04
-            </span>
-            <span className='text-xs font-medium tracking-[0.22em] uppercase text-muted'>
-              Word from Regulars
-            </span>
-            <span aria-hidden='true' className='h-px flex-1 bg-line' />
-          </div>
+          <SectionEyebrow num='04' label='Word from Regulars' />
         </Reveal>
 
         <Reveal delayMs={80}>
