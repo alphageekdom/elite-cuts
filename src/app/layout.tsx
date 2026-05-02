@@ -1,3 +1,6 @@
+import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
+
 import { Fraunces, Instrument_Sans, JetBrains_Mono } from 'next/font/google';
 
 import Footer from '@/components/layout/Footer';
@@ -31,13 +34,13 @@ const jetbrains = JetBrains_Mono({
   display: 'swap',
 });
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Elite Cuts | Luxury Cuts',
   description: 'Explore your new favorite cut',
   keywords: 'butcher shop, steaks, poultry, pork',
 };
 
-const MainLayout = ({ children }) => {
+const MainLayout = ({ children }: { children: ReactNode }) => {
   return (
     <GlobalProvider>
       <AuthProvider>
