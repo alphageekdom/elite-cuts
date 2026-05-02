@@ -10,22 +10,27 @@ const REVIEWS: readonly ReviewCardProps[] = [
     variant: 'light',
     quote: (
       <>
-        Absolutely top-notch meat cuts. Every bite is a testament to the quality
-        and expertise of EliteCuts. As a local in Southern California, I&apos;m{' '}
-        <em className='italic'>fortunate to have such a gem nearby.</em>
+        Picked up a bone-in ribeye for our anniversary last month — they
+        trimmed it on the spot and walked me through reverse-searing it at
+        home.{' '}
+        <em className='italic'>
+          Best steak I&apos;ve cooked, hands down.
+        </em>
       </>
     ),
     name: 'Joseph Doe',
-    meta: 'Verified Customer',
+    meta: 'Regular since 2022',
     avatar: JosephImage,
   },
   {
     variant: 'dark',
     quote: (
       <>
-        EliteCuts&apos; meat cuts are unparalleled. Each piece is tender,
-        succulent, and elevates any meal to a gourmet experience.{' '}
-        <em className='italic'>I can&apos;t imagine going anywhere else.</em>
+        Standing pickup for the dry-aged ribeyes every other Friday. The order
+        is always ready when I am, and they remember the trim I like.{' '}
+        <em className='italic'>
+          Switched two years ago and never looked back.
+        </em>
       </>
     ),
     name: 'Sonia Smith',
