@@ -94,8 +94,8 @@ const About = () => {
                 <span aria-hidden='true' className='h-px w-6 bg-current' />
                 Our Store, est. 2018
               </div>
-              <div className='absolute bottom-4 left-4 rounded-sm bg-ink px-7 py-6 text-cream shadow-[0_20px_50px_rgba(0,0,0,0.15)] lg:bottom-16 lg:-left-8'>
-                <div className='mb-1.5 font-display text-[44px] leading-none tracking-[-0.03em] font-normal'>
+              <div className='mt-6 inline-flex flex-col rounded-sm bg-ink px-7 py-6 text-cream shadow-[0_20px_50px_rgba(0,0,0,0.15)] lg:absolute lg:bottom-16 lg:-left-8 lg:mt-0'>
+                <div className='mb-1.5 font-display text-[clamp(36px,4vw,44px)] leading-none tracking-[-0.03em] font-normal'>
                   <em className='font-normal italic text-camel'>08+</em> yrs
                 </div>
                 <div className='text-[11px] tracking-[0.18em] uppercase opacity-70'>

@@ -147,7 +147,7 @@ const FeaturedProductCard = ({ product }: FeaturedProductCardProps) => {
 
         {tag && (
           <span
-            className={`absolute top-4.5 left-4.5 z-2 rounded-full px-3.5 py-1.5 text-[11px] font-medium tracking-[0.18em] uppercase ${TAG_CLASS[tag]}`}
+            className={`absolute top-4 left-4 z-2 rounded-full px-3.5 py-1.5 text-[11px] font-medium tracking-[0.18em] uppercase ${TAG_CLASS[tag]}`}
           >
             {TAG_LABEL[tag]}
           </span>
@@ -166,7 +166,7 @@ const FeaturedProductCard = ({ product }: FeaturedProductCardProps) => {
           <HeartIcon filled={isBookmarked} />
         </button>
 
-        <div className='absolute right-4.5 bottom-4.5 left-4.5 z-2 flex translate-y-[120%] gap-2 opacity-0 transition-[transform,opacity] duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] max-md:translate-y-0 max-md:opacity-100 md:group-hover:translate-y-0 md:group-hover:opacity-100 motion-reduce:transition-none motion-reduce:max-md:translate-y-0 motion-reduce:max-md:opacity-100'>
+        <div className='absolute right-4 bottom-4 left-4 z-2 flex translate-y-[120%] gap-2 opacity-0 transition-[transform,opacity] duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] max-md:translate-y-0 max-md:opacity-100 md:group-hover:translate-y-0 md:group-hover:opacity-100 motion-reduce:transition-none motion-reduce:max-md:translate-y-0 motion-reduce:max-md:opacity-100'>
           <button
             type='button'
             onClick={onAddClick}

@@ -37,7 +37,7 @@ const Reviews = () => {
   return (
     <section
       aria-labelledby='reviews-heading'
-      className='bg-cream pt-35 pb-30'
+      className='bg-cream-deep pt-25 pb-30'
     >
       <div className='mx-auto w-full max-w-7xl px-6 md:px-8'>
         <Reveal>

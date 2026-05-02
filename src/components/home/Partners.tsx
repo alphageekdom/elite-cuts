@@ -69,11 +69,11 @@ const Partners = () => {
           </h2>
         </Reveal>
 
-        <div className='grid grid-cols-1 gap-8 lg:grid-cols-[1.15fr_0.85fr]'>
+        <div className='grid grid-cols-1 gap-8 md:grid-cols-[1.15fr_0.85fr]'>
           {PARTNERS.map((p, i) => (
             <Reveal key={p.title} delayMs={i * 80}>
               <article className='group overflow-hidden rounded-sm bg-paper transition-transform duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:-translate-y-1.5 motion-reduce:hover:translate-y-0 motion-reduce:transition-none'>
-                <div className='relative h-[380px] overflow-hidden'>
+                <div className='relative h-75 overflow-hidden md:h-80 lg:h-95'>
                   <span className='absolute top-5 left-5 z-2 rounded-full bg-cream px-3.5 py-1.5 text-[11px] font-medium tracking-[0.15em] uppercase text-ink'>
                     Sponsored
                   </span>
