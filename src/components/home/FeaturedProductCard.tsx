@@ -8,10 +8,6 @@ import { useSession } from 'next-auth/react';
 import useHandleAddToCart from '@/hooks/useHandleAddToCart';
 import useHandleBookmark from '@/hooks/useHandleBookmark';
 
-// Field names match the actual seeded DB shape (category, stockCount), which
-// diverges from the Mongoose schema's enforced names (type, inStock). The
-// schema's enums never fired on read so the seed drift went unnoticed.
-// Card binds to the real data; schema reconciliation is its own follow-up.
 export type FeaturedProduct = {
   _id: string;
   name: string;
@@ -97,11 +93,10 @@ const FeaturedProductCard = ({ product }: FeaturedProductCardProps) => {
     useHandleBookmark(userId, product._id);
   const { isAddingToCart, handleAddToCart } = useHandleAddToCart(product);
 
-  // Existing hook does not auto-check on mount — caller responsibility.
+  // Hook does not auto-check on mount — caller responsibility.
   useEffect(() => {
-    checkBookmarkStatus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [product._id, userId]);
+    void checkBookmarkStatus();
+  }, [checkBookmarkStatus]);
 
   const tag = resolveTag(product);
   const productHref = `/products/${product._id}`;

@@ -1,11 +1,17 @@
-import { useState } from 'react';
+import { useCallback, useState, type MouseEvent } from 'react';
 import { toast } from 'react-toastify';
 
-const useHandleBookmark = (userId, productId) => {
-  const [isBookmarked, setIsBookmarked] = useState(false);
-  const [loading, setLoading] = useState(true);
+type BookmarkResponse = { message: string; isBookmarked: boolean };
+type BookmarkCheckResponse = { isBookmarked: boolean };
 
-  const handleBookmarkClick = async (e) => {
+const useHandleBookmark = (
+  userId: string | undefined,
+  productId: string
+) => {
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleBookmarkClick = async (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
     if (!userId) {
@@ -16,52 +22,43 @@ const useHandleBookmark = (userId, productId) => {
     try {
       const res = await fetch('/api/bookmarks', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productId }),
       });
 
       if (res.status === 200) {
-        const data = await res.json();
+        const data = (await res.json()) as BookmarkResponse;
         toast.success(data.message);
         setIsBookmarked(data.isBookmarked);
       } else {
         toast.error('Failed to update bookmark');
       }
-    } catch (error) {
-      console.log(error);
+    } catch {
       toast.error('Something Went Wrong');
     }
   };
 
-  const checkBookmarkStatus = async () => {
-    if (!userId) {
-      setLoading(false);
-      return;
-    }
+  // useCallback so consumers can list it in useEffect deps without tripping
+  // exhaustive-deps when productId/userId are stable.
+  const checkBookmarkStatus = useCallback(async () => {
+    if (!userId) return;
 
+    setLoading(true);
     try {
       const res = await fetch('/api/bookmarks/check', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productId }),
       });
 
       if (res.status === 200) {
-        const data = await res.json();
+        const data = (await res.json()) as BookmarkCheckResponse;
         setIsBookmarked(data.isBookmarked);
-      } else {
-        console.error('Failed to fetch bookmark status');
       }
-    } catch (error) {
-      console.log(error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, productId]);
 
   return {
     isBookmarked,

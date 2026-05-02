@@ -1,9 +1,14 @@
 import { useState } from 'react';
 import { toast } from 'react-toastify';
+
 import { useGlobalContext } from '@/context/CartContext';
 
-const useHandleAddToCart = (product) => {
-  const { addItemToCart } = useGlobalContext();
+type CartProduct = { _id: string; quantity?: number };
+
+const useHandleAddToCart = <T extends CartProduct>(product: T) => {
+  const { addItemToCart } = useGlobalContext() as {
+    addItemToCart: (item: T) => Promise<void>;
+  };
 
   const [isAddingToCart, setIsAddingToCart] = useState(false);
 
@@ -19,8 +24,8 @@ const useHandleAddToCart = (product) => {
     try {
       await addItemToCart(product);
     } catch (error) {
-      console.error('Error updating server:', error);
-      toast.error(`Failed to update server: ${error.message}`);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      toast.error(`Failed to update server: ${message}`);
     } finally {
       setIsAddingToCart(false);
     }
