@@ -54,7 +54,6 @@ export const authOptions = {
     },
     async session({ session, token }) {
       const user = await User.findById(token.sub);
-      session.user.id = token.userId;
       session.user.userId = user._id.toString();
       session.user.isAdmin = user.isAdmin;
       return session;
