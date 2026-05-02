@@ -6,7 +6,10 @@ import Reveal from '@/components/uielements/Reveal';
 import Product from '@/models/Product';
 import { convertToSerializableObject } from '@/utils/convertToObject';
 
-import FeaturedProductCard, { type FeaturedProduct } from './FeaturedProductCard';
+import ProductCard, {
+  type CatalogProduct,
+} from '@/components/product/ProductCard';
+
 import SectionEyebrow from './SectionEyebrow';
 
 // Match the Product schema enum exactly so the URL param flows straight
@@ -25,7 +28,7 @@ const FeaturedProducts = async () => {
   })
     .limit(4)
     .lean();
-  const serialized = products.map(convertToSerializableObject) as FeaturedProduct[];
+  const serialized = products.map(convertToSerializableObject) as CatalogProduct[];
 
   if (serialized.length === 0) return null;
 
@@ -78,7 +81,7 @@ const FeaturedProducts = async () => {
         <div className='grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4'>
           {serialized.map((product, i) => (
             <Reveal key={product._id} delayMs={200 + i * 70}>
-              <FeaturedProductCard product={product} />
+              <ProductCard product={product} />
             </Reveal>
           ))}
         </div>
