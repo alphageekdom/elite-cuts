@@ -1,4 +1,5 @@
 import About from '@/components/home/About';
+import CTA from '@/components/home/CTA';
 import FeaturedProducts from '@/components/home/FeaturedProducts';
 import Hero from '@/components/home/Hero';
 import Marquee from '@/components/home/Marquee';
@@ -14,6 +15,7 @@ const HomePage = async () => {
       <About />
       <FeaturedProducts />
       <Reviews />
+      <CTA />
     </>
   );
 };
