@@ -79,9 +79,9 @@ const QUICK_LINKS = [
 ] as const;
 
 const COLUMN_HEADING =
-  'mb-6 font-sans text-xs font-medium tracking-[0.22em] uppercase text-camel';
+  'mb-6 font-sans text-xs font-medium tracking-[0.16em] uppercase text-camel';
 const COLUMN_LINK =
-  'text-[15px] text-cream opacity-75 transition-[opacity,padding] duration-300 hover:opacity-100 hover:pl-1.5 motion-reduce:transition-none motion-reduce:hover:pl-0';
+  'text-[15px] text-cream opacity-85 transition-[opacity,padding] duration-300 hover:opacity-100 hover:pl-1.5 motion-reduce:transition-none motion-reduce:hover:pl-0';
 
 const Footer = () => {
   const year = new Date().getFullYear();
@@ -95,7 +95,7 @@ const Footer = () => {
               <div className='mb-6 font-display text-5xl leading-none tracking-[-0.02em] font-normal'>
                 Elite<em className='font-normal italic text-camel'>Cuts</em>
               </div>
-              <p className='max-w-[32ch] text-sm leading-[1.6] opacity-70'>
+              <p className='max-w-[32ch] text-sm leading-[1.6] opacity-80'>
                 A modern butcher shop in Southern California — combining
                 traditional cuts with quality, service, and convenience.
               </p>
@@ -103,7 +103,7 @@ const Footer = () => {
 
             <div>
               <h4 className={COLUMN_HEADING}>Visit</h4>
-              <p className='text-sm leading-[1.7] opacity-75'>
+              <p className='text-sm leading-[1.7] opacity-85'>
                 123 Carnivore Street
                 <br />
                 Grillville, CA 90210
@@ -142,7 +142,7 @@ const Footer = () => {
         </Reveal>
 
         <Reveal delayMs={120}>
-          <div className='flex flex-wrap items-center justify-between gap-4 pt-8 text-[13px] opacity-55'>
+          <div className='flex flex-wrap items-center justify-between gap-4 pt-8 text-[14px] opacity-70'>
             <div>&copy; {year} EliteCuts. All rights reserved.</div>
             <div className='flex gap-4'>
               {SOCIALS.map(({ label, href, Icon }) => (
