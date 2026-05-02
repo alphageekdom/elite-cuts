@@ -17,11 +17,11 @@ const ReviewCard = ({ variant, quote, name, meta, avatar }: ReviewCardProps) => 
 
   return (
     <article
-      className={`relative rounded-sm px-11 py-12 transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:-translate-y-1 hover:shadow-[0_30px_60px_rgba(28,24,20,0.08)] motion-reduce:transition-none motion-reduce:hover:translate-y-0 ${surface}`}
+      className={`relative rounded-sm px-7 py-10 transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:-translate-y-1 hover:shadow-[0_30px_60px_rgba(28,24,20,0.08)] motion-reduce:transition-none motion-reduce:hover:translate-y-0 md:px-11 md:py-12 ${surface}`}
     >
       <div
         aria-hidden='true'
-        className='mb-2 font-display text-[80px] leading-[0.7] text-camel'
+        className='mb-2 font-display text-[clamp(56px,9vw,80px)] leading-[0.7] text-camel'
       >
         &ldquo;
       </div>
@@ -31,7 +31,7 @@ const ReviewCard = ({ variant, quote, name, meta, avatar }: ReviewCardProps) => 
       >
         ★★★★★
       </div>
-      <p className='mb-9 font-display text-[22px] leading-[1.4] tracking-[-0.01em] font-normal'>
+      <p className='mb-9 font-display text-[clamp(19px,2.2vw,22px)] leading-[1.4] tracking-[-0.01em] font-normal'>
         {quote}
       </p>
       <div
