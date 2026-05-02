@@ -1,6 +1,13 @@
 import { Schema, model, models } from 'mongoose';
 
-const PRODUCT_CATEGORIES = ['Beef', 'Pork', 'Poultry', 'Lamb', 'Other'];
+const PRODUCT_CATEGORIES = [
+  'Beef',
+  'Pork',
+  'Poultry',
+  'Lamb',
+  'Charcuterie',
+  'Other',
+];
 
 const ProductSchema = new Schema(
   {
