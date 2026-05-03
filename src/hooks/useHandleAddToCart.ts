@@ -1,14 +1,10 @@
 import { useState } from 'react';
 import { toast } from 'react-toastify';
 
-import { useGlobalContext } from '@/context/CartContext';
+import { useGlobalContext, type AddItemArg } from '@/context/CartContext';
 
-type CartProduct = { _id: string; quantity?: number };
-
-const useHandleAddToCart = <T extends CartProduct>(product: T) => {
-  const { addItemToCart } = useGlobalContext() as {
-    addItemToCart: (item: T) => Promise<void>;
-  };
+const useHandleAddToCart = (product: AddItemArg) => {
+  const { addItemToCart } = useGlobalContext();
 
   const [isAddingToCart, setIsAddingToCart] = useState(false);
 
