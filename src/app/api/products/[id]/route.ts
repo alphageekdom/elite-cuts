@@ -4,6 +4,8 @@ import connectDB from '@/config/database';
 import Product from '@/models/Product';
 import Review from '@/models/Review';
 import { getSessionUser } from '@/utils/getSessionUser';
+import { parseProductFormData } from '@/utils/parseProductFormData';
+import { requireAdmin } from '@/utils/requireAdmin';
 
 // Next 15+ params are async — must be awaited inside the handler.
 type RouteContext = { params: Promise<{ id: string }> };
@@ -32,13 +34,8 @@ export const DELETE = async (
   { params }: RouteContext,
 ) => {
   try {
-    const sessionUser = await getSessionUser();
-    if (!sessionUser?.userId) {
-      return new Response('User ID Is Required', { status: 401 });
-    }
-    if (!sessionUser.user?.isAdmin) {
-      return new Response('Admin access required', { status: 403 });
-    }
+    const authError = await requireAdmin();
+    if (authError) return authError;
 
     const { id } = await params;
 
@@ -58,13 +55,8 @@ export const DELETE = async (
 // PUT /api/products/:id — admin-only update from the dashboard form.
 export const PUT = async (request: NextRequest, { params }: RouteContext) => {
   try {
-    const sessionUser = await getSessionUser();
-    if (!sessionUser?.userId) {
-      return new Response('User ID Is Required', { status: 401 });
-    }
-    if (!sessionUser.user?.isAdmin) {
-      return new Response('Admin access required', { status: 403 });
-    }
+    const authError = await requireAdmin();
+    if (authError) return authError;
 
     const { id } = await params;
     const formData = await request.formData();
@@ -74,13 +66,10 @@ export const PUT = async (request: NextRequest, { params }: RouteContext) => {
       return new Response('Product Does Not Exist', { status: 404 });
     }
 
-    // rating preserved from existing doc (it's review-derived, not form-driven).
+    // rating/images/isFeatured preserved from existing doc — not editable via
+    // the admin form (rating is review-derived; images via separate upload).
     const productData = {
-      name: formData.get('name') as string,
-      category: formData.get('category') as string,
-      description: formData.get('description') as string,
-      price: Number(formData.get('price')),
-      stockCount: Number.parseInt(formData.get('stockCount') as string, 10),
+      ...parseProductFormData(formData),
       rating: existingProduct.rating,
       images: existingProduct.images,
       isFeatured: existingProduct.isFeatured,
@@ -100,9 +89,8 @@ export const POST = async (request: NextRequest, { params }: RouteContext) => {
   try {
     const sessionUser = await getSessionUser();
     if (!sessionUser?.userId) {
-      return new Response('User ID Is Required', { status: 401 });
+      return new Response('User ID is required', { status: 401 });
     }
-
     const { userId } = sessionUser;
     const { id } = await params;
 
