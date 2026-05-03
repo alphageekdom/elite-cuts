@@ -52,6 +52,14 @@ const ProductSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    isAged: {
+      type: Boolean,
+      default: false,
+    },
+    isNewArrival: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
