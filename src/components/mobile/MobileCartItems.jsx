@@ -1,4 +1,3 @@
-import React from 'react';
 import { FaTrash } from 'react-icons/fa';
 
 const MobileCartItems = ({ item, handleRemoveItem, handleQuantityChange }) => {
@@ -19,7 +18,7 @@ const MobileCartItems = ({ item, handleRemoveItem, handleQuantityChange }) => {
       <div className='flex items-center'>
         <button
           type='button'
-          onClick={() => handleQuantityChange(item._id, -1)}
+          onClick={() => handleQuantityChange(item.product._id, -1)}
           className='text-gray-600 hover:text-gray-800'
         >
           -
@@ -27,14 +26,14 @@ const MobileCartItems = ({ item, handleRemoveItem, handleQuantityChange }) => {
         <span className='mx-2'>{quantity}</span>
         <button
           type='button'
-          onClick={() => handleQuantityChange(item._id, 1)}
+          onClick={() => handleQuantityChange(item.product._id, 1)}
           className='text-gray-600 hover:text-gray-800'
         >
           +
         </button>
         <button
           type='button'
-          onClick={() => handleRemoveItem(item._id)}
+          onClick={() => handleRemoveItem(item.product._id)}
           className='text-red-600 hover:text-red-800 ml-4'
         >
           <FaTrash />
