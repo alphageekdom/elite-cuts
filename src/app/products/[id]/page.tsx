@@ -242,15 +242,17 @@ export default async function ProductPage({ params }: PageProps) {
         {/* ── Product hero ── */}
         <section className='py-8 pb-20 lg:grid lg:grid-cols-[1.4fr_1fr] lg:gap-16'>
 
-          {/* Gallery */}
+          {/* Gallery — capped on tablet portrait so the buy block stays close to fold */}
           {primaryImage && (
-            <ProductGallery
-              image={primaryImage}
-              name={product.name}
-              isAged={product.isAged}
-              isNewArrival={product.isNewArrival}
-              isFeatured={product.isFeatured}
-            />
+            <div className='mx-auto w-full md:max-w-xl lg:max-w-none'>
+              <ProductGallery
+                image={primaryImage}
+                name={product.name}
+                isAged={product.isAged}
+                isNewArrival={product.isNewArrival}
+                isFeatured={product.isFeatured}
+              />
+            </div>
           )}
 
           {/* Sticky info sidebar */}
@@ -267,7 +269,7 @@ export default async function ProductPage({ params }: PageProps) {
             </div>
 
             {/* Title */}
-            <h1 className='mb-5 font-display text-[clamp(36px,4.5vw,52px)] font-normal leading-[1.05] tracking-[-0.025em]'>
+            <h1 className='mb-5 font-display text-[clamp(36px,4.5vw,52px)] font-normal leading-[1.05] tracking-tight'>
               {product.name.replace(/\.$/, '')}
               <em className='text-oxblood'>.</em>
             </h1>
@@ -333,7 +335,7 @@ export default async function ProductPage({ params }: PageProps) {
                 stroke='currentColor'
                 strokeWidth={2}
                 aria-hidden
-                className='mt-0.5 h-4 w-4 flex-shrink-0 text-oxblood'
+                className='mt-0.5 h-4 w-4 shrink-0 text-oxblood'
               >
                 <path d='M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z' />
                 <circle cx='12' cy='10' r='3' />
@@ -354,14 +356,14 @@ export default async function ProductPage({ params }: PageProps) {
         <section className='border-t border-line-soft py-20'>
           <SectionHead num='02' label='About this cut' />
 
-          <h2 className='mb-10 font-display text-[clamp(32px,4vw,52px)] font-normal leading-[1.05] tracking-[-0.025em]'>
+          <h2 className='mb-10 font-display text-[clamp(32px,4vw,52px)] font-normal leading-[1.05] tracking-tight'>
             What makes{' '}
             <em className='text-oxblood'>this</em> cut.
           </h2>
 
-          <div className='grid gap-12 lg:grid-cols-2 lg:gap-16'>
-            {/* Description body with drop cap */}
-            <div className='prose-none text-[16px] leading-[1.75] text-ink-soft [&>p:first-of-type::first-letter]:float-left [&>p:first-of-type::first-letter]:mr-3 [&>p:first-of-type::first-letter]:mt-1.5 [&>p:first-of-type::first-letter]:font-display [&>p:first-of-type::first-letter]:text-[56px] [&>p:first-of-type::first-letter]:font-medium [&>p:first-of-type::first-letter]:leading-[0.9] [&>p:first-of-type::first-letter]:text-oxblood'>
+          <div className='grid gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-start lg:gap-16'>
+            {/* Description body with drop cap — capped line length for comfortable reading */}
+            <div className='max-w-[58ch] text-[16px] leading-[1.75] text-ink-soft [&>p:first-of-type::first-letter]:float-left [&>p:first-of-type::first-letter]:mr-3 [&>p:first-of-type::first-letter]:mt-1.5 [&>p:first-of-type::first-letter]:font-display [&>p:first-of-type::first-letter]:text-[56px] [&>p:first-of-type::first-letter]:font-medium [&>p:first-of-type::first-letter]:leading-[0.9] [&>p:first-of-type::first-letter]:text-oxblood'>
               <p>{product.description}</p>
             </div>
 
@@ -373,7 +375,7 @@ export default async function ProductPage({ params }: PageProps) {
               <div className='divide-y divide-line-soft'>
                 {COOKING_NOTES.map(({ title, desc }, i) => (
                   <div key={title} className='flex gap-4 py-4 first:pt-0 last:pb-0'>
-                    <span className='mt-0.5 w-6 flex-shrink-0 font-mono text-[12px] text-muted'>
+                    <span className='mt-0.5 w-6 shrink-0 font-mono text-[12px] text-muted'>
                       {String(i + 1).padStart(2, '0')}
                     </span>
                     <div>
@@ -395,67 +397,74 @@ export default async function ProductPage({ params }: PageProps) {
         <section id='reviews' className='border-t border-line-soft py-20'>
           <SectionHead num='03' label='Reviews' />
 
-          <h2 className='mb-10 font-display text-[clamp(32px,4vw,52px)] font-normal leading-[1.05] tracking-[-0.025em]'>
+          <h2 className='mb-10 font-display text-[clamp(32px,4vw,52px)] font-normal leading-[1.05] tracking-tight'>
             What regulars are <em className='text-oxblood'>saying.</em>
           </h2>
 
-          <div className='grid gap-10 lg:grid-cols-[320px_1fr] lg:gap-16'>
-
-            {/* Rating summary */}
-            <div className='rounded-sm border border-line-soft bg-paper p-7 lg:p-8'>
-              <div className='mb-6 border-b border-line-soft pb-6'>
-                <div className='mb-2 font-display text-[64px] font-normal leading-none tracking-[-0.03em]'>
-                  {avgRating > 0 ? avgRating.toFixed(1) : '—'}
-                  <em className='ml-1 text-3xl font-normal not-italic text-muted'>
-                    /5
-                  </em>
-                </div>
-                <Stars rating={avgRating} size='md' />
-                <p className='mt-2 text-[13px] text-muted'>
-                  Based on {reviews.length} {reviews.length === 1 ? 'review' : 'reviews'}
-                </p>
+          {reviews.length === 0 ? (
+            // Empty state — single centered card; no bare distribution bars / wide gap
+            <div className='rounded-sm border border-dashed border-line bg-paper px-6 py-16 text-center md:px-10 md:py-20'>
+              <div className='mx-auto mb-5 grid h-14 w-14 place-items-center rounded-full bg-cream-deep text-ink-soft'>
+                <StarIcon />
               </div>
-
-              {/* Distribution bars */}
-              <div className='flex flex-col gap-2'>
-                {dist.map(({ star, count, fraction }) => (
-                  <div key={star} className='grid grid-cols-[14px_1fr_28px] items-center gap-2.5 text-[12px] text-ink-soft'>
-                    <span className='text-[11px] text-camel'>{star}</span>
-                    <div className='h-1 overflow-hidden rounded-full bg-cream-deep'>
-                      <div
-                        className='h-full rounded-full bg-camel transition-[width] duration-700'
-                        style={{ width: `${Math.round(fraction * 100)}%` }}
-                      />
-                    </div>
-                    <span className='text-right font-mono text-[11px] text-muted'>
-                      {count}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
+              <h3 className='mb-2 font-display text-[24px] font-medium tracking-[-0.01em] md:text-[26px]'>
+                No reviews yet
+              </h3>
+              <p className='mx-auto mb-7 max-w-[36ch] text-[14px] leading-[1.6] text-muted'>
+                Be the first to share your experience with this cut.
+              </p>
               <button
                 type='button'
-                className='mt-6 w-full rounded-full bg-ink px-5 py-3 text-[13px] font-medium tracking-[0.04em] text-cream transition-colors duration-300 hover:bg-oxblood motion-reduce:transition-none'
+                className='rounded-full bg-ink px-7 py-3 text-[13px] font-medium tracking-[0.04em] text-cream transition-colors duration-300 hover:bg-oxblood motion-reduce:transition-none'
               >
                 Write a review
               </button>
             </div>
+          ) : (
+            <div className='grid gap-10 lg:grid-cols-[320px_1fr] lg:gap-16'>
 
-            {/* Review list */}
-            {reviews.length === 0 ? (
-              <div className='flex flex-col items-center justify-center rounded-sm border border-dashed border-line px-10 py-16 text-center'>
-                <div className='mb-5 grid h-14 w-14 place-items-center rounded-full bg-cream-deep text-ink-soft'>
-                  <StarIcon />
+              {/* Rating summary */}
+              <div className='rounded-sm border border-line-soft bg-paper p-7 lg:p-8 lg:self-start'>
+                <div className='mb-6 border-b border-line-soft pb-6'>
+                  <div className='mb-2 font-display text-[64px] font-normal leading-none tracking-[-0.03em]'>
+                    {avgRating.toFixed(1)}
+                    <em className='ml-1 text-3xl font-normal not-italic text-muted'>
+                      /5
+                    </em>
+                  </div>
+                  <Stars rating={avgRating} size='md' />
+                  <p className='mt-2 text-[13px] text-muted'>
+                    Based on {reviews.length} {reviews.length === 1 ? 'review' : 'reviews'}
+                  </p>
                 </div>
-                <h3 className='mb-2 font-display text-[22px] font-medium tracking-[-0.01em]'>
-                  No reviews yet
-                </h3>
-                <p className='max-w-[32ch] text-[14px] text-muted'>
-                  Be the first to share your experience with this cut.
-                </p>
+
+                {/* Distribution bars */}
+                <div className='flex flex-col gap-2'>
+                  {dist.map(({ star, count, fraction }) => (
+                    <div key={star} className='grid grid-cols-[14px_1fr_28px] items-center gap-2.5 text-[12px] text-ink-soft'>
+                      <span className='text-[11px] text-camel'>{star}</span>
+                      <div className='h-1 overflow-hidden rounded-full bg-cream-deep'>
+                        <div
+                          className='h-full rounded-full bg-camel transition-[width] duration-700'
+                          style={{ width: `${Math.round(fraction * 100)}%` }}
+                        />
+                      </div>
+                      <span className='text-right font-mono text-[11px] text-muted'>
+                        {count}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  type='button'
+                  className='mt-6 w-full rounded-full bg-ink px-5 py-3 text-[13px] font-medium tracking-[0.04em] text-cream transition-colors duration-300 hover:bg-oxblood motion-reduce:transition-none'
+                >
+                  Write a review
+                </button>
               </div>
-            ) : (
+
+              {/* Review list */}
               <div className='divide-y divide-line-soft'>
                 {reviews.map((review, i) => {
                   const colorClass = AVATAR_COLORS[i % AVATAR_COLORS.length] ?? AVATAR_COLORS[0];
@@ -463,7 +472,7 @@ export default async function ProductPage({ params }: PageProps) {
                     <article key={review._id} className='py-7 first:pt-0 last:pb-0'>
                       <div className='mb-3.5 flex items-center gap-3.5'>
                         <div
-                          className={`grid h-10 w-10 flex-shrink-0 place-items-center rounded-full font-display text-[14px] font-medium ${colorClass}`}
+                          className={`grid h-10 w-10 shrink-0 place-items-center rounded-full font-display text-[14px] font-medium ${colorClass}`}
                           aria-hidden
                         >
                           {initials(review.userName)}
@@ -493,8 +502,8 @@ export default async function ProductPage({ params }: PageProps) {
                   );
                 })}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </section>
 
         {/* ── Related products ── */}
@@ -502,7 +511,7 @@ export default async function ProductPage({ params }: PageProps) {
           <section className='border-t border-line-soft py-20'>
             <SectionHead num='04' label='You might also like' />
 
-            <h2 className='mb-10 font-display text-[clamp(32px,4vw,52px)] font-normal leading-[1.05] tracking-[-0.025em]'>
+            <h2 className='mb-10 font-display text-[clamp(32px,4vw,52px)] font-normal leading-[1.05] tracking-tight'>
               Other cuts <em className='text-oxblood'>worth knowing.</em>
             </h2>
 
