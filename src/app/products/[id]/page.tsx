@@ -162,7 +162,7 @@ export default async function ProductPage({ params }: PageProps) {
   const rawReviews = (await ReviewModel.find({ product: id })
     .populate<{ user: { name: string } | null }>('user', 'name')
     .sort({ createdAt: -1 })
-    .lean()) as LeanReviewWithUser[];
+    .lean()) as unknown as LeanReviewWithUser[];
 
   const reviews: SerializedReview[] = rawReviews.map((r) => ({
     _id: String(r._id),
@@ -323,6 +323,7 @@ export default async function ProductPage({ params }: PageProps) {
                   price: product.price,
                   stockCount: product.stockCount,
                   name: product.name,
+                  images: product.images,
                 }}
               />
             </div>

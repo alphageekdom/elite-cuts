@@ -1,5 +1,4 @@
-import React from 'react';
-import Image from 'next/image'; // Assuming you're using Next.js
+import Image from 'next/image';
 import { FaMinus, FaPlus, FaTrash } from 'react-icons/fa';
 
 const CartCardItem = ({
@@ -37,7 +36,7 @@ const CartCardItem = ({
           type='button'
           className='text-gray-500 focus:outline-none'
           aria-label='Decrease'
-          onClick={() => handleQuantityChange(item._id, -1)} // Decrement quantity
+          onClick={() => handleQuantityChange(item.product._id, -1)}
         >
           <FaMinus />
         </button>
@@ -46,7 +45,7 @@ const CartCardItem = ({
           type='button'
           className='text-gray-500 focus:outline-none z-10'
           aria-label='Increase'
-          onClick={() => handleQuantityChange(item._id, 1)} // Increment quantity
+          onClick={() => handleQuantityChange(item.product._id, 1)}
         >
           <FaPlus />
         </button>
@@ -57,7 +56,7 @@ const CartCardItem = ({
           type='button'
           aria-label='Delete'
           className='w-full flex justify-center py-2 px-4 border rounded-md  bg-red-600 text-white'
-          onClick={() => handleRemoveItem(item._id)}
+          onClick={() => handleRemoveItem(item.product._id)}
         >
           <FaTrash />
         </button>

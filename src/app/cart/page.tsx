@@ -1,8 +1,14 @@
-import BackButton from '@/components/uielements/BackButton';
-import { FaShoppingCart } from 'react-icons/fa';
-import CartSummary from '@/components/cart/CartSummary';
+'use client';
 
-const CartPage = ({ cartCount, cartItems }) => {
+import { FaShoppingCart } from 'react-icons/fa';
+
+import BackButton from '@/components/uielements/BackButton';
+import CartSummary from '@/components/cart/CartSummary';
+import { useGlobalContext } from '@/context/CartContext';
+
+const CartPage = () => {
+  const { cartCount } = useGlobalContext();
+
   return (
     <>
       <BackButton href={'/products'} />
@@ -16,7 +22,7 @@ const CartPage = ({ cartCount, cartItems }) => {
             </h1>
           </div>
           <div className='grid grid-cols-1 md:grid-cols-70/30 w-full gap-6 mt-9'>
-            <CartSummary items={cartItems} />
+            <CartSummary />
           </div>
         </div>
       </section>
