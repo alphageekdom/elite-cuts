@@ -8,24 +8,12 @@ import { useSession } from 'next-auth/react';
 import useHandleAddToCart from '@/hooks/useHandleAddToCart';
 import useHandleBookmark from '@/hooks/useHandleBookmark';
 
-export type CatalogProduct = {
-  _id: string;
-  name: string;
-  category: string;
-  description: string;
-  price: number;
-  rating: number;
-  images: string[];
-  stockCount: number;
-  isFeatured?: boolean;
-  isAged?: boolean;
-  isNewArrival?: boolean;
-};
+import { type SerializedProduct } from '@/models/Product';
 
 type TagVariant = 'featured' | 'aged' | 'new';
 
 type ProductCardProps = {
-  product: CatalogProduct;
+  product: SerializedProduct;
 };
 
 const TAG_CLASS: Record<TagVariant, string> = {
@@ -41,7 +29,7 @@ const TAG_LABEL: Record<TagVariant, string> = {
 };
 
 // Featured wins over aged wins over new — only one chip renders per card.
-const resolveTag = (product: CatalogProduct): TagVariant | null => {
+const resolveTag = (product: SerializedProduct): TagVariant | null => {
   if (product.isFeatured) return 'featured';
   if (product.isAged) return 'aged';
   if (product.isNewArrival) return 'new';
@@ -135,7 +123,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
         >
           <Image
             src={`/images/products/${product.images[0]}`}
-            alt={product.name}
+            alt=''
             fill
             sizes='(min-width: 1024px) 50vw, 100vw'
             className='object-cover transition-transform duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:scale-105 motion-reduce:group-hover:scale-100 motion-reduce:transition-none'
