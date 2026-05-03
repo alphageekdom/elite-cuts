@@ -8,7 +8,10 @@ import useHandleBookmark from '@/hooks/useHandleBookmark';
 import type { SerializedProduct } from '@/models/Product';
 
 type Props = {
-  product: Pick<SerializedProduct, '_id' | 'price' | 'stockCount' | 'name'>;
+  product: Pick<
+    SerializedProduct,
+    '_id' | 'price' | 'stockCount' | 'name' | 'images'
+  >;
 };
 
 const CartIcon = () => (

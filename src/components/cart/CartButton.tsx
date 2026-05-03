@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import CartCount from './CartCount';
 import MobileModal from '../mobile/MobileModal';
 import { useGlobalContext } from '@/context/CartContext';
@@ -13,10 +12,7 @@ type CartButtonProps = {
 
 const CartButton = ({ scrolled = false }: CartButtonProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { setCartItems, cartCount, setCartCount, loading, setLoading } =
-    useGlobalContext();
-  const { data: session } = useSession();
-  const isLoggedIn = Boolean(session?.user);
+  const { cartCount, loading } = useGlobalContext();
   const router = useRouter();
 
   const handleCartClick = () => {
@@ -27,35 +23,6 @@ const CartButton = ({ scrolled = false }: CartButtonProps) => {
       router.push('/cart');
     }
   };
-
-  useEffect(() => {
-    if (!isLoggedIn) return;
-
-    const fetchCartData = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch('/api/cart');
-
-        if (response.ok) {
-          const data = await response.json();
-          const cartItemsData = data.items || [];
-
-          setCartItems(cartItemsData);
-          setCartCount(cartItemsData.length);
-        } else if (response.status === 401) {
-          console.error('Unauthorized access to fetch cart data');
-        } else {
-          throw new Error('Failed to fetch cart data');
-        }
-      } catch (error) {
-        console.error('Error fetching cart data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCartData();
-  }, [isLoggedIn, setCartItems, setCartCount, setLoading]);
 
   return (
     <>
