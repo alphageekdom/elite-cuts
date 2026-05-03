@@ -3,12 +3,10 @@ import Link from 'next/link';
 import ArrowIcon from '@/components/uielements/ArrowIcon';
 import connectDB from '@/config/database';
 import Reveal from '@/components/uielements/Reveal';
-import Product from '@/models/Product';
+import Product, { type SerializedProduct } from '@/models/Product';
 import { convertToSerializableObject } from '@/utils/convertToObject';
 
-import ProductCard, {
-  type CatalogProduct,
-} from '@/components/product/ProductCard';
+import ProductCard from '@/components/product/ProductCard';
 
 import SectionEyebrow from './SectionEyebrow';
 
@@ -28,7 +26,9 @@ const FeaturedProducts = async () => {
   })
     .limit(4)
     .lean();
-  const serialized = products.map(convertToSerializableObject) as CatalogProduct[];
+  const serialized = products.map(
+    convertToSerializableObject,
+  ) as SerializedProduct[];
 
   if (serialized.length === 0) return null;
 
