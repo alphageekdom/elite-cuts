@@ -18,6 +18,8 @@ export type CatalogProduct = {
   images: string[];
   stockCount: number;
   isFeatured?: boolean;
+  isAged?: boolean;
+  isNewArrival?: boolean;
 };
 
 type TagVariant = 'featured' | 'aged' | 'new';
@@ -34,15 +36,15 @@ const TAG_CLASS: Record<TagVariant, string> = {
 
 const TAG_LABEL: Record<TagVariant, string> = {
   featured: 'Featured',
-  aged: '28-Day Aged',
+  aged: 'Dry-Aged',
   new: 'New',
 };
 
-// Derive the chip variant from existing model fields. Today only `featured`
-// fires because the Product schema lacks `aged`/`new` flags — typed up front
-// so future model fields plug in without a card-level refactor.
+// Featured wins over aged wins over new — only one chip renders per card.
 const resolveTag = (product: CatalogProduct): TagVariant | null => {
   if (product.isFeatured) return 'featured';
+  if (product.isAged) return 'aged';
+  if (product.isNewArrival) return 'new';
   return null;
 };
 
