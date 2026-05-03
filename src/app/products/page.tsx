@@ -2,15 +2,13 @@ import type { Metadata } from 'next';
 import type { SortOrder } from 'mongoose';
 
 import connectDB from '@/config/database';
-import Product from '@/models/Product';
+import Product, { type SerializedProduct } from '@/models/Product';
 import { convertToSerializableObject } from '@/utils/convertToObject';
 
 import CatalogFilterBar from '@/components/product/CatalogFilterBar';
 import CatalogHero from '@/components/product/CatalogHero';
 import CatalogPagination from '@/components/product/CatalogPagination';
-import ProductCard, {
-  type CatalogProduct,
-} from '@/components/product/ProductCard';
+import ProductCard from '@/components/product/ProductCard';
 import ResultsBar from '@/components/product/ResultsBar';
 import {
   PAGE_SIZE,
@@ -92,7 +90,9 @@ const ProductsPage = async ({
       Product.distinct('category').then((arr: string[]) => arr.length),
     ]);
 
-  const products = productsRaw.map(convertToSerializableObject) as CatalogProduct[];
+  const products = productsRaw.map(
+    convertToSerializableObject,
+  ) as SerializedProduct[];
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const safePage = Math.min(pageNum, totalPages);
