@@ -12,6 +12,7 @@ import type { Types } from 'mongoose';
 import ProfileHero from '@/components/profile/ProfileHero';
 import ProfileStats from '@/components/profile/ProfileStats';
 import ProfileTabs from '@/components/profile/ProfileTabs';
+import ProfileOrderList from '@/components/profile/ProfileOrderList';
 
 export type ProfileOrder = {
   _id: string;
@@ -155,10 +156,7 @@ export default async function ProfilePage({ searchParams }: Props) {
                     </Link>
                   )}
                 </div>
-                {/* TODO: ProfileOrderList */}
-                <div className="bg-paper border border-line-soft rounded p-6 text-muted text-sm font-mono">
-                  [ProfileOrderList] — {serializedOrders.length} orders
-                </div>
+                <ProfileOrderList orders={serializedOrders} showAll={activeTab === 'orders'} />
               </section>
             )}
 
