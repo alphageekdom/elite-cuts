@@ -324,6 +324,7 @@ export default async function ProductPage({ params }: PageProps) {
                   stockCount: product.stockCount,
                   name: product.name,
                   images: product.images,
+                  category: product.category,
                 }}
               />
             </div>

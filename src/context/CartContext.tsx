@@ -15,13 +15,12 @@ import { toast } from 'react-toastify';
 
 import type { SerializedProduct } from '@/models/Product';
 
-// Minimum product fields a cart line needs to render: id keys the line,
-// name+price+images drive the card UI. Anything wider (stockCount, category,
-// description, …) is not stored — keeps the localStorage payload small and
-// lets BuyBlock pass a Pick instead of the full product.
+// Minimum product fields a cart line needs to render: id keys the line;
+// name + price + images drive the card UI; category drives the eyebrow meta
+// in cart rows. Anything wider (stockCount, description, …) is not stored.
 export type CartLineProduct = Pick<
   SerializedProduct,
-  '_id' | 'name' | 'price' | 'images'
+  '_id' | 'name' | 'price' | 'images' | 'category'
 >;
 
 // Wire / state shape for a cart line. Identical for guest (localStorage) and
@@ -46,6 +45,7 @@ type CartContextValue = {
   addItemToCart: (item: AddItemArg) => Promise<void>;
   removeItemFromCart: (productId: string) => Promise<void>;
   setItemQuantity: (productId: string, quantity: number) => Promise<void>;
+  clearCart: () => Promise<void>;
 };
 
 const GUEST_CART_KEY = 'guestCart';
@@ -333,6 +333,45 @@ export function CartProvider({ children }: { children: ReactNode }) {
     [isLoggedIn],
   );
 
+  const clearCart = useCallback(async () => {
+    if (!isLoggedIn) {
+      setCartItems(() => {
+        writeGuestCart([]);
+        return [];
+      });
+      toast.success('Cart cleared');
+      return;
+    }
+
+    // Logged-in: DELETE every line in parallel, then refetch to pick up the
+    // canonical empty cart from the server. Optimistic clear with revert on
+    // failure (any single line failing reverts the whole snapshot).
+    let snapshot: CartLine[] = [];
+    setCartItems((prev) => {
+      snapshot = prev;
+      return [];
+    });
+    try {
+      await Promise.all(
+        snapshot.map((line) =>
+          fetch('/api/cart', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ productId: line.product._id }),
+          }).then((res) => {
+            if (!res.ok) throw new Error('clear line failed');
+          }),
+        ),
+      );
+      toast.success('Cart cleared');
+    } catch (error) {
+      setCartItems(snapshot);
+      console.error('Error clearing cart:', error);
+      toast.error('Failed to clear cart');
+    }
+  }, [isLoggedIn]);
+
   const value = useMemo<CartContextValue>(
     () => ({
       cartItems,
@@ -341,8 +380,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
       addItemToCart,
       removeItemFromCart,
       setItemQuantity,
+      clearCart,
     }),
-    [cartItems, loading, addItemToCart, removeItemFromCart, setItemQuantity],
+    [
+      cartItems,
+      loading,
+      addItemToCart,
+      removeItemFromCart,
+      setItemQuantity,
+      clearCart,
+    ],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
