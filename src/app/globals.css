@@ -109,3 +109,46 @@
     transform: translateX(-50%);
   }
 }
+
+/* Auth page animations */
+@keyframes authRise {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.auth-reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: authRise 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.auth-check {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--color-line);
+  border-radius: 3px;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.auth-check:checked {
+  background: var(--color-oxblood);
+  border-color: var(--color-oxblood);
+}
+
+.auth-check:checked::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 5px;
+  height: 9px;
+  border: solid var(--color-cream);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
