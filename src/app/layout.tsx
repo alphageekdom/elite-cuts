@@ -3,8 +3,6 @@ import type { ReactNode } from 'react';
 
 import { Fraunces, Instrument_Sans, JetBrains_Mono } from 'next/font/google';
 
-import Footer from '@/components/layout/Footer';
-import Navbar from '@/components/navbar/Navbar';
 import './globals.css';
 
 import { GlobalProvider } from '@/context/GlobalContext';
@@ -40,19 +38,17 @@ export const metadata: Metadata = {
   keywords: 'butcher shop, steaks, poultry, pork',
 };
 
-const MainLayout = ({ children }: { children: ReactNode }) => {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <GlobalProvider>
       <AuthProvider>
         <CartProvider>
           <html
-            lang='en'
+            lang="en"
             className={`${fraunces.variable} ${instrument.variable} ${jetbrains.variable}`}
           >
-            <body className='bg-cream font-sans text-ink antialiased'>
-              <Navbar />
-              <main className='pt-20'>{children}</main>
-              <Footer />
+            <body className="bg-cream font-sans text-ink antialiased">
+              {children}
               <ToastContainer />
             </body>
           </html>
@@ -60,6 +56,4 @@ const MainLayout = ({ children }: { children: ReactNode }) => {
       </AuthProvider>
     </GlobalProvider>
   );
-};
-
-export default MainLayout;
+}
