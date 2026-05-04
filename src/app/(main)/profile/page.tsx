@@ -10,6 +10,7 @@ import type { SerializedProduct } from '@/models/Product';
 import type { OrderStatus, PaymentMethod } from '@/models/Order';
 import type { Types } from 'mongoose';
 import ProfileHero from '@/components/profile/ProfileHero';
+import ProfileStats from '@/components/profile/ProfileStats';
 
 export type ProfileOrder = {
   _id: string;
@@ -116,12 +117,12 @@ export default async function ProfilePage({ searchParams }: Props) {
 
         <ProfileHero name={displayName} email={displayEmail} createdAt={createdAt} />
 
-        {/* TODO: ProfileStats */}
-        <div className="mt-12 pt-9 border-t border-line-soft">
-          <p className="text-muted text-sm font-mono">
-            [ProfileStats] — {serializedOrders.length} orders · ${totalSpent.toFixed(2)} spent · {serializedBookmarks.length} saved · {joinedMonths}mo
-          </p>
-        </div>
+        <ProfileStats
+          orderCount={serializedOrders.length}
+          totalSpent={totalSpent}
+          savedCuts={serializedBookmarks.length}
+          joinedMonths={joinedMonths}
+        />
 
         {/* TODO: ProfileTabs */}
         <div className="mt-12 border-b border-line-soft">
