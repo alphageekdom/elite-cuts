@@ -10,7 +10,7 @@ import type { SerializedProduct } from '@/models/Product';
 type Props = {
   product: Pick<
     SerializedProduct,
-    '_id' | 'price' | 'stockCount' | 'name' | 'images'
+    '_id' | 'price' | 'stockCount' | 'name' | 'images' | 'category'
   >;
 };
 
