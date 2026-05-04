@@ -26,6 +26,5 @@ export const config = {
     '/products/saved',
     '/messages',
     '/dashboard',
-    '/checkout',
   ],
 };
