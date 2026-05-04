@@ -4,27 +4,21 @@ import { useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'react-toastify';
 
-import { useGlobalContext } from '@/context/CartContext';
+import { useCartContext } from '@/context/CartContext';
 import { useCheckoutContext } from '@/context/CheckoutContext';
 
-const TAX_RATE = 0.1;
-const MEMBER_DISCOUNT_RATE = 0.05;
+import { computeTotals } from '@/lib/pricing';
 
 const PlaceOrderButton = () => {
-  const { cartItems } = useGlobalContext();
+  const { cartItems } = useCartContext();
   const { data: session } = useSession();
   const { isPaymentReady, promoDiscount } = useCheckoutContext();
   const isLoggedIn = Boolean(session?.user);
 
-  const total = useMemo(() => {
-    const subtotal = cartItems.reduce(
-      (acc, line) => acc + line.price * line.quantity,
-      0,
-    );
-    const memberDiscount = isLoggedIn ? subtotal * MEMBER_DISCOUNT_RATE : 0;
-    const afterDiscount = Math.max(0, subtotal - memberDiscount - promoDiscount);
-    return afterDiscount + afterDiscount * TAX_RATE;
-  }, [cartItems, isLoggedIn, promoDiscount]);
+  const total = useMemo(
+    () => computeTotals(cartItems, { isLoggedIn, promoDiscount }).total,
+    [cartItems, isLoggedIn, promoDiscount],
+  );
 
   const handlePlaceOrder = () => {
     toast.info('Payment processing coming soon');

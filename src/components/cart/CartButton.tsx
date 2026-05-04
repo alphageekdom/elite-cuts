@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { useGlobalContext } from '@/context/CartContext';
+import { useCartContext } from '@/context/CartContext';
 import CartCount from './CartCount';
 import CartDrawer from './CartDrawer';
 
@@ -13,7 +13,7 @@ type CartButtonProps = {
 
 const CartButton = ({ scrolled = false }: CartButtonProps) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const { cartCount, loading } = useGlobalContext();
+  const { cartCount, loading } = useCartContext();
   const router = useRouter();
 
   // Empty cart → /cart so guests can see the page chrome.

@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 
 import { useCheckoutContext } from '@/context/CheckoutContext';
+import CheckoutFieldCheck from '@/components/checkout/CheckoutFieldCheck';
+import { FIELD_CLASS, LABEL_CLASS } from '@/components/checkout/checkoutStyles';
 
 type PayMethod = 'card' | 'paypal' | 'apple';
 
@@ -19,25 +21,6 @@ const LockIcon = () => (
     <path d='M7 11V7a5 5 0 0110 0v4' />
   </svg>
 );
-
-const FieldCheck = () => (
-  <svg
-    viewBox='0 0 24 24'
-    fill='none'
-    stroke='currentColor'
-    strokeWidth={2.5}
-    aria-hidden='true'
-    className='h-3.5 w-3.5 shrink-0 text-green'
-  >
-    <polyline points='20 6 9 17 4 12' />
-  </svg>
-);
-
-const FIELD_CLASS =
-  'w-full border-b border-line bg-transparent pb-3.5 pt-2 text-[16px] text-ink outline-none placeholder:text-muted/60 transition-[border-color] duration-300 focus:border-b-oxblood motion-reduce:transition-none';
-
-const LABEL_CLASS =
-  'text-[11px] font-medium uppercase tracking-[0.22em] text-muted';
 
 const PAY_METHODS: { id: PayMethod; label: string }[] = [
   { id: 'card', label: 'Card' },
@@ -108,7 +91,7 @@ const PaymentMethodSelector = () => {
     month.length === 2 &&
     parseInt(month, 10) >= 1 &&
     parseInt(month, 10) <= 12;
-  const isYearValid = year.length === 2 && parseInt(year, 10) >= 26;
+  const isYearValid = year.length === 2 && parseInt(year, 10) >= new Date().getFullYear() % 100;
   const isExpiryValid = isMonthValid && isYearValid;
   const isCvcValid = cvc.length === 3;
 
@@ -182,7 +165,7 @@ const PaymentMethodSelector = () => {
               <label htmlFor='cardName' className={LABEL_CLASS}>
                 Name on card
               </label>
-              {isNameValid && <FieldCheck />}
+              {isNameValid && <CheckoutFieldCheck />}
             </div>
             <input
               id='cardName'
@@ -202,7 +185,7 @@ const PaymentMethodSelector = () => {
               <label htmlFor='cardNumber' className={LABEL_CLASS}>
                 Card number
               </label>
-              {isCardNumberValid && <FieldCheck />}
+              {isCardNumberValid && <CheckoutFieldCheck />}
             </div>
             <div className='flex items-center gap-3 rounded-sm border border-line bg-cream px-4.5 py-3.5'>
               <svg
@@ -237,7 +220,7 @@ const PaymentMethodSelector = () => {
             <div>
               <div className='mb-2.5 flex items-center justify-between'>
                 <label className={LABEL_CLASS}>Expiry</label>
-                {isExpiryValid && <FieldCheck />}
+                {isExpiryValid && <CheckoutFieldCheck />}
               </div>
               <div className='flex items-center gap-2 rounded-sm border border-line bg-cream px-4 py-3.5'>
                 <input
@@ -278,7 +261,7 @@ const PaymentMethodSelector = () => {
                 <label htmlFor='cvc' className={LABEL_CLASS}>
                   CVC
                 </label>
-                {isCvcValid && <FieldCheck />}
+                {isCvcValid && <CheckoutFieldCheck />}
               </div>
               <div className='flex items-center rounded-sm border border-line bg-cream px-4 py-3.5'>
                 <input

@@ -3,25 +3,9 @@
 import { useState, type ChangeEvent } from 'react';
 import Link from 'next/link';
 
-const FIELD_CLASS =
-  'w-full border-b border-line bg-transparent pb-3.5 pt-2 text-[16px] text-ink outline-none placeholder:text-muted/60 transition-[border-color] duration-300 focus:border-b-oxblood motion-reduce:transition-none';
-
-const LABEL_CLASS = 'text-[11px] font-medium uppercase tracking-[0.22em] text-muted';
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-const FieldCheck = () => (
-  <svg
-    viewBox='0 0 24 24'
-    fill='none'
-    stroke='currentColor'
-    strokeWidth={2.5}
-    aria-hidden='true'
-    className='h-3.5 w-3.5 shrink-0 text-green'
-  >
-    <polyline points='20 6 9 17 4 12' />
-  </svg>
-);
+import CheckoutFieldCheck from '@/components/checkout/CheckoutFieldCheck';
+import { FIELD_CLASS, LABEL_CLASS } from '@/components/checkout/checkoutStyles';
+import { EMAIL_RE } from '@/lib/validation';
 
 const CheckoutContactCard = () => {
   const [fullName, setFullName] = useState('');
@@ -64,7 +48,7 @@ const CheckoutContactCard = () => {
           <label htmlFor='fullName' className={LABEL_CLASS}>
             Full name
           </label>
-          {isNameValid && <FieldCheck />}
+          {isNameValid && <CheckoutFieldCheck />}
         </div>
         <input
           id='fullName'
@@ -84,7 +68,7 @@ const CheckoutContactCard = () => {
             <label htmlFor='email' className={LABEL_CLASS}>
               Email
             </label>
-            {isEmailValid && <FieldCheck />}
+            {isEmailValid && <CheckoutFieldCheck />}
           </div>
           <input
             id='email'
@@ -102,7 +86,7 @@ const CheckoutContactCard = () => {
             <label htmlFor='phone' className={LABEL_CLASS}>
               Phone
             </label>
-            {isPhoneValid && <FieldCheck />}
+            {isPhoneValid && <CheckoutFieldCheck />}
           </div>
           <input
             id='phone'

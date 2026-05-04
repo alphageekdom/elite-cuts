@@ -5,10 +5,8 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { toast } from 'react-toastify';
 
-import { useGlobalContext } from '@/context/CartContext';
-
-const TAX_RATE = 0.1;
-const MEMBER_DISCOUNT_RATE = 0.05;
+import { useCartContext } from '@/context/CartContext';
+import { computeTotals } from '@/lib/pricing';
 
 type Fulfillment = 'pickup' | 'delivery';
 
@@ -26,7 +24,7 @@ const ArrowIcon = () => (
 );
 
 const CartSummary = () => {
-  const { cartItems } = useGlobalContext();
+  const { cartItems } = useCartContext();
   const { data: session } = useSession();
   const isLoggedIn = Boolean(session?.user);
 
@@ -39,22 +37,10 @@ const CartSummary = () => {
   );
   const lineCount = cartItems.length;
 
-  const totals = useMemo(() => {
-    const subtotal = cartItems.reduce(
-      (acc, line) => acc + line.price * line.quantity,
-      0,
-    );
-    const memberDiscount = isLoggedIn ? subtotal * MEMBER_DISCOUNT_RATE : 0;
-    const afterDiscount = subtotal - memberDiscount;
-    const tax = afterDiscount * TAX_RATE;
-    const total = afterDiscount + tax;
-    return {
-      subtotal,
-      memberDiscount,
-      tax,
-      total,
-    };
-  }, [cartItems, isLoggedIn]);
+  const totals = useMemo(
+    () => computeTotals(cartItems, { isLoggedIn }),
+    [cartItems, isLoggedIn],
+  );
 
   const onApplyPromo = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();

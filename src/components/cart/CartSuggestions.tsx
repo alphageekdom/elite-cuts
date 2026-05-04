@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 import useHandleAddToCart from '@/hooks/useHandleAddToCart';
-import { useGlobalContext } from '@/context/CartContext';
+import { useCartContext } from '@/context/CartContext';
 import type { SerializedProduct } from '@/models/Product';
 
 type SuggestProps = {
@@ -74,7 +74,7 @@ type Props = {
 };
 
 const CartSuggestions = ({ products }: Props) => {
-  const { cartItems } = useGlobalContext();
+  const { cartItems } = useCartContext();
   const inCart = new Set(cartItems.map((line) => line.product._id));
 
   // Server gives us up to 6 candidates; render the first 3 not already in

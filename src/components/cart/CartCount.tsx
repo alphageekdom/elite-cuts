@@ -1,7 +1,7 @@
 'use client';
 
 import { FaShoppingCart } from 'react-icons/fa';
-import { useGlobalContext } from '@/context/CartContext';
+import { useCartContext } from '@/context/CartContext';
 import { FOCUS_RING, scrollAwareTone } from '@/lib/styles';
 
 type CartCountProps = {
@@ -10,7 +10,7 @@ type CartCountProps = {
 };
 
 const CartCount = ({ onClick, scrolled = false }: CartCountProps) => {
-  const { cartCount } = useGlobalContext();
+  const { cartCount } = useCartContext();
 
   const toneClass = scrollAwareTone(scrolled, {
     hoverScrolled: 'hover:text-oxblood',

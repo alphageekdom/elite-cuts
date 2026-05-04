@@ -1,6 +1,6 @@
 'use client';
 
-import { useGlobalContext } from '@/context/CartContext';
+import { useCartContext } from '@/context/CartContext';
 import CartItemRow from './CartItemRow';
 
 const EmptyState = () => (
@@ -36,7 +36,7 @@ const EmptyState = () => (
 );
 
 const CartItemsPanel = () => {
-  const { cartItems, clearCart } = useGlobalContext();
+  const { cartItems, clearCart } = useCartContext();
   const count = cartItems.length;
 
   const onClearCart = () => {
