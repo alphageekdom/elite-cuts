@@ -8,7 +8,7 @@ import BookmarkButton from '@/components/uielements/BookmarkButton';
 import ShareButtons from '../uielements/ShareButton';
 import React, { useState, Suspense } from 'react';
 import { toast } from 'react-toastify';
-import { useGlobalContext } from '@/context/CartContext';
+import { useCartContext } from '@/context/CartContext';
 import { useSession } from 'next-auth/react';
 
 const CommentSection = dynamic(() => import('./CommentSection'), {
@@ -17,7 +17,7 @@ const CommentSection = dynamic(() => import('./CommentSection'), {
 
 const ProductDetails = React.memo(({ product }) => {
   const [isAddingToCart, setIsAddingToCart] = useState(false);
-  const { addItemToCart } = useGlobalContext();
+  const { addItemToCart } = useCartContext();
 
   const { data: session } = useSession();
   const isLoggedIn = session && session.user;

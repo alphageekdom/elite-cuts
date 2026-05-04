@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useSession } from 'next-auth/react';
 import { toast } from 'react-toastify';
 
-import { useGlobalContext, type CartLine } from '@/context/CartContext';
+import { useCartContext, type CartLine } from '@/context/CartContext';
 
 const MinusIcon = () => (
   <svg
@@ -39,7 +39,7 @@ type Props = {
 };
 
 const CartItemRow = ({ line }: Props) => {
-  const { setItemQuantity, removeItemFromCart } = useGlobalContext();
+  const { setItemQuantity, removeItemFromCart } = useCartContext();
   const { data: session } = useSession();
   const isLoggedIn = Boolean(session?.user);
 

@@ -4,26 +4,18 @@ import { useMemo, useState } from 'react';
 import Image from 'next/image';
 import { useSession } from 'next-auth/react';
 
-import { useGlobalContext } from '@/context/CartContext';
+import { useCartContext } from '@/context/CartContext';
 import { useCheckoutContext } from '@/context/CheckoutContext';
+import { validatePromoCode } from '@/actions/checkout';
 
-const TAX_RATE = 0.1;
-const MEMBER_DISCOUNT_RATE = 0.05;
-const DELIVERY_FEE = 8;
+import { computeTotals, DELIVERY_FEE } from '@/lib/pricing';
 
-type PromoEntry = { type: 'percent'; value: number; label: string }
-                | { type: 'fixed'; value: number; label: string };
-
-const PROMO_CODES: Record<string, PromoEntry> = {
-  ELITECUTS10: { type: 'percent', value: 10, label: '10% off your order' },
-  FIRSTORDER:  { type: 'percent', value: 15, label: '15% off — first order' },
-  NORTHPARK:   { type: 'fixed',   value: 5,  label: '$5 off' },
-};
+const PROMO_SUGGESTIONS = ['ELITECUTS10', 'FIRSTORDER', 'NORTHPARK'];
 
 type PromoStatus = 'idle' | 'valid' | 'invalid';
 
 const CheckoutOrderSummary = () => {
-  const { cartItems, setItemQuantity } = useGlobalContext();
+  const { cartItems, setItemQuantity } = useCartContext();
   const { data: session } = useSession();
   const { fulfillment, promoDiscount, setPromoDiscount } = useCheckoutContext();
   const isLoggedIn = Boolean(session?.user);
@@ -35,41 +27,29 @@ const CheckoutOrderSummary = () => {
   const itemCount = cartItems.reduce((acc, line) => acc + line.quantity, 0);
   const isDelivery = fulfillment === 'delivery';
 
-  const totals = useMemo(() => {
-    const subtotal = cartItems.reduce(
-      (acc, line) => acc + line.price * line.quantity,
-      0,
-    );
-    const memberDiscount = isLoggedIn ? subtotal * MEMBER_DISCOUNT_RATE : 0;
-    const afterDiscounts = subtotal - memberDiscount - promoDiscount;
-    const delivery = isDelivery ? DELIVERY_FEE : 0;
-    const tax = (afterDiscounts + delivery) * TAX_RATE;
-    return {
-      subtotal,
-      memberDiscount,
-      delivery,
-      tax,
-      total: Math.max(0, afterDiscounts) + delivery + tax,
-    };
-  }, [cartItems, isLoggedIn, isDelivery, promoDiscount]);
+  const totals = useMemo(
+    () => computeTotals(cartItems, {
+      isLoggedIn,
+      promoDiscount,
+      deliveryFee: isDelivery ? DELIVERY_FEE : 0,
+    }),
+    [cartItems, isLoggedIn, isDelivery, promoDiscount],
+  );
 
-  const onApplyPromo = (e: { preventDefault(): void }) => {
+  const onApplyPromo = async (e: { preventDefault(): void }) => {
     e.preventDefault();
     const code = promo.trim().toUpperCase();
     if (!code) return;
-    const entry = PROMO_CODES[code];
-    if (!entry) {
+    const subtotal = cartItems.reduce((acc, l) => acc + l.price * l.quantity, 0);
+    const result = await validatePromoCode(code, subtotal);
+    if (!result.valid) {
       setPromoStatus('invalid');
       setPromoDiscount(0);
       setAppliedLabel('');
       return;
     }
-    const subtotal = cartItems.reduce((acc, l) => acc + l.price * l.quantity, 0);
-    const amount = entry.type === 'percent'
-      ? subtotal * (entry.value / 100)
-      : entry.value;
-    setPromoDiscount(amount);
-    setAppliedLabel(entry.label);
+    setPromoDiscount(result.amount);
+    setAppliedLabel(result.label);
     setPromoStatus('valid');
   };
 
@@ -197,7 +177,7 @@ const CheckoutOrderSummary = () => {
 
         {promoStatus !== 'valid' && (
           <div className='mt-5 mb-3 flex flex-wrap gap-2'>
-            {Object.entries(PROMO_CODES).map(([code, entry]) => (
+            {PROMO_SUGGESTIONS.map((code) => (
               <button
                 key={code}
                 type='button'
@@ -206,7 +186,6 @@ const CheckoutOrderSummary = () => {
               >
                 <span className='text-camel'>+</span>
                 {code}
-                <span className='text-muted'>— {entry.label}</span>
               </button>
             ))}
           </div>
@@ -260,14 +239,7 @@ const CheckoutOrderSummary = () => {
               <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2} aria-hidden='true' className='h-3 w-3 shrink-0'>
                 <circle cx='12' cy='12' r='10' /><line x1='4.93' y1='4.93' x2='19.07' y2='19.07' />
               </svg>
-              Invalid code — try{' '}
-              <button
-                type='button'
-                onClick={() => { setPromo('ELITECUTS10'); setPromoStatus('idle'); }}
-                className='underline underline-offset-2'
-              >
-                ELITECUTS10
-              </button>
+              Invalid code — check your promo and try again
             </p>
           )}
         </form>

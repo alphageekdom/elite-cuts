@@ -4,9 +4,10 @@ import { useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
-import { useGlobalContext, type CartLine } from '@/context/CartContext';
+import { useSession } from 'next-auth/react';
 
-const TAX_RATE = 0.1;
+import { useCartContext, type CartLine } from '@/context/CartContext';
+import { computeTotals } from '@/lib/pricing';
 
 type Props = {
   isOpen: boolean;
@@ -41,7 +42,7 @@ const ArrowIcon = () => (
 );
 
 const DrawerLine = ({ line }: { line: CartLine }) => {
-  const { setItemQuantity, removeItemFromCart } = useGlobalContext();
+  const { setItemQuantity, removeItemFromCart } = useCartContext();
   const productId = line.product._id;
 
   return (
@@ -112,17 +113,15 @@ const DrawerLine = ({ line }: { line: CartLine }) => {
 };
 
 const CartDrawer = ({ isOpen, onClose }: Props) => {
-  const { cartItems } = useGlobalContext();
+  const { cartItems } = useCartContext();
+  const { data: session } = useSession();
+  const isLoggedIn = Boolean(session?.user);
   const count = cartItems.length;
 
-  const totals = useMemo(() => {
-    const subtotal = cartItems.reduce(
-      (acc, line) => acc + line.price * line.quantity,
-      0,
-    );
-    const tax = subtotal * TAX_RATE;
-    return { subtotal, tax, total: subtotal + tax };
-  }, [cartItems]);
+  const totals = useMemo(
+    () => computeTotals(cartItems, { isLoggedIn }),
+    [cartItems, isLoggedIn],
+  );
 
   // Body scroll lock + ESC to close. Both reset when the drawer closes.
   useEffect(() => {

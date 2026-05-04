@@ -395,10 +395,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
 
-export function useGlobalContext(): CartContextValue {
+export function useCartContext(): CartContextValue {
   const ctx = useContext(CartContext);
   if (!ctx) {
-    throw new Error('useGlobalContext must be used within a CartProvider');
+    throw new Error('useCartContext must be used within a CartProvider');
   }
   return ctx;
 }
