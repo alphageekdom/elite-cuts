@@ -11,6 +11,7 @@ import type { OrderStatus, PaymentMethod } from '@/models/Order';
 import type { Types } from 'mongoose';
 import ProfileHero from '@/components/profile/ProfileHero';
 import ProfileStats from '@/components/profile/ProfileStats';
+import ProfileTabs from '@/components/profile/ProfileTabs';
 
 export type ProfileOrder = {
   _id: string;
@@ -104,7 +105,7 @@ export default async function ProfilePage({ searchParams }: Props) {
 
   return (
     <main className="bg-cream min-h-screen pt-20">
-      <div className="max-w-[1200px] mx-auto px-5 md:px-8">
+      <div className="max-w-300 mx-auto px-5 md:px-8">
 
         {/* Breadcrumb */}
         <nav className="flex items-center gap-3 text-[12px] tracking-[0.18em] uppercase text-muted pt-6 pb-2">
@@ -124,10 +125,11 @@ export default async function ProfilePage({ searchParams }: Props) {
           joinedMonths={joinedMonths}
         />
 
-        {/* TODO: ProfileTabs */}
-        <div className="mt-12 border-b border-line-soft">
-          <p className="text-muted text-sm font-mono pb-4">[ProfileTabs] — active: {activeTab}</p>
-        </div>
+        <ProfileTabs
+          activeTab={activeTab}
+          orderCount={serializedOrders.length}
+          savedCount={serializedBookmarks.length}
+        />
 
         {/* Main grid */}
         <div className="py-12 pb-24 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-12 items-start">
