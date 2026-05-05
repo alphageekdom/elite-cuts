@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import { FaBookmark } from 'react-icons/fa';
 
 const BookmarkButton = ({ product }) => {

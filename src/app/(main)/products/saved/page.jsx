@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Spinner from '@/components/uielements/Spinner';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import ProductCard from '@/components/product/ProductCard';
 
 const SavedProductsPage = () => {
