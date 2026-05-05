@@ -13,6 +13,7 @@ import ProfileHero from '@/components/profile/ProfileHero';
 import ProfileStats from '@/components/profile/ProfileStats';
 import ProfileTabs from '@/components/profile/ProfileTabs';
 import ProfileOrderList from '@/components/profile/ProfileOrderList';
+import ProfileSavedCuts from '@/components/profile/ProfileSavedCuts';
 
 export type ProfileOrder = {
   _id: string;
@@ -181,10 +182,7 @@ export default async function ProfilePage({ searchParams }: Props) {
                     </Link>
                   )}
                 </div>
-                {/* TODO: ProfileSavedCuts */}
-                <div className="bg-paper border border-line-soft rounded p-6 text-muted text-sm font-mono">
-                  [ProfileSavedCuts] — {serializedBookmarks.length} bookmarks
-                </div>
+                <ProfileSavedCuts bookmarks={serializedBookmarks} showAll={activeTab === 'saved'} />
               </section>
             )}
 
