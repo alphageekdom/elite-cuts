@@ -1,13 +1,18 @@
 import { getServerSession } from 'next-auth/next';
+import type { Session } from 'next-auth';
 import { authOptions } from '@/utils/authOptions';
 
-export const getSessionUser = async () => {
+type SessionUser = {
+  user: NonNullable<Session['user']>;
+  email: string | null | undefined;
+  userId: string | undefined;
+};
+
+export const getSessionUser = async (): Promise<SessionUser | null> => {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session || !session.user) {
-      return null;
-    }
+    if (!session?.user) return null;
 
     const { user } = session;
     return {
