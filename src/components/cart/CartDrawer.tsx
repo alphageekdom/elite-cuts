@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -117,6 +118,9 @@ const CartDrawer = ({ isOpen, onClose }: Props) => {
   const { data: session } = useSession();
   const isLoggedIn = Boolean(session?.user);
   const count = cartItems.length;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   const totals = useMemo(
     () => computeTotals(cartItems, { isLoggedIn }),
@@ -137,12 +141,14 @@ const CartDrawer = ({ isOpen, onClose }: Props) => {
     };
   }, [isOpen, onClose]);
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <>
       <div
         aria-hidden={!isOpen}
         onClick={onClose}
-        className={`fixed inset-0 z-100 bg-ink/40 backdrop-blur-[4px] transition-opacity duration-400 motion-reduce:transition-none ${
+        className={`fixed inset-0 z-[100] bg-ink/40 backdrop-blur-[4px] transition-opacity duration-400 motion-reduce:transition-none ${
           isOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
         }`}
       />
@@ -150,7 +156,7 @@ const CartDrawer = ({ isOpen, onClose }: Props) => {
         role='dialog'
         aria-label='Cart'
         aria-hidden={!isOpen}
-        className={`fixed inset-y-0 right-0 z-101 flex w-full max-w-115 translate-x-full flex-col bg-cream shadow-[-20px_0_60px_rgba(0,0,0,0.15)] transition-transform duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] motion-reduce:transition-none ${
+        className={`fixed inset-y-0 right-0 z-[101] flex w-full max-w-115 translate-x-full flex-col bg-cream shadow-[-20px_0_60px_rgba(0,0,0,0.15)] transition-transform duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] motion-reduce:transition-none ${
           isOpen ? '!translate-x-0' : ''
         }`}
       >
@@ -259,7 +265,8 @@ const CartDrawer = ({ isOpen, onClose }: Props) => {
           </footer>
         )}
       </aside>
-    </>
+    </>,
+    document.body,
   );
 };
 
