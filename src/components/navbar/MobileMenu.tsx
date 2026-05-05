@@ -4,17 +4,18 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 import { FOCUS_RING } from '@/lib/styles';
-import ProductSearchForm from '../uielements/ProductSearchForm';
 import { PRIMARY_LINKS, isActive } from './links';
 
 type MobileMenuProps = {
   closeMobileMenu: () => void;
+  onSignOut: () => void;
   isAdmin?: boolean;
   isLoggedIn?: boolean;
 };
 
 const MobileMenu = ({
   closeMobileMenu,
+  onSignOut,
   isAdmin = false,
   isLoggedIn = false,
 }: MobileMenuProps) => {
@@ -53,13 +54,31 @@ const MobileMenu = ({
             Dashboard
           </Link>
         )}
-        {!isLoggedIn && (
+        {isLoggedIn ? (
+          <>
+            <Link
+              href='/profile'
+              onClick={closeMobileMenu}
+              aria-current={isActive(pathname, '/profile') ? 'page' : undefined}
+              className={linkClass('/profile')}
+            >
+              Profile
+            </Link>
+            <button
+              type='button'
+              onClick={() => { closeMobileMenu(); onSignOut(); }}
+              className={`mt-2 w-full rounded-full border border-line px-5 py-2.5 text-sm font-medium tracking-wide text-ink-soft transition-colors hover:border-oxblood hover:text-oxblood motion-reduce:transition-none ${FOCUS_RING}`}
+            >
+              Sign out
+            </button>
+          </>
+        ) : (
           <>
             <Link
               href='/login'
               onClick={closeMobileMenu}
               aria-current={isActive(pathname, '/login') ? 'page' : undefined}
-              className={`${linkClass('/login')} mt-2`}
+              className={`mt-2 inline-flex w-full items-center justify-center rounded-full border border-line px-5 py-2.5 text-sm font-medium tracking-wide text-ink transition-colors hover:border-ink motion-reduce:transition-none ${FOCUS_RING}`}
             >
               Login
             </Link>
@@ -73,9 +92,6 @@ const MobileMenu = ({
             </Link>
           </>
         )}
-        <div className='pt-3'>
-          <ProductSearchForm />
-        </div>
       </div>
     </nav>
   );
