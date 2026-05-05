@@ -1,26 +1,21 @@
+import type { NextAuthOptions } from 'next-auth';
+import CredentialsProvider from 'next-auth/providers/credentials';
 import connectDB from '@/config/database';
 import User from '@/models/User';
-import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 
-export const authOptions = {
+const MAX_PASSWORD_LENGTH = 128;
+
+export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: 'credentials',
       credentials: {
-        email: {
-          label: 'Email',
-          type: 'email',
-          placeholder: 'example@example.com',
-        },
-        password: {
-          label: 'Password',
-          type: 'password',
-          placeholder: 'Password',
-        },
+        email: { label: 'Email', type: 'email', placeholder: 'example@example.com' },
+        password: { label: 'Password', type: 'password', placeholder: 'Password' },
       },
       async authorize(credentials) {
-        if (!credentials?.password || credentials.password.length > 128) {
+        if (!credentials?.password || credentials.password.length > MAX_PASSWORD_LENGTH) {
           throw new Error('Invalid credentials');
         }
 
@@ -32,16 +27,18 @@ export const authOptions = {
           throw new Error('Invalid credentials');
         }
 
-        const isValid = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
+        const isValid = await bcrypt.compare(credentials.password, user.password as string);
 
         if (!isValid) {
           throw new Error('Invalid credentials');
         }
 
-        return user;
+        return {
+          id: (user._id as { toString(): string }).toString(),
+          name: user.name,
+          email: user.email,
+          isAdmin: user.isAdmin,
+        };
       },
     }),
   ],
@@ -52,14 +49,16 @@ export const authOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.userId = user._id.toString();
+        token.userId = user.id;
         token.isAdmin = Boolean(user.isAdmin);
       }
       return token;
     },
     async session({ session, token }) {
-      session.user.userId = token.userId;
-      session.user.isAdmin = Boolean(token.isAdmin);
+      if (session.user) {
+        session.user.userId = token.userId;
+        session.user.isAdmin = Boolean(token.isAdmin);
+      }
       return session;
     },
   },
