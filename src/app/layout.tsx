@@ -9,8 +9,7 @@ import { GlobalProvider } from '@/context/GlobalContext';
 import AuthProvider from '@/components/AuthProvider';
 import { CartProvider } from '@/context/CartContext';
 
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { Toaster } from 'sonner';
 
 import 'photoswipe/dist/photoswipe.css';
 
@@ -49,7 +48,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           >
             <body className="bg-cream font-sans text-ink antialiased">
               {children}
-              <ToastContainer />
+              <Toaster richColors position='top-right' />
             </body>
           </html>
         </CartProvider>

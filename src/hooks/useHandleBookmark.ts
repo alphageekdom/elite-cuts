@@ -1,5 +1,5 @@
 import { useCallback, useState, type MouseEvent } from 'react';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 
 type BookmarkResponse = { message: string; isBookmarked: boolean };
 type BookmarkCheckResponse = { isBookmarked: boolean };

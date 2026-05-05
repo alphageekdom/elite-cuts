@@ -7,7 +7,7 @@ import ProductImages from './ProductImages';
 import BookmarkButton from '@/components/uielements/BookmarkButton';
 import ShareButtons from '../uielements/ShareButton';
 import React, { useState, Suspense } from 'react';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import { useCartContext } from '@/context/CartContext';
 import { useSession } from 'next-auth/react';
 

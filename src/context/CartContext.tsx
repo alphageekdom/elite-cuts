@@ -11,7 +11,7 @@ import {
   type ReactNode,
 } from 'react';
 import { useSession } from 'next-auth/react';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 
 import type { SerializedProduct } from '@/models/Product';
 

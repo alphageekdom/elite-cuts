@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import { useSession, signIn } from 'next-auth/react';
 
 interface FormState {
@@ -81,7 +81,6 @@ export default function Login() {
       if (res?.error) {
         toast.error('Invalid email or password');
       } else {
-        toast.success('Signed in successfully');
         router.push('/');
       }
     } catch {

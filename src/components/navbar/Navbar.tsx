@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { signOut, useSession } from 'next-auth/react';
 import { usePathname, useRouter } from 'next/navigation';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 
 import MobileMenu from './MobileMenu';
 import ProfileMenu from './ProfileMenu';
