@@ -1,15 +1,19 @@
 import connectDB from '@/config/database';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
-import { validationResult } from 'express-validator';
 import { getSessionUser } from '@/utils/getSessionUser';
 
 await connectDB();
 
-// GET /api/users/:userId
 export const GET = async (req, { params }) => {
+  const sessionUser = await getSessionUser();
+
+  if (!sessionUser?.userId) {
+    return new Response('Unauthorized', { status: 401 });
+  }
+
   try {
-    const { id } = params;
+    const { id } = await params;
 
     if (!id) {
       return new Response('User ID is missing', { status: 400 });
@@ -24,72 +28,67 @@ export const GET = async (req, { params }) => {
     return new Response(JSON.stringify(user), { status: 200 });
   } catch (error) {
     console.error(error);
-    return new Response('Something Went Wrong', { status: 500 });
+    return new Response('Something went wrong', { status: 500 });
   }
 };
 
-// PUT /api/users/:userId
-export const PUT = async (req) => {
+const MAX_PASSWORD_LENGTH = 128;
+const MIN_PASSWORD_LENGTH = 8;
+
+export const PUT = async (req, { params }) => {
   try {
     const sessionUser = await getSessionUser();
 
-    if (!sessionUser || !sessionUser.userId) {
-      return new Response('User ID Is Required', { status: 401 });
+    if (!sessionUser?.userId) {
+      return new Response('Unauthorized', { status: 401 });
     }
 
-    const { userId, newPassword, profileImage } = await req.json();
-    console.log(userId, newPassword, profileImage);
+    const { id } = await params;
 
-    if (!userId || !newPassword) {
-      return new Response('Invalid input data', { status: 400 });
+    if (sessionUser.userId !== id) {
+      return new Response('Forbidden', { status: 403 });
     }
 
-    if (sessionUser.user.userId !== userId) {
-      return new Response('Unauthorized: User ID does not match', {
-        status: 401,
-      });
+    const { currentPassword, newPassword, profileImage } = await req.json();
+
+    if (!newPassword) {
+      return new Response('New password is required', { status: 400 });
+    }
+
+    if (newPassword.length < MIN_PASSWORD_LENGTH || newPassword.length > MAX_PASSWORD_LENGTH) {
+      return new Response(
+        `Password must be between ${MIN_PASSWORD_LENGTH} and ${MAX_PASSWORD_LENGTH} characters`,
+        { status: 400 }
+      );
+    }
+
+    const user = await User.findById(id).select('+password');
+
+    if (!user) {
+      return new Response('User not found', { status: 404 });
+    }
+
+    if (user.password) {
+      if (!currentPassword) {
+        return new Response('Current password is required', { status: 400 });
+      }
+      const isValid = await bcrypt.compare(currentPassword, user.password);
+      if (!isValid) {
+        return new Response('Current password is incorrect', { status: 401 });
+      }
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    if (profileImage) {
-      const user = await User.findByIdAndUpdate(
-        { _id: userId },
-        { password: hashedPassword, profileImage },
-        { upsert: true, new: true }
-      );
+    const updateFields = { password: hashedPassword };
+    if (profileImage) updateFields.profileImage = profileImage;
 
-      if (!user) {
-        return new Response('User not found', { status: 404 });
-      }
+    await User.findByIdAndUpdate(id, updateFields);
 
-      return new Response(
-        JSON.stringify({
-          message: 'Password and profile image updated successfully',
-        }),
-        {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
-    } else {
-      const user = await User.findByIdAndUpdate(
-        { _id: userId },
-        { password: hashedPassword }
-      );
-
-      if (!user) {
-        return new Response('User not found', { status: 404 });
-      }
-
-      return new Response(
-        JSON.stringify({ message: 'Password updated successfully' }),
-        {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
-    }
+    return new Response(
+      JSON.stringify({ message: 'Password updated successfully' }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
   } catch (error) {
     console.error(error);
     return new Response('Something went wrong', { status: 500 });

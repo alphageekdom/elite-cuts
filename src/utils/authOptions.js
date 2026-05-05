@@ -20,12 +20,16 @@ export const authOptions = {
         },
       },
       async authorize(credentials) {
+        if (!credentials?.password || credentials.password.length > 128) {
+          throw new Error('Invalid credentials');
+        }
+
         await connectDB();
 
         const user = await User.findOne({ email: credentials.email }).select('+password');
 
         if (!user) {
-          throw new Error('No user found with this email');
+          throw new Error('Invalid credentials');
         }
 
         const isValid = await bcrypt.compare(
@@ -34,7 +38,7 @@ export const authOptions = {
         );
 
         if (!isValid) {
-          throw new Error('Incorrect password');
+          throw new Error('Invalid credentials');
         }
 
         return user;

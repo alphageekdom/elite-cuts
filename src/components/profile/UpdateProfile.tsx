@@ -10,7 +10,11 @@ export default function UpdateProfile() {
   const router = useRouter();
   const { data: session } = useSession();
 
-  const [formData, setFormData] = useState({ newPassword: '', confirmNewPassword: '' });
+  const [formData, setFormData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmNewPassword: '',
+  });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -21,11 +25,16 @@ export default function UpdateProfile() {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (formData.newPassword !== formData.confirmNewPassword) {
       toast.error('Passwords do not match');
+      return;
+    }
+
+    if (formData.newPassword.length < 8) {
+      toast.error('Password must be at least 8 characters');
       return;
     }
 
@@ -35,7 +44,7 @@ export default function UpdateProfile() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: session?.user?.userId,
+          currentPassword: formData.currentPassword,
           newPassword: formData.newPassword,
         }),
       });
@@ -45,7 +54,8 @@ export default function UpdateProfile() {
         await signOut();
         router.push('/login');
       } else {
-        toast.error('Failed to update password');
+        const text = await res.text();
+        toast.error(text || 'Failed to update password');
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
@@ -57,6 +67,23 @@ export default function UpdateProfile() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      <div>
+        <label htmlFor="currentPassword" className="block text-sm font-medium text-ink-soft mb-1.5">
+          Current password
+        </label>
+        <input
+          type="password"
+          id="currentPassword"
+          name="currentPassword"
+          value={formData.currentPassword}
+          onChange={handleChange}
+          autoComplete="current-password"
+          required
+          className="w-full border-b border-line bg-transparent py-2.5 text-sm text-ink placeholder:text-muted focus:outline-none focus:border-ink transition-colors"
+          placeholder="Your current password"
+        />
+      </div>
+
       <div>
         <label htmlFor="newPassword" className="block text-sm font-medium text-ink-soft mb-1.5">
           New password
@@ -70,6 +97,7 @@ export default function UpdateProfile() {
           autoComplete="new-password"
           required
           minLength={8}
+          maxLength={128}
           className="w-full border-b border-line bg-transparent py-2.5 text-sm text-ink placeholder:text-muted focus:outline-none focus:border-ink transition-colors"
           placeholder="Min. 8 characters"
         />
