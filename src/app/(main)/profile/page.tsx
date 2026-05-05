@@ -14,6 +14,7 @@ import ProfileStats from '@/components/profile/ProfileStats';
 import ProfileTabs from '@/components/profile/ProfileTabs';
 import ProfileOrderList from '@/components/profile/ProfileOrderList';
 import ProfileSavedCuts from '@/components/profile/ProfileSavedCuts';
+import ProfileLoyaltyCard from '@/components/profile/ProfileLoyaltyCard';
 
 export type ProfileOrder = {
   _id: string;
@@ -209,10 +210,7 @@ export default async function ProfilePage({ searchParams }: Props) {
 
           {/* Right: sidebar */}
           <aside className="space-y-4">
-            {/* TODO: ProfileLoyaltyCard */}
-            <div className="bg-ink rounded p-7">
-              <p className="text-cream/60 text-sm font-mono">[ProfileLoyaltyCard]</p>
-            </div>
+            <ProfileLoyaltyCard />
             {/* TODO: ProfileAccountInfo */}
             <div className="bg-paper border border-line-soft rounded p-7">
               <p className="text-muted text-sm font-mono">[ProfileAccountInfo] — {displayEmail}</p>
