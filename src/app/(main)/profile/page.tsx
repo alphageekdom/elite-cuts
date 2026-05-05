@@ -18,6 +18,8 @@ import ProfileLoyaltyCard from '@/components/profile/ProfileLoyaltyCard';
 import ProfileAccountInfo from '@/components/profile/ProfileAccountInfo';
 import ProfileRecentlyViewed from '@/components/profile/ProfileRecentlyViewed';
 import ProfileAddresses from '@/components/profile/ProfileAddresses';
+import ProfileInfoForm from '@/components/profile/ProfileInfoForm';
+import UpdateProfile from '@/components/profile/UpdateProfile';
 import type { SerializedAddress } from '@/types/address';
 
 export type ProfileOrder = {
@@ -60,6 +62,7 @@ export default async function ProfilePage({ searchParams }: Props) {
     _id: Types.ObjectId;
     name: string;
     email: string;
+    phone?: string;
     bookmarks: Types.ObjectId[];
     addresses: {
       _id: Types.ObjectId;
@@ -227,15 +230,26 @@ export default async function ProfilePage({ searchParams }: Props) {
             )}
 
             {activeTab === 'settings' && (
-              <div className="bg-paper border border-line-soft rounded p-8">
-                <div className="mb-6">
-                  <p className="font-display italic text-camel text-[13px] mb-1">— 01</p>
-                  <h2 className="font-display text-[28px] font-normal tracking-tight leading-tight">
-                    Account <em className="italic text-oxblood">settings</em>
-                  </h2>
+              <div className="space-y-14">
+                {/* Profile info */}
+                <div className="bg-paper border border-line-soft rounded p-8">
+                  <div className="mb-6">
+                    <h2 className="font-display text-[28px] font-normal tracking-tight leading-tight">
+                      Profile <em className="italic text-oxblood">info</em>
+                    </h2>
+                  </div>
+                  <ProfileInfoForm initialName={displayName} initialEmail={displayEmail} initialPhone={rawUser.phone ?? ''} />
                 </div>
-                {/* TODO: UpdateProfile */}
-                <p className="text-muted text-sm font-mono">[UpdateProfile] — password change form</p>
+
+                {/* Password */}
+                <div className="bg-paper border border-line-soft rounded p-8">
+                  <div className="mb-6">
+                    <h2 className="font-display text-[28px] font-normal tracking-tight leading-tight">
+                      Change <em className="italic text-oxblood">password</em>
+                    </h2>
+                  </div>
+                  <UpdateProfile />
+                </div>
               </div>
             )}
           </div>

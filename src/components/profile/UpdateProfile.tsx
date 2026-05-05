@@ -1,27 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useSession, signOut } from 'next-auth/react';
-import Link from 'next/link';
+import { useState } from 'react';
+import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 
+const empty = { currentPassword: '', newPassword: '', confirmNewPassword: '' };
+
 export default function UpdateProfile() {
-  const router = useRouter();
   const { data: session } = useSession();
-
-  const [formData, setFormData] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmNewPassword: '',
-  });
+  const [formData, setFormData] = useState(empty);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (!session) router.push('/login');
-  }, [session, router]);
+  const [saved, setSaved] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSaved(false);
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
@@ -50,9 +42,9 @@ export default function UpdateProfile() {
       });
 
       if (res.ok) {
-        toast.success('Password updated — please sign in again');
-        await signOut();
-        router.push('/login');
+        setFormData(empty);
+        setSaved(true);
+        toast.success('Password updated');
       } else {
         const text = await res.text();
         toast.error(text || 'Failed to update password');
@@ -128,9 +120,15 @@ export default function UpdateProfile() {
         >
           {loading ? 'Saving…' : 'Update password'}
         </button>
-        <Link href="/profile" className="text-sm text-muted hover:text-ink transition-colors">
-          Cancel
-        </Link>
+
+        {saved && (
+          <span className="inline-flex items-center gap-1.5 text-[13px] text-green font-medium">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            Password updated
+          </span>
+        )}
       </div>
     </form>
   );

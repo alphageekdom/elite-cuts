@@ -2,6 +2,7 @@ import connectDB from '@/config/database';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
 import { getSessionUser } from '@/utils/getSessionUser';
+import { EMAIL_RE } from '@/lib/validation';
 
 await connectDB();
 
@@ -49,8 +50,41 @@ export const PUT = async (req, { params }) => {
       return new Response('Forbidden', { status: 403 });
     }
 
-    const { currentPassword, newPassword, profileImage } = await req.json();
+    const body = await req.json();
+    const { name, email, phone, currentPassword, newPassword, profileImage } = body;
 
+    // --- Profile info update (name / email / phone) ---
+    if (name !== undefined || email !== undefined || phone !== undefined) {
+      if (name !== undefined) {
+        const trimmed = name.trim();
+        if (!trimmed) return new Response('Name is required', { status: 400 });
+        if (trimmed.length > 80) return new Response('Name is too long', { status: 400 });
+      }
+
+      if (email !== undefined) {
+        if (!EMAIL_RE.test(email)) return new Response('Invalid email address', { status: 400 });
+        const conflict = await User.findOne({ email: email.toLowerCase(), _id: { $ne: id } });
+        if (conflict) return new Response('Email is already in use', { status: 409 });
+      }
+
+      if (phone !== undefined && phone !== '') {
+        const digits = phone.replace(/\D/g, '');
+        if (digits.length < 10) return new Response('Phone number must have at least 10 digits', { status: 400 });
+      }
+
+      const updateFields = {};
+      if (name !== undefined) updateFields.name = name.trim();
+      if (email !== undefined) updateFields.email = email.toLowerCase().trim();
+      if (phone !== undefined) updateFields.phone = phone.trim();
+
+      await User.findByIdAndUpdate(id, { $set: updateFields }, { runValidators: true });
+      return new Response(
+        JSON.stringify({ message: 'Profile updated successfully' }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // --- Password update ---
     if (!newPassword) {
       return new Response('New password is required', { status: 400 });
     }
@@ -83,7 +117,7 @@ export const PUT = async (req, { params }) => {
     const updateFields = { password: hashedPassword };
     if (profileImage) updateFields.profileImage = profileImage;
 
-    await User.findByIdAndUpdate(id, updateFields);
+    await User.findByIdAndUpdate(id, { $set: updateFields });
 
     return new Response(
       JSON.stringify({ message: 'Password updated successfully' }),

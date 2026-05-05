@@ -22,6 +22,7 @@ export type User = {
   name: string;
   email: string;
   password: string;
+  phone?: string;
   favorites: Types.ObjectId[];
   bookmarks: Types.ObjectId[];
   addresses: Types.DocumentArray<Address>;
@@ -76,6 +77,7 @@ const UserSchema = new Schema<User>(
         ref: 'Product',
       },
     ],
+    phone: { type: String, trim: true },
     addresses: [AddressSchema],
     isAdmin: {
       type: Boolean,
