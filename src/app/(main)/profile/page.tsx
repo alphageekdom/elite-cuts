@@ -147,15 +147,6 @@ export default async function ProfilePage({ searchParams }: Props) {
     <main className="bg-cream min-h-screen pt-20">
       <div className="max-w-300 mx-auto px-5 md:px-8">
 
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-3 text-[12px] tracking-[0.18em] uppercase text-muted pt-6 pb-2">
-          <Link href="/" className="hover:text-oxblood transition-colors">Home</Link>
-          <span className="opacity-40">/</span>
-          <span>Account</span>
-          <span className="opacity-40">/</span>
-          <span className="text-ink">Profile</span>
-        </nav>
-
         <ProfileHero name={displayName} email={displayEmail} createdAt={createdAt} />
 
         <ProfileStats
@@ -181,7 +172,6 @@ export default async function ProfilePage({ searchParams }: Props) {
               <section className="mb-14">
                 <div className="flex items-end justify-between mb-7 gap-5">
                   <div>
-                    <p className="font-display italic text-camel text-[13px] mb-1">— 01</p>
                     <h2 className="font-display text-[28px] font-normal tracking-tight leading-tight">
                       Recent <em className="italic text-oxblood">orders</em>
                     </h2>
@@ -204,9 +194,6 @@ export default async function ProfilePage({ searchParams }: Props) {
               <section>
                 <div className="flex items-end justify-between mb-7 gap-5">
                   <div>
-                    <p className="font-display italic text-camel text-[13px] mb-1">
-                      {activeTab === 'overview' ? '— 02' : '— 01'}
-                    </p>
                     <h2 className="font-display text-[28px] font-normal tracking-tight leading-tight">
                       Your saved <em className="italic text-oxblood">cuts</em>
                     </h2>

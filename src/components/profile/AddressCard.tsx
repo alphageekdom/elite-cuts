@@ -54,14 +54,16 @@ export default function AddressCard({ address, onEdit }: Props) {
         <div className="flex items-center gap-3 shrink-0">
           <button
             onClick={() => onEdit(address)}
-            className="text-[12px] tracking-[0.08em] uppercase text-muted hover:text-ink transition-colors"
+            aria-label={`Edit ${address.label} address`}
+            className="text-[12px] tracking-[0.08em] uppercase text-muted hover:text-ink transition-colors min-h-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:rounded-sm"
           >
             Edit
           </button>
           {!confirming ? (
             <button
               onClick={() => setConfirming(true)}
-              className="text-[12px] tracking-[0.08em] uppercase text-muted hover:text-oxblood transition-colors"
+              aria-label={`Remove ${address.label} address`}
+              className="text-[12px] tracking-[0.08em] uppercase text-muted hover:text-oxblood transition-colors min-h-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oxblood focus-visible:rounded-sm"
             >
               Remove
             </button>
@@ -70,13 +72,14 @@ export default function AddressCard({ address, onEdit }: Props) {
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="text-[12px] font-medium text-oxblood hover:underline disabled:opacity-50"
+                className="text-[12px] font-medium text-oxblood hover:underline disabled:opacity-50 min-h-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oxblood focus-visible:rounded-sm"
               >
                 {deleting ? '…' : 'Confirm'}
               </button>
               <button
                 onClick={() => setConfirming(false)}
-                className="text-[12px] text-muted hover:text-ink"
+                aria-label="Cancel removal"
+                className="text-[12px] text-muted hover:text-ink min-h-8 min-w-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:rounded-sm"
               >
                 ✕
               </button>

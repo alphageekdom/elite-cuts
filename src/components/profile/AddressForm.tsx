@@ -79,8 +79,9 @@ export default function AddressForm({ editing, onDone }: Props) {
 
       {/* Label */}
       <div>
-        <label className={LABEL_CLASS}>Label</label>
+        <label htmlFor="addr-label" className={LABEL_CLASS}>Label</label>
         <input
+          id="addr-label"
           className={FIELD_CLASS}
           placeholder="e.g. Home, Work"
           value={form.label}
@@ -92,8 +93,9 @@ export default function AddressForm({ editing, onDone }: Props) {
 
       {/* Address line 1 */}
       <div>
-        <label className={LABEL_CLASS}>Street address</label>
+        <label htmlFor="addr-line1" className={LABEL_CLASS}>Street address</label>
         <input
+          id="addr-line1"
           className={FIELD_CLASS}
           placeholder="123 Main St"
           value={form.address1}
@@ -105,8 +107,11 @@ export default function AddressForm({ editing, onDone }: Props) {
 
       {/* Address line 2 */}
       <div>
-        <label className={LABEL_CLASS}>Apt / Suite <span className="normal-case tracking-normal opacity-60">(optional)</span></label>
+        <label htmlFor="addr-line2" className={LABEL_CLASS}>
+          Apt / Suite <span className="normal-case tracking-normal opacity-60">(optional)</span>
+        </label>
         <input
+          id="addr-line2"
           className={FIELD_CLASS}
           placeholder="Apt 4B"
           value={form.address2}
@@ -118,8 +123,9 @@ export default function AddressForm({ editing, onDone }: Props) {
       {/* City / State / Zip row */}
       <div className="grid grid-cols-2 sm:grid-cols-[1fr_120px_120px] gap-3">
         <div className="col-span-2 sm:col-span-1">
-          <label className={LABEL_CLASS}>City</label>
+          <label htmlFor="addr-city" className={LABEL_CLASS}>City</label>
           <input
+            id="addr-city"
             className={FIELD_CLASS}
             placeholder="San Diego"
             value={form.city}
@@ -129,8 +135,9 @@ export default function AddressForm({ editing, onDone }: Props) {
           />
         </div>
         <div>
-          <label className={LABEL_CLASS}>State</label>
+          <label htmlFor="addr-state" className={LABEL_CLASS}>State</label>
           <select
+            id="addr-state"
             className={FIELD_CLASS}
             value={form.state}
             onChange={(e) => set('state', e.target.value)}
@@ -143,8 +150,9 @@ export default function AddressForm({ editing, onDone }: Props) {
           </select>
         </div>
         <div>
-          <label className={LABEL_CLASS}>ZIP</label>
+          <label htmlFor="addr-zip" className={LABEL_CLASS}>ZIP</label>
           <input
+            id="addr-zip"
             className={FIELD_CLASS}
             placeholder="92101"
             value={form.zip}
@@ -176,14 +184,14 @@ export default function AddressForm({ editing, onDone }: Props) {
         <button
           type="submit"
           disabled={loading}
-          className="bg-ink text-cream text-[13px] font-medium tracking-[0.04em] px-5 py-2.5 rounded-full hover:bg-oxblood transition-colors disabled:opacity-50"
+          className="bg-ink text-cream text-[13px] font-medium tracking-[0.04em] px-5 py-2.5 rounded-full hover:bg-oxblood transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2"
         >
           {loading ? 'Saving…' : editing ? 'Save changes' : 'Add address'}
         </button>
         <button
           type="button"
           onClick={onDone}
-          className="text-[13px] text-muted hover:text-ink transition-colors"
+          className="text-[13px] text-muted hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:rounded-sm"
         >
           Cancel
         </button>

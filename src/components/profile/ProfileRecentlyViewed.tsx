@@ -46,9 +46,9 @@ function RecentItem({ product }: { product: SerializedProduct }) {
         onClick={handleAddToCart}
         disabled={isAddingToCart}
         aria-label={`Add ${product.name} to cart`}
-        className="w-8 h-8 rounded-full bg-ink text-cream flex items-center justify-center shrink-0 transition-all hover:bg-oxblood hover:scale-[1.08] disabled:opacity-50"
+        className="w-8 h-8 rounded-full bg-ink text-cream flex items-center justify-center shrink-0 transition-all hover:bg-oxblood hover:scale-[1.08] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-1"
       >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
           <line x1="12" y1="5" x2="12" y2="19" />
           <line x1="5" y1="12" x2="19" y2="12" />
         </svg>
@@ -63,14 +63,15 @@ export default function ProfileRecentlyViewed({ products }: Props) {
   return (
     <div className="bg-paper border border-line-soft rounded p-7">
       <h3 className="font-display font-medium text-[18px] tracking-tight mb-1">
-        Recently viewed
+        — Recently viewed
       </h3>
       <div className="flex items-center justify-between mb-5">
         <p className="text-[13px] text-muted">From your last visit</p>
         {items.length > 0 && (
           <button
             onClick={() => setItems([])}
-            className="text-[11px] text-muted hover:text-oxblood transition-colors border-b border-current leading-none"
+            aria-label="Clear recently viewed"
+            className="text-[11px] text-muted hover:text-oxblood transition-colors border-b border-current leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oxblood focus-visible:ring-offset-1 rounded-sm"
           >
             Clear
           </button>
@@ -83,7 +84,7 @@ export default function ProfileRecentlyViewed({ products }: Props) {
           ))}
         </ul>
       ) : (
-        <p className="text-[13px] text-muted">Nothing to show.</p>
+        <p className="text-[13px] text-muted py-2">Nothing from your last visit yet.</p>
       )}
     </div>
   );
