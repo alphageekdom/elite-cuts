@@ -81,6 +81,7 @@ export default function Login() {
       if (res?.error) {
         toast.error('Invalid email or password');
       } else {
+        toast.success('Signed in successfully');
         router.push('/');
       }
     } catch {

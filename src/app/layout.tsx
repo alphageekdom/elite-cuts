@@ -48,7 +48,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           >
             <body className="bg-cream font-sans text-ink antialiased">
               {children}
-              <Toaster richColors position='top-right' />
+              <Toaster richColors position='bottom-right' />
             </body>
           </html>
         </CartProvider>
