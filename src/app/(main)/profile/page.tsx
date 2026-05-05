@@ -16,6 +16,7 @@ import ProfileOrderList from '@/components/profile/ProfileOrderList';
 import ProfileSavedCuts from '@/components/profile/ProfileSavedCuts';
 import ProfileLoyaltyCard from '@/components/profile/ProfileLoyaltyCard';
 import ProfileAccountInfo from '@/components/profile/ProfileAccountInfo';
+import ProfileRecentlyViewed from '@/components/profile/ProfileRecentlyViewed';
 
 export type ProfileOrder = {
   _id: string;
@@ -70,6 +71,15 @@ export default async function ProfilePage({ searchParams }: Props) {
       ? await Product.find({ _id: { $in: bookmarkIds } }).lean()
       : [];
   const serializedBookmarks = rawProducts.map((p) =>
+    convertToSerializableObject(p as unknown as Record<string, unknown>),
+  ) as SerializedProduct[];
+
+  // Stub: fetch 3 in-stock products as "recently viewed" (no tracking yet)
+  const rawRecent = await Product.find({ stockCount: { $gt: 0 } })
+    .sort({ createdAt: -1 })
+    .limit(3)
+    .lean();
+  const recentProducts = rawRecent.map((p) =>
     convertToSerializableObject(p as unknown as Record<string, unknown>),
   ) as SerializedProduct[];
 
@@ -213,10 +223,7 @@ export default async function ProfilePage({ searchParams }: Props) {
           <aside className="space-y-4">
             <ProfileLoyaltyCard />
             <ProfileAccountInfo email={displayEmail} joinedAt={createdAt} />
-            {/* TODO: ProfileRecentlyViewed */}
-            <div className="bg-paper border border-line-soft rounded p-7">
-              <p className="text-muted text-sm font-mono">[ProfileRecentlyViewed]</p>
-            </div>
+            <ProfileRecentlyViewed products={recentProducts} />
           </aside>
         </div>
       </div>
