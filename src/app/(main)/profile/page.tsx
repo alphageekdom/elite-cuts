@@ -17,6 +17,8 @@ import ProfileSavedCuts from '@/components/profile/ProfileSavedCuts';
 import ProfileLoyaltyCard from '@/components/profile/ProfileLoyaltyCard';
 import ProfileAccountInfo from '@/components/profile/ProfileAccountInfo';
 import ProfileRecentlyViewed from '@/components/profile/ProfileRecentlyViewed';
+import ProfileAddresses from '@/components/profile/ProfileAddresses';
+import type { SerializedAddress } from '@/types/address';
 
 export type ProfileOrder = {
   _id: string;
@@ -59,11 +61,32 @@ export default async function ProfilePage({ searchParams }: Props) {
     name: string;
     email: string;
     bookmarks: Types.ObjectId[];
+    addresses: {
+      _id: Types.ObjectId;
+      label: string;
+      address1: string;
+      address2?: string;
+      city: string;
+      state: string;
+      zip: string;
+      isDefault: boolean;
+    }[];
     createdAt: Date;
     updatedAt: Date;
   }>();
 
   if (!rawUser) return redirect('/login');
+
+  const serializedAddresses: SerializedAddress[] = (rawUser.addresses ?? []).map((a) => ({
+    _id: a._id.toString(),
+    label: a.label,
+    address1: a.address1,
+    ...(a.address2 ? { address2: a.address2 } : {}),
+    city: a.city,
+    state: a.state,
+    zip: a.zip,
+    isDefault: a.isDefault,
+  }));
 
   const bookmarkIds = rawUser.bookmarks ?? [];
   const rawProducts =
@@ -143,6 +166,7 @@ export default async function ProfilePage({ searchParams }: Props) {
           activeTab={activeTab}
           orderCount={serializedOrders.length}
           savedCount={serializedBookmarks.length}
+          addressCount={serializedAddresses.length}
         />
 
         {/* Main grid */}
@@ -199,10 +223,7 @@ export default async function ProfilePage({ searchParams }: Props) {
             )}
 
             {activeTab === 'addresses' && (
-              <div className="bg-paper border border-dashed border-line rounded p-14 text-center">
-                <h3 className="font-display font-medium text-[22px] tracking-tight mb-2">Addresses</h3>
-                <p className="text-muted text-sm">Address management coming soon.</p>
-              </div>
+              <ProfileAddresses addresses={serializedAddresses} />
             )}
 
             {activeTab === 'settings' && (
