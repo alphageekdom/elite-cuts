@@ -22,7 +22,7 @@ export const authOptions = {
       async authorize(credentials) {
         await connectDB();
 
-        const user = await User.findOne({ email: credentials.email });
+        const user = await User.findOne({ email: credentials.email }).select('+password');
 
         if (!user) {
           throw new Error('No user found with this email');
@@ -54,9 +54,8 @@ export const authOptions = {
       return token;
     },
     async session({ session, token }) {
-      const user = await User.findById(token.sub);
-      session.user.userId = user._id.toString();
-      session.user.isAdmin = user.isAdmin;
+      session.user.userId = token.userId;
+      session.user.isAdmin = Boolean(token.isAdmin);
       return session;
     },
   },
