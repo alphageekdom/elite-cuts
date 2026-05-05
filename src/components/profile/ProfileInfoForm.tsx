@@ -88,7 +88,7 @@ export default function ProfileInfoForm({ initialName, initialEmail, initialPhon
     }
   }
 
-  const LABEL = 'text-[11px] tracking-[0.14em] uppercase text-muted mb-1';
+  const LABEL = 'block text-[11px] tracking-[0.14em] uppercase text-muted mb-1';
   const INPUT = 'w-full border-b border-line bg-transparent py-2.5 text-sm text-ink placeholder:text-muted focus:outline-none focus:border-ink transition-colors';
 
   if (!editing) {
@@ -120,7 +120,7 @@ export default function ProfileInfoForm({ initialName, initialEmail, initialPhon
           <button
             type="button"
             onClick={handleEdit}
-            className="inline-flex items-center gap-2 bg-ink text-cream text-[13px] font-medium tracking-[0.04em] px-6 py-3 rounded-full hover:bg-oxblood transition-colors"
+            className="inline-flex items-center gap-2 bg-ink text-cream text-[13px] font-medium tracking-[0.04em] px-6 py-3 rounded-full hover:bg-oxblood transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2"
           >
             Edit info
           </button>
@@ -132,7 +132,7 @@ export default function ProfileInfoForm({ initialName, initialEmail, initialPhon
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div>
-        <label htmlFor="name" className="block text-sm font-medium text-ink-soft mb-1.5">Full name</label>
+        <label htmlFor="name" className={LABEL}>Full name</label>
         <input
           type="text"
           id="name"
@@ -146,7 +146,7 @@ export default function ProfileInfoForm({ initialName, initialEmail, initialPhon
       </div>
 
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-ink-soft mb-1.5">Email address</label>
+        <label htmlFor="email" className={LABEL}>Email address</label>
         <input
           type="email"
           id="email"
@@ -160,8 +160,8 @@ export default function ProfileInfoForm({ initialName, initialEmail, initialPhon
       </div>
 
       <div>
-        <label htmlFor="phone" className="block text-sm font-medium text-ink-soft mb-1.5">
-          Phone number <span className="font-normal text-muted text-xs">(optional)</span>
+        <label htmlFor="phone" className={LABEL}>
+          Phone number <span className="normal-case tracking-normal opacity-60">(optional)</span>
         </label>
         <input
           type="tel"
@@ -179,7 +179,7 @@ export default function ProfileInfoForm({ initialName, initialEmail, initialPhon
         <button
           type="submit"
           disabled={loading}
-          className="inline-flex items-center gap-2 bg-ink text-cream text-[13px] font-medium tracking-[0.04em] px-6 py-3 rounded-full hover:bg-oxblood transition-colors disabled:opacity-50"
+          className="inline-flex items-center gap-2 bg-ink text-cream text-[13px] font-medium tracking-[0.04em] px-6 py-3 rounded-full hover:bg-oxblood transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2"
         >
           {loading ? 'Saving…' : 'Save changes'}
         </button>
@@ -187,7 +187,7 @@ export default function ProfileInfoForm({ initialName, initialEmail, initialPhon
           type="button"
           onClick={handleCancel}
           disabled={loading}
-          className="text-sm text-muted hover:text-ink transition-colors disabled:opacity-50"
+          className="text-sm text-muted hover:text-ink transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:rounded-sm"
         >
           Cancel
         </button>

@@ -42,15 +42,19 @@ export default function ProfileTabs({ activeTab, orderCount, savedCount, address
             <li key={id} className="-mb-px shrink-0">
               <Link
                 href={href}
-                className={`flex items-center gap-1.5 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors
+                aria-current={isActive ? 'page' : undefined}
+                className={`flex items-center gap-1.5 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oxblood focus-visible:ring-offset-2 focus-visible:ring-offset-cream rounded-sm
                   ${isActive
                     ? 'text-ink border-oxblood'
-                    : 'text-muted border-transparent hover:text-ink'
+                    : 'text-muted border-transparent hover:text-ink hover:border-line'
                   }`}
               >
                 {label}
                 {count !== null && (
-                  <span className={`text-[11px] px-2 py-0.5 rounded-full tracking-[0.02em] ${isActive ? 'bg-ink text-cream' : 'bg-cream-deep text-ink-soft'}`}>
+                  <span
+                    aria-label={`${count} ${label.toLowerCase()}`}
+                    className={`text-[11px] px-2 py-0.5 rounded-full tracking-[0.02em] tabular-nums ${isActive ? 'bg-ink text-cream' : 'bg-cream-deep text-ink-soft'}`}
+                  >
                     {count}
                   </span>
                 )}

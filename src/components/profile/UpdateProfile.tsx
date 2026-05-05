@@ -57,10 +57,13 @@ export default function UpdateProfile() {
     }
   };
 
+  const INPUT = 'w-full border-b border-line bg-transparent py-2.5 text-sm text-ink placeholder:text-muted focus:outline-none focus:border-ink transition-colors';
+  const LABEL = 'block text-[11px] tracking-[0.14em] uppercase text-muted mb-1';
+
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div>
-        <label htmlFor="currentPassword" className="block text-sm font-medium text-ink-soft mb-1.5">
+        <label htmlFor="currentPassword" className={LABEL}>
           Current password
         </label>
         <input
@@ -71,13 +74,13 @@ export default function UpdateProfile() {
           onChange={handleChange}
           autoComplete="current-password"
           required
-          className="w-full border-b border-line bg-transparent py-2.5 text-sm text-ink placeholder:text-muted focus:outline-none focus:border-ink transition-colors"
+          className={INPUT}
           placeholder="Your current password"
         />
       </div>
 
       <div>
-        <label htmlFor="newPassword" className="block text-sm font-medium text-ink-soft mb-1.5">
+        <label htmlFor="newPassword" className={LABEL}>
           New password
         </label>
         <input
@@ -90,13 +93,14 @@ export default function UpdateProfile() {
           required
           minLength={8}
           maxLength={128}
-          className="w-full border-b border-line bg-transparent py-2.5 text-sm text-ink placeholder:text-muted focus:outline-none focus:border-ink transition-colors"
+          className={INPUT}
           placeholder="Min. 8 characters"
         />
+        <p className="text-[11px] text-muted mt-1.5">8–128 characters</p>
       </div>
 
       <div>
-        <label htmlFor="confirmNewPassword" className="block text-sm font-medium text-ink-soft mb-1.5">
+        <label htmlFor="confirmNewPassword" className={LABEL}>
           Confirm new password
         </label>
         <input
@@ -107,7 +111,7 @@ export default function UpdateProfile() {
           onChange={handleChange}
           autoComplete="new-password"
           required
-          className="w-full border-b border-line bg-transparent py-2.5 text-sm text-ink placeholder:text-muted focus:outline-none focus:border-ink transition-colors"
+          className={INPUT}
           placeholder="Repeat password"
         />
       </div>
@@ -116,7 +120,7 @@ export default function UpdateProfile() {
         <button
           type="submit"
           disabled={loading}
-          className="inline-flex items-center gap-2 bg-ink text-cream text-[13px] font-medium tracking-[0.04em] px-6 py-3 rounded-full transition-all hover:bg-oxblood disabled:opacity-50"
+          className="inline-flex items-center gap-2 bg-ink text-cream text-[13px] font-medium tracking-[0.04em] px-6 py-3 rounded-full transition-all hover:bg-oxblood disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2"
         >
           {loading ? 'Saving…' : 'Update password'}
         </button>
