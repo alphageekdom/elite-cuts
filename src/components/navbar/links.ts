@@ -1,6 +1,7 @@
 export const PRIMARY_LINKS = [
   { href: '/', label: 'Home' },
   { href: '/products', label: 'Shop' },
+  { href: '/rewards', label: 'Rewards' },
   { href: '/about', label: 'Our Story' },
 ] as const;
 
