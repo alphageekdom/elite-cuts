@@ -3,16 +3,25 @@ import User from '@/models/User';
 import bcrypt from 'bcryptjs';
 import { NextResponse } from 'next/server';
 
-// POST /api/auth/register
+const MIN_PASSWORD_LENGTH = 8;
+const MAX_PASSWORD_LENGTH = 128;
+
 export const POST = async (request) => {
   try {
     await connectDB();
 
     const { name, email, password } = await request.json();
 
-    if (!email || !password || !name) {
+    if (!name || !email || !password) {
       return NextResponse.json(
-        { message: 'Email, password, and name are required' },
+        { message: 'Name, email, and password are required' },
+        { status: 400 }
+      );
+    }
+
+    if (password.length < MIN_PASSWORD_LENGTH || password.length > MAX_PASSWORD_LENGTH) {
+      return NextResponse.json(
+        { message: `Password must be between ${MIN_PASSWORD_LENGTH} and ${MAX_PASSWORD_LENGTH} characters` },
         { status: 400 }
       );
     }
@@ -28,18 +37,10 @@ export const POST = async (request) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = new User({
-      name,
-      email,
-      password: hashedPassword,
-    });
-
-    await newUser.save();
-
-    // return Response.redirect(`${process.env.NEXTAUTH_URL}/auth/login`);
+    await new User({ name, email, password: hashedPassword }).save();
 
     return NextResponse.json(
-      { message: 'User registered successfully', user: newUser },
+      { message: 'User registered successfully' },
       { status: 201 }
     );
   } catch (error) {
