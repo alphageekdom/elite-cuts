@@ -168,6 +168,7 @@ const Navbar = () => {
           isAdmin={isAdmin}
           isLoggedIn={isLoggedIn}
           closeMobileMenu={closeMobileMenu}
+          onSignOut={handleSignOut}
         />
       )}
     </header>
