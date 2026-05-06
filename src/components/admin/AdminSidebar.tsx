@@ -103,7 +103,7 @@ export default async function AdminSidebar() {
   const initial = name.charAt(0).toUpperCase();
 
   return (
-    <aside className="w-60 bg-ink text-cream flex flex-col py-7 px-6 sticky top-0 h-screen shrink-0">
+    <aside className="hidden md:flex w-60 bg-ink text-cream flex-col py-7 px-6 sticky top-0 h-screen shrink-0">
       {/* Brand */}
       <Link
         href="/"

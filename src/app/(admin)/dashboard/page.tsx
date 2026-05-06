@@ -78,7 +78,7 @@ export default async function AdminDashboardPage() {
         customers={usersCount}
         avgOrder={avgOrder}
       />
-      <div className="grid grid-cols-[1.7fr_1fr] gap-4 mb-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[1.7fr_1fr] gap-4 mb-4">
         <DashboardRevenueChart />
         <DashboardTopCuts />
       </div>

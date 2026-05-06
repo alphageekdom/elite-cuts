@@ -11,7 +11,7 @@ export default function DashboardPageHeader({ name }: Props) {
   });
 
   return (
-    <div className="flex items-end justify-between mb-10 gap-8">
+    <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 md:mb-10 gap-4 sm:gap-8">
       <div>
         <p className="font-display italic text-sm text-camel mb-2">
           ✦ Welcome back, {name}

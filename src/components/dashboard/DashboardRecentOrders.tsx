@@ -53,21 +53,18 @@ type Props = {
 
 export default function DashboardRecentOrders({ orders }: Props) {
   return (
-    <div className="bg-paper rounded-[4px] px-[30px] py-7 border border-line-soft">
+    <div className="bg-paper rounded-sm px-7.5 py-7 border border-line-soft">
       {/* Card head */}
       <div className="flex items-end justify-between mb-7 gap-5">
-        <div>
-          <div className="font-display italic text-[12px] text-camel mb-1">✦ 03</div>
-          <div className="font-display font-medium text-[22px] tracking-[-0.015em] leading-snug">
-            Recent <em className="not-italic italic text-oxblood font-normal">orders</em>
-          </div>
+        <div className="font-display font-medium text-[22px] tracking-[-0.015em] leading-snug">
+          Recent <em className="italic text-oxblood font-normal">orders</em>
         </div>
         <a
           href="#"
           className="text-ink-soft text-[13px] font-medium inline-flex items-center gap-1.5 border-b border-current pb-px hover:text-oxblood transition-colors hover:gap-2.5"
         >
           View all orders
-          <svg className="w-[11px] h-[11px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg className="w-2.75 h-2.75" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M5 12h14M13 5l7 7-7 7" />
           </svg>
         </a>

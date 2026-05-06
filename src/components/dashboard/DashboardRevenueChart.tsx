@@ -9,18 +9,15 @@ export default function DashboardRevenueChart() {
   const [activeTab, setActiveTab] = useState<Tab>('30D');
 
   return (
-    <div className="bg-paper rounded-[4px] px-[30px] py-7 border border-line-soft">
+    <div className="bg-paper rounded-sm px-7.5 py-7 border border-line-soft">
       {/* Card head */}
       <div className="flex items-end justify-between mb-7 gap-5">
-        <div>
-          <div className="font-display italic text-[12px] text-camel mb-1">✦ 01</div>
-          <div className="font-display font-medium text-[22px] tracking-[-0.015em] leading-snug">
-            Revenue{' '}
-            <em className="not-italic italic text-oxblood font-normal">over time</em>
-          </div>
+        <div className="font-display font-medium text-[22px] tracking-[-0.015em] leading-snug">
+          Revenue{' '}
+          <em className="italic text-oxblood font-normal">over time</em>
         </div>
 
-        <div className="inline-flex bg-cream-deep rounded-full p-[3px]">
+        <div className="inline-flex bg-cream-deep rounded-full p-0.75">
           {TABS.map((tab) => (
             <button
               key={tab}
@@ -94,11 +91,11 @@ export default function DashboardRevenueChart() {
       {/* Legend */}
       <div className="flex gap-6 mt-4 pt-4 border-t border-line-soft text-[12px] text-muted">
         <span className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-[2px] bg-oxblood inline-block" />
+          <span className="w-2 h-2 rounded-xs bg-oxblood inline-block" />
           This month · $48,230
         </span>
         <span className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-[2px] bg-camel inline-block" />
+          <span className="w-2 h-2 rounded-xs bg-camel inline-block" />
           Last month · $42,890
         </span>
       </div>

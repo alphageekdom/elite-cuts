@@ -47,7 +47,7 @@ const ACTIONS: Action[] = [
 
 export default function DashboardQuickActions() {
   return (
-    <div className="grid grid-cols-3 gap-4 mb-4">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
       {ACTIONS.map((action) => (
         <Link
           key={action.href}

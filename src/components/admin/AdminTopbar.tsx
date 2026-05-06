@@ -2,9 +2,9 @@
 
 export default function AdminTopbar() {
   return (
-    <div className="flex items-center justify-between px-10 py-5 gap-6 border-b border-line-soft bg-cream shrink-0">
+    <div className="flex items-center justify-between px-5 md:px-10 py-4 md:py-5 gap-4 border-b border-line-soft bg-cream shrink-0">
       {/* Search */}
-      <div className="flex-1 max-w-[420px] bg-paper border border-line rounded-full px-[18px] py-2.5 flex items-center gap-3 focus-within:border-ink transition-colors">
+      <div className="flex-1 max-w-105 bg-paper border border-line rounded-full px-4.5 py-2.5 flex items-center gap-3 focus-within:border-ink transition-colors">
         <svg
           className="w-3.5 h-3.5 text-muted shrink-0"
           viewBox="0 0 24 24"
@@ -20,7 +20,7 @@ export default function AdminTopbar() {
           placeholder="Search orders, products, customers…"
           className="flex-1 bg-transparent border-none outline-none font-sans text-[14px] text-ink placeholder:text-muted"
         />
-        <span className="text-[11px] tracking-[0.1em] text-muted bg-cream-deep px-1.5 py-0.5 rounded">
+        <span className="hidden sm:inline text-[11px] tracking-widest text-muted bg-cream-deep px-1.5 py-0.5 rounded">
           ⌘ K
         </span>
       </div>

@@ -37,9 +37,9 @@ function StatCard({ stat }: { stat: Stat }) {
 
   return (
     <div
-      className="bg-paper rounded-[4px] px-[26px] py-6 border border-line-soft hover:-translate-y-0.5 transition-transform duration-400 opacity-0 translate-y-5"
+      className="bg-paper rounded-[4px] px-[26px] py-6 border border-line-soft hover:-translate-y-0.5 transition-transform duration-400"
       style={{
-        animation: `dashStatRise 0.8s cubic-bezier(0.2,0.8,0.2,1) ${stat.delay} forwards`,
+        animation: `dashStatRise 0.8s cubic-bezier(0.2,0.8,0.2,1) ${stat.delay} both`,
       }}
     >
       <div className="flex items-center justify-between mb-5">
@@ -54,7 +54,7 @@ function StatCard({ stat }: { stat: Stat }) {
       <div className="font-display text-[40px] font-normal leading-none tracking-[-0.025em] mb-3">
         {stat.value}
         {stat.valueSuffix && (
-          <em className="not-italic italic text-oxblood text-[22px] ml-1">
+          <em className="italic text-oxblood text-[22px] ml-1">
             {stat.valueSuffix}
           </em>
         )}
@@ -146,7 +146,7 @@ export default function DashboardStatGrid({ revenue, orders, customers, avgOrder
   ];
 
   return (
-    <div className="grid grid-cols-4 gap-4 mb-8">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       {stats.map((stat) => (
         <StatCard key={stat.label} stat={stat} />
       ))}
