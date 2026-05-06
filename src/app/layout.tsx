@@ -33,7 +33,7 @@ const jetbrains = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: 'Elite Cuts | Luxury Cuts',
-  description: 'Explore your new favorite cut',
+  description: 'Explore your next saved cut',
   keywords: 'butcher shop, steaks, poultry, pork',
 };
 

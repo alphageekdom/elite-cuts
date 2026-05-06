@@ -89,7 +89,7 @@ const FeaturedProducts = async () => {
         <Reveal delayMs={520}>
           <div className='mt-20 flex flex-wrap items-center justify-between gap-8 border-t border-line-soft pt-12'>
             <p className='max-w-[38ch] font-display text-[clamp(22px,2.2vw,30px)] leading-[1.3] tracking-[-0.015em] font-normal'>
-              These are just a few favorites.{' '}
+              These are just a few of our cuts.{' '}
               <em className='font-normal italic text-oxblood'>
                 Plenty more behind the counter.
               </em>

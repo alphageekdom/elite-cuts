@@ -324,7 +324,7 @@ export default function RewardsPage() {
                 <ul className='flex flex-col gap-3.5 border-t border-line-soft pt-6'>
                   {[
                     'Earn 1 point per $1 spent',
-                    'Save your favorite cuts',
+                    'Save cuts for quick reorder',
                     'Order history & quick reorder',
                     'Free pickup on orders over $50',
                   ].map((perk) => (
