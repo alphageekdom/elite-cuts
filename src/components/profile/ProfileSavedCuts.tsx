@@ -8,7 +8,7 @@ import type { SerializedProduct } from '@/models/Product';
 import useHandleAddToCart from '@/hooks/useHandleAddToCart';
 
 type Props = {
-  bookmarks: SerializedProduct[];
+  savedCuts: SerializedProduct[];
   showAll?: boolean;
 };
 
@@ -95,15 +95,15 @@ function BookmarkCard({
   );
 }
 
-export default function ProfileSavedCuts({ bookmarks: initial, showAll = false }: Props) {
-  const [bookmarks, setBookmarks] = useState(initial);
-  const displayed = showAll ? bookmarks : bookmarks.slice(0, 3);
+export default function ProfileSavedCuts({ savedCuts: initial, showAll = false }: Props) {
+  const [savedCuts, setSavedCuts] = useState(initial);
+  const displayed = showAll ? savedCuts : savedCuts.slice(0, 3);
 
   const handleRemove = (id: string) => {
-    setBookmarks((prev) => prev.filter((b) => b._id !== id));
+    setSavedCuts((prev: SerializedProduct[]) => prev.filter((b: SerializedProduct) => b._id !== id));
   };
 
-  if (bookmarks.length === 0) {
+  if (savedCuts.length === 0) {
     return (
       <div className="bg-paper border border-dashed border-line rounded p-14 text-center">
         <div className="w-14 h-14 rounded-full bg-cream-deep text-ink-soft flex items-center justify-center mx-auto mb-5" aria-hidden="true">
@@ -127,7 +127,7 @@ export default function ProfileSavedCuts({ bookmarks: initial, showAll = false }
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {displayed.map((b) => (
+      {displayed.map((b: SerializedProduct) => (
         <BookmarkCard key={b._id} bookmark={b} onRemove={handleRemove} />
       ))}
     </div>
