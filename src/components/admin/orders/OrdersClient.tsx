@@ -174,17 +174,42 @@ export default function OrdersClient({ orders, counts }: Props) {
   return (
     <>
       {/* Stat strip */}
-      <div className="grid grid-cols-3 lg:grid-cols-5 bg-paper border border-line-soft rounded-sm mb-6 overflow-hidden">
-        {STAT_CELLS.map((cell) => {
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 bg-paper border border-line-soft rounded-sm mb-6 overflow-hidden divide-x-0 divide-y-0">
+        {STAT_CELLS.map((cell, idx) => {
           const isActive = activeStatus === cell.key;
           const count = countForKey(cell.key, counts);
+          // Border strategy: every cell gets a right + bottom border, then we
+          // cancel the right border for the rightmost column in each breakpoint,
+          // and cancel the bottom border for the last row in each breakpoint.
+          // 2-col mobile: cols 2,4 = idx 1,3 are rightmost → no right border
+          //               rows: idx 0-1 = row1, 2-3 = row2, 4 = row3 (alone)
+          //               bottom border removed from last row (idx 3,4)
+          // 3-col sm:    cols 3,6 = idx 2 is rightmost in row1; idx 4 alone
+          //               bottom removed from idx 3,4
+          // 5-col lg:    only idx 4 loses right border; no bottom borders
+          const isRightEdge2 = idx % 2 === 1;
+          const isRightEdge3 = idx % 3 === 2;
+          const isLastRow2 = idx >= 3;
+          const isLastRow3 = idx >= 3;
           return (
             <button
               key={cell.key}
               onClick={() => handleStatusFilter(cell.key)}
-              className={`relative text-left px-5 py-5 border-r border-line-soft last:border-r-0 transition-colors cursor-pointer ${
-                isActive ? 'bg-cream' : 'hover:bg-cream'
-              }`}
+              className={[
+                'relative text-left px-4 py-4 sm:px-5 sm:py-5 transition-colors cursor-pointer',
+                'border-r border-b border-line-soft',
+                // mobile 2-col right-edge: no right border
+                isRightEdge2 ? 'border-r-0' : '',
+                // mobile 2-col bottom-edge: no bottom border
+                isLastRow2 ? 'border-b-0' : '',
+                // sm 3-col overrides
+                isRightEdge3 ? 'sm:border-r-0' : 'sm:border-r',
+                isLastRow3 ? 'sm:border-b-0' : 'sm:border-b',
+                // lg 5-col: restore all right borders, no bottom borders; only last loses right
+                idx < 4 ? 'lg:border-r lg:border-line-soft' : 'lg:border-r-0',
+                'lg:border-b-0',
+                isActive ? 'bg-cream' : 'hover:bg-cream',
+              ].join(' ')}
             >
               {isActive && (
                 <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-oxblood" />
@@ -205,10 +230,10 @@ export default function OrdersClient({ orders, counts }: Props) {
                   }}
                 />
               </div>
-              <div className="font-display text-[28px] font-normal leading-none tracking-[-0.025em] mb-1">
+              <div className="font-display text-[22px] sm:text-[28px] font-normal leading-none tracking-tight mb-1">
                 {count}
                 {cell.key === 'Pending' && count > 0 && (
-                  <em className="not-italic italic text-oxblood text-[14px] ml-0.5 font-normal">new</em>
+                  <em className="italic text-oxblood text-[14px] ml-0.5 font-normal">new</em>
                 )}
               </div>
               <div className="font-mono text-[11px] text-muted tracking-[0.04em]">{cell.metaLabel}</div>
@@ -218,43 +243,46 @@ export default function OrdersClient({ orders, counts }: Props) {
       </div>
 
       {/* Toolbar */}
-      <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Search */}
-          <label className="flex items-center gap-2.5 bg-paper border border-line rounded-full px-4 py-2 min-w-[280px] focus-within:border-ink transition-colors">
-            <svg className="w-3.5 h-3.5 text-muted shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
-            </svg>
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              placeholder="Search by order #, customer, email…"
-              className="flex-1 bg-transparent border-none outline-none text-[13px] text-ink placeholder:text-muted"
-            />
-            <span className="font-mono text-[10px] text-muted bg-cream-deep px-1.5 py-0.5 rounded tracking-[0.04em]">⌘ K</span>
-          </label>
+      <div className="flex flex-col gap-2.5 mb-4">
+        {/* Row 1: search (full width on mobile, max-capped on larger screens) */}
+        <label className="flex items-center gap-2.5 bg-paper border border-line rounded-full px-4 py-2 w-full sm:max-w-xs focus-within:border-ink transition-colors">
+          <svg className="w-3.5 h-3.5 text-muted shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
+          </svg>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            placeholder="Search by order #, customer, email…"
+            className="flex-1 bg-transparent border-none outline-none text-[13px] text-ink placeholder:text-muted min-w-0"
+          />
+          <span className="hidden sm:inline font-mono text-[10px] text-muted bg-cream-deep px-1.5 py-0.5 rounded tracking-[0.04em] shrink-0">⌘ K</span>
+        </label>
 
-          <span className="inline-flex items-center gap-1.5 bg-ink text-cream border border-ink rounded-full px-3.5 py-2 text-[13px] font-medium cursor-default">
-            Last 30 days
-            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
-          </span>
+        {/* Row 2: filter pills left, sort/columns right */}
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 bg-ink text-cream border border-ink rounded-full px-3.5 py-2 text-[13px] font-medium cursor-default">
+              Last 30 days
+              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </span>
 
-          <button className="inline-flex items-center gap-1.5 bg-paper border border-line rounded-full px-3.5 py-2 text-[13px] text-ink-soft hover:border-ink hover:text-ink transition-colors">
-            More filters
-            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-          </button>
-        </div>
+            <button className="inline-flex items-center gap-1.5 bg-paper border border-line rounded-full px-3.5 py-2 text-[13px] text-ink-soft hover:border-ink hover:text-ink transition-colors">
+              More filters
+              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+            </button>
+          </div>
 
-        <div className="flex items-center gap-2">
-          <button className="inline-flex items-center gap-1.5 bg-paper border border-line rounded-full px-3.5 py-2 text-[13px] text-ink-soft hover:border-ink hover:text-ink transition-colors">
-            Sort: Newest
-            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
-          <button className="inline-flex items-center gap-1.5 bg-paper border border-line rounded-full px-3.5 py-2 text-[13px] text-ink-soft hover:border-ink hover:text-ink transition-colors">
-            Columns
-            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-          </button>
+          <div className="flex items-center gap-2">
+            <button className="inline-flex items-center gap-1.5 bg-paper border border-line rounded-full px-3.5 py-2 text-[13px] text-ink-soft hover:border-ink hover:text-ink transition-colors">
+              Sort: Newest
+              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <button className="inline-flex items-center gap-1.5 bg-paper border border-line rounded-full px-3.5 py-2 text-[13px] text-ink-soft hover:border-ink hover:text-ink transition-colors">
+              Columns
+              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -281,8 +309,9 @@ export default function OrdersClient({ orders, counts }: Props) {
           </div>
         )}
 
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-[14px] min-w-[860px]">
+        <div className="relative">
+          <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-[14px] min-w-215">
             <thead className="bg-cream border-b border-line-soft">
               <tr>
                 <th className="w-9 pl-6 pr-0 py-3.5">
@@ -323,7 +352,7 @@ export default function OrdersClient({ orders, counts }: Props) {
                       key={order.id}
                       onClick={() => openDrawer(order)}
                       className={`group border-b border-line-soft last:border-b-0 cursor-pointer transition-colors ${
-                        isSelected ? 'bg-camel/[0.06]' : 'hover:bg-cream'
+                        isSelected ? 'bg-camel/6' : 'hover:bg-cream'
                       }`}
                     >
                       <td className="pl-6 pr-0 py-4" onClick={(e) => e.stopPropagation()}>
@@ -340,7 +369,7 @@ export default function OrdersClient({ orders, counts }: Props) {
                       </td>
 
                       <td className="px-4 py-4">
-                        <div className="flex items-center gap-3 min-w-[180px]">
+                        <div className="flex items-center gap-3 min-w-45">
                           <div className={`w-8 h-8 rounded-full grid place-items-center font-display font-semibold text-[11px] shrink-0 ${avatarColor}`}>
                             {initials}
                           </div>
@@ -444,6 +473,9 @@ export default function OrdersClient({ orders, counts }: Props) {
               )}
             </tbody>
           </table>
+          </div>
+          {/* Scroll-hint fade — visible only when table overflows (below lg) */}
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-linear-to-l from-paper to-transparent lg:hidden" />
         </div>
 
         {/* Pagination */}
@@ -502,9 +534,9 @@ export default function OrdersClient({ orders, counts }: Props) {
             </button>
           </div>
 
-          <div className="flex items-center gap-2 font-mono text-[12px] text-muted">
+          <div className="hidden sm:flex items-center gap-2 font-mono text-[12px] text-muted">
             <span>Per page</span>
-            <select className="appearance-none bg-paper border border-line rounded-full pl-3 pr-6 py-1.5 text-[12px] text-ink font-mono cursor-pointer bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2210%22 height=%2210%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%238A7F73%22 stroke-width=%222%22><polyline points=%226 9 12 15 18 9%22/></svg>')] bg-no-repeat bg-[right_8px_center]">
+            <select className="appearance-none bg-paper border border-line rounded-full pl-3 pr-6 py-1.5 text-[12px] text-ink font-mono cursor-pointer bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2210%22 height=%2210%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%238A7F73%22 stroke-width=%222%22><polyline points=%226 9 12 15 18 9%22/></svg>')] bg-no-repeat bg-position-[right_8px_center]">
               <option>8</option>
               <option>20</option>
               <option>50</option>
@@ -523,7 +555,7 @@ export default function OrdersClient({ orders, counts }: Props) {
 
       {/* Order detail drawer */}
       <aside
-        className={`fixed top-0 right-0 w-full max-w-[540px] h-screen bg-cream z-[51] flex flex-col shadow-2xl transition-transform duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
+        className={`fixed top-0 right-0 w-full max-w-135 h-screen bg-cream z-51 flex flex-col shadow-2xl transition-transform duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
           drawerOrder ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -574,12 +606,12 @@ function DrawerContent({ order, statusUpdate, setStatusUpdate, onClose, buildTim
               <div key={i} className="relative grid grid-cols-[22px_1fr] gap-3.5 py-2">
                 {i < timeline.length - 1 && (
                   <span
-                    className="absolute left-[10px] top-[26px] bottom-[-8px] w-px"
+                    className="absolute left-2.5 top-6.5 -bottom-2 w-px"
                     style={{ background: step.done ? 'rgba(74,107,58,0.5)' : 'var(--color-line)' }}
                   />
                 )}
                 <div
-                  className={`w-[22px] h-[22px] rounded-full border-2 grid place-items-center z-10 ${
+                  className={`w-5.5 h-5.5 rounded-full border-2 grid place-items-center z-10 ${
                     step.done
                       ? 'bg-green border-green text-cream'
                       : step.current
