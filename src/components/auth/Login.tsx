@@ -156,7 +156,7 @@ export default function Login() {
               className="auth-reveal text-ink-soft mb-12 text-[15px] leading-relaxed max-w-[38ch]"
               style={{ animationDelay: '0.3s' }}
             >
-              Sign in to track orders, save your favorite cuts, and check out faster next time.
+              Sign in to track orders, save your cuts, and check out faster next time.
             </p>
 
             <form onSubmit={handleSubmit}>
