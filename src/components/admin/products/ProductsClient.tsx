@@ -69,22 +69,6 @@ const CATEGORY_COLORS: Record<string, string> = {
   Other: 'bg-[rgba(28,24,20,0.06)] text-muted',
 };
 
-// Decorative sparkline point strings — valid for SVG <polyline points="…">
-const SPARKS = [
-  '0,20 10,16 20,18 30,10 40,12 50,6 60,4',
-  '0,18 10,14 20,16 30,8 40,12 50,10 60,6',
-  '0,22 10,20 20,18 30,14 40,10 50,6 60,2',
-  '0,8 10,10 20,6 30,12 40,14 50,16 60,18',
-  '0,20 10,18 20,14 30,10 40,8 50,4 60,2',
-  '0,12 10,10 20,14 30,12 40,10 50,12 60,10',
-];
-
-// Deterministic sale counts derived from product index — no Math.random() to avoid hydration mismatch
-const SPARK_COUNTS = [142, 98, 63, 87, 54, 45, 38, 72, 110, 56, 91, 33];
-
-const SPARK_COLORS = ['#4A6B3A', '#4A6B3A', '#4A6B3A', '#6B1F1F', '#4A6B3A', '#8A7F73'];
-const SPARK_CHANGES = ['+14%', '+8%', '+22%', '−4%', '+31%', '0%'];
-const SPARK_DIRS = ['up', 'up', 'up', 'down', 'up', 'flat'] as const;
 
 function stockState(count: number): 'healthy' | 'low' | 'critical' | 'out' {
   if (count === 0) return 'out';
@@ -112,8 +96,10 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerProduct, setDrawerProduct] = useState<ProductTableRow | null>(null);
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<SortBy>('newest');
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     let rows = products;
@@ -156,7 +142,8 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
     else setSelectedIds(new Set());
   }
 
-  function openDrawer() {
+  function openDrawer(product?: ProductTableRow) {
+    setDrawerProduct(product ?? null);
     setDrawerOpen(true);
     document.body.style.overflow = 'hidden';
   }
@@ -326,7 +313,7 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
               </svg>
             </div>
             <button
-              onClick={openDrawer}
+              onClick={() => openDrawer()}
               className="inline-flex items-center gap-1.5 bg-ink text-cream rounded-full px-3.5 py-2 text-[13px] font-medium hover:bg-oxblood transition-colors"
             >
               <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -384,34 +371,28 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
                   <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Stock</th>
                   <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Status</th>
                   <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Tags</th>
-                  <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">30d sales</th>
                   <th className="pr-6 py-3.5" />
                 </tr>
               </thead>
               <tbody>
                 {pageRows.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="text-center py-16 text-muted text-sm">
+                    <td colSpan={8} className="text-center py-16 text-muted text-sm">
                       No products found.
                     </td>
                   </tr>
                 ) : (
-                  pageRows.map((product, i) => {
-                    const absIdx = (page - 1) * PAGE_SIZE + i;
+                  pageRows.map((product) => {
                     const isSelected = selectedIds.has(product.id);
                     const state = stockState(product.stockCount);
                     const fillPct = stockFillWidth(product.stockCount);
-                    const sparkPath = SPARKS[absIdx % SPARKS.length];
-                    const sparkColor = SPARK_COLORS[absIdx % SPARK_COLORS.length];
-                    const sparkChange = SPARK_CHANGES[absIdx % SPARK_CHANGES.length];
-                    const sparkDir = SPARK_DIRS[absIdx % SPARK_DIRS.length];
                     const catClass = CATEGORY_COLORS[product.category] ?? 'bg-cream-deep text-ink-soft';
                     const thumb = product.images[0] ?? null;
 
                     return (
                       <tr
                         key={product.id}
-                        onClick={openDrawer}
+                        onClick={() => openDrawer(product)}
                         className={`group border-b border-line-soft last:border-b-0 cursor-pointer transition-colors ${
                           isSelected ? 'bg-camel/6' : 'hover:bg-cream'
                         }`}
@@ -524,57 +505,55 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
                           </div>
                         </td>
 
-                        {/* 30d sales sparkline (decorative) */}
-                        <td className="px-4 py-4">
-                          <div className="flex items-center gap-2">
-                            <svg viewBox="0 0 60 24" className="w-15 h-6 shrink-0">
-                              <polyline
-                                points={sparkPath}
-                                fill="none"
-                                stroke={sparkColor}
-                                strokeWidth="1.5"
-                              />
-                            </svg>
-                            <div>
-                              <div className="font-mono text-[12px] text-ink font-medium">
-                                {SPARK_COUNTS[absIdx % SPARK_COUNTS.length]}
-                              </div>
-                              <div
-                                className={`font-mono text-[10px] ${
-                                  sparkDir === 'up'
-                                    ? 'text-green'
-                                    : sparkDir === 'down'
-                                    ? 'text-oxblood'
-                                    : 'text-muted'
-                                }`}
-                              >
-                                {sparkDir === 'up' ? '↑' : sparkDir === 'down' ? '↓' : '→'} {sparkChange}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-
                         {/* Row actions */}
                         <td className="pr-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
-                          <div className="inline-flex gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={openDrawer}
-                              aria-label="Edit product"
-                              className="w-7 h-7 rounded-full border border-line text-ink-soft grid place-items-center hover:border-ink hover:bg-cream hover:text-ink transition-colors"
-                            >
-                              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-                                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-                              </svg>
-                            </button>
-                            <button
-                              aria-label="More"
-                              className="w-7 h-7 rounded-full border border-line text-ink-soft grid place-items-center hover:border-ink hover:bg-cream hover:text-ink transition-colors"
-                            >
-                              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
-                                <circle cx="12" cy="12" r="1.5" /><circle cx="19" cy="12" r="1.5" /><circle cx="5" cy="12" r="1.5" />
-                              </svg>
-                            </button>
+                          <div className="relative inline-flex items-center gap-1">
+                            {/* Buttons — fade out when row not hovered */}
+                            <div className="inline-flex gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={() => openDrawer(product)}
+                                aria-label="Edit product"
+                                className="w-7 h-7 rounded-full border border-line text-ink-soft grid place-items-center hover:border-ink hover:bg-cream hover:text-ink transition-colors"
+                              >
+                                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                                  <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                </svg>
+                              </button>
+                              <button
+                                onClick={() => setOpenMenuId((prev) => prev === product.id ? null : product.id)}
+                                aria-label="More actions"
+                                className="w-7 h-7 rounded-full border border-line text-ink-soft grid place-items-center hover:border-ink hover:bg-cream hover:text-ink transition-colors"
+                              >
+                                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                                  <circle cx="12" cy="12" r="1.5" /><circle cx="19" cy="12" r="1.5" /><circle cx="5" cy="12" r="1.5" />
+                                </svg>
+                              </button>
+                            </div>
+                            {/* Dropdown — outside opacity wrapper so it's always fully opaque */}
+                            {openMenuId === product.id && (
+                              <div className="absolute right-0 top-full mt-1 z-20 w-44 rounded-lg shadow-xl overflow-hidden" style={{ background: '#1C1814', border: '1px solid rgba(244,238,228,0.12)' }}>
+                                <button className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left transition-colors" style={{ color: '#EBE3D5' }} onMouseEnter={e => (e.currentTarget.style.background = '#2D2722')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                                  <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                                  </svg>
+                                  Duplicate
+                                </button>
+                                <button className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left transition-colors" style={{ color: '#EBE3D5' }} onMouseEnter={e => (e.currentTarget.style.background = '#2D2722')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                                  <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
+                                  </svg>
+                                  Archive
+                                </button>
+                                <div style={{ borderTop: '1px solid rgba(244,238,228,0.12)' }} />
+                                <button className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left transition-colors" style={{ color: '#E07070' }} onMouseEnter={e => (e.currentTarget.style.background = '#2D2722')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                                  <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+                                  </svg>
+                                  Delete
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -660,6 +639,11 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
         </div>
       </div>
 
+      {/* Menu backdrop */}
+      {openMenuId && (
+        <div className="fixed inset-0 z-10" onClick={() => setOpenMenuId(null)} />
+      )}
+
       {/* Drawer backdrop */}
       {drawerOpen && (
         <div
@@ -668,21 +652,31 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
         />
       )}
 
-      {/* Add product drawer */}
+      {/* Add / Edit product drawer */}
       <aside
         className={`fixed top-0 right-0 w-full max-w-150 h-screen bg-cream z-51 flex flex-col shadow-2xl transition-transform duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
           drawerOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        <DrawerContent onClose={closeDrawer} />
+        <DrawerContent
+          key={drawerProduct?.id ?? 'new'}
+          product={drawerProduct}
+          onClose={closeDrawer}
+        />
       </aside>
     </>
   );
 }
 
-function DrawerContent({ onClose }: { onClose: () => void }) {
-  const [published, setPublished] = useState(false);
-  const [featuredToggle, setFeaturedToggle] = useState(false);
+function DrawerContent({ product, onClose }: { product: ProductTableRow | null; onClose: () => void }) {
+  const isEdit = product !== null;
+
+  const [name, setName] = useState(product?.name ?? '');
+  const [category, setCategory] = useState<string>(product?.category ?? PRODUCT_CATEGORIES[0]);
+  const [price, setPrice] = useState(product ? product.price.toFixed(2) : '');
+  const [stock, setStock] = useState(product ? String(product.stockCount) : '');
+  const [published, setPublished] = useState(isEdit);
+  const [featuredToggle, setFeaturedToggle] = useState(product?.isFeatured ?? false);
   const [membersOnly, setMembersOnly] = useState(false);
 
   return (
@@ -690,9 +684,14 @@ function DrawerContent({ onClose }: { onClose: () => void }) {
       {/* Head */}
       <div className="flex items-center justify-between gap-4 px-8 py-6 border-b border-line-soft bg-paper shrink-0">
         <div>
-          <div className="font-display italic text-[13px] text-camel mb-1">✦ Add new</div>
+          <div className="font-display italic text-[13px] text-camel mb-1">
+            {isEdit ? '✦ Edit product' : '✦ Add new'}
+          </div>
           <div className="font-display text-[22px] font-medium tracking-[-0.015em]">
-            New <em className="italic text-oxblood font-normal">product</em>
+            {isEdit
+              ? <><em className="italic text-oxblood font-normal">{product.name}</em></>
+              : <>New <em className="italic text-oxblood font-normal">product</em></>
+            }
           </div>
         </div>
         <button
@@ -711,14 +710,24 @@ function DrawerContent({ onClose }: { onClose: () => void }) {
         {/* Basic info */}
         <DrawerSection label="Basic information">
           <DrawerField label="Product name">
-            <input type="text" placeholder="e.g. 28-Day Dry-Aged Ribeye" className={inputCls} />
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. 28-Day Dry-Aged Ribeye"
+              className={inputCls}
+            />
           </DrawerField>
           <div className="grid grid-cols-2 gap-4">
             <DrawerField label="SKU">
               <input type="text" placeholder="SKU-0033" className={inputCls} />
             </DrawerField>
             <DrawerField label="Category">
-              <select className={selectCls}>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className={selectCls}
+              >
                 {PRODUCT_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
               </select>
             </DrawerField>
@@ -743,7 +752,15 @@ function DrawerContent({ onClose }: { onClose: () => void }) {
         <DrawerSection label="Pricing">
           <div className="grid grid-cols-3 gap-4">
             <DrawerField label="Price ($)">
-              <input type="number" step="0.01" min="0" placeholder="42.99" className={inputCls} />
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                placeholder="42.99"
+                className={inputCls}
+              />
             </DrawerField>
             <DrawerField label="Unit">
               <select className={selectCls}>
@@ -765,7 +782,14 @@ function DrawerContent({ onClose }: { onClose: () => void }) {
         <DrawerSection label="Inventory">
           <div className="grid grid-cols-3 gap-4">
             <DrawerField label="Current stock">
-              <input type="number" min="0" placeholder="0" className={inputCls} />
+              <input
+                type="number"
+                min="0"
+                value={stock}
+                onChange={(e) => setStock(e.target.value)}
+                placeholder="0"
+                className={inputCls}
+              />
             </DrawerField>
             <DrawerField label="Par level">
               <input type="number" min="0" placeholder="25" className={inputCls} />
@@ -830,7 +854,7 @@ function DrawerContent({ onClose }: { onClose: () => void }) {
           <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="20 6 9 17 4 12" />
           </svg>
-          Save product
+          {isEdit ? 'Save changes' : 'Save product'}
         </button>
       </div>
     </>
