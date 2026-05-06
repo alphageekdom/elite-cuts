@@ -12,6 +12,7 @@ const TABS: Tab[] = [
   { id: 'saved',     label: 'Saved cuts',  href: '/profile?tab=saved' },
   { id: 'addresses', label: 'Addresses',   href: '/profile?tab=addresses' },
   { id: 'settings',  label: 'Settings',    href: '/profile?tab=settings' },
+  { id: 'rewards',   label: 'Rewards',     href: '/profile?tab=rewards' },
 ];
 
 type Props = {
