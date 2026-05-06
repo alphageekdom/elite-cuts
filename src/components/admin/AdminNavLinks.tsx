@@ -26,7 +26,7 @@ const NAV_WORKSPACE = [
     ),
   },
   {
-    href: '/products',
+    href: '/dashboard/products',
     label: 'Products',
     badge: null as string | null,
     icon: (
