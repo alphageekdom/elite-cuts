@@ -10,6 +10,7 @@ import { convertToSerializableObject } from '@/utils/convertToObject';
 import ProductGallery from '@/components/product/detail/ProductGallery';
 import BuyBlock from '@/components/product/detail/BuyBlock';
 import ProductCard from '@/components/product/ProductCard';
+import SectionHead from '@/components/ui/SectionHead';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -70,23 +71,6 @@ const ChevronRight = () => (
   </svg>
 );
 
-function SectionHead({
-  num,
-  label,
-}: {
-  num: string;
-  label: string;
-}) {
-  return (
-    <div className='mb-12 flex items-baseline gap-6'>
-      <span className='font-display text-sm font-medium text-camel'>{num}</span>
-      <span className='text-[11px] font-medium uppercase tracking-[0.22em] text-muted'>
-        {label}
-      </span>
-      <span className='h-px flex-1 bg-line' aria-hidden />
-    </div>
-  );
-}
 
 function Stars({ rating, size = 'sm' }: { rating: number; size?: 'sm' | 'md' | 'lg' }) {
   const sizes = { sm: 'h-3.5 w-3.5', md: 'h-4 w-4', lg: 'h-5 w-5' };

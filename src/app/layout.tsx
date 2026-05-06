@@ -5,7 +5,6 @@ import { Fraunces, Instrument_Sans, JetBrains_Mono } from 'next/font/google';
 
 import './globals.css';
 
-import { GlobalProvider } from '@/context/GlobalContext';
 import AuthProvider from '@/components/AuthProvider';
 import { CartProvider } from '@/context/CartContext';
 
@@ -39,20 +38,18 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <GlobalProvider>
-      <AuthProvider>
-        <CartProvider>
-          <html
-            lang="en"
-            className={`${fraunces.variable} ${instrument.variable} ${jetbrains.variable}`}
-          >
-            <body className="bg-cream font-sans text-ink antialiased">
-              {children}
-              <Toaster richColors position='bottom-right' />
-            </body>
-          </html>
-        </CartProvider>
-      </AuthProvider>
-    </GlobalProvider>
+    <AuthProvider>
+      <CartProvider>
+        <html
+          lang="en"
+          className={`${fraunces.variable} ${instrument.variable} ${jetbrains.variable}`}
+        >
+          <body className="bg-cream font-sans text-ink antialiased">
+            {children}
+            <Toaster richColors position='bottom-right' />
+          </body>
+        </html>
+      </CartProvider>
+    </AuthProvider>
   );
 }
