@@ -24,7 +24,7 @@ interface FormState {
 
 const BENEFITS = [
   'Order online, pick up at the shop — no lines.',
-  'Save your favorite cuts for one-tap reorder.',
+  'Save cuts for quick reorder.',
   'Early access when fresh dry-aged beef hits the case.',
   'Recipes & cooking tips from our butchers.',
 ];
