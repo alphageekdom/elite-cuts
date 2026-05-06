@@ -27,6 +27,15 @@ const loadCart = async (userId: string) => {
   const cart =
     (await Cart.findOne({ user: userId }).populate('items.product')) ??
     (await Cart.create({ user: userId, items: [] }));
+
+  // Self-heal: strip any items whose product was deleted from the DB.
+  // `.populate()` leaves those as null; keep them in the doc would crash the client.
+  const before = cart.items.length;
+  cart.items = cart.items.filter(
+    (line) => line.product != null,
+  ) as typeof cart.items;
+  if (cart.items.length !== before) await cart.save();
+
   return cart;
 };
 

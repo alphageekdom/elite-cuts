@@ -209,7 +209,7 @@ const CartDrawer = ({ isOpen, onClose }: Props) => {
           </div>
         ) : (
           <div className='flex-1 overflow-y-auto px-7 pt-4 pb-6'>
-            {cartItems.map((line) => (
+            {cartItems.filter((line) => line.product != null).map((line) => (
               <DrawerLine key={line.product._id} line={line} />
             ))}
           </div>
