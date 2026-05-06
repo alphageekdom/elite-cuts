@@ -20,6 +20,7 @@ import ProfileRecentlyViewed from '@/components/profile/ProfileRecentlyViewed';
 import ProfileAddresses from '@/components/profile/ProfileAddresses';
 import ProfileInfoForm from '@/components/profile/ProfileInfoForm';
 import UpdateProfile from '@/components/profile/UpdateProfile';
+import ProfileRewards from '@/components/profile/ProfileRewards';
 import type { SerializedAddress } from '@/types/address';
 
 export type ProfileOrder = {
@@ -214,6 +215,10 @@ export default async function ProfilePage({ searchParams }: Props) {
 
             {activeTab === 'addresses' && (
               <ProfileAddresses addresses={serializedAddresses} />
+            )}
+
+            {activeTab === 'rewards' && (
+              <ProfileRewards />
             )}
 
             {activeTab === 'settings' && (
