@@ -20,7 +20,7 @@ const useHandleBookmark = (
     }
 
     try {
-      const res = await fetch('/api/bookmarks', {
+      const res = await fetch('/api/saved-cuts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productId }),
@@ -45,7 +45,7 @@ const useHandleBookmark = (
 
     setLoading(true);
     try {
-      const res = await fetch('/api/bookmarks/check', {
+      const res = await fetch('/api/saved-cuts/check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productId }),
