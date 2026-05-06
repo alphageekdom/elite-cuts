@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 const STATS = [
   { num: '1', suffix: 'pt', label: 'For every $1 spent in the shop' },
-  { num: '3', suffix: '×', label: 'Points on weekend orders' },
+  { num: '3', suffix: '×', label: 'Weekend multiplier — up to 3× at top tier' },
   { num: '$0', suffix: '', label: 'No fees, no subscription, ever' },
   { num: '12', suffix: 'mo', label: 'Points stay valid from your last order' },
 ] as const;
@@ -101,7 +101,7 @@ export default function RewardsPage() {
               <p className='mb-9 max-w-[44ch] text-[17px] leading-relaxed text-ink-soft'>
                 Every cut you order earns points. Hit a tier, unlock perks. No
                 subscription, no fine print — just our way of saying thanks for
-                choosing us over the supermarket.
+                coming back.
               </p>
             </Reveal>
 
@@ -177,12 +177,12 @@ export default function RewardsPage() {
                   </div>
                   <div className='mb-4 font-display text-[clamp(36px,4vw,52px)] font-normal leading-none tracking-tight'>
                     Earn{' '}
-                    <em className='italic text-camel-soft'>3×</em> on weekends
+                    <em className='italic text-camel-soft'>2×</em> on weekends
                   </div>
                   <ul className='flex flex-col gap-1.5'>
                     {[
                       'Free pickup, always',
-                      'Early access to dry-aged cuts',
+                      'Early access to weekly specials',
                       'Birthday cut on us',
                     ].map((perk) => (
                       <li
@@ -510,7 +510,7 @@ export default function RewardsPage() {
               </Link>
             </div>
             <p className='mt-6 text-xs tracking-[0.04em] opacity-60'>
-              No credit card required · Cancel any time, but why would you
+              No credit card required · Free forever, no strings attached
             </p>
           </Reveal>
         </div>
