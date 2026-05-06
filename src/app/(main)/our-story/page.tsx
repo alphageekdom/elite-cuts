@@ -217,7 +217,7 @@ export default function OurStoryPage() {
           </OurStoryReveal>
 
           <OurStoryReveal>
-            <h1 className='font-display mb-0 max-w-[12ch] text-[clamp(44px,9vw,140px)] leading-[0.92] font-normal tracking-[-0.04em]'>
+            <h1 className='font-display mb-0 max-w-[12ch] text-[clamp(36px,9vw,140px)] leading-[0.92] font-normal tracking-[-0.04em]'>
               A neighborhood <em className='text-oxblood italic'>butcher</em>{' '}
               shop, modernized.
             </h1>
@@ -263,7 +263,7 @@ export default function OurStoryPage() {
       <section className='px-4 pb-24 sm:px-8 lg:px-16'>
         <div className='mx-auto max-w-7xl'>
           <OurStoryReveal>
-            <div className='bg-ink relative aspect-21/9 overflow-hidden rounded-sm'>
+            <div className='bg-ink relative aspect-4/3 overflow-hidden rounded-sm sm:aspect-video lg:aspect-21/9'>
               <Image
                 src='/images/our-story/shop-cover.jpg'
                 alt='EliteCuts shop interior, est. 2018'
@@ -329,7 +329,7 @@ export default function OurStoryPage() {
                   The first month, we sold{' '}
                   <em className='text-oxblood italic'>twelve cuts.</em>
                 </h2>
-                <p className='text-ink-soft first-letter:font-display first-letter:text-oxblood mb-5 max-w-[56ch] text-base leading-[1.75] first-letter:float-left first-letter:mt-1.5 first-letter:mr-3.5 first-letter:text-[64px] first-letter:leading-[0.9] first-letter:font-medium'>
+                <p className='text-ink-soft first-letter:font-display first-letter:text-oxblood mb-5 max-w-[56ch] text-base leading-[1.75] first-letter:float-left first-letter:mt-1.5 first-letter:mr-3.5 first-letter:text-[clamp(44px,8vw,64px)] first-letter:leading-[0.9] first-letter:font-medium'>
                   Not twelve a day. Twelve total. Tangelo kept the lights on by
                   working nights at his old kitchen and letting the dry-aging
                   cabinet earn its keep slowly — every steak that came out of it
@@ -377,22 +377,22 @@ export default function OurStoryPage() {
 
           <div className='relative max-w-[880px]'>
             {/* vertical rule */}
-            <div className='bg-line absolute top-[18px] bottom-[18px] left-17 w-px sm:left-20' />
+            <div className='bg-line absolute top-[18px] bottom-[18px] left-15 w-px sm:left-18' />
 
             {MILESTONES.map((m) => (
               <OurStoryReveal key={m.year + m.month}>
-                <div className='relative grid grid-cols-[72px_1fr] gap-8 py-6 sm:grid-cols-[80px_1fr] sm:gap-12'>
+                <div className='relative grid grid-cols-[56px_1fr] gap-6 py-6 sm:grid-cols-[72px_1fr] sm:gap-10'>
                   {/* dot */}
                   <div
-                    className={`border-oxblood absolute top-9 left-16 z-10 h-2.25 w-2.25 rounded-full border-2 sm:left-19 ${
+                    className={`border-oxblood absolute top-9 left-14.25 z-10 h-2.25 w-2.25 rounded-full border-2 sm:left-17.25 ${
                       m.live
                         ? 'bg-oxblood shadow-[0_0_0_4px_rgba(107,31,31,0.15)]'
                         : 'bg-cream'
                     }`}
                   />
-                  <div className='font-display pt-[18px] text-[22px] leading-none font-medium tracking-[-0.015em]'>
+                  <div className='font-display pt-[18px] text-[18px] leading-none font-medium tracking-[-0.015em] sm:text-[22px]'>
                     {m.year}
-                    <em className='text-muted ml-1 block text-[13px] font-normal not-italic'>
+                    <em className='text-muted ml-1 block text-[11px] font-normal not-italic sm:text-[13px]'>
                       {m.month}
                     </em>
                   </div>
@@ -443,10 +443,10 @@ export default function OurStoryPage() {
               <OurStoryReveal key={p.num}>
                 <div
                   className={[
-                    'border-line-soft border-b py-9',
-                    // sm (2-col): even = left col gets right border + right pad; odd = right col gets left pad
-                    i % 2 === 0 ? 'sm:border-r sm:pr-8 sm:pl-0' : 'sm:pl-8',
-                    // lg (3-col): col positions by modulo-3
+                    'border-line-soft border-b py-7 sm:py-9',
+                    // sm (2-col): left col (even index) gets right border; right col (odd) gets left pad
+                    i % 2 === 0 ? 'sm:border-r sm:pr-8' : 'sm:pl-8',
+                    // lg (3-col): override sm border/padding by modulo-3 position
                     i % 3 === 0
                       ? 'lg:border-r lg:pr-8 lg:pl-0'
                       : i % 3 === 1
@@ -459,7 +459,7 @@ export default function OurStoryPage() {
                   <div className='text-camel mb-4 font-mono text-[11px] tracking-[0.06em]'>
                     PRINCIPLE {p.num}
                   </div>
-                  <h3 className='font-display mb-3.5 text-[26px] leading-[1.15] font-medium tracking-[-0.02em]'>
+                  <h3 className='font-display mb-3.5 text-[clamp(22px,4vw,26px)] leading-[1.15] font-medium tracking-[-0.02em]'>
                     {p.title}{' '}
                     <em className='text-oxblood italic'>{p.titleEm}</em>
                   </h3>
@@ -498,7 +498,7 @@ export default function OurStoryPage() {
             {TEAM.map((member) => (
               <OurStoryReveal key={member.name}>
                 <div className='group border-line-soft bg-cream overflow-hidden rounded-sm border transition-transform duration-400 hover:-translate-y-1'>
-                  <div className='bg-cream-deep relative aspect-3/4 w-full'>
+                  <div className='bg-cream-deep relative aspect-square w-full sm:aspect-3/4'>
                     <Image
                       src={member.img}
                       alt={member.name}
@@ -650,7 +650,7 @@ export default function OurStoryPage() {
               <OurStoryReveal key={stat.label}>
                 <div
                   className={[
-                    'px-4 sm:px-6',
+                    'px-3 sm:px-6',
                     // mobile (2-col): left column gets right border; right column doesn't
                     i % 2 === 0 ? 'border-r border-cream/8' : '',
                     // desktop (4-col): first three get right border, last doesn't
@@ -658,18 +658,18 @@ export default function OurStoryPage() {
                     // first item: flush left
                     i === 0 ? 'pl-0' : '',
                     // last item: flush right
-                    i === 3 ? 'pr-0 lg:pr-0' : '',
+                    i === 3 ? 'pr-0' : '',
                   ]
                     .filter(Boolean)
                     .join(' ')}
                 >
-                  <div className='font-display text-cream mb-3 text-[clamp(44px,6vw,72px)] leading-none font-light tracking-[-0.035em]'>
+                  <div className='font-display text-cream mb-3 text-[clamp(36px,6vw,72px)] leading-none font-light tracking-[-0.035em]'>
                     {stat.v}
                     <em className='text-camel ml-0.5 align-[0.1em] text-[0.5em] font-normal not-italic'>
                       {stat.unit}
                     </em>
                   </div>
-                  <div className='text-cream/65 max-w-[22ch] text-[12px] leading-[1.4] tracking-[0.04em]'>
+                  <div className='text-cream/65 text-[11px] leading-[1.4] tracking-[0.04em] sm:text-[12px]'>
                     {stat.label}
                   </div>
                 </div>
@@ -794,7 +794,7 @@ export default function OurStoryPage() {
               </div>
 
               {/* Map image */}
-              <div className='bg-cream-deep relative min-h-70 lg:min-h-0'>
+              <div className='bg-cream-deep relative min-h-80 sm:min-h-96 lg:min-h-0'>
                 <Image
                   src='/images/our-story/visit-map.jpg'
                   alt='Map showing EliteCuts location in San Diego, CA'
