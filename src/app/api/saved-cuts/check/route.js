@@ -5,7 +5,7 @@ import { getSessionUser } from '@/utils/getSessionUser';
 export const dynamic = 'force-dynamic';
 await connectDB();
 
-// POST /api/bookmarks/check
+// POST /api/saved-cuts/check
 export const POST = async (request) => {
   try {
     const { productId } = await request.json();
@@ -18,12 +18,12 @@ export const POST = async (request) => {
 
     const { userId } = sessionUser;
 
-    const user = await User.findOne({ _id: userId }, 'bookmarks');
+    const user = await User.findOne({ _id: userId }, 'savedCuts');
     if (!user) {
       return new Response('User Not Found', { status: 404 });
     }
 
-    const isBookmarked = user.bookmarks.includes(productId);
+    const isBookmarked = user.savedCuts.includes(productId);
 
     return new Response(JSON.stringify({ isBookmarked }, { status: 200 }));
   } catch (error) {

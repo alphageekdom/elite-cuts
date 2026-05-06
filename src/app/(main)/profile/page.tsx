@@ -64,7 +64,7 @@ export default async function ProfilePage({ searchParams }: Props) {
     name: string;
     email: string;
     phone?: string;
-    bookmarks: Types.ObjectId[];
+    savedCuts: Types.ObjectId[];
     addresses: {
       _id: Types.ObjectId;
       label: string;
@@ -92,12 +92,12 @@ export default async function ProfilePage({ searchParams }: Props) {
     isDefault: a.isDefault,
   }));
 
-  const bookmarkIds = rawUser.bookmarks ?? [];
+  const savedCutIds = rawUser.savedCuts ?? [];
   const rawProducts =
-    bookmarkIds.length > 0
-      ? await Product.find({ _id: { $in: bookmarkIds } }).lean()
+    savedCutIds.length > 0
+      ? await Product.find({ _id: { $in: savedCutIds } }).lean()
       : [];
-  const serializedBookmarks = rawProducts.map((p) =>
+  const serializedSavedCuts = rawProducts.map((p) =>
     convertToSerializableObject(p as unknown as Record<string, unknown>),
   ) as SerializedProduct[];
 
@@ -153,14 +153,14 @@ export default async function ProfilePage({ searchParams }: Props) {
         <ProfileStats
           orderCount={serializedOrders.length}
           totalSpent={totalSpent}
-          savedCuts={serializedBookmarks.length}
+          savedCuts={serializedSavedCuts.length}
           joinedMonths={joinedMonths}
         />
 
         <ProfileTabs
           activeTab={activeTab}
           orderCount={serializedOrders.length}
-          savedCount={serializedBookmarks.length}
+          savedCount={serializedSavedCuts.length}
           addressCount={serializedAddresses.length}
         />
 
@@ -199,17 +199,17 @@ export default async function ProfilePage({ searchParams }: Props) {
                       Your saved <em className="italic text-oxblood">cuts</em>
                     </h2>
                   </div>
-                  {serializedBookmarks.length > 3 && activeTab === 'overview' && (
+                  {serializedSavedCuts.length > 3 && activeTab === 'overview' && (
                     <Link
                       href="?tab=saved"
                       className="text-[13px] font-medium text-ink-soft inline-flex items-center gap-1.5 border-b border-current pb-px hover:text-oxblood hover:gap-2.5 transition-all"
                     >
-                      See all {serializedBookmarks.length}
+                      See all {serializedSavedCuts.length}
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M13 5l7 7-7 7" /></svg>
                     </Link>
                   )}
                 </div>
-                <ProfileSavedCuts bookmarks={serializedBookmarks} showAll={activeTab === 'saved'} />
+                <ProfileSavedCuts savedCuts={serializedSavedCuts} showAll={activeTab === 'saved'} />
               </section>
             )}
 

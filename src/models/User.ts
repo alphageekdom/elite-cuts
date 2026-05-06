@@ -23,8 +23,7 @@ export type User = {
   email: string;
   password: string;
   phone?: string;
-  favorites: Types.ObjectId[];
-  bookmarks: Types.ObjectId[];
+  savedCuts: Types.ObjectId[];
   addresses: Types.DocumentArray<Address>;
   isAdmin: boolean;
   createdAt: Date;
@@ -65,13 +64,7 @@ const UserSchema = new Schema<User>(
       required: [true, 'Password is required'],
       select: false,
     },
-    favorites: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: 'Product',
-      },
-    ],
-    bookmarks: [
+    savedCuts: [
       {
         type: Schema.Types.ObjectId,
         ref: 'Product',
