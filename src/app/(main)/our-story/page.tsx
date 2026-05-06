@@ -33,7 +33,7 @@ const MILESTONES = [
     month: 'Apr',
     title: 'Pickup,',
     titleEm: 'refined.',
-    body: 'When everyone was figuring out how to keep operating, we built a proper online ordering system with hand-cut-to-order pickup windows. It\'s still how most of you order today.',
+    body: "When everyone was figuring out how to keep operating, we built a proper online ordering system with hand-cut-to-order pickup windows. It's still how most of you order today.",
     tag: 'ONLINE ORDERING',
     live: false,
   },
@@ -42,7 +42,7 @@ const MILESTONES = [
     month: 'Sep',
     title: 'Doubled the',
     titleEm: 'floor',
-    body: 'Took over the storefront next door. Added a proper aging room (climate-controlled, 28-day capacity), a charcuterie counter, and our second butcher — Marcus, who\'s still here.',
+    body: "Took over the storefront next door. Added a proper aging room (climate-controlled, 28-day capacity), a charcuterie counter, and our second butcher — Marcus, who's still here.",
     tag: 'EXPANSION',
     live: false,
   },
@@ -104,7 +104,7 @@ const PRINCIPLES = [
     num: '05',
     title: 'Honest',
     titleEm: 'pricing',
-    body: "We charge what good meat costs. No loss-leader specials, no markups designed to be marked back down. The price on the tag is the price.",
+    body: 'We charge what good meat costs. No loss-leader specials, no markups designed to be marked back down. The price on the tag is the price.',
   },
   {
     num: '06',
@@ -194,11 +194,11 @@ const PARTNERS = [
 function SectionHead({ num, label }: { num: string; label: string }) {
   return (
     <div className='mb-14 flex items-baseline gap-6'>
-      <span className='font-mono text-sm font-medium text-camel'>{num}</span>
-      <span className='text-xs font-medium uppercase tracking-[0.22em] text-muted'>
+      <span className='text-camel font-mono text-sm font-medium'>{num}</span>
+      <span className='text-muted text-xs font-medium tracking-[0.22em] uppercase'>
         {label}
       </span>
-      <span className='h-px flex-1 bg-line' />
+      <span className='bg-line h-px flex-1' />
     </div>
   );
 }
@@ -211,35 +211,48 @@ export default function OurStoryPage() {
       <section className='px-4 pt-18 pb-12 sm:px-8 lg:px-16'>
         <div className='mx-auto max-w-7xl'>
           <OurStoryReveal>
-            <p className='mb-8 inline-flex items-center gap-3 text-[11px] font-medium uppercase tracking-[0.22em] text-muted before:h-px before:w-7 before:bg-current before:opacity-50'>
+            <p className='text-muted mb-8 inline-flex items-center gap-3 text-[11px] font-medium tracking-[0.22em] uppercase before:h-px before:w-7 before:bg-current before:opacity-50'>
               Our Story · Est. 2018
             </p>
           </OurStoryReveal>
 
           <OurStoryReveal>
-            <h1 className='font-display mb-0 max-w-[12ch] text-[clamp(52px,9vw,140px)] font-normal leading-[0.92] tracking-[-0.04em]'>
-              A neighborhood <em className='italic text-oxblood'>butcher</em>{' '}
+            <h1 className='font-display mb-0 max-w-[12ch] text-[clamp(52px,9vw,140px)] leading-[0.92] font-normal tracking-[-0.04em]'>
+              A neighborhood <em className='text-oxblood italic'>butcher</em>{' '}
               shop, modernized.
             </h1>
           </OurStoryReveal>
 
-          <div className='mt-8 grid gap-16 border-t border-line-soft pt-8 lg:grid-cols-[1fr_1.4fr]'>
+          <div className='border-line-soft mt-8 grid gap-16 border-t pt-8 lg:grid-cols-[1fr_1.4fr]'>
             <OurStoryReveal>
-              <div className='font-mono text-[11px] leading-[1.8] tracking-[0.04em] text-muted'>
-                <p><strong className='text-ink'>Founded</strong> 2018</p>
-                <p><strong className='text-ink'>Location</strong> San Diego, CA</p>
-                <p><strong className='text-ink'>Counter</strong> 6 staff</p>
-                <p><strong className='text-ink'>Sourcing</strong> 6+ local farms</p>
-                <p><strong className='text-ink'>Aging room</strong> 28 days, climate-controlled</p>
+              <div className='text-muted font-mono text-[11px] leading-[1.8] tracking-[0.04em]'>
+                <p>
+                  <strong className='text-ink'>Founded</strong> 2018
+                </p>
+                <p>
+                  <strong className='text-ink'>Location</strong> San Diego, CA
+                </p>
+                <p>
+                  <strong className='text-ink'>Counter</strong> 6 staff
+                </p>
+                <p>
+                  <strong className='text-ink'>Sourcing</strong> 6+ local farms
+                </p>
+                <p>
+                  <strong className='text-ink'>Aging room</strong> 28 days,
+                  climate-controlled
+                </p>
               </div>
             </OurStoryReveal>
             <OurStoryReveal>
-              <p className='font-display max-w-[44ch] text-[19px] font-normal leading-[1.55] tracking-[-0.005em] text-ink-soft'>
+              <p className='font-display text-ink-soft max-w-[44ch] text-[19px] leading-[1.55] font-normal tracking-[-0.005em]'>
                 We started with one rule —{' '}
-                <em className='italic text-oxblood'>
-                  don&apos;t sell anything you wouldn&apos;t cook for your own family.
+                <em className='text-oxblood italic'>
+                  don&apos;t sell anything you wouldn&apos;t cook for your own
+                  family.
                 </em>{' '}
-                Eight years later, that&apos;s still the only one we follow without exception.
+                Eight years later, that&apos;s still the only one we follow
+                without exception.
               </p>
             </OurStoryReveal>
           </div>
@@ -250,7 +263,7 @@ export default function OurStoryPage() {
       <section className='px-4 pb-24 sm:px-8 lg:px-16'>
         <div className='mx-auto max-w-7xl'>
           <OurStoryReveal>
-            <div className='relative aspect-[21/9] overflow-hidden rounded-sm bg-ink'>
+            <div className='bg-ink relative aspect-[21/9] overflow-hidden rounded-sm'>
               <Image
                 src='/images/our-story/shop-cover.jpg'
                 alt='EliteCuts shop interior, est. 2018'
@@ -259,7 +272,7 @@ export default function OurStoryPage() {
                 sizes='(max-width: 768px) 100vw, 90vw'
                 priority
               />
-              <div className='absolute bottom-6 left-7 inline-flex items-center gap-2.5 rounded-full bg-ink/65 px-3.5 py-2 font-mono text-[11px] uppercase tracking-[0.18em] text-cream backdrop-blur-sm before:h-px before:w-4 before:bg-camel before:opacity-80'>
+              <div className='bg-ink/65 text-cream before:bg-camel absolute bottom-6 left-7 inline-flex items-center gap-2.5 rounded-full px-3.5 py-2 font-mono text-[11px] tracking-[0.18em] uppercase backdrop-blur-sm before:h-px before:w-4 before:opacity-80'>
                 The shop · San Diego, March 2018
               </div>
             </div>
@@ -278,21 +291,30 @@ export default function OurStoryPage() {
             {/* Aside */}
             <OurStoryReveal>
               <aside>
-                <h3 className='font-display mb-4 text-[22px] font-normal italic leading-[1.2] tracking-[-0.01em] text-oxblood'>
+                <h3 className='font-display text-oxblood mb-4 text-[22px] leading-[1.2] font-normal tracking-[-0.01em] italic'>
                   Started with one tomahawk and a lot of optimism.
                 </h3>
-                <p className='mb-4 max-w-[32ch] text-sm leading-[1.65] text-ink-soft'>
-                  Tangelo spent nine years as head butcher at a Beverly Hills steakhouse. The kitchen was busy. The work was good. But the cuts going out on $90 plates were getting mishandled by the time they hit customers&apos; home kitchens — and that bothered him.
+                <p className='text-ink-soft mb-4 max-w-[32ch] text-sm leading-[1.65]'>
+                  Tangelo spent nine years as head butcher at a Beverly Hills
+                  steakhouse. The kitchen was busy. The work was good. But the
+                  cuts going out on $90 plates were getting mishandled by the
+                  time they hit customers&apos; home kitchens — and that
+                  bothered him.
                 </p>
-                <p className='mb-5 max-w-[32ch] text-sm leading-[1.65] text-ink-soft'>
-                  So in March 2018, he signed a lease on a 600-square-foot shop on Carnivore Street, brought in a single dry-aging cabinet, and wrote the menu on a whiteboard.
+                <p className='text-ink-soft mb-5 max-w-[32ch] text-sm leading-[1.65]'>
+                  So in March 2018, he signed a lease on a 600-square-foot shop
+                  on Carnivore Street, brought in a single dry-aging cabinet,
+                  and wrote the menu on a whiteboard.
                 </p>
-                <div className='flex items-baseline gap-3 rounded-sm border border-line-soft bg-paper p-5'>
+                <div className='border-line-soft bg-paper flex items-baseline gap-3 rounded-sm border p-5'>
                   <div>
-                    <div className='font-display text-[32px] font-normal leading-none tracking-[-0.025em]'>
-                      600<em className='ml-0.5 text-[16px] font-normal not-italic text-oxblood'>sqft</em>
+                    <div className='font-display text-[32px] leading-none font-normal tracking-[-0.025em]'>
+                      600
+                      <em className='text-oxblood ml-0.5 text-[16px] font-normal not-italic'>
+                        sqft
+                      </em>
                     </div>
-                    <div className='mt-1 text-[11px] uppercase tracking-[0.18em] text-muted'>
+                    <div className='text-muted mt-1 text-[11px] tracking-[0.18em] uppercase'>
                       Original shop size
                     </div>
                   </div>
@@ -303,22 +325,37 @@ export default function OurStoryPage() {
             {/* Main text */}
             <OurStoryReveal>
               <div>
-                <h2 className='font-display mb-8 max-w-[18ch] text-[clamp(34px,4.5vw,52px)] font-normal leading-[1.05] tracking-[-0.025em]'>
+                <h2 className='font-display mb-8 max-w-[18ch] text-[clamp(34px,4.5vw,52px)] leading-[1.05] font-normal tracking-[-0.025em]'>
                   The first month, we sold{' '}
-                  <em className='italic text-oxblood'>twelve cuts.</em>
+                  <em className='text-oxblood italic'>twelve cuts.</em>
                 </h2>
-                <p className='mb-5 max-w-[56ch] text-base leading-[1.75] text-ink-soft first-letter:float-left first-letter:mr-3.5 first-letter:mt-1.5 first-letter:font-display first-letter:text-[64px] first-letter:font-medium first-letter:leading-[0.9] first-letter:text-oxblood'>
-                  Not twelve a day. Twelve total. Tangelo kept the lights on by working nights at his old kitchen and letting the dry-aging cabinet earn its keep slowly — every steak that came out of it took 28 days, and there was no shortcut for that.
+                <p className='text-ink-soft first-letter:font-display first-letter:text-oxblood mb-5 max-w-[56ch] text-base leading-[1.75] first-letter:float-left first-letter:mt-1.5 first-letter:mr-3.5 first-letter:text-[64px] first-letter:leading-[0.9] first-letter:font-medium'>
+                  Not twelve a day. Twelve total. Tangelo kept the lights on by
+                  working nights at his old kitchen and letting the dry-aging
+                  cabinet earn its keep slowly — every steak that came out of it
+                  took 28 days, and there was no shortcut for that.
                 </p>
-                <p className='mb-5 max-w-[56ch] text-base leading-[1.75] text-ink-soft'>
-                  Things shifted when chefs from neighboring restaurants started stopping by on their days off. They knew what dry-aged ribeye was supposed to taste like, and they were finding it within walking distance instead of making the drive to the meatpacking district. They told people. Those people told people.
+                <p className='text-ink-soft mb-5 max-w-[56ch] text-base leading-[1.75]'>
+                  Things shifted when chefs from neighboring restaurants started
+                  stopping by on their days off. They knew what dry-aged ribeye
+                  was supposed to taste like, and they were finding it within
+                  walking distance instead of making the drive to the
+                  meatpacking district. They told people. Those people told
+                  people.
                 </p>
-                <blockquote className='font-display my-9 max-w-[36ch] border-l-2 border-camel py-2 pl-7 text-[clamp(22px,2.6vw,32px)] font-normal italic leading-[1.35] tracking-[-0.015em]'>
-                  &ldquo;We&apos;re not trying to be the cheapest. We&apos;re trying to be the cut you remember{' '}
+                <blockquote className='font-display border-camel my-9 max-w-[36ch] border-l-2 py-2 pl-7 text-[clamp(22px,2.6vw,32px)] leading-[1.35] font-normal tracking-[-0.015em] italic'>
+                  &ldquo;We&apos;re not trying to be the cheapest. We&apos;re
+                  trying to be the cut you remember{' '}
                   <em className='text-oxblood'>three weeks later.</em>&rdquo;
                 </blockquote>
-                <p className='max-w-[56ch] text-base leading-[1.75] text-ink-soft'>
-                  By the end of year one, the shop had outgrown the cabinet. By year three, we&apos;d doubled the floor space, hired our second butcher, and started sourcing directly from a single ranch in the Central Valley. We&apos;ve kept growing — but slowly, deliberately, the way you&apos;d age a brisket. The shop today is recognizably the same place. Just with more cuts in the case.
+                <p className='text-ink-soft max-w-[56ch] text-base leading-[1.75]'>
+                  By the end of year one, the shop had outgrown the cabinet. By
+                  year three, we&apos;d doubled the floor space, hired our
+                  second butcher, and started sourcing directly from a single
+                  ranch in the Central Valley. We&apos;ve kept growing — but
+                  slowly, deliberately, the way you&apos;d age a brisket. The
+                  shop today is recognizably the same place. Just with more cuts
+                  in the case.
                 </p>
               </div>
             </OurStoryReveal>
@@ -333,38 +370,42 @@ export default function OurStoryPage() {
             <SectionHead num='§ 02' label='Eight years, in order' />
           </OurStoryReveal>
           <OurStoryReveal>
-            <h2 className='font-display mb-16 max-w-[16ch] text-[clamp(38px,5vw,60px)] font-normal leading-[1.05] tracking-[-0.025em]'>
-              A timeline of <em className='italic text-oxblood'>cuts.</em>
+            <h2 className='font-display mb-16 max-w-[16ch] text-[clamp(38px,5vw,60px)] leading-[1.05] font-normal tracking-[-0.025em]'>
+              A timeline of <em className='text-oxblood italic'>cuts.</em>
             </h2>
           </OurStoryReveal>
 
           <div className='relative max-w-[880px]'>
             {/* vertical rule */}
-            <div className='absolute top-[18px] bottom-[18px] left-20 w-px bg-line sm:left-20' />
+            <div className='bg-line absolute top-[18px] bottom-[18px] left-20 w-px sm:left-20' />
 
             {MILESTONES.map((m) => (
               <OurStoryReveal key={m.year + m.month}>
                 <div className='relative grid grid-cols-[80px_1fr] gap-12 py-6'>
                   {/* dot */}
                   <div
-                    className={`absolute left-[76px] top-9 z-10 h-[9px] w-[9px] rounded-full border-2 border-oxblood ${
-                      m.live ? 'bg-oxblood shadow-[0_0_0_4px_rgba(107,31,31,0.15)]' : 'bg-cream'
+                    className={`border-oxblood absolute top-9 left-[76px] z-10 h-[9px] w-[9px] rounded-full border-2 ${
+                      m.live
+                        ? 'bg-oxblood shadow-[0_0_0_4px_rgba(107,31,31,0.15)]'
+                        : 'bg-cream'
                     }`}
                   />
-                  <div className='font-display pt-[18px] text-[22px] font-medium leading-none tracking-[-0.015em]'>
+                  <div className='font-display pt-[18px] text-[22px] leading-none font-medium tracking-[-0.015em]'>
                     {m.year}
-                    <em className='ml-1 block text-[13px] font-normal not-italic text-muted'>
+                    <em className='text-muted ml-1 block text-[13px] font-normal not-italic'>
                       {m.month}
                     </em>
                   </div>
                   <div className='pt-3.5'>
-                    <h3 className='font-display mb-2 text-[22px] font-medium leading-[1.2] tracking-[-0.015em]'>
+                    <h3 className='font-display mb-2 text-[22px] leading-[1.2] font-medium tracking-[-0.015em]'>
                       {m.title}{' '}
                       {m.titleEm && (
-                        <em className='font-normal italic text-oxblood'>{m.titleEm}</em>
+                        <em className='text-oxblood font-normal italic'>
+                          {m.titleEm}
+                        </em>
                       )}
                     </h3>
-                    <p className='max-w-[50ch] text-[15px] leading-[1.65] text-ink-soft'>
+                    <p className='text-ink-soft max-w-[50ch] text-[15px] leading-[1.65]'>
                       {m.body}
                     </p>
                     <span
@@ -391,31 +432,32 @@ export default function OurStoryPage() {
             <SectionHead num='§ 03' label='What we stand for' />
           </OurStoryReveal>
           <OurStoryReveal>
-            <h2 className='font-display mb-16 max-w-[16ch] text-[clamp(38px,5vw,60px)] font-normal leading-[1.05] tracking-[-0.025em]'>
-              Six rules we don&apos;t <em className='italic text-oxblood'>break.</em>
+            <h2 className='font-display mb-16 max-w-[16ch] text-[clamp(38px,5vw,60px)] leading-[1.05] font-normal tracking-[-0.025em]'>
+              Six rules we don&apos;t{' '}
+              <em className='text-oxblood italic'>break.</em>
             </h2>
           </OurStoryReveal>
 
-          <div className='grid border-t border-line-soft sm:grid-cols-2 lg:grid-cols-3'>
+          <div className='border-line-soft grid border-t sm:grid-cols-2 lg:grid-cols-3'>
             {PRINCIPLES.map((p, i) => (
               <OurStoryReveal key={p.num}>
                 <div
-                  className={`border-b border-line-soft py-9 ${
-                    (i % 3 === 2) ? 'lg:pr-0 lg:pl-8' :
-                    (i % 3 === 0) ? 'lg:pl-0 lg:pr-8 lg:border-r' :
-                    'lg:px-8 lg:border-r'
-                  } ${
-                    (i % 2 === 1) ? 'sm:pl-8' : 'sm:pr-8 sm:border-r'
-                  }`}
+                  className={`border-line-soft border-b py-9 ${
+                    i % 3 === 2
+                      ? 'lg:pr-0 lg:pl-8'
+                      : i % 3 === 0
+                        ? 'lg:border-r lg:pr-8 lg:pl-0'
+                        : 'lg:border-r lg:px-8'
+                  } ${i % 2 === 1 ? 'sm:pl-8' : 'sm:border-r sm:pr-8'}`}
                 >
-                  <div className='mb-4 font-mono text-[11px] tracking-[0.06em] text-camel'>
+                  <div className='text-camel mb-4 font-mono text-[11px] tracking-[0.06em]'>
                     PRINCIPLE {p.num}
                   </div>
-                  <h3 className='font-display mb-3.5 text-[26px] font-medium leading-[1.15] tracking-[-0.02em]'>
+                  <h3 className='font-display mb-3.5 text-[26px] leading-[1.15] font-medium tracking-[-0.02em]'>
                     {p.title}{' '}
-                    <em className='italic text-oxblood'>{p.titleEm}</em>
+                    <em className='text-oxblood italic'>{p.titleEm}</em>
                   </h3>
-                  <p className='max-w-[32ch] text-sm leading-[1.65] text-ink-soft'>
+                  <p className='text-ink-soft max-w-[32ch] text-sm leading-[1.65]'>
                     {p.body}
                   </p>
                 </div>
@@ -432,21 +474,24 @@ export default function OurStoryPage() {
             <SectionHead num='§ 04' label='The Counter' />
           </OurStoryReveal>
           <OurStoryReveal>
-            <h2 className='font-display mb-6 max-w-[16ch] text-[clamp(38px,5vw,60px)] font-normal leading-[1.05] tracking-[-0.025em]'>
-              The people behind <em className='italic text-oxblood'>the case.</em>
+            <h2 className='font-display mb-6 max-w-[16ch] text-[clamp(38px,5vw,60px)] leading-[1.05] font-normal tracking-[-0.025em]'>
+              The people behind{' '}
+              <em className='text-oxblood italic'>the case.</em>
             </h2>
           </OurStoryReveal>
           <OurStoryReveal>
-            <p className='mb-16 max-w-[50ch] text-base text-ink-soft'>
-              When you walk in on a Saturday morning, these are the faces. Most of us have been here longer than three years. Any of us will cut you a sample if you ask.
+            <p className='text-ink-soft mb-16 max-w-[50ch] text-base'>
+              When you walk in on a Saturday morning, these are the faces. Most
+              of us have been here longer than three years. Any of us will cut
+              you a sample if you ask.
             </p>
           </OurStoryReveal>
 
           <div className='grid gap-6 sm:grid-cols-2 lg:grid-cols-4'>
             {TEAM.map((member) => (
               <OurStoryReveal key={member.name}>
-                <div className='group overflow-hidden rounded-sm border border-line-soft bg-cream transition-transform duration-400 hover:-translate-y-1'>
-                  <div className='relative aspect-[3/4] w-full bg-cream-deep'>
+                <div className='group border-line-soft bg-cream overflow-hidden rounded-sm border transition-transform duration-400 hover:-translate-y-1'>
+                  <div className='bg-cream-deep relative aspect-[3/4] w-full'>
                     <Image
                       src={member.img}
                       alt={member.name}
@@ -459,14 +504,16 @@ export default function OurStoryPage() {
                     <div className='font-display mb-1 text-[20px] font-medium tracking-[-0.015em]'>
                       {member.name}
                     </div>
-                    <div className='mb-3.5 text-[11px] uppercase tracking-[0.18em] text-camel'>
+                    <div className='text-camel mb-3.5 text-[11px] tracking-[0.18em] uppercase'>
                       {member.role}
                     </div>
-                    <p className='mb-3.5 text-[13px] leading-[1.55] text-ink-soft'>
+                    <p className='text-ink-soft mb-3.5 text-[13px] leading-[1.55]'>
                       {member.bio}
                     </p>
-                    <p className='border-t border-line-soft pt-3.5 font-display text-[13px] italic leading-[1.5] text-muted'>
-                      <strong className='font-medium not-italic text-ink'>Cut of choice:</strong>{' '}
+                    <p className='border-line-soft font-display text-muted border-t pt-3.5 text-[13px] leading-[1.5] italic'>
+                      <strong className='text-ink font-medium not-italic'>
+                        Cut of choice:
+                      </strong>{' '}
                       {member.fact}
                     </p>
                   </div>
@@ -484,21 +531,25 @@ export default function OurStoryPage() {
             <SectionHead num='§ 05' label='Where it comes from' />
           </OurStoryReveal>
           <OurStoryReveal>
-            <h2 className='font-display mb-6 max-w-[16ch] text-[clamp(38px,5vw,60px)] font-normal leading-[1.05] tracking-[-0.025em]'>
-              Sources you can <em className='italic text-oxblood'>name.</em>
+            <h2 className='font-display mb-6 max-w-[16ch] text-[clamp(38px,5vw,60px)] leading-[1.05] font-normal tracking-[-0.025em]'>
+              Sources you can <em className='text-oxblood italic'>name.</em>
             </h2>
           </OurStoryReveal>
           <OurStoryReveal>
-            <p className='mb-16 max-w-[50ch] text-base text-ink-soft'>
-              We don&apos;t work with distributors. Every partner on this list — we&apos;ve walked their land, met their animals, and shaken hands on the deal.
+            <p className='text-ink-soft mb-16 max-w-[50ch] text-base'>
+              We don&apos;t work with distributors. Every partner on this list —
+              we&apos;ve walked their land, met their animals, and shaken hands
+              on the deal.
             </p>
           </OurStoryReveal>
 
           {PARTNERS.map((partner) => (
             <OurStoryReveal key={partner.title}>
               <div
-                className={`grid items-center gap-12 border-t border-line-soft py-14 last:border-b last:border-line-soft lg:grid-cols-2 ${
-                  partner.flip ? 'lg:[&>:first-child]:order-2 lg:[&>:last-child]:order-1' : ''
+                className={`border-line-soft last:border-line-soft grid items-center gap-12 border-t py-14 last:border-b lg:grid-cols-2 ${
+                  partner.flip
+                    ? 'lg:[&>:first-child]:order-2 lg:[&>:last-child]:order-1'
+                    : ''
                 }`}
               >
                 {/* Image */}
@@ -512,34 +563,36 @@ export default function OurStoryPage() {
                       sizes='(max-width: 1024px) 100vw, 50vw'
                     />
                   </div>
-                  <div className='absolute bottom-4 left-4 rounded-full bg-cream/95 px-3 py-1.5 font-mono text-[10px] tracking-[0.1em] text-ink backdrop-blur-sm'>
+                  <div className='bg-cream/95 text-ink absolute bottom-4 left-4 rounded-full px-3 py-1.5 font-mono text-[10px] tracking-[0.1em] backdrop-blur-sm'>
                     {partner.meta}
                   </div>
                 </div>
                 {/* Text */}
                 <div>
-                  <div className='mb-4 text-[11px] uppercase tracking-[0.22em] text-camel'>
+                  <div className='text-camel mb-4 text-[11px] tracking-[0.22em] uppercase'>
                     {partner.eyebrow}
                   </div>
-                  <h3 className='font-display mb-4 text-[clamp(26px,3vw,38px)] font-medium leading-[1.1] tracking-[-0.02em]'>
+                  <h3 className='font-display mb-4 text-[clamp(26px,3vw,38px)] leading-[1.1] font-medium tracking-[-0.02em]'>
                     {partner.title}{' '}
-                    <em className='font-normal italic text-oxblood'>{partner.titleEm}</em>
+                    <em className='text-oxblood font-normal italic'>
+                      {partner.titleEm}
+                    </em>
                   </h3>
-                  <p className='max-w-[44ch] text-[15px] leading-[1.65] text-ink-soft'>
+                  <p className='text-ink-soft max-w-[44ch] text-[15px] leading-[1.65]'>
                     {partner.body}
                   </p>
-                  <div className='mt-6 flex gap-8 border-t border-line-soft pt-6'>
+                  <div className='border-line-soft mt-6 flex gap-8 border-t pt-6'>
                     {partner.stats.map((s) => (
                       <div key={s.label}>
-                        <div className='font-display mb-1 text-[22px] font-medium leading-none tracking-[-0.015em]'>
+                        <div className='font-display mb-1 text-[22px] leading-none font-medium tracking-[-0.015em]'>
                           {s.v}
                           {s.unit && (
-                            <em className='ml-0.5 text-[14px] font-normal not-italic text-oxblood'>
+                            <em className='text-oxblood ml-0.5 text-[14px] font-normal not-italic'>
                               {s.unit}
                             </em>
                           )}
                         </div>
-                        <div className='text-[10px] uppercase tracking-[0.18em] text-muted'>
+                        <div className='text-muted text-[10px] tracking-[0.18em] uppercase'>
                           {s.label}
                         </div>
                       </div>
@@ -553,41 +606,54 @@ export default function OurStoryPage() {
       </section>
 
       {/* ── CRAFT NUMBERS ── */}
-      <section className='relative overflow-hidden bg-ink px-4 py-20 sm:px-8 lg:px-16'>
+      <section className='bg-ink relative overflow-hidden px-4 py-20 sm:px-8 lg:px-16'>
         {/* decorative glow */}
         <div className='pointer-events-none absolute -top-36 -right-36 h-96 w-96 rounded-full bg-[radial-gradient(circle,rgba(184,137,90,0.15)_0%,transparent_60%)]' />
         <div className='relative mx-auto max-w-7xl'>
           <OurStoryReveal>
-            <p className='mb-4 text-[11px] uppercase tracking-[0.22em] text-camel'>
+            <p className='text-camel mb-4 text-[11px] tracking-[0.22em] uppercase'>
               § Eight years, by the numbers
             </p>
-            <h2 className='font-display mb-14 max-w-[22ch] text-[clamp(34px,4.5vw,52px)] font-normal leading-[1.05] tracking-[-0.025em] text-cream'>
-              The shop in <em className='italic text-camel-soft'>numbers</em> you can verify.
+            <h2 className='font-display text-cream mb-14 max-w-[22ch] text-[clamp(34px,4.5vw,52px)] leading-[1.05] font-normal tracking-[-0.025em]'>
+              The shop in <em className='text-camel-soft italic'>numbers</em>{' '}
+              you can verify.
             </h2>
           </OurStoryReveal>
 
           <div className='grid grid-cols-2 gap-y-10 lg:grid-cols-4'>
             {[
-              { v: '28', unit: 'days', label: 'Aging room cycle, climate-controlled' },
+              {
+                v: '28',
+                unit: 'days',
+                label: 'Aging room cycle, climate-controlled',
+              },
               { v: '06', unit: '+', label: 'Local farms in our supply chain' },
-              { v: '~36', unit: 'hr', label: 'Max time a cut sits in the case' },
-              { v: '100', unit: '%', label: 'Whole-animal buying — nothing pre-cut' },
+              {
+                v: '~36',
+                unit: 'hr',
+                label: 'Max time a cut sits in the case',
+              },
+              {
+                v: '100',
+                unit: '%',
+                label: 'Whole-animal buying — nothing pre-cut',
+              },
             ].map((stat, i) => (
               <OurStoryReveal key={stat.label}>
                 <div
                   className={`px-8 ${
                     i % 2 !== 0 ? 'lg:border-r-0' : ''
-                  } ${i < 3 ? 'border-r border-cream/[0.08]' : ''} ${
+                  } ${i < 3 ? 'border-cream/[0.08] border-r' : ''} ${
                     i === 0 ? 'pl-0' : ''
                   } ${i === 3 ? 'border-r-0 pr-0' : ''}`}
                 >
-                  <div className='font-display mb-3 text-[clamp(44px,6vw,72px)] font-light leading-none tracking-[-0.035em] text-cream'>
+                  <div className='font-display text-cream mb-3 text-[clamp(44px,6vw,72px)] leading-none font-light tracking-[-0.035em]'>
                     {stat.v}
-                    <em className='ml-0.5 align-[0.1em] text-[0.5em] font-normal not-italic text-camel'>
+                    <em className='text-camel ml-0.5 align-[0.1em] text-[0.5em] font-normal not-italic'>
                       {stat.unit}
                     </em>
                   </div>
-                  <div className='max-w-[22ch] text-[12px] leading-[1.4] tracking-[0.04em] text-cream/65'>
+                  <div className='text-cream/65 max-w-[22ch] text-[12px] leading-[1.4] tracking-[0.04em]'>
                     {stat.label}
                   </div>
                 </div>
@@ -601,17 +667,20 @@ export default function OurStoryPage() {
       <section className='px-4 py-24 sm:px-8 lg:px-16'>
         <div className='mx-auto max-w-7xl'>
           <OurStoryReveal>
-            <div className='overflow-hidden rounded-sm border border-line-soft bg-paper lg:grid lg:grid-cols-2'>
+            <div className='border-line-soft bg-paper overflow-hidden rounded-sm border lg:grid lg:grid-cols-2'>
               {/* Content */}
               <div className='p-10 lg:p-14'>
-                <p className='mb-4 text-[11px] uppercase tracking-[0.22em] text-camel'>
+                <p className='text-camel mb-4 text-[11px] tracking-[0.22em] uppercase'>
                   § Come say hi
                 </p>
-                <h2 className='font-display mb-5 max-w-[14ch] text-[clamp(30px,4vw,46px)] font-normal leading-[1.05] tracking-[-0.025em]'>
-                  The counter&apos;s <em className='italic text-oxblood'>open.</em>
+                <h2 className='font-display mb-5 max-w-[14ch] text-[clamp(30px,4vw,46px)] leading-[1.05] font-normal tracking-[-0.025em]'>
+                  The counter&apos;s{' '}
+                  <em className='text-oxblood italic'>open.</em>
                 </h2>
-                <p className='mb-8 max-w-[38ch] text-[15px] leading-[1.65] text-ink-soft'>
-                  The best way to understand what we do is to walk in and ask. No appointment, no obligation — we&apos;ll cut you a sample of whatever&apos;s looking good that day.
+                <p className='text-ink-soft mb-8 max-w-[38ch] text-[15px] leading-[1.65]'>
+                  The best way to understand what we do is to walk in and ask.
+                  No appointment, no obligation — we&apos;ll cut you a sample of
+                  whatever&apos;s looking good that day.
                 </p>
 
                 <div className='mb-9 flex flex-col gap-4'>
@@ -623,7 +692,9 @@ export default function OurStoryPage() {
                       icon2: <circle cx='12' cy='10' r='3' />,
                       text: (
                         <>
-                          <strong className='font-medium text-ink'>3045 30th Street</strong>
+                          <strong className='text-ink font-medium'>
+                            3045 30th Street
+                          </strong>
                           <br />
                           San Diego, CA 92104
                         </>
@@ -634,9 +705,15 @@ export default function OurStoryPage() {
                       icon2: <polyline points='12 6 12 12 16 14' />,
                       text: (
                         <>
-                          <strong className='font-medium text-ink'>Tue–Sat:</strong> 9am–7pm
+                          <strong className='text-ink font-medium'>
+                            Tue–Sat:
+                          </strong>{' '}
+                          9am–7pm
                           <br />
-                          <strong className='font-medium text-ink'>Sun:</strong> 10am–4pm · Closed Mondays
+                          <strong className='text-ink font-medium'>
+                            Sun:
+                          </strong>{' '}
+                          10am–4pm · Closed Mondays
                         </>
                       ),
                     },
@@ -647,14 +724,20 @@ export default function OurStoryPage() {
                       icon2: null,
                       text: (
                         <>
-                          <strong className='font-medium text-ink'>(619) 555-0142</strong> · Call to reserve a cut
+                          <strong className='text-ink font-medium'>
+                            (619) 555-0142
+                          </strong>{' '}
+                          · Call to reserve a cut
                         </>
                       ),
                     },
                   ].map((row, i) => (
-                    <div key={i} className='flex items-start gap-3.5 text-sm text-ink-soft'>
+                    <div
+                      key={i}
+                      className='text-ink-soft flex items-start gap-3.5 text-sm'
+                    >
                       <svg
-                        className='mt-0.5 h-4 w-4 shrink-0 text-oxblood'
+                        className='text-oxblood mt-0.5 h-4 w-4 shrink-0'
                         viewBox='0 0 24 24'
                         fill='none'
                         stroke='currentColor'
@@ -671,16 +754,23 @@ export default function OurStoryPage() {
                 <div className='flex flex-wrap gap-3'>
                   <a
                     href='/products'
-                    className='inline-flex items-center gap-2.5 rounded-full bg-ink px-6 py-3.5 text-sm font-medium tracking-[0.02em] text-cream transition-colors hover:bg-oxblood'
+                    className='bg-ink text-cream hover:bg-oxblood inline-flex items-center gap-2.5 rounded-full px-6 py-3.5 text-sm font-medium tracking-[0.02em] transition-colors'
                   >
                     Browse the shop
-                    <svg width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2}>
+                    <svg
+                      width='14'
+                      height='14'
+                      viewBox='0 0 24 24'
+                      fill='none'
+                      stroke='currentColor'
+                      strokeWidth={2}
+                    >
                       <path d='M5 12h14M13 5l7 7-7 7' />
                     </svg>
                   </a>
                   <a
                     href='#'
-                    className='inline-flex items-center gap-2.5 rounded-full border border-line px-6 py-3.5 text-sm font-medium tracking-[0.02em] text-ink-soft transition-colors hover:border-ink hover:bg-cream hover:text-ink'
+                    className='border-line text-ink-soft hover:border-ink hover:bg-cream hover:text-ink inline-flex items-center gap-2.5 rounded-full border px-6 py-3.5 text-sm font-medium tracking-[0.02em] transition-colors'
                   >
                     Get directions
                   </a>
@@ -688,7 +778,7 @@ export default function OurStoryPage() {
               </div>
 
               {/* Map image */}
-              <div className='relative min-h-[280px] bg-cream-deep lg:min-h-0'>
+              <div className='bg-cream-deep relative min-h-[280px] lg:min-h-0'>
                 <Image
                   src='/images/our-story/visit-map.jpg'
                   alt='Map showing EliteCuts location in Grillville, CA'
@@ -696,13 +786,6 @@ export default function OurStoryPage() {
                   className='object-cover contrast-[1.03] saturate-[0.85]'
                   sizes='(max-width: 1024px) 100vw, 50vw'
                 />
-                {/* EC marker pin */}
-                <div className='absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full'>
-                  <div className='relative grid h-8 w-8 place-items-center rounded-full border-[3px] border-cream bg-oxblood font-display text-[11px] font-bold text-cream shadow-[0_8px_20px_rgba(0,0,0,0.25)]'>
-                    EC
-                    <span className='absolute -bottom-2 left-1/2 -translate-x-1/2 border-x-[6px] border-t-[10px] border-x-transparent border-t-cream' />
-                  </div>
-                </div>
               </div>
             </div>
           </OurStoryReveal>
