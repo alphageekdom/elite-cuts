@@ -2,7 +2,7 @@ export const PRIMARY_LINKS = [
   { href: '/', label: 'Home' },
   { href: '/products', label: 'Shop' },
   { href: '/rewards', label: 'Rewards' },
-  { href: '/about', label: 'Our Story' },
+  { href: '/our-story', label: 'Our Story' },
 ] as const;
 
 // Sub-routes match too: /products/[id] keeps "Shop" active. Home is
