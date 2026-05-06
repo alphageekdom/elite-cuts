@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 const POINTS = 680;
 const NEXT_TIER = 1000;
 const PROGRESS = Math.round((POINTS / NEXT_TIER) * 100);
@@ -41,6 +43,16 @@ export default function ProfileLoyaltyCard() {
         Reach Master Cut to unlock 15% off all dry-aged orders and early access
         to weekly specials.
       </p>
+
+      <Link
+        href="/profile?tab=rewards"
+        className="relative mt-5 inline-flex items-center gap-1.5 text-[12px] font-medium text-camel-soft border-b border-camel-soft/40 pb-px hover:border-camel-soft transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-camel focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
+      >
+        See your rewards
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
+          <path d="M5 12h14M13 5l7 7-7 7" />
+        </svg>
+      </Link>
     </div>
   );
 }
