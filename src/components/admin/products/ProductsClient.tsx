@@ -35,6 +35,16 @@ type Props = {
 };
 
 type StatFilter = 'all' | 'inStock' | 'outOfStock' | 'featured';
+type SortBy = 'newest' | 'oldest' | 'price-asc' | 'price-desc' | 'name-asc' | 'top-rated';
+
+const SORT_OPTIONS: { value: SortBy; label: string }[] = [
+  { value: 'newest', label: 'Newest first' },
+  { value: 'oldest', label: 'Oldest first' },
+  { value: 'price-asc', label: 'Price: Low → High' },
+  { value: 'price-desc', label: 'Price: High → Low' },
+  { value: 'name-asc', label: 'Name: A → Z' },
+  { value: 'top-rated', label: 'Top rated' },
+];
 
 const STAT_CELLS: Array<{
   key: StatFilter | 'avgPrice';
@@ -103,6 +113,7 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [page, setPage] = useState(1);
+  const [sortBy, setSortBy] = useState<SortBy>('newest');
 
   const filtered = useMemo(() => {
     let rows = products;
@@ -118,8 +129,15 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
       rows = rows.filter((p) => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q));
     }
 
-    return rows;
-  }, [products, activeFilter, activeCategory, search]);
+    const sorted = [...rows];
+    if (sortBy === 'newest') sorted.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+    else if (sortBy === 'oldest') sorted.sort((a, b) => (a.createdAt > b.createdAt ? 1 : -1));
+    else if (sortBy === 'price-asc') sorted.sort((a, b) => a.price - b.price);
+    else if (sortBy === 'price-desc') sorted.sort((a, b) => b.price - a.price);
+    else if (sortBy === 'name-asc') sorted.sort((a, b) => a.name.localeCompare(b.name));
+    else if (sortBy === 'top-rated') sorted.sort((a, b) => b.rating - a.rating);
+    return sorted;
+  }, [products, activeFilter, activeCategory, search, sortBy]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -290,12 +308,23 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
           </div>
 
           <div className="flex items-center gap-2">
-            <button className="inline-flex items-center gap-1.5 bg-paper border border-line rounded-full px-3.5 py-2 text-[13px] text-ink-soft hover:border-ink hover:text-ink transition-colors">
-              Sort: Best selling
-              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <div className="relative inline-flex items-center bg-paper border border-line rounded-full hover:border-ink transition-colors">
+              <span className="pl-3.5 pr-1 text-[13px] text-ink-soft pointer-events-none whitespace-nowrap">
+                Sort:
+              </span>
+              <select
+                value={sortBy}
+                onChange={(e) => { setSortBy(e.target.value as SortBy); setPage(1); }}
+                className="appearance-none bg-transparent border-none outline-none text-[13px] text-ink-soft pr-7 pl-1 py-2 cursor-pointer"
+              >
+                {SORT_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+              <svg className="w-3 h-3 text-muted absolute right-3 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="6 9 12 15 18 9" />
               </svg>
-            </button>
+            </div>
             <button
               onClick={openDrawer}
               className="inline-flex items-center gap-1.5 bg-ink text-cream rounded-full px-3.5 py-2 text-[13px] font-medium hover:bg-oxblood transition-colors"
