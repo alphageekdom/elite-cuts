@@ -66,7 +66,7 @@ export default function ProfileOrderList({ orders, showAll = false }: Props) {
         return (
           <div
             key={order._id}
-            className="bg-paper border border-line-soft rounded px-5 py-5 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5 transition-all duration-300 hover:border-line hover:translate-x-1"
+            className="bg-paper border border-line-soft rounded px-5 py-4 flex items-center gap-4 transition-all duration-300 hover:border-line hover:translate-x-1"
           >
             {/* Image */}
             {first?.image ? (
@@ -102,8 +102,8 @@ export default function ProfileOrderList({ orders, showAll = false }: Props) {
             </div>
 
             {/* Status + price */}
-            <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-3 sm:gap-2 shrink-0">
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium tracking-[0.04em] ${statusChip(order.orderStatus)}`}>
+            <div className="flex flex-col items-end gap-1.5 shrink-0">
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium tracking-[0.04em] whitespace-nowrap ${statusChip(order.orderStatus)}`}>
                 <span className="w-1.5 h-1.5 rounded-full bg-current" aria-hidden="true" />
                 {order.orderStatus}
               </span>

@@ -31,7 +31,7 @@ export default function ProfileTabs({ activeTab, orderCount, savedCount, address
   }
 
   return (
-    <nav aria-label="Profile sections" className="mt-12 border-b border-line-soft relative -mx-5 md:mx-0">
+    <nav aria-label="Profile sections" className="mt-8 sm:mt-12 border-b border-line-soft relative -mx-5 md:mx-0">
       {/* Fade hint — signals more tabs off-screen on mobile */}
       <div className="absolute right-0 top-0 bottom-0 w-10 bg-linear-to-l from-cream to-transparent pointer-events-none md:hidden z-10" />
       <ul className="flex gap-4 md:gap-8 overflow-x-auto px-5 md:px-0 pr-10 md:pr-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">

@@ -45,7 +45,7 @@ function BookmarkCard({
   return (
     <div className="bg-paper border border-line-soft rounded overflow-hidden transition-transform duration-400 hover:-translate-y-0.75">
       <Link href={`/products/${bookmark._id}`} aria-label={`View ${bookmark.name}`} className="block">
-        <div className="relative h-40 overflow-hidden">
+        <div className="relative aspect-4/3 overflow-hidden">
           <Image
             src={`/images/products/${bookmark.images[0]}`}
             alt={bookmark.name}
@@ -126,7 +126,7 @@ export default function ProfileSavedCuts({ savedCuts: initial, showAll = false }
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className={`grid gap-4 ${showAll ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-3'}`}>
       {displayed.map((b: SerializedProduct) => (
         <BookmarkCard key={b._id} bookmark={b} onRemove={handleRemove} />
       ))}

@@ -13,7 +13,7 @@ export default function ProfileStats({ orderCount, totalSpent, savedCuts, joined
   const cents = String(totalSpent.toFixed(2)).split('.')[1];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 mt-12 border-t border-line-soft divide-x divide-line-soft">
+    <div className="grid grid-cols-2 lg:grid-cols-4 mt-8 sm:mt-12 border-t border-line-soft divide-x divide-line-soft">
       <StatCell label="Orders placed" sub={`across ${joinedMonths} month${joinedMonths !== 1 ? 's' : ''}`} first>
         {orderCount}
       </StatCell>
@@ -41,7 +41,7 @@ type CellProps = {
 
 function StatCell({ label, sub, children, first, mobileTopBorder }: CellProps) {
   return (
-    <div className={`py-6 px-5 lg:py-8 lg:px-8 ${first ? 'lg:pl-0' : ''} ${mobileTopBorder ? 'border-t border-line-soft lg:border-t-0' : ''}`}>
+    <div className={`py-5 px-4 sm:py-6 sm:px-5 lg:py-8 lg:px-8 ${first ? 'pl-0' : ''} ${mobileTopBorder ? 'border-t border-line-soft lg:border-t-0' : ''}`}>
       <p className="text-[11px] font-medium tracking-[0.22em] uppercase text-muted mb-3">{label}</p>
       <p className="font-display text-[32px] font-normal leading-none tracking-tight">{children}</p>
       <p className="text-xs text-muted mt-1.5">{sub}</p>

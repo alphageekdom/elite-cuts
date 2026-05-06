@@ -30,16 +30,19 @@ export default function ProfileAddresses({ addresses }: Props) {
 
   return (
     <section>
-      <div className="flex items-end justify-between mb-7 gap-5">
-        <div>
-          <h2 className="font-display text-[28px] font-normal tracking-tight leading-tight">
-            Saved <em className="italic text-oxblood">addresses</em>
-          </h2>
-        </div>
+      <div className="flex items-center justify-between mb-7 gap-5">
+        <h2 className="font-display text-[28px] font-normal tracking-tight leading-tight">
+          Saved <em className="italic text-oxblood">addresses</em>
+          {addresses.length > 0 && (
+            <span className="ml-3 font-sans text-[15px] font-normal text-muted align-middle">
+              ({addresses.length})
+            </span>
+          )}
+        </h2>
         {!showForm && (
           <button
             onClick={openNew}
-            className="inline-flex items-center gap-2 text-[13px] font-medium text-ink-soft border-b border-current pb-px hover:text-oxblood hover:gap-2.5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:rounded-sm"
+            className="inline-flex items-center gap-2 text-[13px] font-medium bg-ink text-cream px-4 py-2.5 rounded-full hover:bg-oxblood transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2"
           >
             + Add address
           </button>
@@ -72,7 +75,7 @@ export default function ProfileAddresses({ addresses }: Props) {
           </button>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {addresses.map((addr) => (
             <AddressCard key={addr._id} address={addr} onEdit={openEdit} />
           ))}

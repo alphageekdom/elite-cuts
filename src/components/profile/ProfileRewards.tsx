@@ -61,7 +61,7 @@ export default function ProfileRewards() {
       <div className='grid grid-cols-1 gap-4 md:grid-cols-2 mb-4'>
 
         {/* Status card — dark */}
-        <div className='relative overflow-hidden rounded bg-ink text-cream p-8'>
+        <div className='relative overflow-hidden rounded bg-ink text-cream p-6 sm:p-8'>
           <div
             aria-hidden
             className='pointer-events-none absolute -top-30 -right-30 size-70 rounded-full'
@@ -141,7 +141,7 @@ export default function ProfileRewards() {
         </div>
 
         {/* Perks card — light */}
-        <div className='rounded border border-line-soft bg-paper p-8'>
+        <div className='rounded border border-line-soft bg-paper p-6 sm:p-8'>
           <div className='mb-6'>
             <h3 className='font-display text-xl font-medium tracking-tight leading-tight mb-1'>
               Your <em className='font-normal italic text-oxblood'>perks</em>
@@ -193,7 +193,7 @@ export default function ProfileRewards() {
       {/* Activity card — full width */}
       <div className='overflow-hidden rounded border border-line-soft bg-paper'>
         {/* Header */}
-        <div className='flex flex-wrap items-center justify-between gap-3 border-b border-line-soft px-8 py-5'>
+        <div className='flex flex-wrap items-center justify-between gap-3 border-b border-line-soft px-5 py-4 sm:px-8 sm:py-5'>
           <h3 className='font-display text-lg font-medium tracking-tight'>
             Points <em className='font-normal italic text-oxblood'>activity</em>
           </h3>
@@ -214,7 +214,7 @@ export default function ProfileRewards() {
         </div>
 
         {/* Rows */}
-        <div className='px-8 py-2'>
+        <div className='px-5 py-1 sm:px-8 sm:py-2'>
           {visible.length === 0 ? (
             <p className='py-10 text-center text-sm text-muted'>Nothing yet — your first order starts your history.</p>
           ) : (

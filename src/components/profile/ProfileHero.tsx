@@ -32,7 +32,7 @@ export default function ProfileHero({ name, email, createdAt }: Props) {
   const [firstName, lastName] = splitName(name);
 
   return (
-    <section className="pt-12 pb-16 border-b border-line-soft">
+    <section className="pt-10 pb-10 sm:pt-12 sm:pb-16 border-b border-line-soft">
       <div className="grid grid-cols-[auto_1fr] lg:grid-cols-[auto_1fr_auto] gap-8 lg:gap-10 items-center">
 
         {/* Avatar */}
@@ -58,7 +58,7 @@ export default function ProfileHero({ name, email, createdAt }: Props) {
             <span className="w-6 h-px bg-current opacity-50 shrink-0" />
             Member since {memberSince(createdAt)}
           </p>
-          <h1 className="font-display font-normal text-[clamp(36px,4.5vw,56px)] leading-none tracking-tight mb-3">
+          <h1 className="font-display font-normal text-[clamp(28px,6vw,56px)] leading-none tracking-tight mb-3">
             {firstName}
             {lastName && (
               <> <span className="italic text-oxblood">{lastName}</span></>

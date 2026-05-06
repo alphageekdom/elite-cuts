@@ -165,17 +165,28 @@ export default async function ProfilePage({ searchParams }: Props) {
         />
 
         {/* Main grid */}
-        <div className="py-12 pb-24 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-12 items-start">
+        <div className="pt-8 pb-16 sm:pt-12 sm:pb-20 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-12 items-start">
 
           {/* Left: content */}
           <div>
             {(activeTab === 'overview' || activeTab === 'orders') && (
-              <section className="mb-14">
+              <section className={activeTab === 'orders' ? '' : 'mb-14'}>
                 <div className="flex items-end justify-between mb-7 gap-5">
                   <div>
-                    <h2 className="font-display text-[28px] font-normal tracking-tight leading-tight">
-                      Recent <em className="italic text-oxblood">orders</em>
-                    </h2>
+                    {activeTab === 'orders' ? (
+                      <h2 className="font-display text-[28px] font-normal tracking-tight leading-tight">
+                        Your <em className="italic text-oxblood">orders</em>
+                        {serializedOrders.length > 0 && (
+                          <span className="ml-3 font-sans text-[15px] font-normal text-muted align-middle">
+                            ({serializedOrders.length})
+                          </span>
+                        )}
+                      </h2>
+                    ) : (
+                      <h2 className="font-display text-[28px] font-normal tracking-tight leading-tight">
+                        Recent <em className="italic text-oxblood">orders</em>
+                      </h2>
+                    )}
                   </div>
                   {serializedOrders.length > 0 && activeTab === 'overview' && (
                     <Link
@@ -195,9 +206,20 @@ export default async function ProfilePage({ searchParams }: Props) {
               <section>
                 <div className="flex items-end justify-between mb-7 gap-5">
                   <div>
-                    <h2 className="font-display text-[28px] font-normal tracking-tight leading-tight">
-                      Your saved <em className="italic text-oxblood">cuts</em>
-                    </h2>
+                    {activeTab === 'saved' ? (
+                      <h2 className="font-display text-[28px] font-normal tracking-tight leading-tight">
+                        Your saved <em className="italic text-oxblood">cuts</em>
+                        {serializedSavedCuts.length > 0 && (
+                          <span className="ml-3 font-sans text-[15px] font-normal text-muted align-middle">
+                            ({serializedSavedCuts.length})
+                          </span>
+                        )}
+                      </h2>
+                    ) : (
+                      <h2 className="font-display text-[28px] font-normal tracking-tight leading-tight">
+                        Your saved <em className="italic text-oxblood">cuts</em>
+                      </h2>
+                    )}
                   </div>
                   {serializedSavedCuts.length > 3 && activeTab === 'overview' && (
                     <Link
@@ -222,24 +244,20 @@ export default async function ProfilePage({ searchParams }: Props) {
             )}
 
             {activeTab === 'settings' && (
-              <div className="space-y-14">
+              <div className="space-y-6">
                 {/* Profile info */}
-                <div className="bg-paper border border-line-soft rounded p-8">
-                  <div className="mb-6">
-                    <h2 className="font-display text-[28px] font-normal tracking-tight leading-tight">
-                      Profile <em className="italic text-oxblood">info</em>
-                    </h2>
-                  </div>
+                <div className="bg-paper border border-line-soft rounded p-6 sm:p-8">
+                  <h2 className="font-display text-[28px] font-normal tracking-tight leading-tight mb-6">
+                    Profile <em className="italic text-oxblood">info</em>
+                  </h2>
                   <ProfileInfoForm initialName={displayName} initialEmail={displayEmail} initialPhone={rawUser.phone ?? ''} />
                 </div>
 
                 {/* Password */}
-                <div className="bg-paper border border-line-soft rounded p-8">
-                  <div className="mb-6">
-                    <h2 className="font-display text-[28px] font-normal tracking-tight leading-tight">
-                      Change <em className="italic text-oxblood">password</em>
-                    </h2>
-                  </div>
+                <div className="bg-paper border border-line-soft rounded p-6 sm:p-8">
+                  <h2 className="font-display text-[28px] font-normal tracking-tight leading-tight mb-6">
+                    Change <em className="italic text-oxblood">password</em>
+                  </h2>
                   <UpdateProfile />
                 </div>
               </div>
