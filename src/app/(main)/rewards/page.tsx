@@ -91,7 +91,7 @@ export default function RewardsPage() {
             </Reveal>
 
             <Reveal delayMs={80}>
-              <h1 className='mb-7 font-display text-[clamp(56px,8vw,120px)] font-normal leading-[0.9] tracking-[-0.035em]'>
+              <h1 className='mb-7 max-w-[14ch] font-display text-[clamp(48px,8vw,120px)] font-normal leading-[0.9] tracking-tight'>
                 Earn while you{' '}
                 <em className='italic text-oxblood'>cook.</em>
               </h1>
@@ -106,7 +106,7 @@ export default function RewardsPage() {
             </Reveal>
 
             <Reveal delayMs={200}>
-              <div className='flex flex-wrap gap-3'>
+              <div className='flex flex-col gap-3 sm:flex-row sm:flex-wrap'>
                 <Link
                   href='/register'
                   className='inline-flex items-center gap-2.5 rounded-full bg-ink px-7 py-4 text-sm font-medium tracking-[0.02em] text-cream transition-[background-color,transform] duration-300 hover:bg-oxblood hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oxblood focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:hover:translate-y-0'
@@ -127,8 +127,7 @@ export default function RewardsPage() {
           {/* Right: tier card visual */}
           <Reveal delayMs={160}>
             <div
-              className='relative overflow-hidden rounded-md bg-ink p-9 text-cream shadow-[0_30px_80px_rgba(28,24,20,0.18)]'
-              style={{ aspectRatio: '1/1.15' }}
+              className='relative overflow-hidden rounded-md bg-ink p-9 text-cream shadow-[0_30px_80px_rgba(28,24,20,0.18)] md:aspect-[1/1.15]'
             >
               <div
                 aria-hidden
@@ -154,7 +153,7 @@ export default function RewardsPage() {
                     <div className='mb-2.5 text-[10px] tracking-[0.22em] uppercase text-camel'>
                       Member Card
                     </div>
-                    <div className='font-display text-[28px] font-semibold tracking-[-0.01em]'>
+                    <div className='font-display text-[28px] font-semibold tracking-tight'>
                       Elite
                       <em className='font-normal italic text-camel'>Cuts</em>
                     </div>
@@ -176,7 +175,7 @@ export default function RewardsPage() {
                   <div className='mb-2.5 text-[10px] tracking-[0.22em] uppercase text-cream/55'>
                     Connoisseur · Tier 02
                   </div>
-                  <div className='mb-4 font-display text-[clamp(36px,4vw,52px)] font-normal leading-none tracking-[-0.02em]'>
+                  <div className='mb-4 font-display text-[clamp(36px,4vw,52px)] font-normal leading-none tracking-tight'>
                     Earn{' '}
                     <em className='italic text-camel-soft'>3×</em> on weekends
                   </div>
@@ -218,11 +217,18 @@ export default function RewardsPage() {
 
         {/* ── STAT STRIP ── */}
         <div className='mt-10 border-t border-line-soft'>
-          <div className='grid grid-cols-2 divide-x divide-line-soft lg:grid-cols-4'>
+          <div className='grid grid-cols-2 lg:grid-cols-4'>
             {STATS.map((stat, i) => (
               <div
                 key={stat.label}
-                className={`py-6 px-6 lg:px-8 ${i === 0 ? 'lg:pl-0' : ''} ${i === 3 ? 'lg:pr-0' : ''} ${i >= 2 ? 'border-t border-line-soft lg:border-t-0' : ''}`}
+                className={[
+                  'py-6 px-6 lg:px-8',
+                  i === 0 ? 'lg:pl-0' : '',
+                  i === 3 ? 'lg:pr-0' : '',
+                  i === 1 ? 'border-l border-line-soft' : '',
+                  i === 2 ? 'border-t border-line-soft lg:border-t-0 lg:border-l lg:border-line-soft' : '',
+                  i === 3 ? 'border-t border-line-soft border-l lg:border-t-0' : '',
+                ].filter(Boolean).join(' ')}
               >
                 <div className='mb-2 font-display text-[clamp(32px,4vw,48px)] font-normal leading-none tracking-tight'>
                   {stat.num}
@@ -258,14 +264,14 @@ export default function RewardsPage() {
           <div className='grid grid-cols-1 gap-12 md:grid-cols-3'>
             {HOW_STEPS.map((step, i) => (
               <Reveal key={step.n} delayMs={i * 80}>
-                <div className='relative pt-12'>
+                <div className='relative pt-16 md:pt-12'>
                   <div
                     aria-hidden
-                    className='absolute top-0 left-0 font-display text-[80px] font-normal italic leading-none tracking-[-0.04em] text-camel opacity-50'
+                    className='absolute top-0 left-0 font-display text-[64px] md:text-[80px] font-normal italic leading-none tracking-tight text-camel opacity-50'
                   >
                     {step.n}
                   </div>
-                  <h3 className='relative mb-4 font-display text-[28px] font-medium leading-[1.1] tracking-[-0.02em]'>
+                  <h3 className='relative mb-4 font-display text-[28px] font-medium leading-[1.1] tracking-tight'>
                     {step.heading}
                   </h3>
                   <p className='max-w-[36ch] text-[15px] leading-[1.65] text-ink-soft'>
@@ -309,7 +315,7 @@ export default function RewardsPage() {
                     <circle cx='12' cy='12' r='6' />
                   </svg>
                 </div>
-                <h3 className='mb-2 font-display text-[30px] font-medium leading-[1.1] tracking-[-0.02em]'>
+                <h3 className='mb-2 font-display text-[30px] font-medium leading-[1.1] tracking-tight'>
                   Regular
                 </h3>
                 <p className='mb-7 font-mono text-xs tracking-[0.06em] text-muted'>
@@ -336,7 +342,7 @@ export default function RewardsPage() {
 
             {/* Connoisseur — featured */}
             <Reveal delayMs={80}>
-              <article className='relative -translate-y-3 rounded-sm border border-ink bg-ink p-9 text-cream shadow-[0_30px_80px_rgba(28,24,20,0.2)] transition-transform duration-300 hover:-translate-y-4 motion-reduce:transition-none motion-reduce:hover:-translate-y-3'>
+              <article className='relative md:-translate-y-3 rounded-sm border border-ink bg-ink p-9 text-cream shadow-[0_30px_80px_rgba(28,24,20,0.2)] transition-transform duration-300 hover:-translate-y-1 md:hover:-translate-y-4 motion-reduce:transition-none motion-reduce:md:hover:-translate-y-3'>
                 <span className='absolute top-6 right-6 rounded-full bg-camel px-3 py-1 text-[10px] font-medium tracking-[0.18em] uppercase text-ink'>
                   Most popular
                 </span>
@@ -350,7 +356,7 @@ export default function RewardsPage() {
                     <path d='M12 2l2.39 7.36H22l-6.18 4.49L18.21 21 12 16.51 5.79 21l2.39-7.15L2 9.36h7.61z' />
                   </svg>
                 </div>
-                <h3 className='mb-2 font-display text-[30px] font-medium leading-[1.1] tracking-[-0.02em]'>
+                <h3 className='mb-2 font-display text-[30px] font-medium leading-[1.1] tracking-tight'>
                   Connois<em className='italic text-camel-soft'>seur</em>
                 </h3>
                 <p className='mb-7 font-mono text-xs tracking-[0.06em] text-cream/55'>
@@ -397,7 +403,7 @@ export default function RewardsPage() {
                     />
                   </svg>
                 </div>
-                <h3 className='mb-2 font-display text-[30px] font-medium leading-[1.1] tracking-[-0.02em]'>
+                <h3 className='mb-2 font-display text-[30px] font-medium leading-[1.1] tracking-tight'>
                   Master <em className='italic text-oxblood'>Cut</em>
                 </h3>
                 <p className='mb-7 font-mono text-xs tracking-[0.06em] text-muted'>
@@ -474,7 +480,7 @@ export default function RewardsPage() {
         />
         <div className='relative z-10 mx-auto max-w-7xl px-6 text-center md:px-8'>
           <Reveal>
-            <h2 className='mx-auto mb-7 max-w-180 font-display text-[clamp(40px,6vw,76px)] font-normal leading-none tracking-[-0.03em]'>
+            <h2 className='mx-auto mb-7 max-w-180 font-display text-[clamp(40px,6vw,76px)] font-normal leading-none tracking-tight'>
               Worth joining for the{' '}
               <em className='italic text-camel-soft'>birthday cut</em> alone.
             </h2>
@@ -488,7 +494,7 @@ export default function RewardsPage() {
           </Reveal>
 
           <Reveal delayMs={140}>
-            <div className='flex flex-wrap justify-center gap-3'>
+            <div className='flex flex-col items-center gap-3 sm:flex-row sm:justify-center'>
               <Link
                 href='/register'
                 className='inline-flex items-center gap-2.5 rounded-full bg-cream px-7 py-4 text-sm font-medium tracking-[0.02em] text-ink transition-[background-color,transform] duration-300 hover:bg-paper hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cream focus-visible:ring-offset-2 focus-visible:ring-offset-oxblood motion-reduce:transition-none motion-reduce:hover:translate-y-0'
