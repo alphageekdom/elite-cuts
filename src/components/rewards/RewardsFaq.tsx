@@ -60,7 +60,7 @@ export default function RewardsFaq() {
               type='button'
               onClick={() => toggle(idx)}
               aria-expanded={isOpen}
-              className={`w-full bg-transparent py-6 font-display text-xl font-medium tracking-[-0.01em] text-ink cursor-pointer flex items-center justify-between gap-4 text-left leading-snug transition-colors duration-300 motion-reduce:transition-none ${FOCUS_RING}`}
+              className={`w-full bg-transparent py-6 font-display text-xl font-medium tracking-tight text-ink cursor-pointer flex items-center justify-between gap-4 text-left leading-snug transition-colors duration-300 motion-reduce:transition-none ${FOCUS_RING}`}
             >
               <span>{faq.q}</span>
               <span
