@@ -5,7 +5,7 @@ import { getSessionUser } from '@/utils/getSessionUser';
 
 export const dynamic = 'force-dynamic';
 
-// GET /api/bookmarks
+// GET /api/saved-cuts
 export const GET = async () => {
   try {
     await connectDB();
@@ -19,16 +19,16 @@ export const GET = async () => {
 
     const user = await User.findOne({ _id: userId });
 
-    const bookmarks = await Product.find({ _id: { $in: user.bookmarks } });
+    const savedCuts = await Product.find({ _id: { $in: user.savedCuts } });
 
-    return new Response(JSON.stringify(bookmarks), { status: 200 });
+    return new Response(JSON.stringify(savedCuts), { status: 200 });
   } catch (error) {
     console.log(error);
     return new Response('Something Went Wrong', { status: 500 });
   }
 };
 
-// POST /api/bookmarks
+// POST /api/saved-cuts
 export const POST = async (request) => {
   try {
     const { productId } = await request.json();
@@ -41,21 +41,19 @@ export const POST = async (request) => {
 
     const { userId } = sessionUser;
 
-    // Find user in database
     const user = await User.findOne({ _id: userId });
 
-    // Check if product is bookmarked
-    let isBookmarked = user.bookmarks.includes(productId);
+    let isBookmarked = user.savedCuts.includes(productId);
 
     let message;
 
     if (isBookmarked) {
-      user.bookmarks.pull(productId);
-      message = 'Bookmark Removed';
+      user.savedCuts.pull(productId);
+      message = 'Removed from saved cuts';
       isBookmarked = false;
     } else {
-      user.bookmarks.push(productId);
-      message = 'Bookmark Added';
+      user.savedCuts.push(productId);
+      message = 'Saved to your cuts';
       isBookmarked = true;
     }
 

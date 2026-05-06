@@ -81,12 +81,12 @@ const CartItemRow = ({ line }: Props) => {
     if (savingForLater) return;
     setSavingForLater(true);
     try {
-      const res = await fetch('/api/bookmarks', {
+      const res = await fetch('/api/saved-cuts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productId }),
       });
-      if (!res.ok) throw new Error('bookmark failed');
+      if (!res.ok) throw new Error('save for later failed');
       await removeItemFromCart(productId);
       toast.success('Saved for later');
     } catch (error) {
