@@ -40,8 +40,8 @@ export default function ProfileLoyaltyCard() {
       </div>
 
       <p className="relative text-[13px] text-cream/60 leading-relaxed mt-4">
-        Reach Master Cut to unlock 15% off all dry-aged orders and early access
-        to weekly specials.
+        Reach Master Cut to unlock 15% off dry-aged orders, first dibs on Wagyu,
+        and a quarterly butcher&apos;s box.
       </p>
 
       <Link

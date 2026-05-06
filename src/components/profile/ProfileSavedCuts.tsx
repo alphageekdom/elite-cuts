@@ -113,7 +113,7 @@ export default function ProfileSavedCuts({ bookmarks: initial, showAll = false }
         </div>
         <h3 className="font-display font-medium text-[22px] tracking-tight mb-2">No saved cuts yet</h3>
         <p className="text-muted text-sm mb-6 max-w-[32ch] mx-auto">
-          Browse the counter and save your favorites for quick reorder.
+          Browse the cuts and save anything worth coming back for.
         </p>
         <Link
           href="/products"

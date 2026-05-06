@@ -17,11 +17,11 @@ export default function ProfileStats({ orderCount, totalSpent, savedCuts, joined
       <StatCell label="Orders placed" sub={`across ${joinedMonths} month${joinedMonths !== 1 ? 's' : ''}`} first>
         {orderCount}
       </StatCell>
-      <StatCell label="Total spent" sub="lifetime value">
+      <StatCell label="Total spent" sub="all time">
         ${dollars}
         <em className="not-italic text-oxblood text-lg ml-0.5">.{cents}</em>
       </StatCell>
-      <StatCell label="Saved cuts" sub="favorites & wishlist" mobileTopBorder>
+      <StatCell label="Saved cuts" sub="your favorites" mobileTopBorder>
         {savedCuts}
       </StatCell>
       <StatCell label="Reward points" sub={`${NEXT_TIER_POINTS - REWARD_POINTS} to Master tier`} mobileTopBorder>

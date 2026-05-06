@@ -42,9 +42,9 @@ export default function ProfileOrderList({ orders, showAll = false }: Props) {
             <path d="M16 10a4 4 0 01-8 0" />
           </svg>
         </div>
-        <h3 className="font-display font-medium text-[22px] tracking-tight mb-2">No orders yet</h3>
+        <h3 className="font-display font-medium text-[22px] tracking-tight mb-2">Nothing here yet</h3>
         <p className="text-muted text-sm mb-6 max-w-[32ch] mx-auto">
-          Place your first order and it&apos;ll appear here.
+          Your order history starts with your first cut.
         </p>
         <Link
           href="/products"

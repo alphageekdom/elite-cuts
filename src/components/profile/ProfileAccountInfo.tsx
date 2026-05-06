@@ -34,7 +34,7 @@ export default function ProfileAccountInfo({ email, joinedAt }: Props) {
       <h3 className="font-display font-medium text-[18px] tracking-tight mb-1 text-cream">
         — Account info
       </h3>
-      <p className="text-[13px] text-cream/50 mb-5">Personal details on file</p>
+      <p className="text-[13px] text-cream/50 mb-5">What we have on your account</p>
 
       <InfoRow label="Email" value={<span title={email}>{email}</span>} truncate />
       <InfoRow label="Member since" value={formatJoined(joinedAt)} />
