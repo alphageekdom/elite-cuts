@@ -80,37 +80,37 @@ const PRINCIPLES = [
     num: '01',
     title: 'Hand-cut',
     titleEm: 'to order',
-    body: 'Nothing pre-cut and shrink-wrapped. You order it, we cut it. The case is full because it has to be — but every steak on your counter was sliced after you walked in.',
+    body: 'Nothing pre-cut and shrink-wrapped. You order it, we cut it. The case looks full because it has to — but every steak on your counter was sliced after you walked in.',
   },
   {
     num: '02',
     title: 'Whole-animal',
     titleEm: 'buying',
-    body: 'We buy whole animals from the farms we work with, then break them down ourselves. It means the unglamorous cuts get the same care as the ribeyes. Nothing wasted.',
+    body: 'We buy whole animals from the farms we work with and break them down ourselves. That means the unglamorous cuts get the same attention as the ribeyes. Nothing wasted.',
   },
   {
     num: '03',
     title: 'Never',
     titleEm: 'frozen',
-    body: "If it's in our case, it's been out of refrigeration for less than 36 hours. If it doesn't sell within three days, it goes to the charcuterie counter or our staff fridge. Not the freezer.",
+    body: "If it's in our case, it's been refrigerated — not frozen — and it's been there less than 36 hours. If it doesn't sell within three days, it goes to the charcuterie counter or the staff fridge. Full stop.",
   },
   {
     num: '04',
     title: 'Source you',
     titleEm: 'can name',
-    body: 'Every cut in the case can be traced to the farm or ranch it came from. Ask any of us — we\'ll tell you the name, the town, and what they fed the animal.',
+    body: "Every cut traces back to the farm or ranch it came from. Ask anyone behind the counter — they'll give you the name, the town, and what the animal ate.",
   },
   {
     num: '05',
     title: 'Honest',
     titleEm: 'pricing',
-    body: "We charge what good meat costs. We don't run loss-leader specials, we don't mark things up to mark them down. The price you see is the price.",
+    body: "We charge what good meat costs. No loss-leader specials, no markups designed to be marked back down. The price on the tag is the price.",
   },
   {
     num: '06',
     title: 'Teach the',
     titleEm: 'technique',
-    body: 'You spent $90 on a tomahawk. We\'re not going to let you cook it wrong. Every order ships with cooking notes, and the team at the counter will walk you through any cut.',
+    body: "You spent $90 on a tomahawk. We're not going to let you cook it wrong. Every order comes with cooking notes, and anyone at the counter will walk you through any cut before you leave.",
   },
 ];
 
@@ -132,7 +132,7 @@ const TEAM = [
   {
     name: 'Elena Huang',
     role: 'Sourcing · Operations',
-    bio: "Former chef de cuisine, now spends most of her week visiting farms. Knows every rancher we buy from by their dog's name.",
+    bio: "Former chef de cuisine, now spends most of her week on the road visiting farms. Knows every rancher we buy from by their dog's name.",
     fact: 'Skirt steak, hot pan, two minutes a side.',
     img: '/images/our-story/team-elena-huang.jpg',
   },
@@ -164,7 +164,7 @@ const PARTNERS = [
     eyebrow: 'Pork · Since 2023',
     title: 'Wildwood',
     titleEm: 'Farm',
-    body: 'Heritage Berkshire pork, pasture-raised on 80 acres of oak savannah. The hogs forage acorns most of the year — it\'s why the fat tastes the way it does.',
+    body: "Heritage Berkshire pork, pasture-raised on 80 acres of oak savannah. The hogs forage acorns most of the year. That's why the fat tastes the way it does.",
     meta: 'SAN LUIS OBISPO · 1.5HR DRIVE',
     img: '/images/our-story/partner-wildwood-farm.jpg',
     stats: [
@@ -175,16 +175,16 @@ const PARTNERS = [
     flip: true,
   },
   {
-    eyebrow: 'Lamb · Since 2022',
-    title: 'Coastal',
-    titleEm: 'Lamb Co.',
-    body: 'Grass-fed Dorset lamb from rolling coastal pasture. Smaller carcasses than typical, sweeter flavor from the salt-air grass. We get a delivery every other Wednesday.',
-    meta: 'CENTRAL COAST · 2.2HR DRIVE',
-    img: '/images/our-story/partner-coastal-lamb.jpg',
+    eyebrow: 'Poultry · Since 2021',
+    title: 'Sunridge',
+    titleEm: 'Farm',
+    body: 'Free-range heritage chickens raised on 60 acres of coastal sage scrubland in Ventura County. No antibiotics, no confinement — the birds forage year-round, and the flavor shows it. We take whole-bird delivery every Tuesday and break them down ourselves.',
+    meta: 'VENTURA COUNTY · 1.3HR DRIVE',
+    img: '/images/our-story/partner-sunridge-farm.jpg',
     stats: [
-      { v: '100', unit: '%', label: 'Grass-fed' },
-      { v: '14', unit: 'day', label: 'Delivery cycle' },
-      { v: 'Dorset', unit: '', label: 'Single breed' },
+      { v: '60', unit: 'ac', label: 'Coastal scrubland' },
+      { v: '100', unit: '%', label: 'Free-range' },
+      { v: '~180', unit: '', label: 'Birds per month' },
     ],
     flip: false,
   },
@@ -227,7 +227,7 @@ export default function OurStoryPage() {
             <OurStoryReveal>
               <div className='font-mono text-[11px] leading-[1.8] tracking-[0.04em] text-muted'>
                 <p><strong className='text-ink'>Founded</strong> 2018</p>
-                <p><strong className='text-ink'>Location</strong> Grillville, CA</p>
+                <p><strong className='text-ink'>Location</strong> San Diego, CA</p>
                 <p><strong className='text-ink'>Counter</strong> 6 staff</p>
                 <p><strong className='text-ink'>Sourcing</strong> 6+ local farms</p>
                 <p><strong className='text-ink'>Aging room</strong> 28 days, climate-controlled</p>
@@ -260,7 +260,7 @@ export default function OurStoryPage() {
                 priority
               />
               <div className='absolute bottom-6 left-7 inline-flex items-center gap-2.5 rounded-full bg-ink/65 px-3.5 py-2 font-mono text-[11px] uppercase tracking-[0.18em] text-cream backdrop-blur-sm before:h-px before:w-4 before:bg-camel before:opacity-80'>
-                The shop · Grillville, March 2018
+                The shop · San Diego, March 2018
               </div>
             </div>
           </OurStoryReveal>
@@ -282,10 +282,10 @@ export default function OurStoryPage() {
                   Started with one tomahawk and a lot of optimism.
                 </h3>
                 <p className='mb-4 max-w-[32ch] text-sm leading-[1.65] text-ink-soft'>
-                  Tangelo had been a head butcher at a Beverly Hills steakhouse for nine years. The kitchen was busy. The work was good. But the cuts that ended up on $90 plates were getting lost in translation by the time they reached customers&apos; kitchens at home.
+                  Tangelo spent nine years as head butcher at a Beverly Hills steakhouse. The kitchen was busy. The work was good. But the cuts going out on $90 plates were getting mishandled by the time they hit customers&apos; home kitchens — and that bothered him.
                 </p>
                 <p className='mb-5 max-w-[32ch] text-sm leading-[1.65] text-ink-soft'>
-                  So in March 2018, he opened a 600-square-foot shop on Carnivore Street with a single dry-aging cabinet and a whiteboard menu.
+                  So in March 2018, he signed a lease on a 600-square-foot shop on Carnivore Street, brought in a single dry-aging cabinet, and wrote the menu on a whiteboard.
                 </p>
                 <div className='flex items-baseline gap-3 rounded-sm border border-line-soft bg-paper p-5'>
                   <div>
@@ -311,7 +311,7 @@ export default function OurStoryPage() {
                   Not twelve a day. Twelve total. Tangelo kept the lights on by working nights at his old kitchen and letting the dry-aging cabinet earn its keep slowly — every steak that came out of it took 28 days, and there was no shortcut for that.
                 </p>
                 <p className='mb-5 max-w-[56ch] text-base leading-[1.75] text-ink-soft'>
-                  Word started moving when chefs at neighboring restaurants began stopping by on their days off. They knew what dry-aged ribeye was supposed to taste like, and they were finding it within walking distance instead of having to drive to the meatpacking district. They told their friends. Their friends told their friends.
+                  Things shifted when chefs from neighboring restaurants started stopping by on their days off. They knew what dry-aged ribeye was supposed to taste like, and they were finding it within walking distance instead of making the drive to the meatpacking district. They told people. Those people told people.
                 </p>
                 <blockquote className='font-display my-9 max-w-[36ch] border-l-2 border-camel py-2 pl-7 text-[clamp(22px,2.6vw,32px)] font-normal italic leading-[1.35] tracking-[-0.015em]'>
                   &ldquo;We&apos;re not trying to be the cheapest. We&apos;re trying to be the cut you remember{' '}
@@ -438,7 +438,7 @@ export default function OurStoryPage() {
           </OurStoryReveal>
           <OurStoryReveal>
             <p className='mb-16 max-w-[50ch] text-base text-ink-soft'>
-              When you walk in on a Saturday morning, these are the faces. Most of us have been here longer than three years. All of us will cut you a sample if you ask nicely.
+              When you walk in on a Saturday morning, these are the faces. Most of us have been here longer than three years. Any of us will cut you a sample if you ask.
             </p>
           </OurStoryReveal>
 
@@ -490,7 +490,7 @@ export default function OurStoryPage() {
           </OurStoryReveal>
           <OurStoryReveal>
             <p className='mb-16 max-w-[50ch] text-base text-ink-soft'>
-              We don&apos;t work with distributors. Every partner on this list, we&apos;ve visited their land, met their animals, and shaken hands on the deal.
+              We don&apos;t work with distributors. Every partner on this list — we&apos;ve walked their land, met their animals, and shaken hands on the deal.
             </p>
           </OurStoryReveal>
 
@@ -611,7 +611,7 @@ export default function OurStoryPage() {
                   The counter&apos;s <em className='italic text-oxblood'>open.</em>
                 </h2>
                 <p className='mb-8 max-w-[38ch] text-[15px] leading-[1.65] text-ink-soft'>
-                  The best way to get to know what we do is to walk in and ask. No appointment, no obligation — we&apos;ll happily cut you a sample of whatever&apos;s looking good.
+                  The best way to understand what we do is to walk in and ask. No appointment, no obligation — we&apos;ll cut you a sample of whatever&apos;s looking good that day.
                 </p>
 
                 <div className='mb-9 flex flex-col gap-4'>
@@ -623,9 +623,9 @@ export default function OurStoryPage() {
                       icon2: <circle cx='12' cy='10' r='3' />,
                       text: (
                         <>
-                          <strong className='font-medium text-ink'>123 Carnivore Street</strong>
+                          <strong className='font-medium text-ink'>3045 30th Street</strong>
                           <br />
-                          Grillville, CA 90210
+                          San Diego, CA 92104
                         </>
                       ),
                     },
@@ -647,7 +647,7 @@ export default function OurStoryPage() {
                       icon2: null,
                       text: (
                         <>
-                          <strong className='font-medium text-ink'>(555) 123-4567</strong> · Call to reserve a cut
+                          <strong className='font-medium text-ink'>(619) 555-0142</strong> · Call to reserve a cut
                         </>
                       ),
                     },
