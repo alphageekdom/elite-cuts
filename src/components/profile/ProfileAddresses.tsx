@@ -62,7 +62,7 @@ export default function ProfileAddresses({ addresses }: Props) {
           </div>
           <h3 className="font-display font-medium text-[22px] tracking-tight mb-2">No addresses saved</h3>
           <p className="text-muted text-sm mb-6 max-w-[32ch] mx-auto">
-            Save an address for faster pickup and account management.
+            Save an address to speed up your next pickup.
           </p>
           <button
             onClick={openNew}

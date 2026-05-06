@@ -66,7 +66,7 @@ export default function ProfileRecentlyViewed({ products }: Props) {
         — Recently viewed
       </h3>
       <div className="flex items-center justify-between mb-5">
-        <p className="text-[13px] text-muted">From your last visit</p>
+        <p className="text-[13px] text-muted">Cuts you looked at recently</p>
         {items.length > 0 && (
           <button
             onClick={() => setItems([])}
@@ -84,7 +84,7 @@ export default function ProfileRecentlyViewed({ products }: Props) {
           ))}
         </ul>
       ) : (
-        <p className="text-[13px] text-muted py-2">Nothing from your last visit yet.</p>
+        <p className="text-[13px] text-muted py-2">Start browsing and your recent cuts will show here.</p>
       )}
     </div>
   );
