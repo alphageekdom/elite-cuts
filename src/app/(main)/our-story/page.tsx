@@ -190,15 +190,15 @@ const PARTNERS = [
   },
 ];
 
-// ─── Shared section header ────────────────────────────────────────────────────
-function SectionHead({ num, label }: { num: string; label: string }) {
+
+// ─── Shared section header ───────────────────────────────────────────────────
+function SectionHead({ label }: { label: string }) {
   return (
     <div className='mb-14 flex items-baseline gap-6'>
-      <span className='text-camel font-mono text-sm font-medium'>{num}</span>
-      <span className='text-muted text-xs font-medium tracking-[0.22em] uppercase'>
+      <span className='text-xs font-medium uppercase tracking-[0.22em] text-muted'>
         {label}
       </span>
-      <span className='bg-line h-px flex-1' />
+      <span className='h-px flex-1 bg-line' />
     </div>
   );
 }
@@ -208,22 +208,22 @@ export default function OurStoryPage() {
   return (
     <>
       {/* ── HERO ── */}
-      <section className='px-4 pt-18 pb-12 sm:px-8 lg:px-16'>
+      <section className='px-4 pt-14 pb-12 sm:pt-18 sm:px-8 lg:px-16'>
         <div className='mx-auto max-w-7xl'>
           <OurStoryReveal>
-            <p className='text-muted mb-8 inline-flex items-center gap-3 text-[11px] font-medium tracking-[0.22em] uppercase before:h-px before:w-7 before:bg-current before:opacity-50'>
+            <p className='text-muted mb-6 inline-flex items-center gap-3 text-[11px] font-medium tracking-[0.22em] uppercase before:h-px before:w-7 before:bg-current before:opacity-50'>
               Our Story · Est. 2018
             </p>
           </OurStoryReveal>
 
           <OurStoryReveal>
-            <h1 className='font-display mb-0 max-w-[12ch] text-[clamp(52px,9vw,140px)] leading-[0.92] font-normal tracking-[-0.04em]'>
+            <h1 className='font-display mb-0 max-w-[12ch] text-[clamp(44px,9vw,140px)] leading-[0.92] font-normal tracking-[-0.04em]'>
               A neighborhood <em className='text-oxblood italic'>butcher</em>{' '}
               shop, modernized.
             </h1>
           </OurStoryReveal>
 
-          <div className='border-line-soft mt-8 grid gap-16 border-t pt-8 lg:grid-cols-[1fr_1.4fr]'>
+          <div className='border-line-soft mt-8 grid gap-8 border-t pt-8 lg:gap-16 lg:grid-cols-[1fr_1.4fr]'>
             <OurStoryReveal>
               <div className='text-muted font-mono text-[11px] leading-[1.8] tracking-[0.04em]'>
                 <p>
@@ -263,7 +263,7 @@ export default function OurStoryPage() {
       <section className='px-4 pb-24 sm:px-8 lg:px-16'>
         <div className='mx-auto max-w-7xl'>
           <OurStoryReveal>
-            <div className='bg-ink relative aspect-[21/9] overflow-hidden rounded-sm'>
+            <div className='bg-ink relative aspect-21/9 overflow-hidden rounded-sm'>
               <Image
                 src='/images/our-story/shop-cover.jpg'
                 alt='EliteCuts shop interior, est. 2018'
@@ -272,7 +272,7 @@ export default function OurStoryPage() {
                 sizes='(max-width: 768px) 100vw, 90vw'
                 priority
               />
-              <div className='bg-ink/65 text-cream before:bg-camel absolute bottom-6 left-7 inline-flex items-center gap-2.5 rounded-full px-3.5 py-2 font-mono text-[11px] tracking-[0.18em] uppercase backdrop-blur-sm before:h-px before:w-4 before:opacity-80'>
+              <div className='bg-ink/65 text-cream before:bg-camel absolute bottom-4 left-4 inline-flex items-center gap-2.5 rounded-full px-3.5 py-2 font-mono text-[11px] tracking-[0.18em] uppercase backdrop-blur-sm before:h-px before:w-4 before:opacity-80 sm:bottom-6 sm:left-7'>
                 The shop · San Diego, March 2018
               </div>
             </div>
@@ -284,24 +284,24 @@ export default function OurStoryPage() {
       <section className='px-4 pb-24 sm:px-8 lg:px-16'>
         <div className='mx-auto max-w-7xl'>
           <OurStoryReveal>
-            <SectionHead num='§ 01' label='How it started' />
+            <SectionHead label='How it started' />
           </OurStoryReveal>
 
-          <div className='grid gap-20 lg:grid-cols-[1fr_1.4fr]'>
+          <div className='grid gap-12 lg:gap-20 lg:grid-cols-[1fr_1.4fr]'>
             {/* Aside */}
             <OurStoryReveal>
               <aside>
                 <h3 className='font-display text-oxblood mb-4 text-[22px] leading-[1.2] font-normal tracking-[-0.01em] italic'>
                   Started with one tomahawk and a lot of optimism.
                 </h3>
-                <p className='text-ink-soft mb-4 max-w-[32ch] text-sm leading-[1.65]'>
+                <p className='text-ink-soft mb-4 text-sm leading-[1.65] lg:max-w-[32ch]'>
                   Tangelo spent nine years as head butcher at a Beverly Hills
                   steakhouse. The kitchen was busy. The work was good. But the
                   cuts going out on $90 plates were getting mishandled by the
                   time they hit customers&apos; home kitchens — and that
                   bothered him.
                 </p>
-                <p className='text-ink-soft mb-5 max-w-[32ch] text-sm leading-[1.65]'>
+                <p className='text-ink-soft mb-5 text-sm leading-[1.65] lg:max-w-[32ch]'>
                   So in March 2018, he signed a lease on a 600-square-foot shop
                   on Carnivore Street, brought in a single dry-aging cabinet,
                   and wrote the menu on a whiteboard.
@@ -367,7 +367,7 @@ export default function OurStoryPage() {
       <section className='bg-cream-deep px-4 py-24 sm:px-8 lg:px-16'>
         <div className='mx-auto max-w-7xl'>
           <OurStoryReveal>
-            <SectionHead num='§ 02' label='Eight years, in order' />
+            <SectionHead label='Eight years, in order' />
           </OurStoryReveal>
           <OurStoryReveal>
             <h2 className='font-display mb-16 max-w-[16ch] text-[clamp(38px,5vw,60px)] leading-[1.05] font-normal tracking-[-0.025em]'>
@@ -377,14 +377,14 @@ export default function OurStoryPage() {
 
           <div className='relative max-w-[880px]'>
             {/* vertical rule */}
-            <div className='bg-line absolute top-[18px] bottom-[18px] left-20 w-px sm:left-20' />
+            <div className='bg-line absolute top-[18px] bottom-[18px] left-17 w-px sm:left-20' />
 
             {MILESTONES.map((m) => (
               <OurStoryReveal key={m.year + m.month}>
-                <div className='relative grid grid-cols-[80px_1fr] gap-12 py-6'>
+                <div className='relative grid grid-cols-[72px_1fr] gap-8 py-6 sm:grid-cols-[80px_1fr] sm:gap-12'>
                   {/* dot */}
                   <div
-                    className={`border-oxblood absolute top-9 left-[76px] z-10 h-[9px] w-[9px] rounded-full border-2 ${
+                    className={`border-oxblood absolute top-9 left-16 z-10 h-2.25 w-2.25 rounded-full border-2 sm:left-19 ${
                       m.live
                         ? 'bg-oxblood shadow-[0_0_0_4px_rgba(107,31,31,0.15)]'
                         : 'bg-cream'
@@ -429,7 +429,7 @@ export default function OurStoryPage() {
       <section className='px-4 py-24 sm:px-8 lg:px-16'>
         <div className='mx-auto max-w-7xl'>
           <OurStoryReveal>
-            <SectionHead num='§ 03' label='What we stand for' />
+            <SectionHead label='What we stand for' />
           </OurStoryReveal>
           <OurStoryReveal>
             <h2 className='font-display mb-16 max-w-[16ch] text-[clamp(38px,5vw,60px)] leading-[1.05] font-normal tracking-[-0.025em]'>
@@ -442,13 +442,19 @@ export default function OurStoryPage() {
             {PRINCIPLES.map((p, i) => (
               <OurStoryReveal key={p.num}>
                 <div
-                  className={`border-line-soft border-b py-9 ${
-                    i % 3 === 2
-                      ? 'lg:pr-0 lg:pl-8'
-                      : i % 3 === 0
-                        ? 'lg:border-r lg:pr-8 lg:pl-0'
-                        : 'lg:border-r lg:px-8'
-                  } ${i % 2 === 1 ? 'sm:pl-8' : 'sm:border-r sm:pr-8'}`}
+                  className={[
+                    'border-line-soft border-b py-9',
+                    // sm (2-col): even = left col gets right border + right pad; odd = right col gets left pad
+                    i % 2 === 0 ? 'sm:border-r sm:pr-8 sm:pl-0' : 'sm:pl-8',
+                    // lg (3-col): col positions by modulo-3
+                    i % 3 === 0
+                      ? 'lg:border-r lg:pr-8 lg:pl-0'
+                      : i % 3 === 1
+                        ? 'lg:border-r lg:px-8'
+                        : 'lg:border-r-0 lg:pl-8 lg:pr-0',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
                 >
                   <div className='text-camel mb-4 font-mono text-[11px] tracking-[0.06em]'>
                     PRINCIPLE {p.num}
@@ -457,7 +463,7 @@ export default function OurStoryPage() {
                     {p.title}{' '}
                     <em className='text-oxblood italic'>{p.titleEm}</em>
                   </h3>
-                  <p className='text-ink-soft max-w-[32ch] text-sm leading-[1.65]'>
+                  <p className='text-ink-soft text-sm leading-[1.65] sm:max-w-[32ch]'>
                     {p.body}
                   </p>
                 </div>
@@ -471,10 +477,11 @@ export default function OurStoryPage() {
       <section className='bg-paper px-4 py-24 sm:px-8 lg:px-16'>
         <div className='mx-auto max-w-7xl'>
           <OurStoryReveal>
-            <SectionHead num='§ 04' label='The Counter' />
+            <SectionHead label='The Counter' />
           </OurStoryReveal>
+
           <OurStoryReveal>
-            <h2 className='font-display mb-6 max-w-[16ch] text-[clamp(38px,5vw,60px)] leading-[1.05] font-normal tracking-[-0.025em]'>
+            <h2 className='font-display mb-6 max-w-[16ch] text-[clamp(38px,5vw,60px)] leading-[1.05] font-normal tracking-tight'>
               The people behind{' '}
               <em className='text-oxblood italic'>the case.</em>
             </h2>
@@ -487,11 +494,11 @@ export default function OurStoryPage() {
             </p>
           </OurStoryReveal>
 
-          <div className='grid gap-6 sm:grid-cols-2 lg:grid-cols-4'>
+          <div className='grid gap-5 sm:grid-cols-2 lg:grid-cols-4'>
             {TEAM.map((member) => (
               <OurStoryReveal key={member.name}>
                 <div className='group border-line-soft bg-cream overflow-hidden rounded-sm border transition-transform duration-400 hover:-translate-y-1'>
-                  <div className='bg-cream-deep relative aspect-[3/4] w-full'>
+                  <div className='bg-cream-deep relative aspect-3/4 w-full'>
                     <Image
                       src={member.img}
                       alt={member.name}
@@ -510,7 +517,7 @@ export default function OurStoryPage() {
                     <p className='text-ink-soft mb-3.5 text-[13px] leading-[1.55]'>
                       {member.bio}
                     </p>
-                    <p className='border-line-soft font-display text-muted border-t pt-3.5 text-[13px] leading-[1.5] italic'>
+                    <p className='border-line-soft font-display text-muted border-t pt-3.5 text-[13px] leading-normal italic'>
                       <strong className='text-ink font-medium not-italic'>
                         Cut of choice:
                       </strong>{' '}
@@ -528,10 +535,11 @@ export default function OurStoryPage() {
       <section className='px-4 py-24 sm:px-8 lg:px-16'>
         <div className='mx-auto max-w-7xl'>
           <OurStoryReveal>
-            <SectionHead num='§ 05' label='Where it comes from' />
+            <SectionHead label='Where it comes from' />
           </OurStoryReveal>
+
           <OurStoryReveal>
-            <h2 className='font-display mb-6 max-w-[16ch] text-[clamp(38px,5vw,60px)] leading-[1.05] font-normal tracking-[-0.025em]'>
+            <h2 className='font-display mb-6 max-w-[16ch] text-[clamp(38px,5vw,60px)] leading-[1.05] font-normal tracking-tight'>
               Sources you can <em className='text-oxblood italic'>name.</em>
             </h2>
           </OurStoryReveal>
@@ -548,13 +556,13 @@ export default function OurStoryPage() {
               <div
                 className={`border-line-soft last:border-line-soft grid items-center gap-12 border-t py-14 last:border-b lg:grid-cols-2 ${
                   partner.flip
-                    ? 'lg:[&>:first-child]:order-2 lg:[&>:last-child]:order-1'
+                    ? 'lg:*:first:order-2 lg:*:last:order-1'
                     : ''
                 }`}
               >
                 {/* Image */}
                 <div className='relative'>
-                  <div className='relative aspect-[4/3] overflow-hidden rounded-sm'>
+                  <div className='relative aspect-4/3 overflow-hidden rounded-sm'>
                     <Image
                       src={partner.img}
                       alt={`${partner.title} ${partner.titleEm}`}
@@ -563,7 +571,7 @@ export default function OurStoryPage() {
                       sizes='(max-width: 1024px) 100vw, 50vw'
                     />
                   </div>
-                  <div className='bg-cream/95 text-ink absolute bottom-4 left-4 rounded-full px-3 py-1.5 font-mono text-[10px] tracking-[0.1em] backdrop-blur-sm'>
+                  <div className='bg-cream/95 text-ink absolute bottom-4 left-4 rounded-full px-3 py-1.5 font-mono text-[10px] tracking-widest backdrop-blur-sm'>
                     {partner.meta}
                   </div>
                 </div>
@@ -614,7 +622,7 @@ export default function OurStoryPage() {
             <p className='text-camel mb-4 text-[11px] tracking-[0.22em] uppercase'>
               § Eight years, by the numbers
             </p>
-            <h2 className='font-display text-cream mb-14 max-w-[22ch] text-[clamp(34px,4.5vw,52px)] leading-[1.05] font-normal tracking-[-0.025em]'>
+            <h2 className='font-display text-cream mb-14 max-w-[22ch] text-[clamp(34px,4.5vw,52px)] leading-[1.05] font-normal tracking-tight'>
               The shop in <em className='text-camel-soft italic'>numbers</em>{' '}
               you can verify.
             </h2>
@@ -641,11 +649,19 @@ export default function OurStoryPage() {
             ].map((stat, i) => (
               <OurStoryReveal key={stat.label}>
                 <div
-                  className={`px-8 ${
-                    i % 2 !== 0 ? 'lg:border-r-0' : ''
-                  } ${i < 3 ? 'border-cream/[0.08] border-r' : ''} ${
-                    i === 0 ? 'pl-0' : ''
-                  } ${i === 3 ? 'border-r-0 pr-0' : ''}`}
+                  className={[
+                    'px-4 sm:px-6',
+                    // mobile (2-col): left column gets right border; right column doesn't
+                    i % 2 === 0 ? 'border-r border-cream/8' : '',
+                    // desktop (4-col): first three get right border, last doesn't
+                    i < 3 ? 'lg:border-r lg:border-cream/8' : 'lg:border-r-0',
+                    // first item: flush left
+                    i === 0 ? 'pl-0' : '',
+                    // last item: flush right
+                    i === 3 ? 'pr-0 lg:pr-0' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
                 >
                   <div className='font-display text-cream mb-3 text-[clamp(44px,6vw,72px)] leading-none font-light tracking-[-0.035em]'>
                     {stat.v}
@@ -669,11 +685,11 @@ export default function OurStoryPage() {
           <OurStoryReveal>
             <div className='border-line-soft bg-paper overflow-hidden rounded-sm border lg:grid lg:grid-cols-2'>
               {/* Content */}
-              <div className='p-10 lg:p-14'>
+              <div className='p-8 lg:p-14'>
                 <p className='text-camel mb-4 text-[11px] tracking-[0.22em] uppercase'>
                   § Come say hi
                 </p>
-                <h2 className='font-display mb-5 max-w-[14ch] text-[clamp(30px,4vw,46px)] leading-[1.05] font-normal tracking-[-0.025em]'>
+                <h2 className='font-display mb-5 max-w-[14ch] text-[clamp(30px,4vw,46px)] leading-[1.05] font-normal tracking-tight'>
                   The counter&apos;s{' '}
                   <em className='text-oxblood italic'>open.</em>
                 </h2>
@@ -778,10 +794,10 @@ export default function OurStoryPage() {
               </div>
 
               {/* Map image */}
-              <div className='bg-cream-deep relative min-h-[280px] lg:min-h-0'>
+              <div className='bg-cream-deep relative min-h-70 lg:min-h-0'>
                 <Image
                   src='/images/our-story/visit-map.jpg'
-                  alt='Map showing EliteCuts location in Grillville, CA'
+                  alt='Map showing EliteCuts location in San Diego, CA'
                   fill
                   className='object-cover contrast-[1.03] saturate-[0.85]'
                   sizes='(max-width: 1024px) 100vw, 50vw'
