@@ -37,16 +37,16 @@ function StatCard({ stat }: { stat: Stat }) {
 
   return (
     <div
-      className="bg-paper rounded-[4px] px-[26px] py-6 border border-line-soft hover:-translate-y-0.5 transition-transform duration-400"
+      className="bg-paper rounded-[4px] px-5 md:px-6.5 py-6 border border-line-soft hover:-translate-y-0.5 transition-transform duration-400"
       style={{
         animation: `dashStatRise 0.8s cubic-bezier(0.2,0.8,0.2,1) ${stat.delay} both`,
       }}
     >
-      <div className="flex items-center justify-between mb-5">
-        <span className="text-[11px] font-medium tracking-[0.22em] uppercase text-muted">
+      <div className="flex items-center justify-between gap-2 mb-5">
+        <span className="text-[11px] font-medium tracking-[0.22em] uppercase text-muted leading-tight">
           {stat.label}
         </span>
-        <span className="w-8 h-8 rounded-full bg-cream-deep text-ink-soft grid place-items-center">
+        <span className="w-8 h-8 rounded-full bg-cream-deep text-ink-soft grid place-items-center shrink-0">
           {stat.icon}
         </span>
       </div>
@@ -60,7 +60,7 @@ function StatCard({ stat }: { stat: Stat }) {
         )}
       </div>
 
-      <div className="flex items-center gap-2 text-[12px] text-muted">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-muted">
         <span
           className={`inline-flex items-center gap-[3px] px-2 py-0.5 rounded-full font-medium text-[11px] tracking-[0.02em] ${
             stat.changeDir === 'up'
@@ -71,7 +71,7 @@ function StatCard({ stat }: { stat: Stat }) {
           {stat.changeDir === 'up' ? <ArrowUp /> : <ArrowDown />}
           {stat.change}
         </span>
-        {stat.changeMeta}
+        <span className="whitespace-nowrap">{stat.changeMeta}</span>
       </div>
     </div>
   );

@@ -67,11 +67,11 @@ export default function DashboardTopCuts() {
       <div className="divide-y divide-line-soft">
         {TOP_CUTS.map((cut) => (
           <div key={cut.name} className="py-3.5 first:pt-0 last:pb-0">
-            <div className="flex justify-between items-baseline mb-1.5">
-              <span className="font-display text-[16px] font-medium tracking-[-0.01em]">
+            <div className="flex items-baseline gap-3 mb-1.5">
+              <span className="font-display text-[16px] font-medium tracking-[-0.01em] flex-1 min-w-0 truncate">
                 {cut.name}
               </span>
-              <span className="font-display text-[16px] font-medium">{cut.revenue}</span>
+              <span className="font-display text-[16px] font-medium shrink-0">{cut.revenue}</span>
             </div>
             <div className="h-1 bg-cream-deep rounded-sm overflow-hidden mb-1.5">
               <div
