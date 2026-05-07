@@ -16,6 +16,8 @@
   --color-green: #4a6b3a;
   --color-green-soft: rgba(74, 107, 58, 0.12);
   --color-red-soft: rgba(107, 31, 31, 0.1);
+  --color-amber: #a87b2b;
+  --color-amber-soft: rgba(168, 123, 43, 0.12);
 
   --font-display: var(--font-fraunces);
   --font-sans: var(--font-instrument);
