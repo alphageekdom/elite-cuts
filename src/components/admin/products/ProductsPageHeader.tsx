@@ -21,9 +21,9 @@ export default function ProductsPageHeader({ total, inStock, outOfStock }: Props
       </div>
 
       <div>
-        <div className="font-display italic text-sm text-camel mb-1.5">✦ Catalog</div>
+        <div className="font-display italic text-sm text-camel mb-1.5">Catalog</div>
         <h1 className="font-display font-normal text-[clamp(36px,4vw,52px)] leading-none tracking-tight mb-1">
-          All <em className="italic text-oxblood">products</em>
+          All <em className="italic text-oxblood">cuts</em>
         </h1>
         <p className="text-muted text-sm tracking-[0.02em]">
           {total} cuts in catalog · {inStock} in stock · {outOfStock} out of stock

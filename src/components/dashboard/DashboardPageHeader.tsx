@@ -14,14 +14,14 @@ export default function DashboardPageHeader({ name }: Props) {
     <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 md:mb-10 gap-4 sm:gap-8">
       <div>
         <p className="font-display italic text-sm text-camel mb-2">
-          ✦ Welcome back, {name}
+          Welcome back, {name}
         </p>
         <h1 className="font-display font-normal text-[clamp(40px,4.5vw,56px)] leading-none tracking-tight mb-1.5">
           Today&apos;s{' '}
           <em className="italic text-oxblood font-normal">counter.</em>
         </h1>
         <p className="text-muted text-sm tracking-[0.02em]">
-          {today} · Here&apos;s what&apos;s happening at the shop.
+          {today} · Here&apos;s how the shop is running.
         </p>
       </div>
 

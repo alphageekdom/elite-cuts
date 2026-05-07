@@ -82,7 +82,7 @@ const STOCK_STATUS_LABEL: Record<StockState, string> = {
   low: 'Low stock',
   critical: 'Critical',
   out: 'Out of stock',
-  over: 'In stock',
+  over: 'Overstocked',
 };
 
 const SORT_OPTIONS: { value: SortBy; label: string }[] = [
@@ -260,8 +260,8 @@ export default function InventoryClient({ rows, counts, categoryCounts }: Props)
             </svg>
           </span>
           <span>
-            <strong className="text-ink font-medium">{counts.critical} item{counts.critical !== 1 ? 's' : ''} critically low.</strong>{' '}
-            Stock levels are below reorder threshold. Review the critical items below.
+            <strong className="text-ink font-medium">{counts.critical} cut{counts.critical !== 1 ? 's' : ''} below reorder threshold.</strong>{' '}
+            Take action now or place an order.
           </span>
           <button
             onClick={() => setAlertDismissed(true)}
@@ -399,25 +399,25 @@ export default function InventoryClient({ rows, counts, categoryCounts }: Props)
             <thead className="bg-cream border-b border-line-soft">
               <tr>
                 <th className="text-left pl-6 pr-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">
-                  Product
+                  Cut
                 </th>
                 <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">
                   Category
                 </th>
                 <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">
-                  Stock level
+                  Stock
                 </th>
                 <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">
                   Status
                 </th>
                 <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">
-                  Price
+                  Price /lb
                 </th>
                 <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">
                   Supplier
                 </th>
                 <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">
-                  Aging
+                  Aged
                 </th>
                 <th className="pr-6 pl-4 py-3.5" />
               </tr>
@@ -426,7 +426,7 @@ export default function InventoryClient({ rows, counts, categoryCounts }: Props)
               {pageRows.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="text-center py-16 text-muted text-[14px]">
-                    No products match your filters.
+                    No cuts match your filters.
                   </td>
                 </tr>
               ) : (
@@ -575,7 +575,7 @@ export default function InventoryClient({ rows, counts, categoryCounts }: Props)
         <div className="flex items-center justify-between px-6 py-4 border-t border-line-soft bg-cream flex-wrap gap-3">
           <div className="font-mono text-[12px] text-muted tracking-[0.04em]">
             Showing <strong className="text-ink font-medium">{(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)}</strong>{' '}
-            of <strong className="text-ink font-medium">{filtered.length}</strong> products
+            of <strong className="text-ink font-medium">{filtered.length}</strong> cuts
           </div>
           <div className="flex items-center gap-1.5">
             <button
@@ -659,7 +659,7 @@ export default function InventoryClient({ rows, counts, categoryCounts }: Props)
                     {cut.weight} LB · STARTED {cut.started}
                     <br />
                     {cut.pastDue ? (
-                      <strong className="text-oxblood font-medium">{cut.day - cut.target} DAYS PAST</strong>
+                      <strong className="text-oxblood font-medium">{cut.day - cut.target} DAYS OVER</strong>
                     ) : (
                       <>READY {cut.ready}</>
                     )}

@@ -162,12 +162,12 @@ export default function SettingsClient() {
     <>
       {/* Page header */}
       <div className="mb-9">
-        <div className="font-display italic text-sm text-camel mb-1.5">✦ Configuration</div>
+        <div className="font-display italic text-sm text-camel mb-1.5">Configuration</div>
         <h1 className="font-display font-normal text-[clamp(36px,4vw,52px)] leading-none tracking-tight mb-1">
           Shop <em className="italic text-oxblood">settings</em>
         </h1>
         <p className="text-sm text-muted tracking-[0.02em]">
-          Manage your shop profile, team, payments, and integrations
+          Shop profile, team access, payments, and fulfillment in one place
         </p>
       </div>
 
@@ -229,7 +229,7 @@ export default function SettingsClient() {
                   Shop <em className="italic text-oxblood font-normal">profile</em>
                 </h2>
                 <p className={sectionSubCls}>
-                  Basic information about your shop. This appears on your storefront, receipts, and customer-facing emails.
+                  Appears on your storefront, receipts, and customer emails.
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
                   <div>
@@ -323,7 +323,7 @@ export default function SettingsClient() {
                     </SelectField>
                   </div>
                   <div>
-                    <label className={labelCls}>Default open</label>
+                    <label className={labelCls}>Opens at</label>
                     <SelectField defaultValue="9:00 AM">
                       <option>8:00 AM</option>
                       <option>9:00 AM</option>
@@ -463,7 +463,7 @@ export default function SettingsClient() {
                   Pickup <em className="italic text-oxblood font-normal">settings</em>
                 </h2>
                 <p className={sectionSubCls}>
-                  Controls the time slots your customers see on the checkout page. Capacity per slot limits how many orders you can fulfill per hour.
+                  Sets the time slots shown at checkout. Capacity per slot caps orders per hour.
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                   <div>
@@ -479,7 +479,7 @@ export default function SettingsClient() {
                     </SelectField>
                   </div>
                   <div>
-                    <label className={labelCls}>Max advance booking</label>
+                    <label className={labelCls}>Max booking window</label>
                     <SelectField>
                       <option>Same day</option>
                       <option>3 days</option>
@@ -547,12 +547,12 @@ export default function SettingsClient() {
               </p>
               <div className="flex flex-col">
                 {[
-                  { label: 'New order received', desc: 'Get notified when a customer places a new order', defaultOn: true },
-                  { label: 'Low stock alerts', desc: 'When any item drops below reorder threshold', defaultOn: true },
-                  { label: 'Daily summary', desc: 'Orders, revenue, and inventory at end of day', defaultOn: true },
+                  { label: 'New order received', desc: 'Alert when a customer places an order', defaultOn: true },
+                  { label: 'Low stock', desc: 'When any cut drops below reorder threshold', defaultOn: true },
+                  { label: 'Daily summary', desc: 'Orders, revenue, and stock at close of day', defaultOn: true },
                   { label: 'Weekly analytics report', desc: 'Revenue trends, top sellers, and customer insights', defaultOn: false },
-                  { label: 'Aging room reminders', desc: 'Notifications when a cut reaches its target age', defaultOn: true },
-                  { label: 'Customer churn alerts', desc: "When a customer hasn't ordered in 90+ days", defaultOn: false },
+                  { label: 'Aging room alerts', desc: 'When a cut reaches target age', defaultOn: true },
+                  { label: 'Dormant customer alerts', desc: "When a customer hasn't ordered in 90+ days", defaultOn: false },
                 ].map((n) => (
                   <div
                     key={n.label}
@@ -607,7 +607,7 @@ export default function SettingsClient() {
                     <input type="text" defaultValue="100 pts = $5 off" className={inputCls} />
                   </div>
                   <div>
-                    <label className={labelCls}>Min redemption</label>
+                    <label className={labelCls}>Min to redeem</label>
                     <input type="number" defaultValue={0} placeholder="No minimum" className={inputCls} />
                   </div>
                 </div>
@@ -619,11 +619,11 @@ export default function SettingsClient() {
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-3">
                   <div>
-                    <label className={labelCls}>Connoisseur threshold</label>
+                    <label className={labelCls}>Connoisseur (pts)</label>
                     <input type="number" defaultValue={250} className={inputCls} />
                   </div>
                   <div>
-                    <label className={labelCls}>Master Cut threshold</label>
+                    <label className={labelCls}>Master Cut (pts)</label>
                     <input type="number" defaultValue={1000} className={inputCls} />
                   </div>
                   <div>
@@ -659,8 +659,8 @@ export default function SettingsClient() {
               {[
                 { label: 'Export all data', desc: 'Download a complete export of orders, customers, inventory, and analytics as CSV files.', action: 'Export all', cls: btnGhost },
                 { label: 'Reset analytics', desc: 'Clear all analytics data and start tracking from scratch. Orders and customer records are preserved.', action: 'Reset analytics', cls: btnDanger },
-                { label: 'Close shop temporarily', desc: 'Disables online ordering and hides the storefront. Your dashboard remains accessible.', action: 'Close shop', cls: btnDanger },
-                { label: 'Delete everything', desc: 'Permanently delete your shop, all orders, customers, inventory, and analytics. This cannot be undone.', action: 'Delete shop', cls: btnDanger },
+                { label: 'Pause the storefront', desc: 'Disables online ordering and hides the shop. Your dashboard stays accessible.', action: 'Pause shop', cls: btnDanger },
+                { label: 'Delete shop', desc: 'Permanently deletes all orders, customers, stock, and analytics. This cannot be undone.', action: 'Delete shop', cls: btnDanger },
               ].map((row) => (
                 <div
                   key={row.label}

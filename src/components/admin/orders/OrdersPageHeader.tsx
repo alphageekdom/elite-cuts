@@ -20,12 +20,12 @@ export default function OrdersPageHeader({ totalThisMonth, pendingCount }: Props
       </div>
 
       <div>
-        <div className="font-display italic text-sm text-camel mb-1.5">✦ Manage</div>
+        <div className="font-display italic text-sm text-camel mb-1.5">Manage</div>
         <h1 className="font-display font-normal text-[clamp(36px,4vw,52px)] leading-none tracking-tight mb-1">
           All <em className="italic text-oxblood">orders</em>
         </h1>
         <p className="text-muted text-sm tracking-[0.02em]">
-          {totalThisMonth} orders this month · {pendingCount} need your attention
+          {totalThisMonth} orders this month · {pendingCount} pending action
         </p>
       </div>
 

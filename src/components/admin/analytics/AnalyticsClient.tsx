@@ -182,7 +182,7 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
         </div>
 
         <div>
-          <div className="font-display italic text-sm text-camel mb-1.5">✦ Insights</div>
+          <div className="font-display italic text-sm text-camel mb-1.5">Insights</div>
           <h1 className="font-display font-normal text-[clamp(36px,4vw,52px)] leading-none tracking-tight mb-1">
             Shop <em className="italic text-oxblood">analytics</em>
           </h1>
@@ -281,7 +281,7 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
         {/* Avg Order Value */}
         <div className="bg-paper border border-line-soft rounded-sm px-6 py-5.5 hover:border-line transition-colors">
           <div className="flex items-center justify-between mb-3.5">
-            <span className="text-[10px] font-medium tracking-[0.22em] uppercase text-muted">Avg Order Value</span>
+            <span className="text-[10px] font-medium tracking-[0.22em] uppercase text-muted">Avg Order</span>
             <span className="w-6.5 h-6.5 rounded-full bg-cream-deep text-ink-soft grid place-items-center">
               <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
@@ -300,7 +300,7 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
         {/* Repeat Purchase */}
         <div className="bg-paper border border-line-soft rounded-sm px-6 py-5.5 hover:border-line transition-colors">
           <div className="flex items-center justify-between mb-3.5">
-            <span className="text-[10px] font-medium tracking-[0.22em] uppercase text-muted">Repeat Purchase</span>
+            <span className="text-[10px] font-medium tracking-[0.22em] uppercase text-muted">Repeat rate</span>
             <span className="w-6.5 h-6.5 rounded-full bg-cream-deep text-ink-soft grid place-items-center">
               <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" />
@@ -322,7 +322,7 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
         {/* New Customers */}
         <div className="bg-paper border border-line-soft rounded-sm px-6 py-5.5 hover:border-line transition-colors">
           <div className="flex items-center justify-between mb-3.5">
-            <span className="text-[10px] font-medium tracking-[0.22em] uppercase text-muted">New Customers</span>
+            <span className="text-[10px] font-medium tracking-[0.22em] uppercase text-muted">New customers</span>
             <span className="w-6.5 h-6.5 rounded-full bg-cream-deep text-ink-soft grid place-items-center">
               <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="8.5" cy="7" r="4" />
@@ -342,7 +342,7 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
         {/* Cancellation Rate */}
         <div className="bg-paper border border-line-soft rounded-sm px-6 py-5.5 hover:border-line transition-colors">
           <div className="flex items-center justify-between mb-3.5">
-            <span className="text-[10px] font-medium tracking-[0.22em] uppercase text-muted">Cancellation Rate</span>
+            <span className="text-[10px] font-medium tracking-[0.22em] uppercase text-muted">Cancel rate</span>
             <span className="w-6.5 h-6.5 rounded-full bg-cream-deep text-ink-soft grid place-items-center">
               <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10" />
@@ -371,7 +371,7 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
                 Revenue <em className="italic text-oxblood font-normal">over time</em>
               </div>
               <div className="text-[12px] text-muted mt-1">
-                Weekly totals · this period vs prev
+                Weekly totals · this period vs previous
               </div>
             </div>
             <div className="inline-flex bg-cream-deep rounded-full p-[3px] shrink-0">
@@ -465,7 +465,7 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
             <div className="font-display font-medium text-[22px] tracking-[-0.015em] leading-snug">
               By <em className="italic text-oxblood font-normal">category</em>
             </div>
-            <div className="text-[12px] text-muted mt-1">Where the money came from</div>
+            <div className="text-[12px] text-muted mt-1">Revenue by category this period</div>
           </div>
 
           {data.categories.length === 0 ? (
@@ -578,7 +578,7 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
           <div className="flex flex-col gap-3">
             {[
               { step: '01', label: 'Visitors', count: 8420, pct: 100, w: 1.0, drop: null },
-              { step: '02', label: 'Product viewed', count: 5230, pct: 62.1, w: 0.62, drop: '↓37.9%' },
+              { step: '02', label: 'Cut viewed', count: 5230, pct: 62.1, w: 0.62, drop: '↓37.9%' },
               { step: '03', label: 'Added to cart', count: 1840, pct: 21.9, w: 0.22, drop: '↓40.2%' },
               { step: '04', label: 'Started checkout', count: 628, pct: 7.5, w: 0.075, drop: '↓14.4%' },
               { step: '05', label: 'Order placed', count: data.orderCount || 324, pct: data.orderCount ? parseFloat(((data.orderCount / 8420) * 100).toFixed(1)) : 3.8, w: 0.04, drop: null },
@@ -645,7 +645,7 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
               },
               {
                 tag: 'tip',
-                body: '<strong>Cart-to-checkout is your biggest funnel leak.</strong> Worth investigating shipping costs or guest checkout friction.',
+                body: '<strong>Cart-to-checkout is your biggest drop-off.</strong> Check for friction at guest checkout.',
               },
               {
                 tag: 'up',
@@ -686,7 +686,7 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
               When orders <em className="italic text-oxblood font-normal">happen</em>
             </div>
             <div className="text-[12px] text-muted mt-1">
-              Order volume by day-of-week and hour-of-day
+              Volume by day and hour
             </div>
           </div>
           <div className="inline-flex bg-cream-deep rounded-full p-[3px] shrink-0">

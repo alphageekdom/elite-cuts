@@ -14,7 +14,7 @@ type Props = {
 
 const STAT_CELLS = [
   { key: 'all', label: 'All', metaLabel: 'THIS MONTH', dotClass: '' },
-  { key: 'Pending', label: 'Pending', metaLabel: 'NEEDS ATTENTION', dotClass: '' },
+  { key: 'Pending', label: 'Pending', metaLabel: 'NEED ACTION', dotClass: '' },
   { key: 'Ready for Pickup', label: 'Ready', metaLabel: 'AWAITING PICKUP', dotClass: 'camel' },
   { key: 'Completed', label: 'Delivered', metaLabel: 'COMPLETED', dotClass: 'green' },
   { key: 'Cancelled', label: 'Cancelled', metaLabel: 'CANCELLED', dotClass: 'oxblood' },
@@ -141,7 +141,7 @@ export default function OrdersClient({ orders, counts }: Props) {
               <div className="font-display text-[22px] sm:text-[28px] font-normal leading-none tracking-tight mb-1">
                 {count}
                 {cell.key === 'Pending' && count > 0 && (
-                  <em className="italic text-oxblood text-[14px] ml-0.5 font-normal">new</em>
+                  <em className="italic text-oxblood text-[14px] ml-0.5 font-normal">open</em>
                 )}
               </div>
               <div className="font-mono text-[11px] text-muted tracking-[0.04em]">{cell.metaLabel}</div>
@@ -232,7 +232,7 @@ export default function OrdersClient({ orders, counts }: Props) {
                   <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Items</th>
                   <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Total</th>
                   <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Status</th>
-                  <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Fulfillment</th>
+                  <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Pickup</th>
                   <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">Date ↓</th>
                   <th className="pr-6 py-3.5" />
                 </tr>
