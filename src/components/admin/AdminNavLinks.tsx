@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 
 type Props = {
   criticalInventoryCount?: number;
+  collapsed?: boolean;
 };
 
 const NAV_WORKSPACE = [
@@ -96,33 +97,35 @@ const NAV_OPERATIONS = [
   },
 ];
 
-export default function AdminNavLinks({ criticalInventoryCount }: Props) {
+export default function AdminNavLinks({ criticalInventoryCount, collapsed }: Props) {
   const pathname = usePathname();
 
   const isActive = (href: string) =>
     href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(href);
 
+  const linkCls = (href: string) =>
+    [
+      'flex items-center rounded-lg text-sm transition-colors w-full min-h-11',
+      collapsed ? 'justify-center py-2.5' : 'gap-3 px-3 py-2.5',
+      isActive(href) ? 'bg-oxblood text-cream' : 'text-cream/75 hover:bg-cream/8 hover:text-cream',
+    ].join(' ');
+
   return (
     <>
       {/* Workspace */}
-      <div className="mb-8">
-        <div className="text-[10px] font-medium tracking-[0.22em] uppercase text-cream/40 mb-3.5 px-3">
-          Workspace
-        </div>
+      <div className="mb-6">
+        {!collapsed && (
+          <div className="text-[10px] font-medium tracking-[0.22em] uppercase text-cream/50 mb-3.5 px-3">
+            Workspace
+          </div>
+        )}
         <ul className="flex flex-col gap-0.5">
           {NAV_WORKSPACE.map((item) => (
             <li key={item.href}>
-              <Link
-                href={item.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                  isActive(item.href)
-                    ? 'bg-oxblood text-cream'
-                    : 'text-cream/75 hover:bg-cream/5 hover:text-cream'
-                }`}
-              >
-                <span className="opacity-85">{item.icon}</span>
-                {item.label}
-                {item.badge && (
+              <Link href={item.href} className={linkCls(item.href)} title={collapsed ? item.label : undefined}>
+                <span className="opacity-85 shrink-0">{item.icon}</span>
+                {!collapsed && item.label}
+                {!collapsed && item.badge && (
                   <span className="ml-auto bg-camel text-ink text-[10px] font-semibold px-1.5 py-0.5 rounded-full tracking-[0.04em]">
                     {item.badge}
                   </span>
@@ -133,32 +136,40 @@ export default function AdminNavLinks({ criticalInventoryCount }: Props) {
         </ul>
       </div>
 
+      {/* Divider — collapsed only */}
+      {collapsed && <div className="my-2 mx-2 h-px bg-cream/15" />}
+
       {/* Operations */}
       <div>
-        <div className="text-[10px] font-medium tracking-[0.22em] uppercase text-cream/40 mb-3.5 px-3">
-          Operations
-        </div>
+        {!collapsed && (
+          <div className="text-[10px] font-medium tracking-[0.22em] uppercase text-cream/50 mb-3.5 px-3 mt-2">
+            Operations
+          </div>
+        )}
         <ul className="flex flex-col gap-0.5">
-          {NAV_OPERATIONS.map((item) => (
-            <li key={item.href}>
-              <Link
-                href={item.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                  isActive(item.href)
-                    ? 'bg-oxblood text-cream'
-                    : 'text-cream/75 hover:bg-cream/5 hover:text-cream'
-                }`}
-              >
-                <span className="opacity-85">{item.icon}</span>
-                {item.label}
-                {item.href === '/dashboard/inventory' && criticalInventoryCount && criticalInventoryCount > 0 ? (
-                  <span className="ml-auto bg-oxblood text-cream text-[10px] font-semibold px-1.5 py-0.5 rounded-full tracking-[0.04em]">
-                    {criticalInventoryCount}
+          {NAV_OPERATIONS.map((item) => {
+            const isInventory = item.href === '/dashboard/inventory';
+            const showBadge = isInventory && criticalInventoryCount && criticalInventoryCount > 0;
+            return (
+              <li key={item.href}>
+                <Link href={item.href} className={linkCls(item.href)} title={collapsed ? item.label : undefined}>
+                  {/* Icon — with dot badge when collapsed */}
+                  <span className="relative opacity-85 shrink-0">
+                    {item.icon}
+                    {collapsed && showBadge && (
+                      <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-oxblood border border-ink" />
+                    )}
                   </span>
-                ) : null}
-              </Link>
-            </li>
-          ))}
+                  {!collapsed && item.label}
+                  {!collapsed && showBadge && (
+                    <span className="ml-auto bg-oxblood text-cream text-[10px] font-semibold px-1.5 py-0.5 rounded-full tracking-[0.04em]">
+                      {criticalInventoryCount}
+                    </span>
+                  )}
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       </div>
     </>
