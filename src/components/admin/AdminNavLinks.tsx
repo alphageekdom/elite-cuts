@@ -37,7 +37,7 @@ const NAV_WORKSPACE = [
     ),
   },
   {
-    href: '/users',
+    href: '/dashboard/customers',
     label: 'Customers',
     badge: null as string | null,
     icon: (

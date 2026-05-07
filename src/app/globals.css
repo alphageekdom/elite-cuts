@@ -186,3 +186,10 @@
     transform: scaleX(1);
   }
 }
+
+/* Analytics — variable-width bar fill (uses --bar-w CSS custom prop) */
+@keyframes analyticsBarGrow {
+  to {
+    transform: scaleX(var(--bar-w, 1));
+  }
+}
