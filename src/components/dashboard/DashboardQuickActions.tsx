@@ -10,8 +10,8 @@ type Action = {
 const ACTIONS: Action[] = [
   {
     href: '/products/add',
-    label: 'Add a product',
-    desc: 'List a new cut in the shop',
+    label: 'Add a cut',
+    desc: 'List a new cut in the catalog',
     icon: (
       <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <line x1="12" y1="5" x2="12" y2="19" />
@@ -34,7 +34,7 @@ const ACTIONS: Action[] = [
   {
     href: '/dashboard/reports',
     label: 'Export reports',
-    desc: 'Sales, inventory, customers',
+    desc: 'Sales, inventory, and customers',
     icon: (
       <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />

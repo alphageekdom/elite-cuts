@@ -32,10 +32,10 @@ const STAT_CELLS: Array<{
   dotStyle: string;
   isInfo?: boolean;
 }> = [
-  { key: 'all', label: 'All products', meta: 'IN CATALOG', dotStyle: 'var(--color-muted)' },
+  { key: 'all', label: 'All cuts', meta: 'IN CATALOG', dotStyle: 'var(--color-muted)' },
   { key: 'inStock', label: 'In Stock', meta: 'AVAILABLE', dotStyle: 'var(--color-green)' },
   { key: 'outOfStock', label: 'Out of Stock', meta: 'UNAVAILABLE', dotStyle: 'var(--color-oxblood)' },
-  { key: 'avgPrice', label: 'Avg price', meta: 'PER UNIT', dotStyle: 'var(--color-camel)', isInfo: true },
+  { key: 'avgPrice', label: 'Avg price', meta: 'PER LB', dotStyle: 'var(--color-camel)', isInfo: true },
   { key: 'featured', label: 'Featured', meta: 'ON HOMEPAGE', dotStyle: 'var(--color-camel)' },
 ];
 
@@ -195,7 +195,7 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
             type="text"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            placeholder="Search by name, category…"
+            placeholder="Search cuts, categories…"
             className="flex-1 bg-transparent border-none outline-none text-[13px] text-ink placeholder:text-muted min-w-0"
           />
           <span className="hidden sm:inline font-mono text-[10px] text-muted bg-cream-deep px-1.5 py-0.5 rounded tracking-[0.04em] shrink-0">⌘ K</span>
@@ -267,7 +267,7 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
               <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
               </svg>
-              Add product
+              Add cut
             </button>
           </div>
         </div>
@@ -286,7 +286,7 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
               selected
             </div>
             <div className="flex gap-1.5">
-              {['Publish', 'Hide', 'Edit price', 'Archive', 'Delete'].map((action) => (
+              {['Publish', 'Unpublish', 'Edit price', 'Archive', 'Delete'].map((action) => (
                 <button
                   key={action}
                   className="bg-cream/10 text-cream border border-cream/20 rounded-full px-3 py-1.5 text-[12px] hover:bg-cream/20 hover:border-cream/40 transition-colors"
@@ -312,10 +312,10 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
                     />
                   </th>
                   <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">
-                    Product ↓
+                    Cut ↓
                   </th>
                   <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Category</th>
-                  <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">Price</th>
+                  <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">Price /lb</th>
                   <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Stock</th>
                   <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Status</th>
                   <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Tags</th>
@@ -326,7 +326,7 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
                 {pageRows.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="text-center py-16 text-muted text-sm">
-                      No products found.
+                      No cuts match your filters.
                     </td>
                   </tr>
                 ) : (
@@ -519,7 +519,7 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
             <strong className="text-ink font-medium">
               {filtered.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)}
             </strong>{' '}
-            of <strong className="text-ink font-medium">{filtered.length}</strong> products
+            of <strong className="text-ink font-medium">{filtered.length}</strong> cuts
           </div>
 
           <div className="flex items-center gap-1">

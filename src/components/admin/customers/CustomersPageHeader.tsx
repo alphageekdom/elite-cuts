@@ -20,12 +20,12 @@ export default function CustomersPageHeader({ total, newThisWeek, atRisk }: Prop
       </div>
 
       <div>
-        <div className="font-display italic text-sm text-camel mb-1.5">✦ Manage</div>
+        <div className="font-display italic text-sm text-camel mb-1.5">Manage</div>
         <h1 className="font-display font-normal text-[clamp(36px,4vw,52px)] leading-none tracking-tight mb-1">
           All <em className="italic text-oxblood">customers</em>
         </h1>
         <p className="text-muted text-sm tracking-[0.02em]">
-          {total} customers · {newThisWeek} new this week · {atRisk} at risk of churn
+          {total} customers · {newThisWeek} new this week · {atRisk} going dormant
         </p>
       </div>
 

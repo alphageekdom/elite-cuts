@@ -19,12 +19,12 @@ export default function InventoryPageHeader({ totalProducts }: Props) {
       </div>
 
       <div>
-        <div className="font-display italic text-sm text-camel mb-1.5">✦ Operations</div>
+        <div className="font-display italic text-sm text-camel mb-1.5">Operations</div>
         <h1 className="font-display font-normal text-[clamp(36px,4vw,52px)] leading-none tracking-tight mb-1">
-          Stock &amp; <em className="italic text-oxblood">inventory</em>
+          Stock &amp; <em className="italic text-oxblood">aging</em>
         </h1>
         <p className="text-muted text-sm tracking-[0.02em]">
-          {totalProducts} products tracked · Last stocktake: Today
+          {totalProducts} cuts tracked · Last stocktake: today
         </p>
       </div>
 

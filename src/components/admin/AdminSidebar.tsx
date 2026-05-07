@@ -39,7 +39,7 @@ export default async function AdminSidebar() {
         EliteCuts
       </Link>
       <div className="text-[10px] tracking-[0.22em] uppercase text-camel ml-12 mb-10">
-        Admin · v2.4
+        Admin
       </div>
 
       <AdminNavLinks criticalInventoryCount={criticalInventoryCount} />

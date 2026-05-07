@@ -17,7 +17,7 @@ export default function AdminTopbar() {
         </svg>
         <input
           type="text"
-          placeholder="Search orders, products, customers…"
+          placeholder="Search cuts, orders, customers…"
           className="flex-1 bg-transparent border-none outline-none font-sans text-[14px] text-ink placeholder:text-muted"
         />
         <span className="hidden sm:inline text-[11px] tracking-widest text-muted bg-cream-deep px-1.5 py-0.5 rounded">

@@ -17,10 +17,10 @@ type TierFilter = 'all' | 'master' | 'connoisseur' | 'regular';
 
 const STAT_CELLS = [
   { key: 'all' as StatFilter, label: 'All', metaLabel: 'REGISTERED', dotClass: '' },
-  { key: 'new' as StatFilter, label: 'New', metaLabel: 'FIRST 30 DAYS', dotClass: 'ink' },
+  { key: 'new' as StatFilter, label: 'New', metaLabel: 'JOINED IN 30 DAYS', dotClass: 'ink' },
   { key: 'active' as StatFilter, label: 'Active', metaLabel: 'ORDERED IN 90 DAYS', dotClass: 'green' },
   { key: 'connoisseurPlus' as StatFilter, label: 'Connoisseur+', metaLabel: '10+ ORDERS', dotClass: 'camel' },
-  { key: 'atRisk' as StatFilter, label: 'At risk', metaLabel: '90+ DAYS DORMANT', dotClass: 'oxblood' },
+  { key: 'atRisk' as StatFilter, label: 'At risk', metaLabel: 'DORMANT 90+ DAYS', dotClass: 'oxblood' },
 ];
 
 const TIER_PILLS: Array<{ key: TierFilter; label: string }> = [
@@ -156,9 +156,7 @@ export default function CustomersClient({ customers, counts }: Props) {
               </div>
               <div className="font-display text-[22px] sm:text-[28px] font-normal leading-none tracking-tight mb-1">
                 {count}
-                {cell.key === 'new' && count > 0 && (
-                  <em className="italic text-oxblood text-[14px] ml-0.5 font-normal">wk</em>
-                )}
+                {cell.key === 'new' && count > 0 && null}
                 {cell.key === 'atRisk' && count > 0 && (
                   <em className="italic text-oxblood text-[14px] ml-0.5 font-normal">!</em>
                 )}
@@ -260,9 +258,9 @@ export default function CustomersClient({ customers, counts }: Props) {
                   <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Tier</th>
                   <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">Lifetime spend ↓</th>
                   <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Orders</th>
-                  <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Avg</th>
+                  <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">Avg order</th>
                   <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">Last order</th>
-                  <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Status</th>
+                  <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Activity</th>
                   <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Tags</th>
                   <th className="pr-6 py-3.5" />
                 </tr>

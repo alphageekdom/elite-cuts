@@ -211,7 +211,7 @@ export default function ScheduleClient() {
         </div>
 
         <div>
-          <div className="font-display italic text-sm text-camel mb-1.5">✦ Operations</div>
+          <div className="font-display italic text-sm text-camel mb-1.5">Operations</div>
           <h1 className="font-display font-normal text-[clamp(36px,4vw,52px)] leading-none tracking-tight mb-1">
             Weekly <em className="italic text-oxblood">schedule</em>
           </h1>
@@ -382,9 +382,9 @@ export default function ScheduleClient() {
               <div className="grid grid-cols-2 gap-3 pt-5 border-t" style={{ borderColor: 'rgba(244,238,228,.1)' }}>
                 {[
                   { v: '4', unit: 'staff', label: 'On today' },
-                  { v: '18', unit: 'slots', label: 'Pickups booked' },
+                  { v: '18', unit: 'slots', label: 'Slots booked' },
                   { v: '$2.1K', unit: 'est', label: 'Projected rev' },
-                  { v: '1', unit: '📦', label: 'Delivery today' },
+                  { v: '1', unit: '📦', label: 'Deliveries' },
                 ].map((stat) => (
                   <div key={stat.label}>
                     <div className="font-display text-2xl font-normal tracking-tight leading-none mb-1">
