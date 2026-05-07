@@ -4,8 +4,6 @@ import bcrypt from 'bcryptjs';
 import { getSessionUser } from '@/utils/getSessionUser';
 import { EMAIL_RE } from '@/lib/validation';
 
-await connectDB();
-
 export const GET = async (req, { params }) => {
   const sessionUser = await getSessionUser();
 
@@ -19,6 +17,12 @@ export const GET = async (req, { params }) => {
     if (!id) {
       return new Response('User ID is missing', { status: 400 });
     }
+
+    if (sessionUser.userId !== id && !sessionUser.user?.isAdmin) {
+      return new Response('Forbidden', { status: 403 });
+    }
+
+    await connectDB();
 
     const user = await User.findById(id).select('-largeField');
 
@@ -50,8 +54,10 @@ export const PUT = async (req, { params }) => {
       return new Response('Forbidden', { status: 403 });
     }
 
+    await connectDB();
+
     const body = await req.json();
-    const { name, email, phone, currentPassword, newPassword, profileImage } = body;
+    const { name, email, phone, currentPassword, newPassword } = body;
 
     // --- Profile info update (name / email / phone) ---
     if (name !== undefined || email !== undefined || phone !== undefined) {
@@ -114,10 +120,7 @@ export const PUT = async (req, { params }) => {
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    const updateFields = { password: hashedPassword };
-    if (profileImage) updateFields.profileImage = profileImage;
-
-    await User.findByIdAndUpdate(id, { $set: updateFields });
+    await User.findByIdAndUpdate(id, { $set: { password: hashedPassword } });
 
     return new Response(
       JSON.stringify({ message: 'Password updated successfully' }),

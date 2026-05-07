@@ -58,9 +58,15 @@ export default function ProfileInfoForm({ initialName, initialEmail, initialPhon
       return;
     }
 
+    const userId = session?.user?.userId;
+    if (!userId) {
+      toast.error('Session expired. Please sign in again.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await fetch(`/api/users/${session?.user?.userId}`, {
+      const res = await fetch(`/api/users/${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: trimmedName, email: trimmedEmail, phone: trimmedPhone }),

@@ -10,7 +10,7 @@ export const POST = async (request) => {
   try {
     await connectDB();
 
-    const { name, email, password } = await request.json();
+    const { name, email, password, confirmPassword } = await request.json();
 
     if (!name || !email || !password) {
       return NextResponse.json(
@@ -22,6 +22,13 @@ export const POST = async (request) => {
     if (password.length < MIN_PASSWORD_LENGTH || password.length > MAX_PASSWORD_LENGTH) {
       return NextResponse.json(
         { message: `Password must be between ${MIN_PASSWORD_LENGTH} and ${MAX_PASSWORD_LENGTH} characters` },
+        { status: 400 }
+      );
+    }
+
+    if (confirmPassword !== undefined && confirmPassword !== password) {
+      return NextResponse.json(
+        { message: 'Passwords do not match' },
         { status: 400 }
       );
     }
@@ -44,8 +51,9 @@ export const POST = async (request) => {
       { status: 201 }
     );
   } catch (error) {
+    console.error('[register]', error);
     return NextResponse.json(
-      { message: 'Server error', error: error.message },
+      { message: 'Registration failed. Please try again.' },
       { status: 500 }
     );
   }
