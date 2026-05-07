@@ -1,9 +1,8 @@
 'use client';
 import { useState, useMemo } from 'react';
 import { CATEGORY_PAR } from '@/lib/inventory';
-
-const PRODUCT_CATEGORIES = ['Beef', 'Pork', 'Poultry', 'Lamb', 'Charcuterie', 'Other'] as const;
-type ProductCategory = (typeof PRODUCT_CATEGORIES)[number];
+import { statCellBorderClasses } from '@/lib/admin-utils';
+import { PRODUCT_CATEGORIES, type ProductCategory } from '@/lib/admin-constants';
 
 export type InventoryRow = {
   id: string;
@@ -248,22 +247,6 @@ export default function InventoryClient({ rows, counts, categoryCounts }: Props)
     { id: 'aging-room', key: 'all', label: 'Aging room', value: counts.agingRoom, meta: 'IN CABINET', dotColor: 'bg-muted' },
   ];
 
-  function cellBorderClasses(idx: number) {
-    const isRightEdge2 = idx % 2 === 1;
-    const isRightEdge3 = idx % 3 === 2;
-    const isLastRow2 = idx >= 3;
-    const isLastRow3 = idx >= 3;
-    return [
-      'border-r border-b border-line-soft',
-      isRightEdge2 ? 'border-r-0' : '',
-      isLastRow2 ? 'border-b-0' : '',
-      isRightEdge3 ? 'sm:border-r-0' : 'sm:border-r',
-      isLastRow3 ? 'sm:border-b-0' : 'sm:border-b',
-      idx < 4 ? 'lg:border-r lg:border-line-soft' : 'lg:border-r-0',
-      'lg:border-b-0',
-    ].join(' ');
-  }
-
   return (
     <div>
       {/* Alert banner */}
@@ -303,7 +286,7 @@ export default function InventoryClient({ rows, counts, categoryCounts }: Props)
                 'relative px-5 py-5 transition-colors',
                 isAgingCell ? 'cursor-default' : 'cursor-pointer hover:bg-cream',
                 isActive ? 'bg-cream' : '',
-                cellBorderClasses(idx),
+                statCellBorderClasses(idx),
               ].join(' ')}
             >
               {isActive && (
