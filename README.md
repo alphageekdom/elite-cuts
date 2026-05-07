@@ -1,150 +1,308 @@
-![EliteCuts Logo](/public/elitecuts.jpeg)
-
 # EliteCuts
 
-EliteCuts is a web application designed to provide high quality cuts of meat, poultry, and pork for registered users only. With the option to order online and pickup at the butcher shop.
+**Premium Online Butcher Shop** — order ahead, pick up fresh.
+
+EliteCuts is a full-stack web application that gives a local butcher shop a modern storefront: authenticated customers browse cuts, build a cart, pay via Stripe, and schedule a pickup. Admins manage products, orders, and users through a dashboard.
+
+This repository is a **TypeScript redesign** of the original JavaScript app — same core idea, rebuilt with strict types, a modernized stack, and an editorial UI.
+
+---
 
 ## Table of Contents
 
 - [Features](#features)
-- [Technologies Used](#technologies-used)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Database Setup](#database-setup)
-- [Running the Application](#running-the-application)
-- [API Endpoints](#api-endpoints)
-- [Contributing](#contributing)
-- [License](#license)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Data Models](#data-models)
+- [API Routes](#api-routes)
+- [Getting Started](#getting-started)
+- [Environment Variables](#environment-variables)
+- [Auth Flow](#auth-flow)
+- [Checkout Flow](#checkout-flow)
 
-![Features Image](/public/products.jpeg)
+---
 
 ## Features
 
-- User Authentication and Authorization
-- Profile Management
-- Bookmarking Products
-- Purchasing Products
-- Only Authenticated User Can Shop
-- Admin Dashboard for Managing Products and Users
-- Responsive Design
+**Customer**
+- Browse products by category (Beef, Pork, Poultry, Lamb, Charcuterie)
+- View product detail with image gallery (PhotoSwipe)
+- Authenticated-only cart and checkout
+- Stripe Checkout with pickup time selection
+- Save/unsave cuts to a personal favorites list
+- Profile management: name, email, password, addresses, order history
 
-## Technologies Used
+**Admin**
+- Full product CRUD with Cloudinary image upload
+- Mark products featured, aged, or new arrival
+- View and manage all users
+- View and update order status (Pending → Ready for Pickup → Completed)
+- Dashboard with sales and inventory metrics
 
-### Frontend
+**UX**
+- Mobile-first responsive layout
+- Warm editorial aesthetic (Fraunces + Instrument Sans + JetBrains Mono)
+- Animated hero, featured product grid, marquee strip
+- Toast notifications via Sonner
 
-- Next.js
-- Tailwind CSS
-- React
-- React Icons
-- React Toastify
-- React Share
-- React Spinners
-- React Photoswipe Gallery
-- Photoswipe
+---
 
-### Backend
+## Tech Stack
 
-- Next.js API Routes
-- Next-Auth
-- Mongoose
-- Cloudinary
-- Express Validator
-- Bcryptjs
-- Stripe (React-Stripe-JS, Stripe-JS)
-- Dompurify
+| Layer | Choice | Version |
+|---|---|---|
+| Framework | Next.js (App Router) | ^16.2.4 |
+| Language | TypeScript (strict mode) | ^6.0.3 |
+| UI Library | React | ^19.2.5 |
+| Styling | Tailwind CSS v4 | ^4.2.4 |
+| UI Primitives | Headless UI | ^2.2.10 |
+| Icons | React Icons | ^5.6.0 |
+| Database | MongoDB Atlas + Mongoose | ^9.6.1 |
+| Auth | NextAuth.js | ^4.24.14 |
+| Image Hosting | Cloudinary | ^2.10.0 |
+| Payments | Stripe | — |
+| Validation | express-validator | ^7.3.2 |
+| Notifications | Sonner | ^2.0.7 |
+| Image Gallery | react-photoswipe-gallery | ^4.0.0 |
+| Deployment | Vercel | — |
 
-### Database
+---
 
-- MongoDB
+## Project Structure
 
-![Endpoints Image](/public/cart.jpeg)
+```
+src/
+├── app/
+│   ├── (auth)/             # Login, Register pages
+│   ├── (main)/             # All authenticated/public app pages
+│   │   ├── page.tsx        # Home
+│   │   ├── products/       # Catalog, detail, add, list, saved
+│   │   ├── cart/
+│   │   ├── checkout/
+│   │   ├── profile/
+│   │   ├── dashboard/      # Admin
+│   │   ├── rewards/
+│   │   └── users/          # Admin user management
+│   └── api/                # API route handlers
+├── components/             # Feature-organized React components
+├── models/                 # Mongoose schemas (User, Product, Order, Cart, Review)
+├── config/                 # DB connection, Cloudinary setup
+├── utils/                  # Auth options, session helpers, form parsing
+├── hooks/                  # useHandleAddToCart, useHandleBookmark, useReveal
+├── actions/                # Server Actions (checkout, addresses)
+├── context/                # CartContext, CheckoutContext, GlobalContext
+├── lib/                    # Validation helpers, pricing, style utilities
+└── types/                  # TypeScript type extensions (next-auth.d.ts, address.ts)
+```
 
-## API Endpoints
+---
 
-### Users
+## Data Models
 
-- `GET /api/users` - Get all users
-- `DELETE /api/users` - Delete a user
-- `POST /api/users` - Create a new user
-- `GET /api/users/:userId` - Get user by ID
-- `PUT /api/users/:userId` - Update user by ID
+### User
+```ts
+{
+  name: string
+  email: string           // unique, lowercase
+  password?: string       // bcrypt hash; optional for OAuth users
+  savedCuts: ObjectId[]   // refs to Product
+  addresses: Address[]    // embedded subdocuments
+  isAdmin: boolean        // immutable after creation
+}
+```
 
-### Products
-
-- `GET /api/products` - Get all products
-- `POST /api/products` - Create a new product
-- `GET /api/products/:id` - Get product by ID
-- `DELETE /api/products/:id` - Delete product by ID
-- `PUT /api/products/:id` - Update product by ID
-
-### Properties
-
-- `GET /api/product/featured` - Get featured products
-
-### Admin
-
-- `GET /api/admin` - Admin dashboard
+### Product
+```ts
+{
+  name: string
+  category: 'Beef' | 'Pork' | 'Poultry' | 'Lamb' | 'Charcuterie' | 'Other'
+  description: string
+  price: number           // cents
+  images: string[]        // Cloudinary URLs
+  stockCount: number
+  isFeatured: boolean
+  isAged: boolean
+  isNewArrival: boolean
+  rating: number          // 0–5
+}
+```
 
 ### Cart
+```ts
+{
+  user: ObjectId          // unique — one cart per user
+  items: {
+    product: ObjectId
+    quantity: number      // min: 1
+    price: number         // snapshot at add time
+  }[]
+}
+```
 
-- `GET /api/cart` - Get cart items
-- `POST /api/cart` - Add item to cart
-- `DELETE /api/cart` - Remove item from cart
+### Order
+```ts
+{
+  user: ObjectId
+  orderItems: { product, name, qty, image, price, productType }[]
+  subtotal: number
+  tax: number
+  totalCost: number
+  orderStatus: 'Pending' | 'Ready for Pickup' | 'Completed' | 'Cancelled'
+  paymentMethod: 'Credit Card' | 'Debit Card' | 'Apple Pay' | 'PayPal' | 'Crypto'
+  paymentResult: { status, transactionId?, amountPaid, currency, paymentDate }
+  pickupLocation: string
+  isPaid: boolean
+  pickedUp: boolean
+}
+```
 
-### Bookmarks
+### Review
+```ts
+{
+  user: ObjectId
+  product: ObjectId
+  rating: number          // 1–5
+  comment: string         // max 1000 chars
+  // compound unique index: one review per user per product
+}
+```
 
-- `GET /api/bookmarks` - Get all bookmarks
-- `POST /api/bookmarks` - Add a bookmark
-- `POST /api/bookmarks/check` - Check a bookmark
+---
 
-### Authentication
+## API Routes
 
-- `POST /api/auth/register` - Register a new user
-- `POST /api/auth/login` - Log in an existing user
+### Auth
+| Method | Route | Description |
+|---|---|---|
+| POST | `/api/auth/register` | Register new user |
+| * | `/api/auth/[...nextauth]` | NextAuth handler |
 
-### Deployment
+### Products
+| Method | Route | Description |
+|---|---|---|
+| GET | `/api/products` | List all products |
+| POST | `/api/products` | Create product (admin) |
+| GET | `/api/products/[id]` | Get single product |
+| PUT | `/api/products/[id]` | Update product (admin) |
+| DELETE | `/api/products/[id]` | Delete product (admin) |
+| GET | `/api/products/featured` | Get featured products |
 
-- Vercel
+### Cart
+| Method | Route | Description |
+|---|---|---|
+| GET | `/api/cart` | Get user's cart |
+| POST | `/api/cart` | Add or update cart item |
+| DELETE | `/api/cart` | Remove cart item |
 
-### Development Tools
+### Saved Cuts
+| Method | Route | Description |
+|---|---|---|
+| GET | `/api/saved-cuts` | Get user's saved cuts |
+| POST | `/api/saved-cuts` | Save or unsave a product |
+| POST | `/api/saved-cuts/check` | Check if a product is saved |
 
-- ESLint
-- PostCSS
-- Autoprefixer
+### Users (Admin)
+| Method | Route | Description |
+|---|---|---|
+| GET | `/api/users` | List all users |
+| POST | `/api/users` | Create user |
+| DELETE | `/api/users` | Delete user |
+| GET | `/api/users/[id]` | Get user by ID |
+| PUT | `/api/users/[id]` | Update user by ID |
 
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+### Admin
+| Method | Route | Description |
+|---|---|---|
+| GET | `/api/dashboard` | Dashboard statistics |
+
+---
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 20+
+- MongoDB Atlas cluster (or local MongoDB)
+- Cloudinary account
+- Stripe account
+
+### Install
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <repo-url>
+cd elite-cuts
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Develop
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+```bash
+npm run dev       # http://localhost:3000
+npm run build     # production build
+npm run start     # start production server
+npm run lint      # ESLint
+npm run format    # Prettier
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+---
 
-## Learn More
+## Environment Variables
 
-To learn more about Next.js, take a look at the following resources:
+Copy `.env.example` to `.env` and fill in every value:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+cp .env.example .env
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+```env
+MONGODB_URI=mongodb+srv://<user>:<password>@<cluster>.mongodb.net/<dbname>
+NEXT_PUBLIC_DOMAIN=http://localhost:3000
+NEXTAUTH_SECRET=                    # openssl rand -base64 32
 
-## Deploy on Vercel
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+NEXT_PUBLIC_API_URL=
+NEXT_PUBLIC_SITE_URL=
+```
+
+---
+
+## Auth Flow
+
+```
+User → /login → NextAuth Credentials Provider
+                ↓
+          bcrypt.compare(password, hash)
+                ↓
+          JWT session { userId, isAdmin }
+                ↓
+    Middleware checks role → /dashboard (admin) or /products (customer)
+```
+
+- Passwords are hashed with bcryptjs (max length: 128 chars)
+- Session data is stored in a signed JWT (not a database session)
+- `isAdmin` is set at registration and is immutable
+- Only authenticated users can add to cart or check out
+
+---
+
+## Checkout Flow
+
+```
+Cart → auth check → Review order
+                       ↓
+               Create Stripe Checkout Session
+                       ↓
+               Stripe-hosted checkout page
+                       ↓
+               Stripe webhook → create Order (status: Paid)
+                       ↓
+               Confirmation page
+```
+
+Fulfillment is pickup-only. No shipping in the current version.
