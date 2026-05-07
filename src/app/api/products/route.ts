@@ -80,8 +80,9 @@ export const POST = async (request: NextRequest) => {
     const newProduct = new Product(productData);
     await newProduct.save();
 
-    return Response.redirect(
-      `${process.env.NEXTAUTH_URL}/products/${newProduct._id}`,
+    return NextResponse.json(
+      { id: String(newProduct._id) },
+      { status: 201 },
     );
   } catch (error) {
     console.error(error);
