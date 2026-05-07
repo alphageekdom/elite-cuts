@@ -2,6 +2,10 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+type Props = {
+  criticalInventoryCount?: number;
+};
+
 const NAV_WORKSPACE = [
   {
     href: '/dashboard',
@@ -92,7 +96,7 @@ const NAV_OPERATIONS = [
   },
 ];
 
-export default function AdminNavLinks() {
+export default function AdminNavLinks({ criticalInventoryCount }: Props) {
   const pathname = usePathname();
 
   const isActive = (href: string) =>
@@ -147,6 +151,11 @@ export default function AdminNavLinks() {
               >
                 <span className="opacity-85">{item.icon}</span>
                 {item.label}
+                {item.href === '/dashboard/inventory' && criticalInventoryCount && criticalInventoryCount > 0 ? (
+                  <span className="ml-auto bg-oxblood text-cream text-[10px] font-semibold px-1.5 py-0.5 rounded-full tracking-[0.04em]">
+                    {criticalInventoryCount}
+                  </span>
+                ) : null}
               </Link>
             </li>
           ))}

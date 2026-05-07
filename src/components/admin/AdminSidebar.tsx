@@ -1,12 +1,30 @@
 import Link from 'next/link';
 import { GiMeatCleaver } from 'react-icons/gi';
 import { getSessionUser } from '@/utils/getSessionUser';
+import connectDB from '@/config/database';
+import ProductModel from '@/models/Product';
+import { CATEGORY_PAR } from '@/lib/inventory';
 import AdminNavLinks from './AdminNavLinks';
 
 export default async function AdminSidebar() {
   const sessionUser = await getSessionUser();
   const name = sessionUser?.user?.name ?? 'Admin';
   const initial = name.charAt(0).toUpperCase();
+
+  let criticalInventoryCount = 0;
+  try {
+    await connectDB();
+    const products = await ProductModel.find({ stockCount: { $gt: 0 } })
+      .select('category stockCount')
+      .lean()
+      .exec();
+    for (const p of products) {
+      const par = CATEGORY_PAR[p.category] ?? 15;
+      if (p.stockCount / par < 0.3) criticalInventoryCount++;
+    }
+  } catch {
+    // Non-fatal — badge just won't show
+  }
 
   return (
     <aside className="hidden md:flex w-60 bg-ink text-cream flex-col py-7 px-6 sticky top-0 h-screen shrink-0">
@@ -24,10 +42,10 @@ export default async function AdminSidebar() {
         Admin · v2.4
       </div>
 
-      <AdminNavLinks />
+      <AdminNavLinks criticalInventoryCount={criticalInventoryCount} />
 
       {/* User card */}
-      <div className="mt-auto pt-6 border-t border-cream/[0.08]">
+      <div className="mt-auto pt-6 border-t border-cream/8">
         <div className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-cream/5 transition-colors cursor-pointer">
           <div className="w-9 h-9 rounded-full bg-camel text-ink grid place-items-center font-display font-semibold text-sm shrink-0">
             {initial}
