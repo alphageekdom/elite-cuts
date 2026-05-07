@@ -30,9 +30,15 @@ export default function UpdateProfile() {
       return;
     }
 
+    const userId = session?.user?.userId;
+    if (!userId) {
+      toast.error('Session expired. Please sign in again.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await fetch(`/api/users/${session?.user?.userId}`, {
+      const res = await fetch(`/api/users/${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

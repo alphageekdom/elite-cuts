@@ -1,5 +1,7 @@
 'use server';
 
+import { getSessionUser } from '@/utils/getSessionUser';
+
 type PromoResult =
   | { valid: true; amount: number; label: string }
   | { valid: false };
@@ -14,6 +16,9 @@ export async function validatePromoCode(
   code: string,
   subtotal: number,
 ): Promise<PromoResult> {
+  const sessionUser = await getSessionUser();
+  if (!sessionUser?.userId) return { valid: false };
+
   const entry = PROMO_CODES[code.trim().toUpperCase()];
   if (!entry) return { valid: false };
   const amount =

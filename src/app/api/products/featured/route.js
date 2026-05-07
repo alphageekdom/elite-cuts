@@ -1,11 +1,11 @@
 import connectDB from '@/config/database';
 import Product from '@/models/Product';
 
-await connectDB();
-
 // GET /api/products/featured
 export const GET = async (request) => {
   try {
+    await connectDB();
+
     const products = await Product.find({
       isFeatured: true,
     });

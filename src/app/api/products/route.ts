@@ -7,6 +7,8 @@ import Product from '@/models/Product';
 import { parseProductFormData } from '@/utils/parseProductFormData';
 import { requireAdmin } from '@/utils/requireAdmin';
 
+const ALLOWED_PRODUCT_SORT_FIELDS = new Set(['_id', 'name', 'price', 'createdAt', 'stockCount']);
+
 // GET /api/products — list products with pagination + arbitrary sort field.
 // Preserved for future mobile / CLI clients; the catalog page queries the
 // model directly.
@@ -20,8 +22,8 @@ export const GET = async (request: NextRequest) => {
       1,
       Number.parseInt(params.get('pageSize') ?? '6', 10) || 6,
     );
-
-    const sortField = params.get('sortField') ?? '_id';
+    const rawSortField = params.get('sortField') ?? '_id';
+    const sortField = ALLOWED_PRODUCT_SORT_FIELDS.has(rawSortField) ? rawSortField : '_id';
     const sortOrder: SortOrder = params.get('sortOrder') === 'desc' ? -1 : 1;
     const sort: Record<string, SortOrder> = { [sortField]: sortOrder };
 
