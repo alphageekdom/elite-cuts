@@ -9,7 +9,7 @@ type Action = {
 
 const ACTIONS: Action[] = [
   {
-    href: '/products/add',
+    href: '/dashboard/products',
     label: 'Add a cut',
     desc: 'List a new cut in the catalog',
     icon: (
@@ -20,7 +20,7 @@ const ACTIONS: Action[] = [
     ),
   },
   {
-    href: '/products/list',
+    href: '/dashboard/inventory',
     label: 'Manage inventory',
     desc: 'Update stock and pricing',
     icon: (

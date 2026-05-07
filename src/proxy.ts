@@ -1,10 +1,9 @@
 import { withAuth } from 'next-auth/middleware';
 
-const ADMIN_ROUTE_PREFIXES = ['/dashboard', '/products/add'] as const;
+const ADMIN_ROUTE_PREFIXES = ['/dashboard'] as const;
 
 const isAdminRoute = (pathname: string): boolean =>
-  ADMIN_ROUTE_PREFIXES.some((p) => pathname.startsWith(p)) ||
-  /^\/products\/[^/]+\/edit$/.test(pathname);
+  ADMIN_ROUTE_PREFIXES.some((p) => pathname.startsWith(p));
 
 export default withAuth({
   callbacks: {
@@ -19,12 +18,5 @@ export default withAuth({
 });
 
 export const config = {
-  matcher: [
-    '/products/add',
-    '/products/:id/edit',
-    '/profile',
-    '/products/saved',
-    '/messages',
-    '/dashboard',
-  ],
+  matcher: ['/profile', '/messages', '/dashboard', '/dashboard/:path*'],
 };
