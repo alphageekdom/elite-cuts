@@ -30,7 +30,7 @@ export default function AdminSidebarClient({ name, initial, criticalInventoryCou
 
   return (
     <aside
-      className={`hidden md:flex flex-col bg-ink text-cream sticky top-0 h-screen shrink-0 overflow-hidden transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+      className={`hidden lg:flex flex-col bg-ink text-cream sticky top-0 h-screen shrink-0 overflow-hidden transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
         collapsed ? 'w-16' : 'w-60'
       }`}
     >
