@@ -83,7 +83,7 @@ const ProfileMenu = ({
             Your Profile
           </Link>
           <Link
-            href='/profile'
+            href='/profile?tab=saved'
             role='menuitem'
             tabIndex={-1}
             onClick={onClose}

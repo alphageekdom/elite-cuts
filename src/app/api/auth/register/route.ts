@@ -1,35 +1,46 @@
+import { NextResponse, type NextRequest } from 'next/server';
+import bcrypt from 'bcryptjs';
+
 import connectDB from '@/config/database';
 import User from '@/models/User';
-import bcrypt from 'bcryptjs';
-import { NextResponse } from 'next/server';
 
 const MIN_PASSWORD_LENGTH = 8;
 const MAX_PASSWORD_LENGTH = 128;
 
-export const POST = async (request) => {
+export const POST = async (request: NextRequest) => {
   try {
     await connectDB();
 
-    const { name, email, password, confirmPassword } = await request.json();
+    const { name, email, password, confirmPassword } = (await request.json()) as {
+      name?: string;
+      email?: string;
+      password?: string;
+      confirmPassword?: string;
+    };
 
     if (!name || !email || !password) {
       return NextResponse.json(
         { message: 'Name, email, and password are required' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    if (password.length < MIN_PASSWORD_LENGTH || password.length > MAX_PASSWORD_LENGTH) {
+    if (
+      password.length < MIN_PASSWORD_LENGTH ||
+      password.length > MAX_PASSWORD_LENGTH
+    ) {
       return NextResponse.json(
-        { message: `Password must be between ${MIN_PASSWORD_LENGTH} and ${MAX_PASSWORD_LENGTH} characters` },
-        { status: 400 }
+        {
+          message: `Password must be between ${MIN_PASSWORD_LENGTH} and ${MAX_PASSWORD_LENGTH} characters`,
+        },
+        { status: 400 },
       );
     }
 
     if (confirmPassword !== undefined && confirmPassword !== password) {
       return NextResponse.json(
         { message: 'Passwords do not match' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -38,7 +49,7 @@ export const POST = async (request) => {
     if (existingUser) {
       return NextResponse.json(
         { message: 'User already exists' },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -48,13 +59,13 @@ export const POST = async (request) => {
 
     return NextResponse.json(
       { message: 'User registered successfully' },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error('[register]', error);
     return NextResponse.json(
       { message: 'Registration failed. Please try again.' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 };
