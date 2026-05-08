@@ -1,9 +1,27 @@
-export default function ScheduleTodayCard() {
+const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+type Props = {
+  staffCount: number;
+  slotsBooked: number;
+  projectedRevenue: number;
+  deliveryCount: number;
+  openLabel: string;
+};
+
+export default function ScheduleTodayCard({ staffCount, slotsBooked, projectedRevenue, deliveryCount, openLabel }: Props) {
+  const now = new Date();
+  const dayName  = DAY_NAMES[now.getDay()];
+  const dateStr  = `${MONTH_ABBR[now.getMonth()]} ${now.getDate()}`;
+  const revLabel = projectedRevenue >= 1000
+    ? `$${(projectedRevenue / 1000).toFixed(1)}K`
+    : `$${projectedRevenue.toFixed(0)}`;
+
   const stats = [
-    { v: '4', unit: 'staff', label: 'On today' },
-    { v: '18', unit: 'slots', label: 'Slots booked' },
-    { v: '$2.1K', unit: 'est', label: 'Projected rev' },
-    { v: '1', unit: '📦', label: 'Deliveries' },
+    { v: String(staffCount),  unit: 'staff',  label: 'On today' },
+    { v: String(slotsBooked), unit: 'slots',  label: 'Slots booked' },
+    { v: revLabel,            unit: 'est',    label: 'Projected rev' },
+    { v: String(deliveryCount), unit: '📦',  label: 'Deliveries' },
   ];
 
   return (
@@ -18,11 +36,11 @@ export default function ScheduleTodayCard() {
           Today
         </div>
         <div className="font-display text-4xl font-normal tracking-tight leading-none mb-1.5">
-          Wednesday{' '}
-          <em className="italic text-camel-soft text-xl font-normal ml-1.5">Apr 30</em>
+          {dayName}{' '}
+          <em className="italic text-camel-soft text-xl font-normal ml-1.5">{dateStr}</em>
         </div>
         <div className="font-mono text-xs tracking-[0.04em] mb-5" style={{ color: 'rgba(244,238,228,.65)' }}>
-          OPEN 9AM – 7PM · 10 HOURS
+          {openLabel}
         </div>
         <div className="grid grid-cols-2 gap-3 pt-5 border-t" style={{ borderColor: 'rgba(244,238,228,.1)' }}>
           {stats.map((stat) => (

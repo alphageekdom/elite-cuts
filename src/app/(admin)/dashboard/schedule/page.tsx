@@ -6,7 +6,8 @@ import ShiftModel from '@/models/Shift';
 import ShopHoursModel, { DEFAULT_DAYS } from '@/models/ShopHours';
 import ShopSettingsModel from '@/models/ShopSettings';
 import Order from '@/models/Order';
-import ScheduleClient, { type ShiftRow } from '@/components/admin/schedule/ScheduleClient';
+import DeliveryModel from '@/models/Delivery';
+import ScheduleClient, { type ShiftRow, type UpcomingDelivery } from '@/components/admin/schedule/ScheduleClient';
 import type { PickupSlotRow } from '@/components/admin/schedule/SchedulePickupSlots';
 import { SLOT_LABELS } from '@/components/admin/schedule/SchedulePickupSlots';
 
@@ -41,13 +42,18 @@ export default async function AdminSchedulePage() {
   todayStart.setHours(0, 0, 0, 0);
   const todayEnd = new Date(todayStart.getTime() + 86400000);
 
-  const [rawShifts, shopHoursDoc, settingsDoc, pickupOrders] = await Promise.all([
+  const [rawShifts, shopHoursDoc, settingsDoc, pickupOrders, deliveryCount, upcomingDeliveriesRaw] = await Promise.all([
     ShiftModel.find({ weekStart: { $gte: weekStart, $lt: weekEnd } }).lean(),
     ShopHoursModel.findOneAndUpdate({}, {}, { upsert: true, new: true, setDefaultsOnInsert: true }).lean(),
     ShopSettingsModel.findOneAndUpdate({}, {}, { upsert: true, new: true, setDefaultsOnInsert: true }).lean(),
     Order.find({
       pickupSlot: { $gte: todayStart.toISOString(), $lt: todayEnd.toISOString() },
-    }).select('pickupSlot').lean(),
+    }).select('pickupSlot totalCost').lean(),
+    DeliveryModel.countDocuments({ deliveryDate: { $gte: todayStart, $lt: todayEnd } }),
+    DeliveryModel.find({ deliveryDate: { $gte: todayStart } })
+      .sort({ deliveryDate: 1 })
+      .limit(4)
+      .lean(),
   ]);
 
   const initialShifts: ShiftRow[] = rawShifts.map((s) => ({
@@ -61,6 +67,27 @@ export default async function AdminSchedulePage() {
 
   const shopHours = shopHoursDoc?.days ?? DEFAULT_DAYS;
   const slotsPerHour = settingsDoc?.slotsPerHour ?? 10;
+
+  const slotsBooked = pickupOrders.length;
+  const projectedRevenue = pickupOrders.reduce((sum, o) => sum + ((o.totalCost as number) ?? 0), 0);
+
+  const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const DAY_ABBR   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const upcomingDeliveries: UpcomingDelivery[] = upcomingDeliveriesRaw.map((d) => {
+    const date = new Date(d.deliveryDate);
+    const isToday = date >= todayStart && date < todayEnd;
+    const dateLabel = isToday
+      ? 'TODAY'
+      : `${DAY_ABBR[date.getDay()].toUpperCase()} ${MONTH_ABBR[date.getMonth()].toUpperCase()} ${date.getDate()}`;
+    return {
+      id: d._id.toString(),
+      supplier: d.supplier,
+      supplierSuffix: d.supplierSuffix,
+      detail: d.detail,
+      status: d.status,
+      dateLabel,
+    };
+  });
 
   // Count pickups per hour slot (slots 0–7 = 9AM–5PM)
   const slotCounts = new Array<number>(8).fill(0);
@@ -82,6 +109,10 @@ export default async function AdminSchedulePage() {
       initialShifts={initialShifts}
       shopHours={shopHours}
       pickupSlots={pickupSlots}
+      slotsBooked={slotsBooked}
+      projectedRevenue={projectedRevenue}
+      deliveryCount={deliveryCount}
+      upcomingDeliveries={upcomingDeliveries}
     />
   );
 }

@@ -38,7 +38,9 @@ const MAIN_TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: 'rewards', label: 'Rewards', icon: (<svg className="w-3.75 h-3.75" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2l2.39 7.36H22l-6.18 4.49L18.21 21 12 16.51 5.79 21l2.39-7.15L2 9.36h7.61z" /></svg>) },
 ];
 
-export default function SettingsClient() {
+type AdminUser = { id: string; name: string; email: string };
+
+export default function SettingsClient({ adminUsers }: { adminUsers: AdminUser[] }) {
   const [tab, setTab] = useState<Tab>('general');
   const [settings, setSettings] = useState<ShopSettings>(DEFAULTS);
   const [loading, setLoading] = useState(true);
@@ -130,7 +132,7 @@ export default function SettingsClient() {
           ) : (
             <>
               {tab === 'general'       && <GeneralTab {...tabProps} />}
-              {tab === 'team'          && <TeamTab />}
+              {tab === 'team'          && <TeamTab members={adminUsers} />}
               {tab === 'payments'      && <PaymentsTab />}
               {tab === 'fulfillment'   && <FulfillmentTab {...tabProps} />}
               {tab === 'notifications' && <NotificationsTab {...tabProps} />}

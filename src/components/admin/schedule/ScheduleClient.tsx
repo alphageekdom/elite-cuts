@@ -9,6 +9,7 @@ import ScheduleShopHours from './ScheduleShopHours';
 import ScheduleComingUp from './ScheduleComingUp';
 import type { ShopHoursDay } from '@/models/ShopHours';
 import type { ShiftColor } from '@/models/Shift';
+// ShiftColor re-exported for ScheduleOnTodayCard usage via ScheduleClient import
 
 type View = 'day' | 'week' | 'month';
 
@@ -43,13 +44,29 @@ function getMondayOf(date: Date): Date {
   return d;
 }
 
+export type UpcomingDelivery = {
+  id: string;
+  supplier: string;
+  supplierSuffix: string;
+  detail: string;
+  status: string;
+  dateLabel: string;
+};
+
 type Props = {
   initialShifts: ShiftRow[];
   shopHours: ShopHoursDay[];
   pickupSlots: PickupSlotRow[];
+  slotsBooked: number;
+  projectedRevenue: number;
+  deliveryCount: number;
+  upcomingDeliveries: UpcomingDelivery[];
 };
 
-export default function ScheduleClient({ initialShifts, shopHours, pickupSlots }: Props) {
+export default function ScheduleClient({
+  initialShifts, shopHours, pickupSlots,
+  slotsBooked, projectedRevenue, deliveryCount, upcomingDeliveries,
+}: Props) {
   const [view, setView] = useState<View>('week');
   const [weekStart, setWeekStart] = useState<Date>(() => getMondayOf(new Date()));
   const [shifts, setShifts] = useState<ShiftRow[]>(initialShifts);
@@ -84,6 +101,35 @@ export default function ScheduleClient({ initialShifts, shopHours, pickupSlots }
 
   const today = new Date();
   const todayDow = (today.getDay() + 6) % 7; // 0=Mon … 6=Sun
+
+  // Derive today's stats for ScheduleTodayCard
+  const todayShiftRows = shifts.filter((s) => s.dayOfWeek === todayDow);
+  // Group by staffName to get unique staff + hour range
+  const staffMap = new Map<string, { min: number; max: number; role: string; color: ShiftColor }>();
+  for (const s of todayShiftRows) {
+    const existing = staffMap.get(s.staffName);
+    if (!existing) {
+      staffMap.set(s.staffName, { min: s.hourIndex, max: s.hourIndex, role: s.role, color: s.color });
+    } else {
+      existing.min = Math.min(existing.min, s.hourIndex);
+      existing.max = Math.max(existing.max, s.hourIndex);
+    }
+  }
+  const todayStaff = Array.from(staffMap.entries()).map(([name, v]) => {
+    const startH = v.min + 8; // hourIndex 0 = 8AM
+    const endH   = v.max + 9; // +1 for end of that slot
+    const fmt = (h: number) => h < 12 ? `${h}AM` : h === 12 ? '12PM' : `${h - 12}PM`;
+    return { name, time: `${fmt(startH)} – ${fmt(endH)}`, role: v.role, color: v.color };
+  });
+  const staffCount = staffMap.size;
+
+  // Today's shop hours label
+  const todayHours = shopHours.find((h) => h.dayOfWeek === todayDow);
+  const openLabel = todayHours?.isClosed
+    ? 'CLOSED TODAY'
+    : todayHours
+    ? `OPEN ${todayHours.opensAt} – ${todayHours.closesAt}`
+    : 'OPEN';
 
   const DAYS = DAY_LABELS.map((label, i) => {
     const d = new Date(weekStart);
@@ -218,11 +264,17 @@ export default function ScheduleClient({ initialShifts, shopHours, pickupSlots }
 
         {/* Sidebar */}
         <div className="grid gap-4 grid-cols-2 xl:grid-cols-1">
-          <ScheduleTodayCard />
-          <ScheduleOnTodayCard />
+          <ScheduleTodayCard
+            staffCount={staffCount}
+            slotsBooked={slotsBooked}
+            projectedRevenue={projectedRevenue}
+            deliveryCount={deliveryCount}
+            openLabel={openLabel}
+          />
+          <ScheduleOnTodayCard todayStaff={todayStaff} />
           <SchedulePickupSlots slots={pickupSlots} />
           <ScheduleShopHours hours={shopHours} />
-          <ScheduleComingUp />
+          <ScheduleComingUp deliveries={upcomingDeliveries} />
         </div>
       </div>
     </div>

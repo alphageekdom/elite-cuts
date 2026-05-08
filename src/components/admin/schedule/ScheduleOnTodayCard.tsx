@@ -1,13 +1,11 @@
-type ShiftColor = 'tangelo' | 'marcus' | 'elena' | 'sam' | 'maya' | 'delivery';
+import type { ShiftColor } from '@/models/Shift';
 
-interface StaffEntry {
-  initials: string;
+type StaffEntry = {
   name: string;
   time: string;
   role: string;
-  isLead?: boolean;
   color: ShiftColor;
-}
+};
 
 const AVATAR_STYLES: Record<ShiftColor, string> = {
   tangelo: 'bg-oxblood text-cream',
@@ -18,13 +16,6 @@ const AVATAR_STYLES: Record<ShiftColor, string> = {
   delivery: 'bg-cream-deep text-ink-soft',
 };
 
-const STAFF_TODAY: StaffEntry[] = [
-  { initials: 'TD', name: 'Tangelo Doe', time: '8AM – 3PM · 7HR', role: 'Lead', isLead: true, color: 'tangelo' },
-  { initials: 'MR', name: 'Marcus Reyes', time: '9AM – 4PM · 7HR', role: 'Butcher', color: 'marcus' },
-  { initials: 'SO', name: 'Sam Okafor', time: '11AM – 7PM · 8HR', role: 'Counter', color: 'sam' },
-  { initials: 'MP', name: 'Maya Park', time: '12PM – 7PM · 7HR', role: 'Counter', color: 'maya' },
-];
-
 function ChevronRight() {
   return (
     <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -33,7 +24,15 @@ function ChevronRight() {
   );
 }
 
-export default function ScheduleOnTodayCard() {
+function initials(name: string) {
+  return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
+}
+
+type Props = {
+  todayStaff: StaffEntry[];
+};
+
+export default function ScheduleOnTodayCard({ todayStaff }: Props) {
   return (
     <div className="bg-paper border border-line-soft rounded p-6">
       <div className="flex items-center justify-between mb-4 gap-3">
@@ -44,25 +43,29 @@ export default function ScheduleOnTodayCard() {
           All staff <ChevronRight />
         </a>
       </div>
-      <div className="flex flex-col">
-        {STAFF_TODAY.map((staff, i) => (
-          <div
-            key={staff.name}
-            className={`flex items-center gap-3 py-3 ${i < STAFF_TODAY.length - 1 ? 'border-b border-line-soft' : ''} ${i === 0 ? 'pt-0' : ''}`}
-          >
-            <div className={`w-9 h-9 rounded-full grid place-items-center font-display font-semibold text-xs shrink-0 ${AVATAR_STYLES[staff.color]}`}>
-              {staff.initials}
+      {todayStaff.length === 0 ? (
+        <p className="text-[13px] text-muted py-4 text-center">No shifts today</p>
+      ) : (
+        <div className="flex flex-col">
+          {todayStaff.map((staff, i) => (
+            <div
+              key={staff.name}
+              className={`flex items-center gap-3 py-3 ${i < todayStaff.length - 1 ? 'border-b border-line-soft' : ''} ${i === 0 ? 'pt-0' : ''}`}
+            >
+              <div className={`w-9 h-9 rounded-full grid place-items-center font-display font-semibold text-xs shrink-0 ${AVATAR_STYLES[staff.color] ?? 'bg-cream-deep text-ink-soft'}`}>
+                {initials(staff.name)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-display text-sm font-medium tracking-tight mb-0.5">{staff.name}</div>
+                <div className="font-mono text-[11px] text-muted tracking-[0.04em]">{staff.time}</div>
+              </div>
+              <span className="inline-block px-2 py-0.5 rounded-full text-[10px] tracking-[0.1em] uppercase font-medium bg-ink/[6%] text-ink-soft">
+                {staff.role}
+              </span>
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="font-display text-sm font-medium tracking-tight mb-0.5">{staff.name}</div>
-              <div className="font-mono text-[11px] text-muted tracking-[0.04em]">{staff.time}</div>
-            </div>
-            <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] tracking-[0.1em] uppercase font-medium ${staff.isLead ? 'bg-red-soft text-oxblood' : 'bg-ink/[6%] text-ink-soft'}`}>
-              {staff.role}
-            </span>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
