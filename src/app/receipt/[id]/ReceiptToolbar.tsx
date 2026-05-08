@@ -3,9 +3,26 @@
 type Props = {
   backHref: string;
   email: string;
+  orderRef: string;
+  orderId: string;
 };
 
-export default function ReceiptToolbar({ backHref, email }: Props) {
+export default function ReceiptToolbar({ backHref, email, orderRef, orderId }: Props) {
+  const receiptUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/receipt/${orderId}`
+    : `/receipt/${orderId}`;
+
+  const mailtoHref = [
+    `mailto:${email}`,
+    `?subject=${encodeURIComponent(`Your EliteCuts Receipt ${orderRef}`)}`,
+    `&body=${encodeURIComponent(
+      `Hi,\n\nThank you for your order at EliteCuts.\n\nYou can view your receipt here:\n${receiptUrl}\n\n` +
+      `Order reference: ${orderRef}\n\n` +
+      `If you have any questions, reply to this email or call us at (619) 555-0142.\n\n` +
+      `— EliteCuts\n3045 30th St, North Park, San Diego, CA 92104`
+    )}`,
+  ].join('');
+
   return (
     <div className="print:hidden w-full max-w-150 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
       <a
@@ -46,7 +63,7 @@ export default function ReceiptToolbar({ backHref, email }: Props) {
           Download PDF
         </button>
         <a
-          href={`mailto:${email}`}
+          href={mailtoHref}
           className="col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-full bg-ink text-cream text-[13px] font-medium whitespace-nowrap hover:bg-oxblood transition-colors"
         >
           <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
