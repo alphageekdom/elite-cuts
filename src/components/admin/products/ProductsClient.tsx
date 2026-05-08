@@ -212,6 +212,56 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
 
   const allPageSelected = pageRows.length > 0 && pageRows.every((r) => selectedIds.has(r.id));
   const someSelected = selectedIds.size > 0;
+  const [bulkLoading, setBulkLoading] = useState('');
+  const [editPriceMode, setEditPriceMode] = useState(false);
+  const [bulkPrice, setBulkPrice] = useState('');
+
+  async function bulkPatch(body: Record<string, unknown>, label: string) {
+    const ids = [...selectedIds];
+    setBulkLoading(label);
+    try {
+      await Promise.all(
+        ids.map((id) =>
+          fetch(`/api/products/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          }),
+        ),
+      );
+      if (body.isActive !== undefined) {
+        setLocalProducts((prev) => prev.map((p) => (selectedIds.has(p.id) ? { ...p } : p)));
+      }
+      if (body.price !== undefined) {
+        const price = body.price as number;
+        setLocalProducts((prev) =>
+          prev.map((p) => (selectedIds.has(p.id) ? { ...p, price } : p)),
+        );
+      }
+      setSelectedIds(new Set());
+      setEditPriceMode(false);
+      toast.success(`${ids.length} product${ids.length !== 1 ? 's' : ''} updated`);
+    } catch {
+      toast.error('Failed to update some products');
+    } finally {
+      setBulkLoading('');
+    }
+  }
+
+  async function bulkDelete() {
+    const ids = [...selectedIds];
+    setBulkLoading('delete');
+    try {
+      await Promise.all(ids.map((id) => fetch(`/api/products/${id}`, { method: 'DELETE' })));
+      setLocalProducts((prev) => prev.filter((p) => !selectedIds.has(p.id)));
+      setSelectedIds(new Set());
+      toast.success(`${ids.length} product${ids.length !== 1 ? 's' : ''} deleted`);
+    } catch {
+      toast.error('Failed to delete some products');
+    } finally {
+      setBulkLoading('');
+    }
+  }
 
   function statCellValue(key: StatFilter | 'avgPrice'): string {
     if (key === 'all') return String(counts.all);
@@ -360,15 +410,66 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
               </span>
               selected
             </div>
-            <div className="flex gap-1.5">
-              {['Publish', 'Unpublish', 'Edit price', 'Archive', 'Delete'].map((action) => (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button
+                onClick={() => bulkPatch({ isActive: true }, 'publish')}
+                disabled={!!bulkLoading}
+                className="bg-cream/10 text-cream border border-cream/20 rounded-full px-3 py-1.5 text-[12px] hover:bg-cream/20 hover:border-cream/40 transition-colors disabled:opacity-50"
+              >
+                {bulkLoading === 'publish' ? 'Updating…' : 'Publish'}
+              </button>
+              <button
+                onClick={() => bulkPatch({ isActive: false }, 'unpublish')}
+                disabled={!!bulkLoading}
+                className="bg-cream/10 text-cream border border-cream/20 rounded-full px-3 py-1.5 text-[12px] hover:bg-cream/20 hover:border-cream/40 transition-colors disabled:opacity-50"
+              >
+                {bulkLoading === 'unpublish' ? 'Updating…' : 'Unpublish'}
+              </button>
+              {editPriceMode ? (
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={bulkPrice}
+                    onChange={(e) => setBulkPrice(e.target.value)}
+                    placeholder="New price"
+                    autoFocus
+                    className="w-24 bg-cream/10 border border-cream/30 rounded-full px-3 py-1 text-[12px] text-cream outline-none placeholder:text-cream/40"
+                  />
+                  <button
+                    onClick={() => {
+                      const p = parseFloat(bulkPrice);
+                      if (!isNaN(p) && p >= 0) bulkPatch({ price: p }, 'price');
+                    }}
+                    disabled={!!bulkLoading || !bulkPrice}
+                    className="bg-camel text-ink rounded-full px-3 py-1.5 text-[12px] font-medium disabled:opacity-50"
+                  >
+                    {bulkLoading === 'price' ? '…' : 'Set'}
+                  </button>
+                  <button
+                    onClick={() => setEditPriceMode(false)}
+                    className="text-cream/60 text-[12px] px-2 hover:text-cream"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
                 <button
-                  key={action}
-                  className="bg-cream/10 text-cream border border-cream/20 rounded-full px-3 py-1.5 text-[12px] hover:bg-cream/20 hover:border-cream/40 transition-colors"
+                  onClick={() => setEditPriceMode(true)}
+                  disabled={!!bulkLoading}
+                  className="bg-cream/10 text-cream border border-cream/20 rounded-full px-3 py-1.5 text-[12px] hover:bg-cream/20 hover:border-cream/40 transition-colors disabled:opacity-50"
                 >
-                  {action}
+                  Edit price
                 </button>
-              ))}
+              )}
+              <button
+                onClick={bulkDelete}
+                disabled={!!bulkLoading}
+                className="bg-oxblood/70 text-cream border border-oxblood rounded-full px-3 py-1.5 text-[12px] hover:bg-oxblood transition-colors disabled:opacity-50"
+              >
+                {bulkLoading === 'delete' ? 'Deleting…' : 'Delete'}
+              </button>
             </div>
           </div>
         )}

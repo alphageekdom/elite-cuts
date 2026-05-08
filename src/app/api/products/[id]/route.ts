@@ -30,6 +30,45 @@ export const GET = async (_request: NextRequest, { params }: RouteContext) => {
   }
 };
 
+// PATCH /api/products/:id — admin-only partial update (isActive, isFeatured, price).
+export const PATCH = async (request: NextRequest, { params }: RouteContext) => {
+  const authError = await requireAdmin();
+  if (authError) return authError;
+
+  try {
+    await connectDB();
+    const { id } = await params;
+    const body = (await request.json()) as {
+      isActive?: boolean;
+      isFeatured?: boolean;
+      price?: number;
+    };
+
+    const update: Record<string, unknown> = {};
+    if (body.isActive !== undefined) update.isActive = body.isActive;
+    if (body.isFeatured !== undefined) update.isFeatured = body.isFeatured;
+    if (body.price !== undefined) {
+      if (typeof body.price !== 'number' || body.price < 0) {
+        return NextResponse.json({ message: 'price must be a non-negative number' }, { status: 400 });
+      }
+      update.price = body.price;
+    }
+
+    if (Object.keys(update).length === 0) {
+      return NextResponse.json({ message: 'No valid fields to update' }, { status: 400 });
+    }
+
+    const product = await Product.findByIdAndUpdate(id, { $set: update }, { new: true, runValidators: true });
+    if (!product) {
+      return NextResponse.json({ message: 'Product not found' }, { status: 404 });
+    }
+    return NextResponse.json({ id: String(product._id), ...update });
+  } catch (error) {
+    console.error('[products/:id PATCH]', error);
+    return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
+  }
+};
+
 // DELETE /api/products/:id — admin-only.
 export const DELETE = async (
   _request: NextRequest,

@@ -126,6 +126,32 @@ export default function OrdersClient({ orders, counts }: Props) {
 
   const allPageSelected = pageRows.length > 0 && pageRows.every((r) => selectedIds.has(r.id));
   const someSelected = selectedIds.size > 0;
+  const [bulkLoading, setBulkLoading] = useState('');
+
+  async function bulkUpdateStatus(newStatus: string) {
+    const ids = [...selectedIds];
+    setBulkLoading(newStatus);
+    try {
+      await Promise.all(
+        ids.map((id) =>
+          fetch(`/api/orders/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderStatus: newStatus }),
+          }),
+        ),
+      );
+      setLocalOrders((prev) =>
+        prev.map((o) => (selectedIds.has(o.id) ? { ...o, status: newStatus } : o)),
+      );
+      setSelectedIds(new Set());
+      toast.success(`${ids.length} order${ids.length !== 1 ? 's' : ''} updated to ${newStatus}`);
+    } catch {
+      toast.error('Failed to update some orders');
+    } finally {
+      setBulkLoading('');
+    }
+  }
 
   return (
     <>
@@ -227,10 +253,25 @@ export default function OrdersClient({ orders, counts }: Props) {
               selected
             </div>
             <div className="flex gap-1.5">
-              {['Mark ready', 'Print labels', 'Export', 'Cancel orders'].map((action) => (
+              <button
+                onClick={() => bulkUpdateStatus('Ready for Pickup')}
+                disabled={!!bulkLoading}
+                className="bg-cream/10 text-cream border border-cream/20 rounded-full px-3 py-1.5 text-[12px] hover:bg-cream/20 hover:border-cream/40 transition-colors disabled:opacity-50"
+              >
+                {bulkLoading === 'Ready for Pickup' ? 'Updating…' : 'Mark ready'}
+              </button>
+              <button
+                onClick={() => bulkUpdateStatus('Cancelled')}
+                disabled={!!bulkLoading}
+                className="bg-cream/10 text-cream border border-cream/20 rounded-full px-3 py-1.5 text-[12px] hover:bg-cream/20 hover:border-cream/40 transition-colors disabled:opacity-50"
+              >
+                {bulkLoading === 'Cancelled' ? 'Updating…' : 'Cancel orders'}
+              </button>
+              {['Print labels', 'Export'].map((action) => (
                 <button
                   key={action}
-                  className="bg-cream/10 text-cream border border-cream/20 rounded-full px-3 py-1.5 text-[12px] hover:bg-cream/20 hover:border-cream/40 transition-colors"
+                  className="bg-cream/10 text-cream border border-cream/20 rounded-full px-3 py-1.5 text-[12px] opacity-40 cursor-not-allowed"
+                  disabled
                 >
                   {action}
                 </button>

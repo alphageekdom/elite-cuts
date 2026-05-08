@@ -160,6 +160,50 @@ export default function CustomersClient({ customers, counts }: Props) {
 
   const allPageSelected = pageRows.length > 0 && pageRows.every((r) => selectedIds.has(r.id));
   const someSelected = selectedIds.size > 0;
+  const [bulkLoading, setBulkLoading] = useState('');
+  const [adjustPointsMode, setAdjustPointsMode] = useState(false);
+  const [pointsDelta, setPointsDelta] = useState('');
+
+  async function bulkAdjustPoints() {
+    const delta = parseInt(pointsDelta, 10);
+    if (isNaN(delta)) { toast.error('Enter a valid number'); return; }
+    const ids = [...selectedIds];
+    setBulkLoading('points');
+    try {
+      await Promise.all(
+        ids.map((id) =>
+          fetch(`/api/users/${id}/points`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ delta }),
+          }),
+        ),
+      );
+      setSelectedIds(new Set());
+      setAdjustPointsMode(false);
+      setPointsDelta('');
+      toast.success(`Points adjusted for ${ids.length} customer${ids.length !== 1 ? 's' : ''}`);
+    } catch {
+      toast.error('Failed to adjust points');
+    } finally {
+      setBulkLoading('');
+    }
+  }
+
+  async function bulkDeleteCustomers() {
+    const ids = [...selectedIds];
+    setBulkLoading('delete');
+    try {
+      await Promise.all(ids.map((id) => fetch(`/api/users/${id}`, { method: 'DELETE' })));
+      setLocalCustomers((prev) => prev.filter((c) => !selectedIds.has(c.id)));
+      setSelectedIds(new Set());
+      toast.success(`${ids.length} customer${ids.length !== 1 ? 's' : ''} deleted`);
+    } catch {
+      toast.error('Failed to delete some customers');
+    } finally {
+      setBulkLoading('');
+    }
+  }
 
   return (
     <>
@@ -269,11 +313,52 @@ export default function CustomersClient({ customers, counts }: Props) {
               <span className="bg-camel text-ink text-[12px] font-medium px-2 py-0.5 rounded-full">{selectedIds.size}</span>
               selected
             </div>
-            <div className="flex gap-1.5">
-              {['Email', 'Add tag', 'Adjust points', 'Export', 'Delete'].map((action) => (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {adjustPointsMode ? (
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    value={pointsDelta}
+                    onChange={(e) => setPointsDelta(e.target.value)}
+                    placeholder="+100 or -50"
+                    autoFocus
+                    className="w-28 bg-cream/10 border border-cream/30 rounded-full px-3 py-1 text-[12px] text-cream outline-none placeholder:text-cream/40"
+                  />
+                  <button
+                    onClick={bulkAdjustPoints}
+                    disabled={!!bulkLoading || !pointsDelta}
+                    className="bg-camel text-ink rounded-full px-3 py-1.5 text-[12px] font-medium disabled:opacity-50"
+                  >
+                    {bulkLoading === 'points' ? '…' : 'Apply'}
+                  </button>
+                  <button
+                    onClick={() => { setAdjustPointsMode(false); setPointsDelta(''); }}
+                    className="text-cream/60 text-[12px] px-2 hover:text-cream"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setAdjustPointsMode(true)}
+                  disabled={!!bulkLoading}
+                  className="bg-cream/10 text-cream border border-cream/20 rounded-full px-3 py-1.5 text-[12px] hover:bg-cream/20 hover:border-cream/40 transition-colors disabled:opacity-50"
+                >
+                  Adjust points
+                </button>
+              )}
+              <button
+                onClick={bulkDeleteCustomers}
+                disabled={!!bulkLoading}
+                className="bg-oxblood/70 text-cream border border-oxblood rounded-full px-3 py-1.5 text-[12px] hover:bg-oxblood transition-colors disabled:opacity-50"
+              >
+                {bulkLoading === 'delete' ? 'Deleting…' : 'Delete'}
+              </button>
+              {['Email', 'Add tag', 'Export'].map((action) => (
                 <button
                   key={action}
-                  className="bg-cream/10 text-cream border border-cream/20 rounded-full px-3 py-1.5 text-[12px] hover:bg-cream/20 hover:border-cream/40 transition-colors"
+                  disabled
+                  className="bg-cream/10 text-cream border border-cream/20 rounded-full px-3 py-1.5 text-[12px] opacity-40 cursor-not-allowed"
                 >
                   {action}
                 </button>
