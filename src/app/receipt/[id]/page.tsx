@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect, notFound } from 'next/navigation';
+import { GiMeatCleaver } from 'react-icons/gi';
 import { getSessionUser } from '@/utils/getSessionUser';
 import connectDB from '@/config/database';
 import Order from '@/models/Order';
@@ -96,20 +97,22 @@ export default async function ReceiptPage({ params }: Props) {
         <ReceiptToolbar
           backHref="/dashboard/orders"
           email={displayEmail}
+          orderRef={orderRef}
+          orderId={id}
         />
 
         {/* Receipt card */}
         <div className="receipt-card w-full max-w-150 bg-paper border border-line-soft rounded shadow-[0_8px_40px_rgba(28,24,20,0.06)] overflow-hidden">
 
           {/* Decorative edge */}
-          <div className="h-1 bg-gradient-to-r from-oxblood via-camel to-oxblood" />
+          <div className="h-1 bg-linear-to-r from-oxblood via-camel to-oxblood" />
 
           {/* ── Header ── */}
           <div className="px-10 sm:px-12 py-10 text-center border-b border-line-soft">
             {/* Brand */}
             <div className="flex items-center justify-center gap-3 mb-5">
-              <span className="w-10 h-10 rounded-full bg-oxblood text-cream grid place-items-center font-display font-bold text-[13px] tracking-wide shrink-0">
-                EC
+              <span className="w-10 h-10 rounded-full bg-oxblood text-cream grid place-items-center shrink-0">
+                <GiMeatCleaver className="text-xl" aria-hidden="true" />
               </span>
               <span className="font-display text-[26px] font-semibold tracking-tight leading-none">
                 Elite<em className="italic text-oxblood font-normal">Cuts</em>
@@ -129,6 +132,13 @@ export default async function ReceiptPage({ params }: Props) {
               <span className="w-1.5 h-1.5 rounded-full bg-current" />
               {order.orderStatus}
             </span>
+
+            {/* Pending note */}
+            {order.orderStatus === 'Pending' && (
+              <p className="font-mono text-[11px] text-muted tracking-[0.04em] mb-4 -mt-1">
+                Order received — we&apos;ll notify you when it&apos;s ready.
+              </p>
+            )}
 
             {/* Date row */}
             <div className="flex items-center justify-center gap-4 font-mono text-[11px] text-muted tracking-[0.04em] flex-wrap">
@@ -184,8 +194,34 @@ export default async function ReceiptPage({ params }: Props) {
                   Window: {pickupWindow}
                 </div>
               )}
+              {order.fulfillmentType === 'delivery' && (
+                <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-full bg-cream border border-line-soft text-[11px] font-medium text-muted">
+                  Demo delivery — no dispatch
+                </div>
+              )}
             </div>
           </div>
+
+          {/* ── Ready for Pickup banner ── */}
+          {order.orderStatus === 'Ready for Pickup' && (
+            <div className="mx-8 sm:mx-12 mt-5 px-5 py-4 rounded border border-camel/25 flex items-start gap-3.5" style={{ background: 'rgba(184,137,90,0.08)' }}>
+              <span className="w-7 h-7 rounded-full grid place-items-center shrink-0 mt-0.5" style={{ background: 'rgba(184,137,90,0.2)' }}>
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="rgba(184,137,90,1)" strokeWidth="2.5">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </span>
+              <div>
+                <div className="font-display text-[15px] font-medium tracking-tight text-ink leading-snug">
+                  Your order is ready — come pick it up.
+                </div>
+                {pickupWindow && (
+                  <div className="font-mono text-[11px] text-muted tracking-[0.04em] mt-1">
+                    Pickup window: {pickupWindow}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* ── Items ── */}
           <div className="px-8 sm:px-12">
@@ -278,23 +314,34 @@ export default async function ReceiptPage({ params }: Props) {
             </div>
           )}
 
-          {/* ── Points earned ── */}
-          <div className="mx-8 sm:mx-12 mb-6 px-5 py-4 bg-ink rounded flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5 text-cream text-[13px]">
-              <span className="w-7 h-7 rounded-full grid place-items-center shrink-0" style={{ background: 'rgba(184,137,90,0.25)' }}>
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="rgba(212,179,145,1)">
-                  <path d="M12 2l2.39 7.36H22l-6.18 4.49L18.21 21 12 16.51 5.79 21l2.39-7.15L2 9.36h7.61z" />
-                </svg>
-              </span>
-              <span>
-                {order.orderStatus === 'Completed' ? 'You earned points on this order' : 'Points you\'ll earn on completion'}
-              </span>
+          {/* ── Points earned / Cancelled note ── */}
+          {order.orderStatus === 'Cancelled' ? (
+            <div className="mx-8 sm:mx-12 mb-6 px-5 py-3 flex items-center gap-2.5">
+              <svg className="w-4 h-4 shrink-0 text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="15" y1="9" x2="9" y2="15" />
+                <line x1="9" y1="9" x2="15" y2="15" />
+              </svg>
+              <span className="font-mono text-[12px] text-muted tracking-[0.04em]">This order was cancelled.</span>
             </div>
-            <div className="font-display text-[20px] font-medium tracking-tight leading-none shrink-0" style={{ color: 'rgba(212,179,145,1)' }}>
-              +{pointsEarned.toLocaleString('en-US')}
-              <em className="italic font-sans text-[12px] font-normal ml-1 opacity-60">pts</em>
+          ) : (
+            <div className="mx-8 sm:mx-12 mb-6 px-5 py-4 bg-ink rounded flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 text-cream text-[13px]">
+                <span className="w-7 h-7 rounded-full grid place-items-center shrink-0" style={{ background: 'rgba(184,137,90,0.25)' }}>
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="rgba(212,179,145,1)">
+                    <path d="M12 2l2.39 7.36H22l-6.18 4.49L18.21 21 12 16.51 5.79 21l2.39-7.15L2 9.36h7.61z" />
+                  </svg>
+                </span>
+                <span>
+                  {order.orderStatus === 'Completed' ? 'You earned points on this order' : 'Points you\'ll earn on completion'}
+                </span>
+              </div>
+              <div className="font-display text-[20px] font-medium tracking-tight leading-none shrink-0" style={{ color: 'rgba(212,179,145,1)' }}>
+                +{pointsEarned.toLocaleString('en-US')}
+                <em className="italic font-sans text-[12px] font-normal ml-1 opacity-60">pts</em>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* ── Footer ── */}
           <div className="px-8 sm:px-12 py-8 text-center border-t border-line-soft">
@@ -309,7 +356,7 @@ export default async function ReceiptPage({ params }: Props) {
               {' · '}
               <a href="https://elitecuts.com" className="hover:text-ink transition-colors">elitecuts.com</a>
             </div>
-            <div className="font-mono text-[10px] tracking-[0.1em] text-muted/60 uppercase">
+            <div className="font-mono text-[10px] tracking-widest text-muted/60 uppercase">
               Portfolio project · Not a real shop · No orders are processed
             </div>
           </div>
