@@ -13,12 +13,17 @@ export default function ReceiptToolbar({ backHref, email, orderRef, orderId }: P
 
   const mailtoHref = [
     `mailto:${email}`,
-    `?subject=${encodeURIComponent(`Your EliteCuts Receipt ${orderRef}`)}`,
+    `?subject=${encodeURIComponent(`Your EliteCuts order is confirmed — ${orderRef}`)}`,
     `&body=${encodeURIComponent(
-      `Hi,\n\nThank you for your order at EliteCuts.\n\nYou can view your order here:\n${orderUrl}\n\n` +
-      `Order reference: ${orderRef}\n\n` +
-      `If you have any questions, reply to this email or call us at (619) 555-0142.\n\n` +
-      `— EliteCuts\n3045 30th St, North Park, San Diego, CA 92104`
+      `Hi,\n\nYour order is confirmed and we're getting your cuts ready.\n\n` +
+      `Order summary: ${orderUrl}\n` +
+      `Reference: ${orderRef}\n\n` +
+      `Pickup is at 3045 30th St, North Park, San Diego. We'll cut everything fresh before you arrive.\n\n` +
+      `Questions before you come in? Call us at (619) 555-0142 or reply here.\n\n` +
+      `See you at the counter.\n` +
+      `— EliteCuts\n` +
+      `3045 30th St · North Park, San Diego, CA 92104\n` +
+      `(619) 555-0142 · hello@elitecuts.com`
     )}`,
   ].join('');
 
