@@ -44,6 +44,7 @@ export type AnalyticsData = {
   weeklyRevenueTotal: number;
   weeklyRevenuePrevTotal: number;
   heatmap: number[][];
+  heatmapRevenue: number[][];
 };
 
 export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
@@ -141,7 +142,7 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
       <AnalyticsKpiGrid data={data} />
       <AnalyticsRevenueChart data={data} />
       <AnalyticsBestSellersSection data={data} />
-      <AnalyticsHeatmap heatmap={data.heatmap} />
+      <AnalyticsHeatmap heatmap={data.heatmap} heatmapRevenue={data.heatmapRevenue} />
     </>
   );
 }

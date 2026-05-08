@@ -11,7 +11,6 @@ import type { ShopHoursDay } from '@/models/ShopHours';
 import type { ShiftColor } from '@/models/Shift';
 // ShiftColor re-exported for ScheduleOnTodayCard usage via ScheduleClient import
 
-type View = 'day' | 'week' | 'month';
 
 export type ShiftRow = {
   _id: string;
@@ -67,7 +66,6 @@ export default function ScheduleClient({
   initialShifts, shopHours, pickupSlots,
   slotsBooked, projectedRevenue, deliveryCount, upcomingDeliveries,
 }: Props) {
-  const [view, setView] = useState<View>('week');
   const [weekStart, setWeekStart] = useState<Date>(() => getMondayOf(new Date()));
   const [shifts, setShifts] = useState<ShiftRow[]>(initialShifts);
   const [loadingShifts, setLoadingShifts] = useState(false);
@@ -193,15 +191,9 @@ export default function ScheduleClient({
             Today
           </button>
         </div>
-        <div className="inline-flex bg-paper border border-line rounded-full p-[3px]">
-          {(['day', 'week', 'month'] as const).map((v) => (
-            <button key={v} onClick={() => setView(v)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-colors capitalize ${view === v ? 'bg-ink text-cream' : 'text-ink-soft hover:text-ink'}`}
-            >
-              {v.charAt(0).toUpperCase() + v.slice(1)}
-            </button>
-          ))}
-        </div>
+        <span className="inline-flex bg-paper border border-line rounded-full px-3.5 py-1.5 text-xs font-medium text-ink-soft">
+          Week
+        </span>
       </div>
 
       {/* Schedule Layout */}

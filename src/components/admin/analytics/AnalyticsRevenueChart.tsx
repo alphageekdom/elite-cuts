@@ -1,10 +1,7 @@
-'use client';
-import { useState } from 'react';
 import { fmtDollarShort, toSvgPath, toSvgArea, dotPositions } from './analytics-utils';
 import type { AnalyticsData } from './AnalyticsClient';
 
 export default function AnalyticsRevenueChart({ data }: { data: AnalyticsData }) {
-  const [chartView, setChartView] = useState<'Day' | 'Week' | 'Month'>('Week');
 
   const maxWeekly = Math.max(1, ...data.weeklyRevenue, ...data.weeklyRevenuePrev);
   const currentPath = toSvgPath(data.weeklyRevenue, maxWeekly);
@@ -30,19 +27,9 @@ export default function AnalyticsRevenueChart({ data }: { data: AnalyticsData })
             </div>
             <div className="text-[12px] text-muted mt-1">Weekly totals · this period vs previous</div>
           </div>
-          <div className="inline-flex bg-cream-deep rounded-full p-[3px] shrink-0">
-            {(['Day', 'Week', 'Month'] as const).map((v) => (
-              <button
-                key={v}
-                onClick={() => setChartView(v)}
-                className={`px-3 py-1.5 rounded-full text-[12px] font-medium transition-colors ${
-                  chartView === v ? 'bg-ink text-cream' : 'text-ink-soft hover:text-ink'
-                }`}
-              >
-                {v}
-              </button>
-            ))}
-          </div>
+          <span className="inline-flex bg-cream-deep rounded-full px-3.5 py-1.5 text-[12px] font-medium text-ink-soft shrink-0">
+            Week
+          </span>
         </div>
 
         <div className="relative h-[280px]">

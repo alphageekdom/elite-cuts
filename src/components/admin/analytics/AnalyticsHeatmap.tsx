@@ -2,8 +2,9 @@
 import { Fragment, useState } from 'react';
 import { HEAT_BG, DAY_LABELS, HOUR_LABELS } from './analytics-utils';
 
-export default function AnalyticsHeatmap({ heatmap }: { heatmap: number[][] }) {
+export default function AnalyticsHeatmap({ heatmap, heatmapRevenue }: { heatmap: number[][]; heatmapRevenue: number[][] }) {
   const [heatView, setHeatView] = useState<'Volume' | 'Revenue'>('Volume');
+  const activeHeatmap = heatView === 'Revenue' ? heatmapRevenue : heatmap;
 
   return (
     <div className="bg-paper border border-line-soft rounded-sm p-7 mb-4">
@@ -13,7 +14,7 @@ export default function AnalyticsHeatmap({ heatmap }: { heatmap: number[][] }) {
           <div className="font-display font-medium text-[22px] tracking-[-0.015em] leading-snug">
             When orders <em className="italic text-oxblood font-normal">happen</em>
           </div>
-          <div className="text-[12px] text-muted mt-1">Volume by day and hour</div>
+          <div className="text-[12px] text-muted mt-1">{heatView === 'Revenue' ? 'Revenue by day and hour' : 'Volume by day and hour'}</div>
         </div>
         <div className="inline-flex bg-cream-deep rounded-full p-[3px] shrink-0">
           {(['Volume', 'Revenue'] as const).map((v) => (
@@ -31,7 +32,7 @@ export default function AnalyticsHeatmap({ heatmap }: { heatmap: number[][] }) {
       </div>
 
       <div className="grid gap-[3px]" style={{ gridTemplateColumns: '60px repeat(12, 1fr)' }}>
-        {heatmap.map((row, dayIdx) => (
+        {activeHeatmap.map((row, dayIdx) => (
           <Fragment key={dayIdx}>
             <span className="font-mono text-[10px] text-muted tracking-[0.04em] flex items-center pr-1">
               {DAY_LABELS[dayIdx]}
@@ -62,12 +63,12 @@ export default function AnalyticsHeatmap({ heatmap }: { heatmap: number[][] }) {
           ))}
         </div>
         <span>MORE</span>
-        {heatmap.flat().some((v) => v > 0) && (
+        {activeHeatmap.flat().some((v) => v > 0) && (
           <span className="ml-4">
             PEAK:{' '}
             {(() => {
               let max = 0; let dayI = 0; let hourI = 0;
-              heatmap.forEach((row, d) => row.forEach((v, h) => { if (v > max) { max = v; dayI = d; hourI = h; } }));
+              activeHeatmap.forEach((row, d) => row.forEach((v, h) => { if (v > max) { max = v; dayI = d; hourI = h; } }));
               return `${DAY_LABELS[dayI]} ${HOUR_LABELS[hourI]}`;
             })()}
           </span>

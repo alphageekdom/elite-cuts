@@ -355,15 +355,6 @@ export default function CustomersClient({ customers, counts }: Props) {
               >
                 {bulkLoading === 'delete' ? 'Deleting…' : 'Delete'}
               </button>
-              {['Email', 'Add tag', 'Export'].map((action) => (
-                <button
-                  key={action}
-                  disabled
-                  className="bg-cream/10 text-cream border border-cream/20 rounded-full px-3 py-1.5 text-[12px] opacity-40 cursor-not-allowed"
-                >
-                  {action}
-                </button>
-              ))}
             </div>
           </div>
         )}
