@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { getSessionUser } from '@/utils/getSessionUser';
 import connectDB from '@/config/database';
@@ -13,7 +14,7 @@ import CustomersClient, {
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Customers · EliteCuts Admin',
 };
 
@@ -34,7 +35,7 @@ export default async function AdminCustomersPage() {
   await connectDB();
 
   const [rawUsers, orderAgg] = await Promise.all([
-    UserModel.find({ isAdmin: false })
+    UserModel.find({ role: 'customer' })
       .sort({ createdAt: -1 })
       .limit(200)
       .lean()

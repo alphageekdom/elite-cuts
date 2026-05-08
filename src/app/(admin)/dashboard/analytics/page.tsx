@@ -4,11 +4,12 @@ import connectDB from '@/config/database';
 import OrderModel from '@/models/Order';
 import User from '@/models/User';
 
+import type { Metadata } from 'next';
 import AnalyticsClient, { type AnalyticsData } from '@/components/admin/analytics/AnalyticsClient';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Analytics · EliteCuts Admin',
 };
 
@@ -17,6 +18,8 @@ const MONTHS = [
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 ];
 
+// CSS variable values used as inline chart colors — intentionally separate from
+// the Tailwind-class-based CATEGORY_COLORS in admin-constants (those are for pills).
 const CATEGORY_COLORS: Record<string, string> = {
   Beef: 'var(--color-oxblood)',
   Pork: 'var(--color-camel)',
