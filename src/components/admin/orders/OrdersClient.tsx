@@ -15,12 +15,13 @@ type Props = {
 };
 
 const STAT_CELLS = [
-  { key: 'all',              label: 'All',       metaLabel: 'THIS MONTH',      dotClass: '' },
-  { key: 'Order Placed',     label: 'New',        metaLabel: 'ORDER PLACED',    dotClass: '' },
-  { key: 'Preparing',        label: 'Preparing',  metaLabel: 'IN PROGRESS',     dotClass: 'camel' },
-  { key: 'Ready for Pickup', label: 'Ready',      metaLabel: 'AWAITING PICKUP', dotClass: 'camel' },
-  { key: 'Completed',        label: 'Completed',  metaLabel: 'COMPLETED',       dotClass: 'green' },
-  { key: 'Cancelled',        label: 'Cancelled',  metaLabel: 'CANCELLED',       dotClass: 'oxblood' },
+  { key: 'all',               label: 'All',        metaLabel: 'THIS MONTH',      dotClass: '' },
+  { key: 'Order Placed',      label: 'New',         metaLabel: 'ORDER PLACED',    dotClass: '' },
+  { key: 'Preparing',         label: 'Preparing',   metaLabel: 'IN PROGRESS',     dotClass: 'camel' },
+  { key: 'Ready for Pickup',  label: 'Ready',       metaLabel: 'AWAITING PICKUP', dotClass: 'camel' },
+  { key: 'Out for Delivery',  label: 'Delivering',  metaLabel: 'OUT FOR DELIVERY',dotClass: 'camel' },
+  { key: 'Completed',         label: 'Completed',   metaLabel: 'COMPLETED',       dotClass: 'green' },
+  { key: 'Cancelled',         label: 'Cancelled',   metaLabel: 'CANCELLED',       dotClass: 'oxblood' },
 ] as const;
 
 type StatKey = (typeof STAT_CELLS)[number]['key'];
@@ -35,12 +36,13 @@ const STATUS_PILL: Record<string, { bg: string; text: string; label: string; cam
 };
 
 function countForKey(key: StatKey, counts: StatusCounts): number {
-  if (key === 'all')              return counts.all;
-  if (key === 'Order Placed')     return counts.orderPlaced;
-  if (key === 'Preparing')        return counts.preparing;
-  if (key === 'Ready for Pickup') return counts.readyForPickup;
-  if (key === 'Completed')        return counts.completed;
-  if (key === 'Cancelled')        return counts.cancelled;
+  if (key === 'all')               return counts.all;
+  if (key === 'Order Placed')      return counts.orderPlaced;
+  if (key === 'Preparing')         return counts.preparing;
+  if (key === 'Ready for Pickup')  return counts.readyForPickup;
+  if (key === 'Out for Delivery')  return counts.outForDelivery;
+  if (key === 'Completed')         return counts.completed;
+  if (key === 'Cancelled')         return counts.cancelled;
   return 0;
 }
 
@@ -175,7 +177,7 @@ export default function OrdersClient({ orders, counts }: Props) {
   return (
     <>
       {/* Stat strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 bg-paper border border-line-soft rounded-sm mb-6 overflow-hidden">
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 bg-paper border border-line-soft rounded-sm mb-6 overflow-hidden">
         {STAT_CELLS.map((cell, idx) => {
           const isActive = activeStatus === cell.key;
           const count = countForKey(cell.key, counts);
