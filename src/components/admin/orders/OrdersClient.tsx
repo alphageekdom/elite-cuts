@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
+import { toast } from 'sonner';
 import { getInitials, formatDateTime, statCellBorderClasses } from '@/lib/admin-utils';
 import { AVATAR_COLORS } from '@/lib/admin-constants';
 import type { OrderTableRow, StatusCounts } from '@/types/admin';
@@ -41,6 +42,7 @@ function countForKey(key: StatKey, counts: StatusCounts): number {
 const PAGE_SIZE = 8;
 
 export default function OrdersClient({ orders, counts }: Props) {
+  const [localOrders, setLocalOrders] = useState(orders);
   const [activeStatus, setActiveStatus] = useState<StatKey>('all');
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -49,7 +51,7 @@ export default function OrdersClient({ orders, counts }: Props) {
   const [statusUpdate, setStatusUpdate] = useState<string>('');
 
   const filtered = useMemo(() => {
-    let rows = orders;
+    let rows = localOrders;
     if (activeStatus !== 'all') {
       rows = rows.filter((o) => o.status === activeStatus);
     }
@@ -63,7 +65,30 @@ export default function OrdersClient({ orders, counts }: Props) {
       );
     }
     return rows;
-  }, [orders, activeStatus, search]);
+  }, [localOrders, activeStatus, search]);
+
+  async function updateOrder(newStatus: string) {
+    if (!drawerOrder) return;
+    try {
+      const res = await fetch(`/api/orders/${drawerOrder.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderStatus: newStatus }),
+      });
+      if (!res.ok) {
+        const { message } = await res.json();
+        toast.error(message ?? 'Failed to update order');
+        return;
+      }
+      setLocalOrders((prev) =>
+        prev.map((o) => (o.id === drawerOrder.id ? { ...o, status: newStatus } : o)),
+      );
+      setDrawerOrder((prev) => (prev ? { ...prev, status: newStatus } : prev));
+      toast.success('Order status updated');
+    } catch {
+      toast.error('Failed to update order');
+    }
+  }
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -469,6 +494,7 @@ export default function OrdersClient({ orders, counts }: Props) {
             statusUpdate={statusUpdate}
             setStatusUpdate={setStatusUpdate}
             onClose={closeDrawer}
+            onUpdate={updateOrder}
           />
         )}
       </aside>

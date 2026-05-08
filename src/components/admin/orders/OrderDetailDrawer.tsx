@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import { formatMoney, getInitials, formatDateTime } from '@/lib/admin-utils';
 import type { OrderTableRow } from '@/types/admin';
 
@@ -42,11 +43,19 @@ type Props = {
   statusUpdate: string;
   setStatusUpdate: (s: string) => void;
   onClose: () => void;
+  onUpdate: (newStatus: string) => Promise<void>;
 };
 
-export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate, onClose }: Props) {
+export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate, onClose, onUpdate }: Props) {
+  const [updating, setUpdating] = useState(false);
   const initials = getInitials(order.customerName);
   const timeline = buildTimeline(order);
+
+  async function handleUpdate() {
+    setUpdating(true);
+    await onUpdate(statusUpdate);
+    setUpdating(false);
+  }
 
   return (
     <>
@@ -117,8 +126,12 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
               <option value="Completed">Completed</option>
               <option value="Cancelled">Cancelled</option>
             </select>
-            <button className="px-4 py-2.5 rounded-full bg-ink text-cream text-[13px] font-medium hover:bg-oxblood transition-colors">
-              Update
+            <button
+              onClick={handleUpdate}
+              disabled={updating || statusUpdate === order.status}
+              className="px-4 py-2.5 rounded-full bg-ink text-cream text-[13px] font-medium hover:bg-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {updating ? 'Saving…' : 'Update'}
             </button>
           </div>
         </div>

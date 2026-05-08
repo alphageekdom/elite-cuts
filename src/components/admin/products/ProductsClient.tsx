@@ -1,7 +1,9 @@
 'use client';
 import { useState, useMemo } from 'react';
+import { toast } from 'sonner';
 import { statCellBorderClasses } from '@/lib/admin-utils';
 import { PRODUCT_CATEGORIES, CATEGORY_COLORS } from '@/lib/admin-constants';
+import type { ProductCategory } from '@/lib/admin-constants';
 import type { ProductTableRow, ProductCounts } from '@/types/admin';
 import ProductFormDrawer from './ProductFormDrawer';
 
@@ -60,6 +62,7 @@ function stockFillWidth(count: number): number {
 const PAGE_SIZE = 8;
 
 export default function ProductsClient({ products, counts, categoryCounts }: Props) {
+  const [localProducts, setLocalProducts] = useState(products);
   const [activeFilter, setActiveFilter] = useState<StatFilter>('all');
   const [activeCategory, setActiveCategory] = useState<string>('');
   const [search, setSearch] = useState('');
@@ -70,8 +73,80 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
   const [sortBy, setSortBy] = useState<SortBy>('newest');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
+  async function handleSave(fd: FormData, id?: string) {
+    try {
+      const res = await fetch(id ? `/api/products/${id}` : '/api/products', {
+        method: id ? 'PUT' : 'POST',
+        body: fd,
+      });
+      if (!res.ok) {
+        const { message } = await res.json();
+        toast.error(message ?? 'Failed to save product');
+        return;
+      }
+      const data = await res.json();
+      const now = new Date().toISOString();
+      const cat = fd.get('category') as ProductCategory;
+      if (id) {
+        setLocalProducts((prev) =>
+          prev.map((p) =>
+            p.id === id
+              ? {
+                  ...p,
+                  name: fd.get('name') as string,
+                  category: cat,
+                  price: Number(fd.get('price')),
+                  stockCount: Number(fd.get('stockCount')),
+                  updatedAt: now,
+                }
+              : p,
+          ),
+        );
+        toast.success('Product updated');
+      } else {
+        setLocalProducts((prev) => [
+          {
+            id: data.id as string,
+            name: fd.get('name') as string,
+            category: cat,
+            price: Number(fd.get('price')),
+            stockCount: Number(fd.get('stockCount')),
+            images: [],
+            isFeatured: false,
+            isAged: false,
+            isNewArrival: true,
+            rating: 0,
+            createdAt: now,
+            updatedAt: now,
+          },
+          ...prev,
+        ]);
+        toast.success('Product created');
+      }
+      closeDrawer();
+    } catch {
+      toast.error('Failed to save product');
+    }
+  }
+
+  async function handleDelete(id: string) {
+    try {
+      const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const { message } = await res.json();
+        toast.error(message ?? 'Failed to delete product');
+        return;
+      }
+      setLocalProducts((prev) => prev.filter((p) => p.id !== id));
+      setOpenMenuId(null);
+      toast.success('Product deleted');
+    } catch {
+      toast.error('Failed to delete product');
+    }
+  }
+
   const filtered = useMemo(() => {
-    let rows = products;
+    let rows = localProducts;
 
     if (activeFilter === 'inStock') rows = rows.filter((p) => p.stockCount > 0);
     else if (activeFilter === 'outOfStock') rows = rows.filter((p) => p.stockCount === 0);
@@ -92,7 +167,7 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
     else if (sortBy === 'name-asc') sorted.sort((a, b) => a.name.localeCompare(b.name));
     else if (sortBy === 'top-rated') sorted.sort((a, b) => b.rating - a.rating);
     return sorted;
-  }, [products, activeFilter, activeCategory, search, sortBy]);
+  }, [localProducts, activeFilter, activeCategory, search, sortBy]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -490,7 +565,10 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
                                   Archive
                                 </button>
                                 <div className="border-t border-cream/12" />
-                                <button className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left text-red-400 hover:bg-cream/10 transition-colors">
+                                <button
+                                  onClick={() => handleDelete(product.id)}
+                                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left text-red-400 hover:bg-cream/10 transition-colors"
+                                >
                                   <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                     <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
                                   </svg>
@@ -606,6 +684,7 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
           key={drawerProduct?.id ?? 'new'}
           product={drawerProduct}
           onClose={closeDrawer}
+          onSave={handleSave}
         />
       </aside>
     </>
