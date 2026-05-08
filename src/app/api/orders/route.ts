@@ -102,10 +102,10 @@ export const POST = async (request: NextRequest) => {
       };
     });
 
-    const subtotal = orderItems.reduce(
+    const subtotal = Math.round(orderItems.reduce(
       (sum, item) => sum + item.price * item.qty,
       0,
-    );
+    ) * 100) / 100;
     const tax = Math.round(subtotal * TAX_RATE * 100) / 100;
     const totalCost = Math.round((subtotal + tax) * 100) / 100;
 

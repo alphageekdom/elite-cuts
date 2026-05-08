@@ -23,8 +23,8 @@ const AVATAR_COLORS = [
   'bg-green text-cream',
 ];
 
-function formatMoney(cents: number) {
-  return (cents / 100).toLocaleString('en-US', {
+function formatMoney(amount: number) {
+  return amount.toLocaleString('en-US', {
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: 2,

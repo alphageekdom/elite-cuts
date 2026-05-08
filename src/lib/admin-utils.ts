@@ -1,5 +1,5 @@
-export function formatMoney(cents: number): string {
-  return (cents / 100).toLocaleString('en-US', {
+export function formatMoney(amount: number): string {
+  return amount.toLocaleString('en-US', {
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: 2,

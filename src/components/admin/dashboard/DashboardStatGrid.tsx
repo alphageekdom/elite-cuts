@@ -16,8 +16,8 @@ type Props = {
   avgOrder: number;
 };
 
-function formatMoney(cents: number) {
-  return (cents / 100).toLocaleString('en-US', {
+function formatMoney(amount: number) {
+  return amount.toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });

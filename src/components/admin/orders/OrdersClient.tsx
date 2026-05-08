@@ -313,7 +313,7 @@ export default function OrdersClient({ orders, counts }: Props) {
 
                         <td className="px-4 py-4">
                           <span className="font-display text-[16px] font-medium tracking-[-0.01em]">
-                            ${(order.total / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                            ${order.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                           </span>
                         </td>
 

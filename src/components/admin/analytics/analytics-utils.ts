@@ -1,13 +1,11 @@
-export function fmtDollars(cents: number): { whole: string; frac: string } {
-  const dollars = cents / 100;
-  const [whole, frac] = dollars.toFixed(2).split('.');
+export function fmtDollars(amount: number): { whole: string; frac: string } {
+  const [whole, frac] = amount.toFixed(2).split('.');
   return { whole: `$${Number(whole).toLocaleString()}`, frac };
 }
 
-export function fmtDollarShort(cents: number): string {
-  const d = cents / 100;
-  if (d >= 1000) return `$${(d / 1000).toFixed(1)}K`;
-  return `$${d.toFixed(0)}`;
+export function fmtDollarShort(amount: number): string {
+  if (amount >= 1000) return `$${(amount / 1000).toFixed(1)}K`;
+  return `$${amount.toFixed(0)}`;
 }
 
 export function fmtRank(n: number): string {

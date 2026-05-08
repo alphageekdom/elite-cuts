@@ -13,9 +13,9 @@ export default function AnalyticsRevenueChart({ data }: { data: AnalyticsData })
   const prevArea = toSvgArea(data.weeklyRevenuePrev, maxWeekly);
   const dots = dotPositions(data.weeklyRevenue, maxWeekly);
 
-  const yMax = maxWeekly / 100;
+  const yMax = maxWeekly;
   const yLabels = [yMax, yMax * 0.75, yMax * 0.5, yMax * 0.25, 0].map((v) =>
-    fmtDollarShort(v * 100),
+    fmtDollarShort(v),
   );
 
   return (
