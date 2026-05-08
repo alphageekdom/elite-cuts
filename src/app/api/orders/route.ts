@@ -135,7 +135,7 @@ export const POST = async (request: NextRequest) => {
       tax,
       totalCost,
       isPaid: false,
-      orderStatus: 'Pending',
+      orderStatus: 'Order Placed',
       paymentMethod: body.paymentMethod as PaymentMethod,
       paymentResult: {
         status: 'Pending',

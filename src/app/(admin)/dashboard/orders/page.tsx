@@ -50,8 +50,10 @@ export default async function AdminOrdersPage() {
 
   const counts: StatusCounts = {
     all: totalAll,
-    pending: countMap['Pending'] ?? 0,
+    orderPlaced: countMap['Order Placed'] ?? 0,
+    preparing: countMap['Preparing'] ?? 0,
     readyForPickup: countMap['Ready for Pickup'] ?? 0,
+    outForDelivery: countMap['Out for Delivery'] ?? 0,
     completed: countMap['Completed'] ?? 0,
     cancelled: countMap['Cancelled'] ?? 0,
   };
@@ -81,6 +83,8 @@ export default async function AdminOrdersPage() {
       paymentMethod: order.paymentMethod,
       pickupLocation: order.pickupLocation,
       pickedUp: order.pickedUp,
+      fulfillmentType: order.fulfillmentType,
+      cancellationReason: order.cancellationReason,
       createdAt: order.createdAt.toISOString(),
     };
   });
@@ -89,7 +93,7 @@ export default async function AdminOrdersPage() {
     <>
       <OrdersPageHeader
         totalThisMonth={counts.all}
-        pendingCount={counts.pending}
+        pendingCount={counts.orderPlaced}
       />
       <OrdersClient orders={orders} counts={counts} />
     </>

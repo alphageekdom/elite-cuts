@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { formatMoney, getInitials, formatDateTime } from '@/lib/admin-utils';
 import { printReceipt } from '@/lib/print-receipt';
+import { CANCELLATION_REASONS } from '@/lib/order-constants';
 import type { OrderTableRow } from '@/types/admin';
 
 type TimelineStep = {
@@ -11,30 +12,32 @@ type TimelineStep = {
   current: boolean;
 };
 
+const PICKUP_STEPS = ['Order Placed', 'Preparing', 'Ready for Pickup', 'Completed'];
+const DELIVERY_STEPS = ['Order Placed', 'Preparing', 'Out for Delivery', 'Completed'];
+
 function buildTimeline(order: OrderTableRow): TimelineStep[] {
   const d = formatDateTime(order.createdAt);
-  const steps = [
-    { label: 'Order placed', time: d.day + ' · ' + d.time, done: true },
-    {
-      label: 'Payment confirmed',
-      time: order.isPaid
-        ? order.paidAt
-          ? formatDateTime(order.paidAt).day + ' · STRIPE'
-          : 'STRIPE'
-        : '—',
-      done: order.isPaid,
-    },
-    {
-      label: 'Hand-cut & packed',
-      time: 'In progress',
-      done: order.status === 'Ready for Pickup' || order.status === 'Completed',
-    },
-    {
-      label: 'Picked up by customer',
-      time: order.pickedUp ? 'Completed' : 'Awaiting',
-      done: order.status === 'Completed' || order.pickedUp,
-    },
+  const isDelivery = order.fulfillmentType === 'delivery';
+  const track = isDelivery ? DELIVERY_STEPS : PICKUP_STEPS;
+  const statusIdx = track.indexOf(order.status);
+
+  const labels = isDelivery
+    ? ['Order placed', 'Preparing your cuts', 'Out for delivery', 'Delivered']
+    : ['Order placed', 'Preparing your cuts', 'Ready for pickup', 'Picked up'];
+
+  const times = [
+    d.day + ' · ' + d.time,
+    statusIdx >= 1 ? 'In progress' : '—',
+    statusIdx >= 2 ? (isDelivery ? 'En route' : 'Ready') : '—',
+    order.status === 'Completed' ? 'Completed' : 'Awaiting',
   ];
+
+  const steps = labels.map((label, i) => ({
+    label,
+    time: times[i],
+    done: order.status === 'Cancelled' ? false : statusIdx >= i,
+  }));
+
   const currentIdx = steps.findLastIndex((s) => s.done);
   return steps.map((s, i) => ({ ...s, current: i === currentIdx && i < steps.length - 1 }));
 }
@@ -44,17 +47,21 @@ type Props = {
   statusUpdate: string;
   setStatusUpdate: (s: string) => void;
   onClose: () => void;
-  onUpdate: (newStatus: string) => Promise<void>;
+  onUpdate: (newStatus: string, cancellationReason?: string) => Promise<void>;
 };
 
 export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate, onClose, onUpdate }: Props) {
   const [updating, setUpdating] = useState(false);
+  const [cancellationReason, setCancellationReason] = useState(order.cancellationReason ?? '');
   const initials = getInitials(order.customerName);
   const timeline = buildTimeline(order);
 
   async function handleUpdate() {
     setUpdating(true);
-    await onUpdate(statusUpdate);
+    await onUpdate(
+      statusUpdate,
+      statusUpdate === 'Cancelled' ? cancellationReason || undefined : undefined,
+    );
     setUpdating(false);
   }
 
@@ -118,24 +125,40 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
             ))}
           </div>
 
-          <div className="flex gap-2 mt-4 pt-4 border-t border-line-soft">
-            <select
-              value={statusUpdate}
-              onChange={(e) => setStatusUpdate(e.target.value)}
-              className="flex-1 appearance-none bg-paper border border-line rounded-full px-4 py-2.5 text-[13px] text-ink font-sans outline-none focus:border-ink cursor-pointer"
-            >
-              <option value="Pending">Pending</option>
-              <option value="Ready for Pickup">Ready for Pickup</option>
-              <option value="Completed">Completed</option>
-              <option value="Cancelled">Cancelled</option>
-            </select>
-            <button
-              onClick={handleUpdate}
-              disabled={updating || statusUpdate === order.status}
-              className="px-4 py-2.5 rounded-full bg-ink text-cream text-[13px] font-medium hover:bg-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {updating ? 'Saving…' : 'Update'}
-            </button>
+          <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-line-soft">
+            <div className="flex gap-2">
+              <select
+                value={statusUpdate}
+                onChange={(e) => { setStatusUpdate(e.target.value); if (e.target.value !== 'Cancelled') setCancellationReason(''); }}
+                className="flex-1 appearance-none bg-paper border border-line rounded-full px-4 py-2.5 text-[13px] text-ink font-sans outline-none focus:border-ink cursor-pointer"
+              >
+                <option value="Order Placed">Order Placed</option>
+                <option value="Preparing">Preparing</option>
+                {order.fulfillmentType !== 'delivery' && <option value="Ready for Pickup">Ready for Pickup</option>}
+                {order.fulfillmentType === 'delivery' && <option value="Out for Delivery">Out for Delivery</option>}
+                <option value="Completed">Completed</option>
+                <option value="Cancelled">Cancelled</option>
+              </select>
+              <button
+                onClick={handleUpdate}
+                disabled={updating || (statusUpdate === order.status && cancellationReason === (order.cancellationReason ?? ''))}
+                className="px-4 py-2.5 rounded-full bg-ink text-cream text-[13px] font-medium hover:bg-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {updating ? 'Saving…' : 'Update'}
+              </button>
+            </div>
+            {statusUpdate === 'Cancelled' && (
+              <select
+                value={cancellationReason}
+                onChange={(e) => setCancellationReason(e.target.value)}
+                className="appearance-none bg-paper border border-line rounded-full px-4 py-2.5 text-[13px] text-ink font-sans outline-none focus:border-ink cursor-pointer"
+              >
+                <option value="">Select reason…</option>
+                {CANCELLATION_REASONS.map((r) => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
+            )}
           </div>
         </div>
 
@@ -221,7 +244,7 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
           <div className="text-[10px] font-medium tracking-[0.22em] uppercase text-muted mb-4">Fulfillment</div>
           <div className="flex flex-col gap-2">
             {[
-              { l: 'Method', v: 'PICKUP' },
+              { l: 'Method', v: order.fulfillmentType === 'delivery' ? 'DELIVERY' : 'PICKUP' },
               { l: 'Location', v: order.pickupLocation || 'San Diego, CA' },
               { l: 'Paid', v: order.isPaid ? 'Yes' : 'No' },
               { l: 'Picked up', v: order.pickedUp ? 'Yes' : 'Awaiting' },
