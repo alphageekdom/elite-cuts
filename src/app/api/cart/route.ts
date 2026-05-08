@@ -43,6 +43,17 @@ const loadCart = async (userId: string) => {
 // envelope's `_id`, `user`, or timestamps.
 const respond = (items: CartLineWire[]) => NextResponse.json({ items });
 
+// Handles both populated ( { _id, ... } ) and unpopulated ( ObjectId string )
+// product references — Mongoose leaves the raw ObjectId when populate() hasn't
+// been called yet, or after a fresh push before re-populate.
+const matchesProduct = (
+  item: { product: unknown },
+  productId: string,
+): boolean =>
+  item.product instanceof Object && '_id' in item.product
+    ? String((item.product as { _id: unknown })._id) === productId
+    : String(item.product) === productId;
+
 // GET /api/cart — current user's cart.
 export const GET = async () => {
   try {
@@ -54,7 +65,7 @@ export const GET = async () => {
     return respond(cart.toJSON().items as CartLineWire[]);
   } catch (error) {
     console.error(error);
-    return new Response('Something Went Wrong', { status: 500 });
+    return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
 };
 
@@ -77,14 +88,10 @@ export const POST = async (request: NextRequest) => {
     await connectDB();
 
     const product = await Product.findById(productId);
-    if (!product) return new Response('Product not found', { status: 404 });
+    if (!product) return NextResponse.json({ message: 'Product not found' }, { status: 404 });
 
     const cart = await loadCart(sessionUser.userId);
-    const existing = cart.items.find((item) =>
-      item.product instanceof Object && '_id' in item.product
-        ? String((item.product as { _id: unknown })._id) === productId
-        : String(item.product) === productId,
-    );
+    const existing = cart.items.find((item) => matchesProduct(item, productId));
 
     if (existing) {
       existing.quantity += addBy;
@@ -101,7 +108,7 @@ export const POST = async (request: NextRequest) => {
     return respond(cart.toJSON().items as CartLineWire[]);
   } catch (error) {
     console.error(error);
-    return new Response('Something Went Wrong', { status: 500 });
+    return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
 };
 
@@ -124,11 +131,7 @@ export const PATCH = async (request: NextRequest) => {
     await connectDB();
     const cart = await loadCart(sessionUser.userId);
 
-    const idx = cart.items.findIndex((item) =>
-      item.product instanceof Object && '_id' in item.product
-        ? String((item.product as { _id: unknown })._id) === productId
-        : String(item.product) === productId,
-    );
+    const idx = cart.items.findIndex((item) => matchesProduct(item, productId));
 
     if (quantity <= 0) {
       if (idx !== -1) cart.items.splice(idx, 1);
@@ -136,7 +139,7 @@ export const PATCH = async (request: NextRequest) => {
       cart.items[idx].quantity = quantity;
     } else {
       const product = await Product.findById(productId);
-      if (!product) return new Response('Product not found', { status: 404 });
+      if (!product) return NextResponse.json({ message: 'Product not found' }, { status: 404 });
       cart.items.push({
         product: product._id,
         quantity,
@@ -149,7 +152,7 @@ export const PATCH = async (request: NextRequest) => {
     return respond(cart.toJSON().items as CartLineWire[]);
   } catch (error) {
     console.error(error);
-    return new Response('Something Went Wrong', { status: 500 });
+    return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
 };
 
@@ -169,11 +172,7 @@ export const DELETE = async (request: NextRequest) => {
     await connectDB();
     const cart = await loadCart(sessionUser.userId);
 
-    const idx = cart.items.findIndex((item) =>
-      item.product instanceof Object && '_id' in item.product
-        ? String((item.product as { _id: unknown })._id) === productId
-        : String(item.product) === productId,
-    );
+    const idx = cart.items.findIndex((item) => matchesProduct(item, productId));
 
     if (idx !== -1) {
       cart.items.splice(idx, 1);
@@ -184,6 +183,6 @@ export const DELETE = async (request: NextRequest) => {
     return respond(cart.toJSON().items as CartLineWire[]);
   } catch (error) {
     console.error(error);
-    return new Response('Something Went Wrong', { status: 500 });
+    return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
 };

@@ -10,12 +10,13 @@ export const dynamic = 'force-dynamic';
 // GET /api/saved-cuts
 export const GET = async () => {
   try {
-    await connectDB();
     const sessionUser = await getSessionUser();
 
     if (!sessionUser?.userId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
+
+    await connectDB();
 
     const user = await User.findById(sessionUser.userId);
     if (!user) {
@@ -34,12 +35,13 @@ export const GET = async () => {
 // POST /api/saved-cuts — toggles a product in/out of savedCuts
 export const POST = async (request: NextRequest) => {
   try {
-    await connectDB();
     const sessionUser = await getSessionUser();
 
     if (!sessionUser?.userId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
+
+    await connectDB();
 
     const { productId } = (await request.json()) as { productId?: string };
 

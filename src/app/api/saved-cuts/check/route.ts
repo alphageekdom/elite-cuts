@@ -9,12 +9,13 @@ export const dynamic = 'force-dynamic';
 // POST /api/saved-cuts/check
 export const POST = async (request: NextRequest) => {
   try {
-    await connectDB();
     const sessionUser = await getSessionUser();
 
     if (!sessionUser?.userId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
+
+    await connectDB();
 
     const { productId } = (await request.json()) as { productId?: string };
 
