@@ -14,7 +14,31 @@ type Props = {
   orders: number;
   customers: number;
   avgOrder: number;
+  currentMonthRevenue: number;
+  prevMonthRevenue: number;
+  currentMonthOrders: number;
+  prevMonthOrders: number;
+  currentMonthCustomers: number;
+  prevMonthCustomers: number;
 };
+
+function pctChange(current: number, prev: number): { label: string; dir: 'up' | 'down' } | null {
+  if (prev === 0) return null;
+  const pct = ((current - prev) / prev) * 100;
+  return {
+    label: `${Math.abs(pct).toFixed(1)}%`,
+    dir: pct >= 0 ? 'up' : 'down',
+  };
+}
+
+function countChange(current: number, prev: number): { label: string; dir: 'up' | 'down' } | null {
+  if (prev === 0 && current === 0) return null;
+  const diff = current - prev;
+  return {
+    label: diff >= 0 ? `+${diff} new` : `${diff} new`,
+    dir: diff >= 0 ? 'up' : 'down',
+  };
+}
 
 function formatMoney(amount: number) {
   return amount.toLocaleString('en-US', {
@@ -61,36 +85,51 @@ function StatCard({ stat }: { stat: Stat }) {
       </div>
 
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-muted">
-        <span
-          className={`inline-flex items-center gap-[3px] px-2 py-0.5 rounded-full font-medium text-[11px] tracking-[0.02em] ${
-            stat.changeDir === 'up'
-              ? 'bg-green-soft text-green'
-              : 'bg-red-soft text-oxblood'
-          }`}
-        >
-          {stat.changeDir === 'up' ? <ArrowUp /> : <ArrowDown />}
-          {stat.change}
-        </span>
+        {stat.change !== '—' ? (
+          <span
+            className={`inline-flex items-center gap-[3px] px-2 py-0.5 rounded-full font-medium text-[11px] tracking-[0.02em] ${
+              stat.changeDir === 'up'
+                ? 'bg-green-soft text-green'
+                : 'bg-red-soft text-oxblood'
+            }`}
+          >
+            {stat.changeDir === 'up' ? <ArrowUp /> : <ArrowDown />}
+            {stat.change}
+          </span>
+        ) : null}
         <span className="whitespace-nowrap">{stat.changeMeta}</span>
       </div>
     </div>
   );
 }
 
-export default function DashboardStatGrid({ revenue, orders, customers, avgOrder }: Props) {
+export default function DashboardStatGrid({
+  revenue, orders, customers, avgOrder,
+  currentMonthRevenue, prevMonthRevenue,
+  currentMonthOrders, prevMonthOrders,
+  currentMonthCustomers, prevMonthCustomers,
+}: Props) {
   const revenueFormatted = revenue > 0 ? formatMoney(revenue) : '0.00';
   const [revMain, revCents] = revenueFormatted.split('.');
   const avgFormatted = avgOrder > 0 ? formatMoney(avgOrder) : '0.00';
   const [avgMain, avgCents] = avgFormatted.split('.');
+
+  const currentMonthAvg = currentMonthOrders > 0 ? currentMonthRevenue / currentMonthOrders : 0;
+  const prevMonthAvg    = prevMonthOrders > 0    ? prevMonthRevenue / prevMonthOrders : 0;
+
+  const revChange  = pctChange(currentMonthRevenue, prevMonthRevenue);
+  const ordChange  = pctChange(currentMonthOrders, prevMonthOrders);
+  const custChange = countChange(currentMonthCustomers, prevMonthCustomers);
+  const avgChange  = pctChange(currentMonthAvg, prevMonthAvg);
 
   const stats: Stat[] = [
     {
       label: 'Revenue',
       value: `$${revMain}`,
       valueSuffix: `.${revCents}`,
-      change: '12.4%',
-      changeDir: 'up',
-      changeMeta: 'vs last month',
+      change: revChange?.label ?? '—',
+      changeDir: revChange?.dir ?? 'up',
+      changeMeta: revChange ? 'vs last month' : 'no prior data',
       delay: '0.05s',
       icon: (
         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -102,9 +141,9 @@ export default function DashboardStatGrid({ revenue, orders, customers, avgOrder
     {
       label: 'Orders',
       value: orders.toLocaleString(),
-      change: '8.1%',
-      changeDir: 'up',
-      changeMeta: 'vs last month',
+      change: ordChange?.label ?? '—',
+      changeDir: ordChange?.dir ?? 'up',
+      changeMeta: ordChange ? 'vs last month' : 'no prior data',
       delay: '0.12s',
       icon: (
         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -117,9 +156,9 @@ export default function DashboardStatGrid({ revenue, orders, customers, avgOrder
     {
       label: 'Customers',
       value: customers.toLocaleString(),
-      change: '+24 new',
-      changeDir: 'up',
-      changeMeta: 'this week',
+      change: custChange?.label ?? '—',
+      changeDir: custChange?.dir ?? 'up',
+      changeMeta: custChange ? 'vs last month' : 'no prior data',
       delay: '0.19s',
       icon: (
         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -133,9 +172,9 @@ export default function DashboardStatGrid({ revenue, orders, customers, avgOrder
       label: 'Avg. Order',
       value: `$${avgMain}`,
       valueSuffix: `.${avgCents}`,
-      change: '2.3%',
-      changeDir: 'down',
-      changeMeta: 'vs last month',
+      change: avgChange?.label ?? '—',
+      changeDir: avgChange?.dir ?? 'up',
+      changeMeta: avgChange ? 'vs last month' : 'no prior data',
       delay: '0.26s',
       icon: (
         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

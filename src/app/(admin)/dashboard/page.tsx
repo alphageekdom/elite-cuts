@@ -39,8 +39,10 @@ export default async function AdminDashboardPage() {
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000);
   const sixtyDaysAgo = new Date(now.getTime() - 60 * 86400000);
 
-  const [usersCount, ordersCount, revenueResult, rawOrders, topCutsRaw, weeklyRaw, weeklyPrevRaw] =
-    await Promise.all([
+  const [
+    usersCount, ordersCount, revenueResult, rawOrders, topCutsRaw, weeklyRaw, weeklyPrevRaw,
+    currentPeriodAgg, prevPeriodAgg, currentCustomers, prevCustomers,
+  ] = await Promise.all([
       User.countDocuments({}),
       Order.countDocuments({}),
       Order.aggregate<{ total: number }>([
@@ -96,10 +98,30 @@ export default async function AdminDashboardPage() {
         },
         { $sort: { _id: 1 } },
       ]),
+      // Current 30-day period: revenue + order count
+      Order.aggregate<{ total: number; count: number }>([
+        { $match: { createdAt: { $gte: thirtyDaysAgo } } },
+        { $group: { _id: null, total: { $sum: '$totalCost' }, count: { $sum: 1 } } },
+      ]),
+      // Prior 30-day period: revenue + order count
+      Order.aggregate<{ total: number; count: number }>([
+        { $match: { createdAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo } } },
+        { $group: { _id: null, total: { $sum: '$totalCost' }, count: { $sum: 1 } } },
+      ]),
+      // New customers: current 30 days
+      User.countDocuments({ createdAt: { $gte: thirtyDaysAgo } }),
+      // New customers: prior 30 days
+      User.countDocuments({ createdAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo } }),
     ]);
 
   const revenue = revenueResult[0]?.total ?? 0;
   const avgOrder = ordersCount > 0 ? Math.round(revenue / ordersCount) : 0;
+
+  // Period-over-period stats for change pills
+  const currentMonthRevenue = currentPeriodAgg[0]?.total ?? 0;
+  const currentMonthOrders  = currentPeriodAgg[0]?.count ?? 0;
+  const prevMonthRevenue    = prevPeriodAgg[0]?.total ?? 0;
+  const prevMonthOrders     = prevPeriodAgg[0]?.count ?? 0;
 
   // Top cuts — normalize bar widths relative to the highest earner
   const maxRevenue = topCutsRaw[0]?.revenue ?? 1;
@@ -149,6 +171,12 @@ export default async function AdminDashboardPage() {
         orders={ordersCount}
         customers={usersCount}
         avgOrder={avgOrder}
+        currentMonthRevenue={currentMonthRevenue}
+        prevMonthRevenue={prevMonthRevenue}
+        currentMonthOrders={currentMonthOrders}
+        prevMonthOrders={prevMonthOrders}
+        currentMonthCustomers={currentCustomers}
+        prevMonthCustomers={prevCustomers}
       />
       <div className="grid grid-cols-1 lg:grid-cols-[1.7fr_1fr] gap-4 mb-4">
         <DashboardRevenueChart weeklyRevenue={weeklyRevenue} />

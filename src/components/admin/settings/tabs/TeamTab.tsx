@@ -1,16 +1,21 @@
 'use client';
 import { toast } from 'sonner';
 import { sectionTitleCls, sectionSubCls, btnPrimary } from '../SettingsUI';
+import { getInitials } from '@/lib/admin-utils';
 
-const MEMBERS = [
-  { initials: 'TD', name: 'Tangelo Doe', email: 'TANGELO@ELITECUTS.COM', role: 'Admin', avatarCls: 'bg-oxblood text-cream', pillCls: 'bg-red-soft text-oxblood' },
-  { initials: 'MR', name: 'Marcus Reyes', email: 'MARCUS@ELITECUTS.COM', role: 'Staff', avatarCls: 'bg-ink text-cream', pillCls: 'bg-ink/[0.06] text-ink-soft' },
-  { initials: 'EH', name: 'Elena Huang', email: 'ELENA@ELITECUTS.COM', role: 'Staff', avatarCls: 'bg-camel text-ink', pillCls: 'bg-ink/[0.06] text-ink-soft' },
-  { initials: 'SO', name: 'Sam Okafor', email: 'SAM@ELITECUTS.COM', role: 'Staff', avatarCls: 'bg-green text-cream', pillCls: 'bg-ink/[0.06] text-ink-soft' },
-  { initials: 'MP', name: 'Maya Park', email: 'MAYA@ELITECUTS.COM', role: 'View only', avatarCls: 'bg-camel-soft text-ink', pillCls: 'bg-green-soft text-green' },
+const AVATAR_PALETTE = [
+  'bg-oxblood text-cream',
+  'bg-ink text-cream',
+  'bg-camel text-ink',
+  'bg-green text-cream',
+  'bg-camel-soft text-ink',
 ];
 
-export default function TeamTab() {
+type Member = { id: string; name: string; email: string };
+
+type Props = { members: Member[] };
+
+export default function TeamTab({ members }: Props) {
   return (
     <div>
       <h2 className={sectionTitleCls}>
@@ -20,20 +25,20 @@ export default function TeamTab() {
         Manage who has access to this dashboard and what they can do. Admin users can change settings and manage other users. Staff can view orders and update inventory.
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-        {MEMBERS.map((m) => (
+        {members.map((m, idx) => (
           <div
-            key={m.initials}
+            key={m.id}
             className="flex items-center gap-3.5 p-4 bg-paper border border-line-soft rounded-lg hover:border-line transition-colors group"
           >
-            <div className={`w-11 h-11 rounded-full grid place-items-center font-display font-semibold text-sm shrink-0 ${m.avatarCls}`}>
-              {m.initials}
+            <div className={`w-11 h-11 rounded-full grid place-items-center font-display font-semibold text-sm shrink-0 ${AVATAR_PALETTE[idx % AVATAR_PALETTE.length]}`}>
+              {getInitials(m.name)}
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-display text-[15px] font-medium tracking-[-0.005em] mb-0.5">{m.name}</div>
-              <div className="text-[11px] text-muted font-mono tracking-[0.04em]">{m.email}</div>
+              <div className="text-[11px] text-muted font-mono tracking-[0.04em]">{m.email.toUpperCase()}</div>
             </div>
-            <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] tracking-widest uppercase font-medium shrink-0 ${m.pillCls}`}>
-              {m.role}
+            <span className="inline-block px-2 py-0.5 rounded-full text-[10px] tracking-widest uppercase font-medium shrink-0 bg-red-soft text-oxblood">
+              Admin
             </span>
             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
               <button
@@ -60,6 +65,9 @@ export default function TeamTab() {
             </div>
           </div>
         ))}
+        {members.length === 0 && (
+          <p className="text-[13px] text-muted col-span-2 py-4">No admin users found.</p>
+        )}
       </div>
       <button type="button" onClick={() => toast.info('Coming soon')} className={btnPrimary}>
         <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
