@@ -11,21 +11,18 @@ export default function ReceiptToolbar({ backHref, email, orderRef, orderId }: P
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const orderUrl = `${origin}/checkout/confirmation?orderId=${orderId}`;
 
-  const mailtoHref = [
-    `mailto:${email}`,
-    `?subject=${encodeURIComponent(`Your EliteCuts order is confirmed — ${orderRef}`)}`,
-    `&body=${encodeURIComponent(
-      `Hi,\n\nYour order is confirmed and we're getting your cuts ready.\n\n` +
-      `Order summary: ${orderUrl}\n` +
-      `Reference: ${orderRef}\n\n` +
-      `Pickup is at 3045 30th St, North Park, San Diego. We'll cut everything fresh before you arrive.\n\n` +
-      `Questions before you come in? Call us at (619) 555-0142 or reply here.\n\n` +
-      `See you at the counter.\n` +
-      `— EliteCuts\n` +
-      `3045 30th St · North Park, San Diego, CA 92104\n` +
-      `(619) 555-0142 · hello@elitecuts.com`
-    )}`,
-  ].join('');
+  const body = encodeURIComponent(
+    `Hi,\n\nYour order is confirmed and we're getting your cuts ready.\n\n` +
+    `Order summary: ${orderUrl}\n` +
+    `Reference: ${orderRef}\n\n` +
+    `Pickup is at 3045 30th St, North Park, San Diego. We'll cut everything fresh before you arrive.\n\n` +
+    `Questions before you come in? Call us at (619) 555-0142 or reply here.\n\n` +
+    `See you at the counter.\n` +
+    `— EliteCuts\n` +
+    `3045 30th St · North Park, San Diego, CA 92104\n` +
+    `(619) 555-0142 · hello@elitecuts.com`,
+  );
+  const mailtoHref = `mailto:${email}?subject=${encodeURIComponent(`Your EliteCuts order is confirmed — ${orderRef}`)}&body=${body}`;
 
   return (
     <div className="print:hidden w-full max-w-150 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
