@@ -3,6 +3,8 @@ import { useState, useMemo } from 'react';
 import { CATEGORY_PAR } from '@/lib/inventory';
 import { statCellBorderClasses } from '@/lib/admin-utils';
 import { PRODUCT_CATEGORIES, type ProductCategory } from '@/lib/admin-constants';
+import InventoryAgingRoom from './InventoryAgingRoom';
+import InventoryUpcomingDeliveries from './InventoryUpcomingDeliveries';
 
 export type InventoryRow = {
   id: string;
@@ -93,64 +95,6 @@ const SORT_OPTIONS: { value: SortBy; label: string }[] = [
   { value: 'newest', label: 'Newest first' },
 ];
 
-// Static aging room seed data — no aging model exists yet
-const AGING_CUTS = [
-  { id: 'a1', cut: 'Ribeye #A', day: 26, target: 28, rack: 'Rack 1, Shelf 2', weight: '8.4', started: 'May 8', ready: 'Jun 5' },
-  { id: 'a2', cut: 'Ribeye #B', day: 24, target: 28, rack: 'Rack 1, Shelf 3', weight: '9.1', started: 'May 10', ready: 'Jun 7' },
-  { id: 'a3', cut: 'Strip Loin', day: 18, target: 28, rack: 'Rack 2, Shelf 1', weight: '12.3', started: 'May 16', ready: 'Jun 13' },
-  { id: 'a4', cut: 'Tomahawk', day: 14, target: 28, rack: 'Rack 2, Shelf 2', weight: '6.8', started: 'May 20', ready: 'Jun 17' },
-  { id: 'a5', cut: 'Bone-in Ribeye', day: 8, target: 28, rack: 'Rack 3, Shelf 1', weight: '7.2', started: 'May 26', ready: 'Jun 23' },
-  { id: 'a6', cut: 'Porterhouse', day: 5, target: 28, rack: 'Rack 3, Shelf 2', weight: '10.5', started: 'May 29', ready: 'Jun 26' },
-  { id: 'a7', cut: 'Côte de Boeuf', day: 3, target: 28, rack: 'Rack 4, Shelf 1', weight: '5.6', started: 'May 31', ready: 'Jun 28' },
-  { id: 'a8', cut: 'NY Strip Primal', day: 30, target: 28, rack: 'Rack 1, Shelf 1', weight: '11.0', started: 'May 6', ready: 'Jun 3', pastDue: true },
-];
-
-type AgingPhase = 'early' | 'mid' | 'ready' | 'past';
-
-function getAgingPhase(day: number, target: number, pastDue?: boolean): AgingPhase {
-  if (pastDue || day > target) return 'past';
-  const ratio = day / target;
-  if (ratio >= 0.8) return 'ready';
-  if (ratio >= 0.5) return 'mid';
-  return 'early';
-}
-
-const AGING_PILL_STYLE: Record<AgingPhase, string> = {
-  early: 'bg-amber-soft text-amber',
-  mid: 'bg-[rgba(184,137,90,0.25)] text-camel',
-  ready: 'bg-green-soft text-green',
-  past: 'bg-red-soft text-oxblood',
-};
-
-const AGING_BAR_COLOR: Record<AgingPhase, string> = {
-  early: 'bg-camel-soft',
-  mid: 'bg-camel',
-  ready: 'bg-green',
-  past: 'bg-oxblood',
-};
-
-// Static delivery schedule — no supplier model exists yet
-const DELIVERIES = [
-  { id: 'd1', day: '30', month: 'MAY', dow: 'Fri', supplier: 'Hartwell', supplierEm: 'Ranch', detail: '~120 LB BEEF · WHOLE CARCASS · BI-WEEKLY', status: 'confirmed' as const },
-  { id: 'd2', day: '02', month: 'JUN', dow: 'Mon', supplier: 'Wildwood', supplierEm: 'Farm', detail: '~60 LB PORK · HALF HOG · WEEKLY', status: 'confirmed' as const },
-  { id: 'd3', day: '05', month: 'JUN', dow: 'Thu', supplier: 'Sunridge', supplierEm: 'Farm', detail: '~40 LB POULTRY · 10 WHOLE BIRDS · WEEKLY', status: 'pending' as const },
-  { id: 'd4', day: '07', month: 'JUN', dow: 'Sat', supplier: 'Coastal Lamb', supplierEm: 'Co.', detail: '~35 LB LAMB · 2 WHOLE ANIMALS · BI-WEEKLY', status: 'pending' as const },
-  { id: 'd5', day: '14', month: 'JUN', dow: 'Sat', supplier: 'Hartwell', supplierEm: 'Ranch', detail: '~120 LB BEEF · WHOLE CARCASS · BI-WEEKLY', status: 'scheduled' as const },
-];
-
-type DeliveryStatus = 'confirmed' | 'pending' | 'scheduled';
-
-const DELIVERY_PILL_STYLE: Record<DeliveryStatus, string> = {
-  confirmed: 'bg-green-soft text-green',
-  pending: 'bg-amber-soft text-amber',
-  scheduled: 'bg-[rgba(28,24,20,0.06)] text-muted',
-};
-
-const DELIVERY_PILL_LABEL: Record<DeliveryStatus, string> = {
-  confirmed: 'Confirmed',
-  pending: 'Pending',
-  scheduled: 'Scheduled',
-};
 
 const PAGE_SIZE = 8;
 
@@ -162,8 +106,6 @@ export default function InventoryClient({ rows, counts, categoryCounts }: Props)
   const [sortBy, setSortBy] = useState<SortBy>('stock-asc');
   const [sortOpen, setSortOpen] = useState(false);
   const [page, setPage] = useState(1);
-  const [agingTab, setAgingTab] = useState<'active' | 'history'>('active');
-
   const filtered = useMemo(() => {
     let list = rows;
 
@@ -611,113 +553,8 @@ export default function InventoryClient({ rows, counts, categoryCounts }: Props)
 
       {/* Two-column grid: Aging room + Deliveries */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* § 01 Aging Room */}
-        <div className="bg-paper border border-line-soft rounded p-7">
-          <div className="flex items-end justify-between mb-6 gap-5">
-            <div>
-              <div className="font-display italic text-[12px] text-camel mb-1">§ 01</div>
-              <div className="font-display text-[22px] font-medium tracking-tight leading-snug">
-                Aging <em className="italic text-oxblood font-normal">room</em>
-              </div>
-              <div className="text-[12px] text-muted mt-1">28-day climate-controlled cabinet · 8 cuts active</div>
-            </div>
-            <div className="inline-flex bg-cream-deep rounded-full p-0.5 shrink-0">
-              {(['active', 'history'] as const).map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setAgingTab(tab)}
-                  className={`px-3 py-1.5 rounded-full text-[12px] font-medium capitalize transition-colors ${
-                    agingTab === tab ? 'bg-ink text-cream' : 'text-ink-soft hover:text-ink'
-                  }`}
-                >
-                  {tab === 'active' ? 'Active' : 'History'}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {AGING_CUTS.map((cut) => {
-              const phase = getAgingPhase(cut.day, cut.target, cut.pastDue);
-              const barPct = Math.min((cut.day / cut.target) * 100, 100);
-              return (
-                <div
-                  key={cut.id}
-                  className="relative bg-cream border border-line-soft rounded p-4 overflow-hidden hover:border-line hover:-translate-y-0.5 transition-all"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="font-display text-[15px] font-medium tracking-tight leading-snug">{cut.cut}</div>
-                    <span
-                      className={`font-mono text-[10px] px-2 py-0.5 rounded-full tracking-[0.04em] shrink-0 ml-1 ${AGING_PILL_STYLE[phase]}`}
-                    >
-                      DAY {cut.day}
-                    </span>
-                  </div>
-                  <div className="font-mono text-[11px] text-muted tracking-[0.04em] leading-relaxed">
-                    <strong className="text-ink font-medium">{cut.rack}</strong>
-                    <br />
-                    {cut.weight} LB · STARTED {cut.started}
-                    <br />
-                    {cut.pastDue ? (
-                      <strong className="text-oxblood font-medium">{cut.day - cut.target} DAYS OVER</strong>
-                    ) : (
-                      <>READY {cut.ready}</>
-                    )}
-                  </div>
-                  {/* Bottom progress bar */}
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-cream-deep">
-                    <div
-                      className={`h-full transition-all duration-700 ${AGING_BAR_COLOR[phase]}`}
-                      style={{ width: `${barPct}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* § 02 Upcoming Deliveries */}
-        <div className="bg-paper border border-line-soft rounded p-7">
-          <div className="mb-6">
-            <div className="font-display italic text-[12px] text-camel mb-1">§ 02</div>
-            <div className="font-display text-[22px] font-medium tracking-tight leading-snug">
-              Upcoming <em className="italic text-oxblood font-normal">deliveries</em>
-            </div>
-            <div className="text-[12px] text-muted mt-1">Next 14 days from active suppliers</div>
-          </div>
-
-          <div className="flex flex-col divide-y divide-line-soft">
-            {DELIVERIES.map((d, idx) => (
-              <div
-                key={d.id}
-                className={`grid items-center gap-4 py-4 ${idx === 0 ? 'pt-0' : ''}`}
-                style={{ gridTemplateColumns: '64px 1fr auto' }}
-              >
-                <div className="text-center">
-                  <div className="font-display text-[26px] font-normal leading-none tracking-tight text-ink">{d.day}</div>
-                  <div className="font-mono text-[10px] tracking-[0.18em] uppercase text-muted mt-0.5">{d.month}</div>
-                  <div className="text-[11px] text-muted mt-0.5">{d.dow}</div>
-                </div>
-                <div className="min-w-0">
-                  <div className="font-display text-[15px] font-medium tracking-tight mb-0.5 leading-snug">
-                    {d.supplier} <em className="italic text-oxblood font-normal">{d.supplierEm}</em>
-                  </div>
-                  <div className="font-mono text-[11px] text-muted tracking-[0.04em] leading-relaxed">{d.detail}</div>
-                </div>
-                <div>
-                  <span
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium tracking-[0.04em] before:content-[''] before:w-1.5 before:h-1.5 before:rounded-full before:bg-current ${
-                      DELIVERY_PILL_STYLE[d.status]
-                    }`}
-                  >
-                    {DELIVERY_PILL_LABEL[d.status]}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <InventoryAgingRoom />
+        <InventoryUpcomingDeliveries />
       </div>
 
       {/* Click-outside handler for sort dropdown */}
