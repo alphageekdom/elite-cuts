@@ -134,7 +134,7 @@ const PaymentMethodSelector = () => {
         </span>
         <span className='inline-flex items-center gap-1.5 text-[12px] text-muted'>
           <LockIcon />
-          Encrypted via Stripe
+          Demo — no real charge
         </span>
       </div>
 
