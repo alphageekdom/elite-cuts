@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 import connectDB from '@/config/database';
-import Order, { ORDER_STATUSES } from '@/models/Order';
+import Order, { ORDER_STATUSES, CANCELLATION_REASONS } from '@/models/Order';
 import User from '@/models/User';
 import { getSessionUser } from '@/utils/getSessionUser';
 import { requireAdmin } from '@/utils/requireAdmin';
@@ -85,9 +85,15 @@ export const PATCH = async (request: NextRequest, { params }: RouteContext) => {
     }
 
     const updateFields: Record<string, unknown> = { orderStatus };
-    if (orderStatus === 'Cancelled' && cancellationReason) {
-      updateFields.cancellationReason = cancellationReason;
-    } else if (orderStatus !== 'Cancelled') {
+    if (orderStatus === 'Cancelled') {
+      if (cancellationReason && !isIn(CANCELLATION_REASONS, cancellationReason)) {
+        return NextResponse.json(
+          { message: `cancellationReason must be one of: ${CANCELLATION_REASONS.join(', ')}` },
+          { status: 400 },
+        );
+      }
+      updateFields.cancellationReason = cancellationReason ?? null;
+    } else {
       updateFields.cancellationReason = null;
     }
 
