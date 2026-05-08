@@ -3,12 +3,16 @@ import { redirect } from 'next/navigation';
 import { getSessionUser } from '@/utils/getSessionUser';
 import connectDB from '@/config/database';
 import ProductModel from '@/models/Product';
+import AgingCutModel from '@/models/AgingCut';
+import DeliveryModel from '@/models/Delivery';
 
 import InventoryPageHeader from '@/components/admin/inventory/InventoryPageHeader';
 import InventoryClient, {
   type InventoryRow,
   type InventoryCounts,
 } from '@/components/admin/inventory/InventoryClient';
+import type { AgingCutRow } from '@/components/admin/inventory/InventoryAgingRoom';
+import type { DeliveryRow } from '@/components/admin/inventory/InventoryUpcomingDeliveries';
 import { CATEGORY_PAR } from '@/lib/inventory';
 
 export const dynamic = 'force-dynamic';
@@ -16,8 +20,6 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'Inventory · EliteCuts Admin',
 };
-
-const AGING_ROOM_COUNT = 8;
 
 export default async function AdminInventoryPage() {
   const sessionUser = await getSessionUser();
@@ -28,11 +30,11 @@ export default async function AdminInventoryPage() {
 
   await connectDB();
 
-  const rawProducts = await ProductModel.find({})
-    .sort({ stockCount: 1 })
-    .limit(200)
-    .lean()
-    .exec();
+  const [rawProducts, rawAgingCuts, rawDeliveries] = await Promise.all([
+    ProductModel.find({}).sort({ stockCount: 1 }).limit(200).lean().exec(),
+    AgingCutModel.find({ isActive: true }).sort({ startedAt: 1 }).lean().exec(),
+    DeliveryModel.find({ deliveryDate: { $gte: new Date() } }).sort({ deliveryDate: 1 }).limit(10).lean().exec(),
+  ]);
 
   const total = rawProducts.length;
 
@@ -58,7 +60,7 @@ export default async function AdminInventoryPage() {
     inStock,
     lowStock,
     critical,
-    agingRoom: AGING_ROOM_COUNT,
+    agingRoom: rawAgingCuts.length,
   };
 
   const categoryCounts: Record<string, number> = {};
@@ -78,6 +80,25 @@ export default async function AdminInventoryPage() {
     createdAt: p.createdAt.toISOString(),
   }));
 
+  const agingCuts: AgingCutRow[] = rawAgingCuts.map((c) => ({
+    _id: c._id.toString(),
+    cut: c.cut,
+    targetDays: c.targetDays,
+    rack: c.rack,
+    weightLb: c.weightLb,
+    startedAt: c.startedAt.toISOString(),
+    isActive: c.isActive,
+  }));
+
+  const deliveries: DeliveryRow[] = rawDeliveries.map((d) => ({
+    _id: d._id.toString(),
+    deliveryDate: d.deliveryDate.toISOString(),
+    supplier: d.supplier,
+    supplierSuffix: d.supplierSuffix,
+    detail: d.detail,
+    status: d.status,
+  }));
+
   return (
     <>
       <InventoryPageHeader totalProducts={total} />
@@ -85,6 +106,8 @@ export default async function AdminInventoryPage() {
         rows={rows}
         counts={counts}
         categoryCounts={categoryCounts}
+        agingCuts={agingCuts}
+        deliveries={deliveries}
       />
     </>
   );

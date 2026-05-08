@@ -4,8 +4,8 @@ import { toast } from 'sonner';
 import { CATEGORY_PAR } from '@/lib/inventory';
 import { statCellBorderClasses } from '@/lib/admin-utils';
 import { PRODUCT_CATEGORIES, type ProductCategory } from '@/lib/admin-constants';
-import InventoryAgingRoom from './InventoryAgingRoom';
-import InventoryUpcomingDeliveries from './InventoryUpcomingDeliveries';
+import InventoryAgingRoom, { type AgingCutRow } from './InventoryAgingRoom';
+import InventoryUpcomingDeliveries, { type DeliveryRow } from './InventoryUpcomingDeliveries';
 
 export type InventoryRow = {
   id: string;
@@ -31,6 +31,8 @@ type Props = {
   rows: InventoryRow[];
   counts: InventoryCounts;
   categoryCounts: Record<string, number>;
+  agingCuts: AgingCutRow[];
+  deliveries: DeliveryRow[];
 };
 
 type StatFilter = 'all' | 'inStock' | 'lowStock' | 'critical';
@@ -92,7 +94,7 @@ const SORT_OPTIONS: { value: SortBy; label: string }[] = [
 
 const PAGE_SIZE = 8;
 
-export default function InventoryClient({ rows, counts, categoryCounts }: Props) {
+export default function InventoryClient({ rows, counts, categoryCounts, agingCuts, deliveries }: Props) {
   const [localRows, setLocalRows] = useState(rows);
   const [alertDismissed, setAlertDismissed] = useState(false);
   const [activeFilter, setActiveFilter] = useState<StatFilter>('all');
@@ -613,8 +615,8 @@ export default function InventoryClient({ rows, counts, categoryCounts }: Props)
 
       {/* Two-column grid: Aging room + Deliveries */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <InventoryAgingRoom />
-        <InventoryUpcomingDeliveries />
+        <InventoryAgingRoom cuts={agingCuts} />
+        <InventoryUpcomingDeliveries deliveries={deliveries} />
       </div>
 
       {/* Click-outside handler for sort dropdown */}

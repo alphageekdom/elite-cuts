@@ -1,0 +1,38 @@
+import { NextResponse, type NextRequest } from 'next/server';
+import connectDB from '@/config/database';
+import AgingCut from '@/models/AgingCut';
+import { requireAdmin } from '@/utils/requireAdmin';
+
+type RouteContext = { params: Promise<{ id: string }> };
+
+export const PATCH = async (request: NextRequest, { params }: RouteContext) => {
+  const adminError = await requireAdmin();
+  if (adminError) return adminError;
+  try {
+    await connectDB();
+    const { id } = await params;
+    const body = await request.json();
+    const { _id, __v, createdAt, updatedAt, ...patch } = body;
+    void _id; void __v; void createdAt; void updatedAt;
+    const cut = await AgingCut.findByIdAndUpdate(id, { $set: patch }, { new: true });
+    if (!cut) return NextResponse.json({ message: 'Not found' }, { status: 404 });
+    return NextResponse.json(cut);
+  } catch (error) {
+    console.error('[aging/:id PATCH]', error);
+    return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
+  }
+};
+
+export const DELETE = async (_request: NextRequest, { params }: RouteContext) => {
+  const adminError = await requireAdmin();
+  if (adminError) return adminError;
+  try {
+    await connectDB();
+    const { id } = await params;
+    await AgingCut.findByIdAndDelete(id);
+    return NextResponse.json({ message: 'Deleted' });
+  } catch (error) {
+    console.error('[aging/:id DELETE]', error);
+    return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
+  }
+};

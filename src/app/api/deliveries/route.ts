@@ -1,0 +1,33 @@
+import { NextResponse, type NextRequest } from 'next/server';
+import connectDB from '@/config/database';
+import Delivery from '@/models/Delivery';
+import { requireAdmin } from '@/utils/requireAdmin';
+
+export const GET = async () => {
+  const adminError = await requireAdmin();
+  if (adminError) return adminError;
+  try {
+    await connectDB();
+    const upcoming = await Delivery.find({
+      deliveryDate: { $gte: new Date() },
+    }).sort({ deliveryDate: 1 }).limit(10).lean();
+    return NextResponse.json(upcoming);
+  } catch (error) {
+    console.error('[deliveries GET]', error);
+    return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
+  }
+};
+
+export const POST = async (request: NextRequest) => {
+  const adminError = await requireAdmin();
+  if (adminError) return adminError;
+  try {
+    await connectDB();
+    const body = await request.json();
+    const delivery = await Delivery.create(body);
+    return NextResponse.json(delivery, { status: 201 });
+  } catch (error) {
+    console.error('[deliveries POST]', error);
+    return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
+  }
+};

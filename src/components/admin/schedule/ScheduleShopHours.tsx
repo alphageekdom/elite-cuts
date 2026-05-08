@@ -1,19 +1,8 @@
-interface ShopHour {
-  day: string;
-  hours: string;
-  closed?: boolean;
-  isToday?: boolean;
-}
+import type { ShopHoursDay } from '@/models/ShopHours';
 
-const SHOP_HOURS: ShopHour[] = [
-  { day: 'Monday', hours: 'CLOSED', closed: true },
-  { day: 'Tuesday', hours: '9AM – 7PM' },
-  { day: 'Wednesday', hours: '9AM – 7PM', isToday: true },
-  { day: 'Thursday', hours: '9AM – 7PM' },
-  { day: 'Friday', hours: '9AM – 7PM' },
-  { day: 'Saturday', hours: '9AM – 7PM' },
-  { day: 'Sunday', hours: '10AM – 4PM' },
-];
+const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+type Props = { hours: ShopHoursDay[] };
 
 function ChevronRight() {
   return (
@@ -23,31 +12,43 @@ function ChevronRight() {
   );
 }
 
-export default function ScheduleShopHours() {
+export default function ScheduleShopHours({ hours }: Props) {
+  const todayDow = (new Date().getDay() + 6) % 7; // 0=Mon … 6=Sun
+
+  const sorted = [...hours].sort((a, b) => a.dayOfWeek - b.dayOfWeek);
+
   return (
     <div className="bg-paper border border-line-soft rounded p-6">
       <div className="flex items-center justify-between mb-4 gap-3">
         <span className="font-display text-lg font-medium tracking-tight">
           Shop <em className="italic text-oxblood font-normal">hours</em>
         </span>
-        <a href="#" className="text-xs text-ink-soft border-b border-line pb-px inline-flex items-center gap-1 hover:text-oxblood transition-colors">
+        <a
+          href="/dashboard/settings"
+          className="text-xs text-ink-soft border-b border-line pb-px inline-flex items-center gap-1 hover:text-oxblood transition-colors"
+        >
           Edit <ChevronRight />
         </a>
       </div>
       <div>
-        {SHOP_HOURS.map((h, i) => (
-          <div
-            key={h.day}
-            className={`flex justify-between items-baseline py-2 text-[13px] ${
-              h.isToday ? 'bg-oxblood/[4%] -mx-3.5 px-3.5 rounded' : ''
-            } ${i < SHOP_HOURS.length - 1 ? 'border-b border-line-soft' : ''}`}
-          >
-            <span className={h.isToday ? 'text-ink font-medium' : 'text-ink-soft'}>{h.day}</span>
-            <span className={`font-mono text-xs font-medium tracking-[0.02em] ${h.closed ? 'text-oxblood' : 'text-ink'}`}>
-              {h.hours}
-            </span>
-          </div>
-        ))}
+        {sorted.map((h, i) => {
+          const isToday = h.dayOfWeek === todayDow;
+          const label = DAY_NAMES[h.dayOfWeek] ?? `Day ${h.dayOfWeek}`;
+          const hoursStr = h.isClosed ? 'CLOSED' : `${h.opensAt} – ${h.closesAt}`;
+          return (
+            <div
+              key={h.dayOfWeek}
+              className={`flex justify-between items-baseline py-2 text-[13px] ${
+                isToday ? 'bg-oxblood/[4%] -mx-3.5 px-3.5 rounded' : ''
+              } ${i < sorted.length - 1 ? 'border-b border-line-soft' : ''}`}
+            >
+              <span className={isToday ? 'text-ink font-medium' : 'text-ink-soft'}>{label}</span>
+              <span className={`font-mono text-xs font-medium tracking-[0.02em] ${h.isClosed ? 'text-oxblood' : 'text-ink'}`}>
+                {hoursStr}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
