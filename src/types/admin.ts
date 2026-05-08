@@ -75,3 +75,13 @@ export type StatusCounts = {
   completed: number;
   cancelled: number;
 };
+
+export type OrderRow = {
+  id: string;
+  orderRef: string;
+  customerName: string;
+  customerEmail: string;
+  cut: string;
+  status: string;
+  total: number;
+};

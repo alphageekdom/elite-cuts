@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { getSessionUser } from '@/utils/getSessionUser';
 import connectDB from '@/config/database';
@@ -21,7 +22,7 @@ type PopulatedUser = {
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Dashboard · EliteCuts Admin',
 };
 

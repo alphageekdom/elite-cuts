@@ -1,20 +1,11 @@
 'use client';
 
-import type { CSSProperties } from 'react';
 import BarLoader from 'react-spinners/BarLoader';
 
-const override: CSSProperties = {
-  display: 'block',
-  margin: '100px auto',
-};
-
 const LoadingPage = () => (
-  <BarLoader
-    color='#6b1f1f'
-    cssOverride={override}
-    width={150}
-    aria-label='Loading'
-  />
+  <div role='status' aria-label='Loading' className='flex justify-center pt-25'>
+    <BarLoader color='var(--color-oxblood)' width={150} />
+  </div>
 );
 
 export default LoadingPage;

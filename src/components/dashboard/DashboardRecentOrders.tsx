@@ -1,12 +1,5 @@
-export type OrderRow = {
-  id: string;
-  orderRef: string;
-  customerName: string;
-  customerEmail: string;
-  cut: string;
-  status: string;
-  total: number;
-};
+import type { OrderRow } from '@/types/admin';
+export type { OrderRow };
 
 const STATUS_STYLES: Record<string, string> = {
   Completed: 'bg-ink text-cream',

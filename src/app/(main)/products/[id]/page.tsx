@@ -7,6 +7,7 @@ import connectDB from '@/config/database';
 import ProductModel, { type SerializedProduct } from '@/models/Product';
 import ReviewModel from '@/models/Review';
 import { convertToSerializableObject } from '@/utils/convertToObject';
+import { AVATAR_COLORS } from '@/lib/admin-constants';
 import ProductGallery from '@/components/product/detail/ProductGallery';
 import BuyBlock from '@/components/product/detail/BuyBlock';
 import ProductCard from '@/components/product/ProductCard';
@@ -123,12 +124,6 @@ function initials(name: string) {
     .join('');
 }
 
-const AVATAR_COLORS = [
-  'bg-camel text-cream',
-  'bg-oxblood text-cream',
-  'bg-ink text-cream',
-];
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function ProductPage({ params }: PageProps) {
@@ -150,8 +145,7 @@ export default async function ProductPage({ params }: PageProps) {
 
   const reviews: SerializedReview[] = rawReviews.map((r) => ({
     _id: String(r._id),
-    userName:
-      r.user && 'name' in r.user ? String(r.user.name) : 'Anonymous',
+    userName: r.user?.name ?? 'Anonymous',
     rating: r.rating,
     comment: r.comment,
     createdAt: new Date(r.createdAt).toLocaleDateString('en-US', {
@@ -396,15 +390,9 @@ export default async function ProductPage({ params }: PageProps) {
               <h3 className='mb-2 font-display text-[24px] font-medium tracking-[-0.01em] md:text-[26px]'>
                 No reviews yet
               </h3>
-              <p className='mx-auto mb-7 max-w-[36ch] text-[14px] leading-[1.6] text-muted'>
+              <p className='mx-auto max-w-[36ch] text-[14px] leading-[1.6] text-muted'>
                 Be the first to share your experience with this cut.
               </p>
-              <button
-                type='button'
-                className='rounded-full bg-ink px-7 py-3 text-[13px] font-medium tracking-[0.04em] text-cream transition-colors duration-300 hover:bg-oxblood motion-reduce:transition-none'
-              >
-                Write a review
-              </button>
             </div>
           ) : (
             <div className='grid gap-10 lg:grid-cols-[320px_1fr] lg:gap-16'>
@@ -442,12 +430,6 @@ export default async function ProductPage({ params }: PageProps) {
                   ))}
                 </div>
 
-                <button
-                  type='button'
-                  className='mt-6 w-full rounded-full bg-ink px-5 py-3 text-[13px] font-medium tracking-[0.04em] text-cream transition-colors duration-300 hover:bg-oxblood motion-reduce:transition-none'
-                >
-                  Write a review
-                </button>
               </div>
 
               {/* Review list */}

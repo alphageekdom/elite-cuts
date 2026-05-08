@@ -31,25 +31,28 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Elite Cuts | Luxury Cuts',
-  description: 'Explore your next saved cut',
-  keywords: 'butcher shop, steaks, poultry, pork',
+  title: {
+    default: 'EliteCuts — Premium Butcher, San Diego',
+    template: '%s · EliteCuts',
+  },
+  description:
+    'Order premium hand-cut beef, pork, and poultry online. Ready for same-day pickup in North Park, San Diego.',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <AuthProvider>
-      <CartProvider>
-        <html
-          lang="en"
-          className={`${fraunces.variable} ${instrument.variable} ${jetbrains.variable}`}
-        >
-          <body className="bg-cream font-sans text-ink antialiased">
+    <html
+      lang="en"
+      className={`${fraunces.variable} ${instrument.variable} ${jetbrains.variable}`}
+    >
+      <body className="bg-cream font-sans text-ink antialiased">
+        <AuthProvider>
+          <CartProvider>
             {children}
-            <Toaster richColors position='bottom-right' />
-          </body>
-        </html>
-      </CartProvider>
-    </AuthProvider>
+          </CartProvider>
+        </AuthProvider>
+        <Toaster richColors position='bottom-right' />
+      </body>
+    </html>
   );
 }

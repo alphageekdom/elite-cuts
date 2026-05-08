@@ -72,7 +72,7 @@ const CartPage = async () => {
   ) as SerializedProduct[];
 
   return (
-    <main className='bg-cream pb-24'>
+    <div className='bg-cream pb-24'>
       <div className='mx-auto w-full max-w-7xl px-6 md:px-8'>
         <nav
           aria-label='Breadcrumb'
@@ -126,7 +126,7 @@ const CartPage = async () => {
           </aside>
         </div>
       </div>
-    </main>
+    </div>
   );
 };
 
