@@ -5,10 +5,11 @@ type Props = {
   values: ShopSettings;
   onChange: (patch: Partial<ShopSettings>) => void;
   onSave: () => void;
+  onDiscard: () => void;
   saving: boolean;
 };
 
-export default function GeneralTab({ values, onChange, onSave, saving }: Props) {
+export default function GeneralTab({ values, onChange, onSave, onDiscard, saving }: Props) {
   return (
     <div className="space-y-10">
       <section>
@@ -106,7 +107,7 @@ export default function GeneralTab({ values, onChange, onSave, saving }: Props) 
           </svg>
           {saving ? 'Saving…' : 'Save changes'}
         </button>
-        <button type="button" className={btnGhost}>Discard</button>
+        <button type="button" onClick={onDiscard} className={btnGhost}>Discard</button>
       </div>
     </div>
   );

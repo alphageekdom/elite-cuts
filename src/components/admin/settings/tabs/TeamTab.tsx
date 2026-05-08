@@ -1,3 +1,5 @@
+'use client';
+import { toast } from 'sonner';
 import { sectionTitleCls, sectionSubCls, btnPrimary } from '../SettingsUI';
 
 const MEMBERS = [
@@ -21,7 +23,7 @@ export default function TeamTab() {
         {MEMBERS.map((m) => (
           <div
             key={m.initials}
-            className="flex items-center gap-3.5 p-4 bg-paper border border-line-soft rounded-lg hover:border-line transition-colors"
+            className="flex items-center gap-3.5 p-4 bg-paper border border-line-soft rounded-lg hover:border-line transition-colors group"
           >
             <div className={`w-11 h-11 rounded-full grid place-items-center font-display font-semibold text-sm shrink-0 ${m.avatarCls}`}>
               {m.initials}
@@ -33,10 +35,33 @@ export default function TeamTab() {
             <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] tracking-widest uppercase font-medium shrink-0 ${m.pillCls}`}>
               {m.role}
             </span>
+            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+              <button
+                type="button"
+                onClick={() => toast.info('Coming soon')}
+                className="w-7 h-7 rounded-full border border-line text-ink-soft grid place-items-center hover:border-ink hover:text-ink transition-colors"
+                aria-label={`Edit ${m.name}`}
+              >
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={() => toast.info('Coming soon')}
+                className="w-7 h-7 rounded-full border border-line text-ink-soft grid place-items-center hover:border-oxblood hover:text-oxblood transition-colors"
+                aria-label={`Remove ${m.name}`}
+              >
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4h6v2" />
+                </svg>
+              </button>
+            </div>
           </div>
         ))}
       </div>
-      <button type="button" className={btnPrimary}>
+      <button type="button" onClick={() => toast.info('Coming soon')} className={btnPrimary}>
         <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
         </svg>

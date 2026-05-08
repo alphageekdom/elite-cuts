@@ -1,3 +1,5 @@
+'use client';
+import { useRouter } from 'next/navigation';
 import type { OrderRow } from '@/types/admin';
 export type { OrderRow };
 
@@ -45,6 +47,7 @@ type Props = {
 };
 
 export default function DashboardRecentOrders({ orders }: Props) {
+  const router = useRouter();
   return (
     <div className="bg-paper rounded-sm px-7.5 py-7 border border-line-soft">
       {/* Card head */}
@@ -53,7 +56,7 @@ export default function DashboardRecentOrders({ orders }: Props) {
           Recent <em className="italic text-oxblood font-normal">orders</em>
         </div>
         <a
-          href="#"
+          href="/dashboard/orders"
           className="text-ink-soft text-[13px] font-medium inline-flex items-center gap-1.5 border-b border-current pb-px hover:text-oxblood transition-colors hover:gap-2.5"
         >
           All orders
@@ -128,6 +131,7 @@ export default function DashboardRecentOrders({ orders }: Props) {
                     <td className="py-[18px] px-2.5 border-b border-line-soft text-right">
                       <div className="inline-flex gap-1.5">
                         <button
+                          onClick={() => router.push('/dashboard/orders')}
                           aria-label="View order"
                           className="w-[30px] h-[30px] rounded-full bg-transparent border border-line text-ink-soft grid place-items-center hover:border-ink hover:bg-cream transition-colors"
                         >
@@ -137,6 +141,7 @@ export default function DashboardRecentOrders({ orders }: Props) {
                           </svg>
                         </button>
                         <button
+                          onClick={() => router.push('/dashboard/orders')}
                           aria-label="More options"
                           className="w-[30px] h-[30px] rounded-full bg-transparent border border-line text-ink-soft grid place-items-center hover:border-ink hover:bg-cream transition-colors"
                         >

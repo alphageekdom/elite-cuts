@@ -69,6 +69,9 @@ export default function CustomerDetailDrawer({ customer, onClose, onSave, onDele
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [noteEditing, setNoteEditing] = useState(false);
+  const [noteText, setNoteText] = useState(customer.adminNote ?? '');
+  const [savingNote, setSavingNote] = useState(false);
 
   const tier = getTier(customer.orderCount);
   const activity = getActivity(customer);
@@ -291,7 +294,7 @@ export default function CustomerDetailDrawer({ customer, onClose, onSave, onDele
         <div className="pb-6 mb-6 border-b border-line-soft">
           <div className="flex items-center justify-between mb-4">
             <div className="text-[10px] font-medium tracking-[0.22em] uppercase text-muted">Tags</div>
-            <button className="text-[12px] text-ink-soft border-b border-line hover:text-oxblood transition-colors">Manage</button>
+            <button onClick={() => toast.info('Coming soon')} className="text-[12px] text-ink-soft border-b border-line hover:text-oxblood transition-colors">Manage</button>
           </div>
           <div className="flex flex-wrap gap-1.5">
             {tags.map((tag) => (
@@ -309,12 +312,12 @@ export default function CustomerDetailDrawer({ customer, onClose, onSave, onDele
         <div className="pb-6 mb-6 border-b border-line-soft">
           <div className="flex items-center justify-between mb-4">
             <div className="text-[10px] font-medium tracking-[0.22em] uppercase text-muted">Order history</div>
-            <button className="inline-flex items-center gap-1 text-[12px] text-ink-soft border-b border-line hover:text-oxblood transition-colors">
+            <a href="/dashboard/orders" className="inline-flex items-center gap-1 text-[12px] text-ink-soft border-b border-line hover:text-oxblood transition-colors">
               View all {customer.orderCount}
               <svg className="w-2.75 h-2.75" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M5 12h14M13 5l7 7-7 7" />
               </svg>
-            </button>
+            </a>
           </div>
           <div className="grid grid-cols-3 gap-0 bg-paper border border-line-soft rounded-sm overflow-hidden">
             {[
@@ -330,18 +333,72 @@ export default function CustomerDetailDrawer({ customer, onClose, onSave, onDele
           </div>
         </div>
 
-        {/* Internal note stub */}
+        {/* Internal note */}
         <div>
           <div className="flex items-center justify-between mb-4">
             <div className="text-[10px] font-medium tracking-[0.22em] uppercase text-muted">Internal note</div>
-            <button className="text-[12px] text-ink-soft border-b border-line hover:text-oxblood transition-colors">Edit</button>
+            {!noteEditing && (
+              <button
+                onClick={() => setNoteEditing(true)}
+                className="text-[12px] text-ink-soft border-b border-line hover:text-oxblood transition-colors"
+              >
+                Edit
+              </button>
+            )}
           </div>
-          <div
-            className="p-4 border border-camel/20 rounded-sm font-display italic text-[13px] text-muted leading-relaxed"
-            style={{ background: 'rgba(184,137,90,0.08)' }}
-          >
-            No notes added yet.
-          </div>
+          {noteEditing ? (
+            <div className="space-y-2">
+              <textarea
+                value={noteText}
+                onChange={(e) => setNoteText(e.target.value)}
+                placeholder="Add an internal note…"
+                rows={3}
+                className={`${inputCls} resize-y`}
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setNoteEditing(false); setNoteText(customer.adminNote ?? ''); }}
+                  className="flex-1 px-4 py-2 rounded-full border border-line text-ink-soft text-[13px] font-medium hover:border-ink hover:text-ink transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  disabled={savingNote}
+                  onClick={async () => {
+                    setSavingNote(true);
+                    try {
+                      const res = await fetch(`/api/users/${customer.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ adminNote: noteText }),
+                      });
+                      if (!res.ok) {
+                        const { message } = await res.json();
+                        toast.error(message ?? 'Failed to save note');
+                        return;
+                      }
+                      setNoteEditing(false);
+                      toast.success('Note saved');
+                    } catch {
+                      toast.error('Failed to save note');
+                    } finally {
+                      setSavingNote(false);
+                    }
+                  }}
+                  className="flex-1 px-4 py-2 rounded-full bg-ink text-cream text-[13px] font-medium hover:bg-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {savingNote ? 'Saving…' : 'Save'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div
+              className="p-4 border border-camel/20 rounded-sm font-display italic text-[13px] text-muted leading-relaxed"
+              style={{ background: 'rgba(184,137,90,0.08)' }}
+            >
+              {noteText || 'No notes added yet.'}
+            </div>
+          )}
         </div>
 
       </div>

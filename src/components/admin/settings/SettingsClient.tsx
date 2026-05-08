@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { SaveToast } from './SettingsToast';
 import GeneralTab from './tabs/GeneralTab';
@@ -44,11 +44,16 @@ export default function SettingsClient() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
+  const savedRef = useRef<ShopSettings>(DEFAULTS);
 
   useEffect(() => {
     fetch('/api/settings')
       .then((r) => r.json())
-      .then((data) => setSettings({ ...DEFAULTS, ...data }))
+      .then((data) => {
+        const merged = { ...DEFAULTS, ...data };
+        setSettings(merged);
+        savedRef.current = merged;
+      })
       .catch(() => toast.error('Failed to load settings'))
       .finally(() => setLoading(false));
   }, []);
@@ -69,6 +74,7 @@ export default function SettingsClient() {
         toast.error('Failed to save settings');
         return;
       }
+      savedRef.current = settings;
       setToastVisible(true);
       setTimeout(() => setToastVisible(false), 2400);
     } catch {
@@ -78,7 +84,8 @@ export default function SettingsClient() {
     }
   }
 
-  const tabProps = { values: settings, onChange: handleChange, onSave: handleSave, saving };
+  const onDiscard = useCallback(() => setSettings(savedRef.current), []);
+  const tabProps = { values: settings, onChange: handleChange, onSave: handleSave, onDiscard, saving };
 
   return (
     <>

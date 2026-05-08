@@ -11,6 +11,9 @@ export type ProductTableRow = {
   isFeatured: boolean;
   isAged: boolean;
   isNewArrival: boolean;
+  sku?: string;
+  gradeBreed?: string;
+  supplier?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -34,6 +37,7 @@ export type CustomerTableRow = {
   lastOrderAt?: string;
   defaultCity?: string;
   savedCutsCount: number;
+  adminNote?: string;
 };
 
 export type CustomerCounts = {

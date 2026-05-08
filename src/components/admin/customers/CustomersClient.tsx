@@ -287,7 +287,7 @@ export default function CustomersClient({ customers, counts }: Props) {
                 </svg>
               </button>
             ))}
-            <button className="inline-flex items-center gap-1.5 bg-paper border border-line rounded-full px-3.5 py-2 text-[13px] text-ink-soft hover:border-ink hover:text-ink transition-colors">
+            <button onClick={() => toast.info('Coming soon')} className="inline-flex items-center gap-1.5 bg-paper border border-line rounded-full px-3.5 py-2 text-[13px] text-ink-soft hover:border-ink hover:text-ink transition-colors">
               More filters
               <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
@@ -295,7 +295,7 @@ export default function CustomersClient({ customers, counts }: Props) {
             </button>
           </div>
 
-          <button className="inline-flex items-center gap-1.5 bg-paper border border-line rounded-full px-3.5 py-2 text-[13px] text-ink-soft hover:border-ink hover:text-ink transition-colors">
+          <button onClick={() => toast.info('Coming soon')} className="inline-flex items-center gap-1.5 bg-paper border border-line rounded-full px-3.5 py-2 text-[13px] text-ink-soft hover:border-ink hover:text-ink transition-colors">
             Sort: Top spenders
             <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="6 9 12 15 18 9" />
@@ -529,7 +529,7 @@ export default function CustomersClient({ customers, counts }: Props) {
                               </svg>
                             </button>
                             {openMenuId === cust.id && (
-                              <div className="absolute right-0 top-full mt-1 z-20 w-40 rounded-lg shadow-xl overflow-hidden bg-ink border border-cream/12">
+                              <div className="absolute right-0 top-full mt-1 z-20 w-40 rounded-lg shadow-xl overflow-hidden bg-ink border border-cream/25">
                                 <button
                                   onClick={() => { openDrawer(cust); setOpenMenuId(null); }}
                                   className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left text-cream hover:bg-cream/10 transition-colors"
@@ -548,7 +548,7 @@ export default function CustomersClient({ customers, counts }: Props) {
                                   </svg>
                                   Email
                                 </button>
-                                <div className="border-t border-cream/12" />
+                                <div className="border-t border-cream/25" />
                                 <button
                                   onClick={() => { handleCustomerDelete(cust.id); setOpenMenuId(null); }}
                                   className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left text-red-400 hover:bg-cream/10 transition-colors"

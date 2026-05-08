@@ -27,6 +27,7 @@ export type User = {
   addresses: Types.DocumentArray<Address>;
   isAdmin: boolean;
   rewardPoints: number;
+  adminNote?: string;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -82,6 +83,11 @@ const UserSchema = new Schema<User>(
       type: Number,
       default: 0,
       min: 0,
+    },
+    adminNote: {
+      type: String,
+      trim: true,
+      default: '',
     },
   },
   {

@@ -1,4 +1,5 @@
 'use client';
+import { toast } from 'sonner';
 
 export default function AdminTopbar() {
   return (
@@ -28,15 +29,16 @@ export default function AdminTopbar() {
       {/* Action buttons */}
       <div className="flex items-center gap-3">
         <button
+          onClick={() => toast.info('No new notifications')}
           aria-label="Notifications"
           className="relative w-10 h-10 rounded-full bg-paper border border-line grid place-items-center text-ink hover:border-ink transition-colors"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" />
           </svg>
-          <span className="absolute top-2 right-2.5 w-1.5 h-1.5 rounded-full bg-oxblood border-2 border-paper" />
         </button>
         <button
+          onClick={() => toast.info('No new messages')}
           aria-label="Messages"
           className="w-10 h-10 rounded-full bg-paper border border-line grid place-items-center text-ink hover:border-ink transition-colors"
         >

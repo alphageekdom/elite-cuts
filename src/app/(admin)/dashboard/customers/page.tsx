@@ -103,6 +103,7 @@ export default async function AdminCustomersPage() {
         ? `${defaultAddress.city}, ${defaultAddress.state}`
         : undefined,
       savedCutsCount: (u.savedCuts ?? []).length,
+      adminNote: u.adminNote ?? '',
     };
   });
 
