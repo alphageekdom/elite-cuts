@@ -29,7 +29,7 @@ function buildTimeline(order: OrderTableRow): TimelineStep[] {
     d.day + ' · ' + d.time,
     statusIdx >= 1 ? 'In progress' : '—',
     statusIdx >= 2 ? (isDelivery ? 'En route' : 'Ready') : '—',
-    order.status === 'Completed' ? 'Completed' : 'Awaiting',
+    order.status === 'Completed' ? 'Completed' : order.status === 'Cancelled' ? '—' : 'Awaiting',
   ];
 
   const steps = labels.map((label, i) => ({
