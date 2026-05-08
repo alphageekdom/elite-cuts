@@ -35,10 +35,12 @@ function getTierLabel(pts: number) {
 }
 
 const STATUS_STYLE: Record<string, string> = {
-  Pending:          'bg-[rgba(184,137,90,0.18)] text-camel',
+  'Order Placed':     'bg-[rgba(184,137,90,0.18)] text-camel',
+  'Preparing':        'bg-[rgba(184,137,90,0.18)] text-camel',
   'Ready for Pickup': 'bg-[rgba(184,137,90,0.18)] text-camel',
-  Completed:        'bg-green-soft text-green',
-  Cancelled:        'bg-red-soft text-oxblood',
+  'Out for Delivery': 'bg-[rgba(28,24,20,0.1)] text-ink',
+  'Completed':        'bg-green-soft text-green',
+  'Cancelled':        'bg-red-soft text-oxblood',
 };
 
 // ── page ────────────────────────────────────────────────────────────────────
@@ -133,10 +135,15 @@ export default async function ReceiptPage({ params }: Props) {
               {order.orderStatus}
             </span>
 
-            {/* Pending note */}
-            {order.orderStatus === 'Pending' && (
+            {/* Status notes */}
+            {order.orderStatus === 'Order Placed' && (
               <p className="font-mono text-[11px] text-muted tracking-[0.04em] mb-4 -mt-1">
                 Order received — we&apos;ll notify you when it&apos;s ready.
+              </p>
+            )}
+            {order.orderStatus === 'Preparing' && (
+              <p className="font-mono text-[11px] text-muted tracking-[0.04em] mb-4 -mt-1">
+                Your cuts are being prepared — we&apos;ll notify you when they&apos;re ready.
               </p>
             )}
 
@@ -201,6 +208,20 @@ export default async function ReceiptPage({ params }: Props) {
               )}
             </div>
           </div>
+
+          {/* ── Out for Delivery banner ── */}
+          {order.orderStatus === 'Out for Delivery' && (
+            <div className="mx-8 sm:mx-12 mt-5 px-5 py-4 rounded border border-ink/15 bg-ink/5 flex items-start gap-3.5">
+              <span className="w-7 h-7 rounded-full grid place-items-center shrink-0 mt-0.5 bg-ink/10">
+                <svg className="w-3.5 h-3.5 text-ink" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="1" y="3" width="15" height="13" /><path d="M16 8h4l3 3v5h-7V8z" /><circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" />
+                </svg>
+              </span>
+              <div className="font-display text-[15px] font-medium tracking-tight text-ink leading-snug">
+                Your order is on its way.
+              </div>
+            </div>
+          )}
 
           {/* ── Ready for Pickup banner ── */}
           {order.orderStatus === 'Ready for Pickup' && (
@@ -322,7 +343,9 @@ export default async function ReceiptPage({ params }: Props) {
                 <line x1="15" y1="9" x2="9" y2="15" />
                 <line x1="9" y1="9" x2="15" y2="15" />
               </svg>
-              <span className="font-mono text-[12px] text-muted tracking-[0.04em]">This order was cancelled.</span>
+              <span className="font-mono text-[12px] text-muted tracking-[0.04em]">
+                This order was cancelled{order.cancellationReason ? ` — ${order.cancellationReason.toLowerCase()}` : ''}.
+              </span>
             </div>
           ) : (
             <div className="mx-8 sm:mx-12 mb-6 px-5 py-4 bg-ink rounded flex items-center justify-between gap-3">
