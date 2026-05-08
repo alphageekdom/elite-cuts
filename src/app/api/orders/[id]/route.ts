@@ -38,6 +38,25 @@ export const GET = async (_request: NextRequest, { params }: RouteContext) => {
   }
 };
 
+// DELETE /api/orders/:id — admin only
+export const DELETE = async (_request: NextRequest, { params }: RouteContext) => {
+  const adminError = await requireAdmin();
+  if (adminError) return adminError;
+
+  try {
+    await connectDB();
+    const { id } = await params;
+    const deleted = await Order.findByIdAndDelete(id);
+    if (!deleted) {
+      return NextResponse.json({ message: 'Order not found' }, { status: 404 });
+    }
+    return NextResponse.json({ message: 'Order deleted successfully' });
+  } catch (error) {
+    console.error('[orders/:id DELETE]', error);
+    return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
+  }
+};
+
 // PATCH /api/orders/:id — admin updates order status
 export const PATCH = async (request: NextRequest, { params }: RouteContext) => {
   const adminError = await requireAdmin();

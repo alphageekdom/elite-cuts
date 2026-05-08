@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
+import { toast } from 'sonner';
 import { CATEGORY_PAR } from '@/lib/inventory';
 import { statCellBorderClasses } from '@/lib/admin-utils';
 import { PRODUCT_CATEGORIES, type ProductCategory } from '@/lib/admin-constants';
@@ -99,6 +100,7 @@ const SORT_OPTIONS: { value: SortBy; label: string }[] = [
 const PAGE_SIZE = 8;
 
 export default function InventoryClient({ rows, counts, categoryCounts }: Props) {
+  const [localRows, setLocalRows] = useState(rows);
   const [alertDismissed, setAlertDismissed] = useState(false);
   const [activeFilter, setActiveFilter] = useState<StatFilter>('all');
   const [activeCategory, setActiveCategory] = useState('');
@@ -106,8 +108,42 @@ export default function InventoryClient({ rows, counts, categoryCounts }: Props)
   const [sortBy, setSortBy] = useState<SortBy>('stock-asc');
   const [sortOpen, setSortOpen] = useState(false);
   const [page, setPage] = useState(1);
+  const [stockEditId, setStockEditId] = useState<string | null>(null);
+  const [stockEditValue, setStockEditValue] = useState('');
+  const [stockSaving, setStockSaving] = useState(false);
+
+  async function handleStockSave(id: string) {
+    const newCount = parseInt(stockEditValue, 10);
+    if (isNaN(newCount) || newCount < 0) {
+      toast.error('Stock must be a non-negative number');
+      return;
+    }
+    setStockSaving(true);
+    try {
+      const res = await fetch(`/api/products/${id}/stock`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stockCount: newCount }),
+      });
+      if (!res.ok) {
+        const { message } = await res.json();
+        toast.error(message ?? 'Failed to update stock');
+        return;
+      }
+      setLocalRows((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, stockCount: newCount } : r)),
+      );
+      setStockEditId(null);
+      toast.success('Stock updated');
+    } catch {
+      toast.error('Failed to update stock');
+    } finally {
+      setStockSaving(false);
+    }
+  }
+
   const filtered = useMemo(() => {
-    let list = rows;
+    let list = localRows;
 
     if (activeFilter === 'inStock') {
       list = list.filter((r) => {
@@ -150,7 +186,7 @@ export default function InventoryClient({ rows, counts, categoryCounts }: Props)
     else if (sortBy === 'newest') sorted.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 
     return sorted;
-  }, [rows, activeFilter, activeCategory, search, sortBy]);
+  }, [localRows, activeFilter, activeCategory, search, sortBy]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -481,29 +517,64 @@ export default function InventoryClient({ rows, counts, categoryCounts }: Props)
                       </td>
 
                       {/* Actions */}
-                      <td className="pr-6 pl-4 py-3.5 text-right">
-                        <div className="inline-flex gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
-                          <button
-                            className="w-7 h-7 rounded-full bg-transparent border border-line text-ink-soft hover:border-ink hover:bg-cream hover:text-ink transition-colors grid place-items-center"
-                            aria-label="Adjust stock"
-                          >
-                            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-                              <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-                            </svg>
-                          </button>
-                          <button
-                            className="w-7 h-7 rounded-full bg-transparent border border-line text-ink-soft hover:border-ink hover:bg-cream hover:text-ink transition-colors grid place-items-center"
-                            aria-label="Order more"
-                          >
-                            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <rect x="1" y="3" width="15" height="13" />
-                              <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
-                              <circle cx="5.5" cy="18.5" r="2.5" />
-                              <circle cx="18.5" cy="18.5" r="2.5" />
-                            </svg>
-                          </button>
-                        </div>
+                      <td className="pr-6 pl-4 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
+                        {stockEditId === row.id ? (
+                          <div className="inline-flex items-center gap-1.5">
+                            <input
+                              type="number"
+                              min="0"
+                              value={stockEditValue}
+                              onChange={(e) => setStockEditValue(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleStockSave(row.id);
+                                if (e.key === 'Escape') setStockEditId(null);
+                              }}
+                              autoFocus
+                              className="w-16 border border-ink rounded-lg px-2 py-1 text-[13px] text-ink bg-paper outline-none text-center"
+                            />
+                            <button
+                              onClick={() => handleStockSave(row.id)}
+                              disabled={stockSaving}
+                              className="w-7 h-7 rounded-full bg-ink text-cream grid place-items-center hover:bg-oxblood transition-colors disabled:opacity-50"
+                            >
+                              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => setStockEditId(null)}
+                              className="w-7 h-7 rounded-full border border-line text-ink-soft grid place-items-center hover:border-ink transition-colors"
+                            >
+                              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                              </svg>
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="inline-flex gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => { setStockEditId(row.id); setStockEditValue(String(row.stockCount)); }}
+                              className="w-7 h-7 rounded-full bg-transparent border border-line text-ink-soft hover:border-ink hover:bg-cream hover:text-ink transition-colors grid place-items-center"
+                              aria-label="Adjust stock"
+                            >
+                              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                              </svg>
+                            </button>
+                            <button
+                              className="w-7 h-7 rounded-full bg-transparent border border-line text-ink-soft hover:border-ink hover:bg-cream hover:text-ink transition-colors grid place-items-center"
+                              aria-label="Order more"
+                            >
+                              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <rect x="1" y="3" width="15" height="13" />
+                                <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+                                <circle cx="5.5" cy="18.5" r="2.5" />
+                                <circle cx="18.5" cy="18.5" r="2.5" />
+                              </svg>
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   );

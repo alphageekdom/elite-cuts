@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
+import { toast } from 'sonner';
 import { formatMoney, formatDate, relativeTime, getInitials, avatarColorForId, statCellBorderClasses } from '@/lib/admin-utils';
 import { AVATAR_COLORS } from '@/lib/admin-constants';
 import type { CustomerTableRow, CustomerCounts } from '@/types/admin';
@@ -56,6 +57,7 @@ function countForStat(key: StatFilter, counts: CustomerCounts): number {
 }
 
 export default function CustomersClient({ customers, counts }: Props) {
+  const [localCustomers, setLocalCustomers] = useState(customers);
   const [activeStatFilter, setActiveStatFilter] = useState<StatFilter>('all');
   const [activeTierFilter, setActiveTierFilter] = useState<TierFilter>('all');
   const [search, setSearch] = useState('');
@@ -63,8 +65,47 @@ export default function CustomersClient({ customers, counts }: Props) {
   const [drawerCustomer, setDrawerCustomer] = useState<CustomerTableRow | null>(null);
   const [page, setPage] = useState(1);
 
+  async function handleCustomerSave(id: string, data: { name: string; email: string; phone: string }) {
+    try {
+      const res = await fetch(`/api/users/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const { message } = await res.json();
+        toast.error(message ?? 'Failed to update customer');
+        return;
+      }
+      setLocalCustomers((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, ...data } : c)),
+      );
+      setDrawerCustomer((prev) => (prev ? { ...prev, ...data } : prev));
+      toast.success('Customer updated');
+    } catch {
+      toast.error('Failed to update customer');
+    }
+  }
+
+  async function handleCustomerDelete(id: string) {
+    try {
+      const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const { message } = await res.json();
+        toast.error(message ?? 'Failed to delete customer');
+        return;
+      }
+      setLocalCustomers((prev) => prev.filter((c) => c.id !== id));
+      setDrawerCustomer(null);
+      document.body.style.overflow = '';
+      toast.success('Customer deleted');
+    } catch {
+      toast.error('Failed to delete customer');
+    }
+  }
+
   const filtered = useMemo(() => {
-    let rows = customers;
+    let rows = localCustomers;
     rows = rows.filter((r) => matchesStatFilter(r, activeStatFilter));
     if (activeTierFilter !== 'all') {
       rows = rows.filter((r) => getTier(r.orderCount) === activeTierFilter);
@@ -76,7 +117,7 @@ export default function CustomersClient({ customers, counts }: Props) {
       );
     }
     return rows;
-  }, [customers, activeStatFilter, activeTierFilter, search]);
+  }, [localCustomers, activeStatFilter, activeTierFilter, search]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -490,7 +531,12 @@ export default function CustomersClient({ customers, counts }: Props) {
         }`}
       >
         {drawerCustomer && (
-          <CustomerDetailDrawer customer={drawerCustomer} onClose={closeDrawer} />
+          <CustomerDetailDrawer
+            customer={drawerCustomer}
+            onClose={closeDrawer}
+            onSave={handleCustomerSave}
+            onDelete={handleCustomerDelete}
+          />
         )}
       </aside>
     </>
