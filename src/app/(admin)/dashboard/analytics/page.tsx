@@ -175,8 +175,9 @@ export default async function AdminAnalyticsPage() {
     );
   }
 
-  // Heatmap: 7 rows (Mon–Sun) × 12 cols (9A–8P), normalized 0–5
+  // Heatmap: 7 rows (Mon–Sun) × 12 cols (9A–8P), normalized 0–5 for both volume and revenue
   const heatmapRaw: number[][] = Array.from({ length: 7 }, () => Array(12).fill(0));
+  const heatmapRevRaw: number[][] = Array.from({ length: 7 }, () => Array(12).fill(0));
   for (const order of currentOrders) {
     const d = order.createdAt;
     const hour = d.getHours();
@@ -185,11 +186,16 @@ export default async function AdminAnalyticsPage() {
       const hourIdx = hour - 9;
       const dayIdx = day === 0 ? 6 : day - 1;
       heatmapRaw[dayIdx][hourIdx]++;
+      heatmapRevRaw[dayIdx][hourIdx] += order.totalCost;
     }
   }
   const heatmapMax = Math.max(1, ...heatmapRaw.flat());
+  const heatmapRevMax = Math.max(1, ...heatmapRevRaw.flat());
   const heatmap = heatmapRaw.map((row) =>
     row.map((v) => Math.min(5, Math.round((v / heatmapMax) * 5))),
+  );
+  const heatmapRevenue = heatmapRevRaw.map((row) =>
+    row.map((v) => Math.min(5, Math.round((v / heatmapRevMax) * 5))),
   );
 
   // Period label
@@ -215,6 +221,7 @@ export default async function AdminAnalyticsPage() {
     weeklyRevenueTotal: revenue,
     weeklyRevenuePrevTotal: prevRevenue,
     heatmap,
+    heatmapRevenue,
   };
 
   return <AnalyticsClient data={data} />;

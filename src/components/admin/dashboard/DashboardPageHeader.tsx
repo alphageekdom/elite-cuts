@@ -25,7 +25,7 @@ export default function DashboardPageHeader({ name }: Props) {
         </p>
       </div>
 
-      <button className="bg-paper border border-line rounded-full px-4.5 py-2.5 text-[13px] text-ink-soft inline-flex items-center gap-2.5 hover:border-ink transition-colors shrink-0">
+      <span className="bg-paper border border-line rounded-full px-4.5 py-2.5 text-[13px] text-ink-soft inline-flex items-center gap-2.5 shrink-0">
         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <rect x="3" y="4" width="18" height="18" rx="2" />
           <line x1="16" y1="2" x2="16" y2="6" />
@@ -33,10 +33,7 @@ export default function DashboardPageHeader({ name }: Props) {
           <line x1="3" y1="10" x2="21" y2="10" />
         </svg>
         Last 30 days
-        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-      </button>
+      </span>
     </div>
   );
 }

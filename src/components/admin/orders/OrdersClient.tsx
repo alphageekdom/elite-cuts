@@ -295,15 +295,6 @@ export default function OrdersClient({ orders, counts }: Props) {
               >
                 {bulkLoading === 'Cancelled' ? 'Updating…' : 'Cancel orders'}
               </button>
-              {['Print labels', 'Export'].map((action) => (
-                <button
-                  key={action}
-                  className="bg-cream/10 text-cream border border-cream/20 rounded-full px-3 py-1.5 text-[12px] opacity-40 cursor-not-allowed"
-                  disabled
-                >
-                  {action}
-                </button>
-              ))}
             </div>
           </div>
         )}

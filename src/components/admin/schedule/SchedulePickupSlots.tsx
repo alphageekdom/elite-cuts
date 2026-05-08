@@ -52,7 +52,7 @@ export default function SchedulePickupSlots({ slots }: Props) {
         <span className="font-display text-lg font-medium tracking-tight">
           Pickup <em className="italic text-oxblood font-normal">slots</em>
         </span>
-        <a href="#" className="text-xs text-ink-soft border-b border-line pb-px inline-flex items-center gap-1 hover:text-oxblood transition-colors">
+        <a href="/dashboard/settings" className="text-xs text-ink-soft border-b border-line pb-px inline-flex items-center gap-1 hover:text-oxblood transition-colors">
           Manage <ChevronRight />
         </a>
       </div>
