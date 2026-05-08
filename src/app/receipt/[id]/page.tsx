@@ -35,10 +35,10 @@ function getTierLabel(pts: number) {
 }
 
 const STATUS_STYLE: Record<string, string> = {
-  'Order Placed':     'bg-[rgba(184,137,90,0.18)] text-camel',
-  'Preparing':        'bg-[rgba(184,137,90,0.18)] text-camel',
-  'Ready for Pickup': 'bg-[rgba(184,137,90,0.18)] text-camel',
-  'Out for Delivery': 'bg-[rgba(28,24,20,0.1)] text-ink',
+  'Order Placed':     'bg-camel/18 text-camel',
+  'Preparing':        'bg-camel/18 text-camel',
+  'Ready for Pickup': 'bg-camel/18 text-camel',
+  'Out for Delivery': 'bg-ink/10 text-ink',
   'Completed':        'bg-green-soft text-green',
   'Cancelled':        'bg-red-soft text-oxblood',
 };
@@ -225,9 +225,9 @@ export default async function ReceiptPage({ params }: Props) {
 
           {/* ── Ready for Pickup banner ── */}
           {order.orderStatus === 'Ready for Pickup' && (
-            <div className="mx-8 sm:mx-12 mt-5 px-5 py-4 rounded border border-camel/25 flex items-start gap-3.5" style={{ background: 'rgba(184,137,90,0.08)' }}>
-              <span className="w-7 h-7 rounded-full grid place-items-center shrink-0 mt-0.5" style={{ background: 'rgba(184,137,90,0.2)' }}>
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="rgba(184,137,90,1)" strokeWidth="2.5">
+            <div className="mx-8 sm:mx-12 mt-5 px-5 py-4 rounded border border-camel/25 bg-camel/8 flex items-start gap-3.5">
+              <span className="w-7 h-7 rounded-full bg-camel/20 text-camel grid place-items-center shrink-0 mt-0.5">
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
               </span>
@@ -329,7 +329,7 @@ export default async function ReceiptPage({ params }: Props) {
 
           {/* ── Butcher notes ── */}
           {order.orderNotes && (
-            <div className="mx-8 sm:mx-12 mb-5 px-5 py-4 rounded border border-camel/20" style={{ background: 'rgba(184,137,90,0.08)' }}>
+            <div className="mx-8 sm:mx-12 mb-5 px-5 py-4 rounded border border-camel/20 bg-camel/8">
               <div className="font-mono text-[10px] font-medium tracking-[0.22em] uppercase text-muted mb-2">Notes for the butcher</div>
               <p className="font-display italic text-[14px] text-ink-soft leading-relaxed">{order.orderNotes}</p>
             </div>
@@ -350,8 +350,8 @@ export default async function ReceiptPage({ params }: Props) {
           ) : (
             <div className="mx-8 sm:mx-12 mb-6 px-5 py-4 bg-ink rounded flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5 text-cream text-[13px]">
-                <span className="w-7 h-7 rounded-full grid place-items-center shrink-0" style={{ background: 'rgba(184,137,90,0.25)' }}>
-                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="rgba(212,179,145,1)">
+                <span className="w-7 h-7 rounded-full bg-camel/25 grid place-items-center shrink-0">
+                  <svg className="w-3.5 h-3.5 text-camel-soft" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 2l2.39 7.36H22l-6.18 4.49L18.21 21 12 16.51 5.79 21l2.39-7.15L2 9.36h7.61z" />
                   </svg>
                 </span>
@@ -359,7 +359,7 @@ export default async function ReceiptPage({ params }: Props) {
                   {order.orderStatus === 'Completed' ? 'You earned points on this order' : 'Points you\'ll earn on completion'}
                 </span>
               </div>
-              <div className="font-display text-[20px] font-medium tracking-tight leading-none shrink-0" style={{ color: 'rgba(212,179,145,1)' }}>
+              <div className="font-display text-[20px] font-medium tracking-tight leading-none shrink-0 text-camel-soft">
                 +{pointsEarned.toLocaleString('en-US')}
                 <em className="italic font-sans text-[12px] font-normal ml-1 opacity-60">pts</em>
               </div>
