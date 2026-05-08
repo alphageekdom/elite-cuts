@@ -15,28 +15,32 @@ type Props = {
 };
 
 const STAT_CELLS = [
-  { key: 'all', label: 'All', metaLabel: 'THIS MONTH', dotClass: '' },
-  { key: 'Pending', label: 'Pending', metaLabel: 'NEED ACTION', dotClass: '' },
-  { key: 'Ready for Pickup', label: 'Ready', metaLabel: 'AWAITING PICKUP', dotClass: 'camel' },
-  { key: 'Completed', label: 'Delivered', metaLabel: 'COMPLETED', dotClass: 'green' },
-  { key: 'Cancelled', label: 'Cancelled', metaLabel: 'CANCELLED', dotClass: 'oxblood' },
+  { key: 'all',              label: 'All',       metaLabel: 'THIS MONTH',      dotClass: '' },
+  { key: 'Order Placed',     label: 'New',        metaLabel: 'ORDER PLACED',    dotClass: '' },
+  { key: 'Preparing',        label: 'Preparing',  metaLabel: 'IN PROGRESS',     dotClass: 'camel' },
+  { key: 'Ready for Pickup', label: 'Ready',      metaLabel: 'AWAITING PICKUP', dotClass: 'camel' },
+  { key: 'Completed',        label: 'Completed',  metaLabel: 'COMPLETED',       dotClass: 'green' },
+  { key: 'Cancelled',        label: 'Cancelled',  metaLabel: 'CANCELLED',       dotClass: 'oxblood' },
 ] as const;
 
 type StatKey = (typeof STAT_CELLS)[number]['key'];
 
-const STATUS_PILL: Record<string, { bg: string; text: string; label: string }> = {
-  Pending: { bg: 'bg-line-soft', text: 'text-muted', label: 'Pending' },
-  'Ready for Pickup': { bg: '', text: 'text-camel', label: 'Ready' },
-  Completed: { bg: 'bg-green-soft', text: 'text-green', label: 'Delivered' },
-  Cancelled: { bg: 'bg-red-soft', text: 'text-oxblood', label: 'Cancelled' },
+const STATUS_PILL: Record<string, { bg: string; text: string; label: string; camel?: boolean }> = {
+  'Order Placed':     { bg: 'bg-line-soft',  text: 'text-muted',    label: 'Order Placed' },
+  'Preparing':        { bg: '',              text: 'text-camel',    label: 'Preparing',        camel: true },
+  'Ready for Pickup': { bg: '',              text: 'text-camel',    label: 'Ready',            camel: true },
+  'Out for Delivery': { bg: '',              text: 'text-camel',    label: 'Out for Delivery', camel: true },
+  'Completed':        { bg: 'bg-green-soft', text: 'text-green',    label: 'Completed' },
+  'Cancelled':        { bg: 'bg-red-soft',   text: 'text-oxblood',  label: 'Cancelled' },
 };
 
 function countForKey(key: StatKey, counts: StatusCounts): number {
-  if (key === 'all') return counts.all;
-  if (key === 'Pending') return counts.pending;
+  if (key === 'all')              return counts.all;
+  if (key === 'Order Placed')     return counts.orderPlaced;
+  if (key === 'Preparing')        return counts.preparing;
   if (key === 'Ready for Pickup') return counts.readyForPickup;
-  if (key === 'Completed') return counts.completed;
-  if (key === 'Cancelled') return counts.cancelled;
+  if (key === 'Completed')        return counts.completed;
+  if (key === 'Cancelled')        return counts.cancelled;
   return 0;
 }
 
@@ -68,13 +72,15 @@ export default function OrdersClient({ orders, counts }: Props) {
     return rows;
   }, [localOrders, activeStatus, search]);
 
-  async function updateOrder(newStatus: string) {
+  async function updateOrder(newStatus: string, cancellationReason?: string) {
     if (!drawerOrder) return;
     try {
+      const body: Record<string, string> = { orderStatus: newStatus };
+      if (cancellationReason) body.cancellationReason = cancellationReason;
       const res = await fetch(`/api/orders/${drawerOrder.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderStatus: newStatus }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
         const { message } = await res.json();
@@ -82,9 +88,9 @@ export default function OrdersClient({ orders, counts }: Props) {
         return;
       }
       setLocalOrders((prev) =>
-        prev.map((o) => (o.id === drawerOrder.id ? { ...o, status: newStatus } : o)),
+        prev.map((o) => (o.id === drawerOrder.id ? { ...o, status: newStatus, cancellationReason } : o)),
       );
-      setDrawerOrder((prev) => (prev ? { ...prev, status: newStatus } : prev));
+      setDrawerOrder((prev) => (prev ? { ...prev, status: newStatus, cancellationReason } : prev));
       toast.success('Order status updated');
     } catch {
       toast.error('Failed to update order');
@@ -169,7 +175,7 @@ export default function OrdersClient({ orders, counts }: Props) {
   return (
     <>
       {/* Stat strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 bg-paper border border-line-soft rounded-sm mb-6 overflow-hidden">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 bg-paper border border-line-soft rounded-sm mb-6 overflow-hidden">
         {STAT_CELLS.map((cell, idx) => {
           const isActive = activeStatus === cell.key;
           const count = countForKey(cell.key, counts);
@@ -204,8 +210,8 @@ export default function OrdersClient({ orders, counts }: Props) {
               </div>
               <div className="font-display text-[22px] sm:text-[28px] font-normal leading-none tracking-tight mb-1">
                 {count}
-                {cell.key === 'Pending' && count > 0 && (
-                  <em className="italic text-oxblood text-[14px] ml-0.5 font-normal">open</em>
+                {cell.key === 'Order Placed' && count > 0 && (
+                  <em className="italic text-oxblood text-[14px] ml-0.5 font-normal">new</em>
                 )}
               </div>
               <div className="font-mono text-[11px] text-muted tracking-[0.04em]">{cell.metaLabel}</div>
@@ -266,6 +272,13 @@ export default function OrdersClient({ orders, counts }: Props) {
               selected
             </div>
             <div className="flex gap-1.5">
+              <button
+                onClick={() => bulkUpdateStatus('Preparing')}
+                disabled={!!bulkLoading}
+                className="bg-cream/10 text-cream border border-cream/20 rounded-full px-3 py-1.5 text-[12px] hover:bg-cream/20 hover:border-cream/40 transition-colors disabled:opacity-50"
+              >
+                {bulkLoading === 'Preparing' ? 'Updating…' : 'Mark preparing'}
+              </button>
               <button
                 onClick={() => bulkUpdateStatus('Ready for Pickup')}
                 disabled={!!bulkLoading}
@@ -399,7 +412,7 @@ export default function OrdersClient({ orders, counts }: Props) {
                         <td className="px-4 py-4">
                           <span
                             className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-[0.04em] whitespace-nowrap ${pill.bg} ${pill.text}`}
-                            style={order.status === 'Ready for Pickup' ? { background: 'rgba(184,137,90,0.18)' } : undefined}
+                            style={pill.camel ? { background: 'rgba(184,137,90,0.18)' } : undefined}
                           >
                             <span className="w-1.5 h-1.5 rounded-full bg-current" />
                             {pill.label}
@@ -582,6 +595,7 @@ export default function OrdersClient({ orders, counts }: Props) {
       >
         {drawerOrder && (
           <OrderDetailDrawer
+            key={drawerOrder.id}
             order={drawerOrder}
             statusUpdate={statusUpdate}
             setStatusUpdate={setStatusUpdate}

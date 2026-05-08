@@ -61,7 +61,7 @@ export function statCellBorderClasses(idx: number): string {
     isLastRow2 ? 'border-b-0' : '',
     isRightEdge3 ? 'sm:border-r-0' : 'sm:border-r',
     isLastRow3 ? 'sm:border-b-0' : 'sm:border-b',
-    idx < 4 ? 'lg:border-r lg:border-line-soft' : 'lg:border-r-0',
+    idx < 5 ? 'lg:border-r lg:border-line-soft' : 'lg:border-r-0',
     'lg:border-b-0',
   ]
     .filter(Boolean)
