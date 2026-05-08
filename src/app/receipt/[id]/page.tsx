@@ -3,7 +3,6 @@ import { redirect, notFound } from 'next/navigation';
 import { getSessionUser } from '@/utils/getSessionUser';
 import connectDB from '@/config/database';
 import Order from '@/models/Order';
-import User from '@/models/User';
 import ReceiptToolbar from './ReceiptToolbar';
 
 export const dynamic = 'force-dynamic';
@@ -100,7 +99,7 @@ export default async function ReceiptPage({ params }: Props) {
         />
 
         {/* Receipt card */}
-        <div className="receipt-card w-full max-w-[680px] bg-paper border border-line-soft rounded shadow-[0_8px_40px_rgba(28,24,20,0.06)] overflow-hidden">
+        <div className="receipt-card w-full max-w-150 bg-paper border border-line-soft rounded shadow-[0_8px_40px_rgba(28,24,20,0.06)] overflow-hidden">
 
           {/* Decorative edge */}
           <div className="h-1 bg-gradient-to-r from-oxblood via-camel to-oxblood" />
