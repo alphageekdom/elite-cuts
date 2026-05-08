@@ -158,6 +158,7 @@ export default async function ProfilePage({ searchParams }: Props) {
           totalSpent={totalSpent}
           savedCuts={serializedSavedCuts.length}
           joinedMonths={joinedMonths}
+          rewardPoints={rawUser.rewardPoints ?? 0}
         />
 
         <ProfileTabs

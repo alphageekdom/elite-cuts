@@ -31,6 +31,8 @@ const ACTIVITY: { type: ActivityType; title: string; meta: string; points: numbe
 
 const FILTERS: Filter[] = ['all', 'earned', 'redeemed'];
 
+const fmt = (n: number) => n.toLocaleString('en-US');
+
 export default function ProfileRewards({ points = 0 }: { points?: number }) {
   const [filter, setFilter] = useState<Filter>('all');
 
@@ -82,7 +84,7 @@ export default function ProfileRewards({ points = 0 }: { points?: number }) {
               <p className='mb-2.5 text-[11px] tracking-[0.22em] uppercase text-cream/55'>Your balance</p>
               <div className='flex flex-wrap items-baseline gap-3 mb-2'>
                 <span className='font-display text-[56px] font-normal leading-none tracking-tight'>
-                  {points}
+                  {fmt(points)}
                   <em className='ml-1 font-normal italic text-camel text-2xl'>pts</em>
                 </span>
               </div>
@@ -98,11 +100,11 @@ export default function ProfileRewards({ points = 0 }: { points?: number }) {
                 <>
                   <div className='flex items-baseline justify-between mb-3'>
                     <span className='font-display text-base font-normal'>
-                      {tier.nextAt - points} points to{' '}
+                      {fmt(tier.nextAt - points)} points to{' '}
                       <em className='italic text-camel-soft'>{tier.next}</em>
                     </span>
                     <span className='font-mono text-[11px] tracking-[0.04em] text-cream/55'>
-                      {points} / {tier.nextAt}
+                      {fmt(points)} / {fmt(tier.nextAt)}
                     </span>
                   </div>
                   <div
@@ -111,7 +113,7 @@ export default function ProfileRewards({ points = 0 }: { points?: number }) {
                     aria-valuenow={points}
                     aria-valuemin={0}
                     aria-valuemax={tier.nextAt}
-                    aria-label={`${points} of ${tier.nextAt} points to ${tier.next}`}
+                    aria-label={`${fmt(points)} of ${fmt(tier.nextAt)} points to ${tier.next}`}
                   >
                     <div className='h-full rounded-full bg-linear-to-r from-oxblood to-camel' style={{ width: `${progress}%` }} />
                   </div>

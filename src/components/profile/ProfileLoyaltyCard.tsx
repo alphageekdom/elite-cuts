@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+const fmt = (n: number) => n.toLocaleString('en-US');
+
 function getTier(pts: number) {
   if (pts >= 1000) return { name: 'Master Cut', nextAt: 1000, atMax: true };
   if (pts >= 250) return { name: 'Connoisseur', nextAt: 1000, atMax: false };
@@ -19,7 +21,7 @@ export default function ProfileLoyaltyCard({ points = 0 }: { points?: number }) 
         {tier.atMax ? (
           <>You&apos;ve reached <em className="italic text-camel-soft">Master Cut</em></>
         ) : (
-          <>{tier.nextAt - points} points to{' '}<em className="italic text-camel-soft">{tier.name === 'Regular' ? 'Connoisseur' : 'Master Cut'}</em></>
+          <>{fmt(tier.nextAt - points)} points to{' '}<em className="italic text-camel-soft">{tier.name === 'Regular' ? 'Connoisseur' : 'Master Cut'}</em></>
         )}
       </h3>
 
@@ -30,7 +32,7 @@ export default function ProfileLoyaltyCard({ points = 0 }: { points?: number }) 
           aria-valuenow={points}
           aria-valuemin={0}
           aria-valuemax={tier.nextAt}
-          aria-label={`${points} of ${tier.nextAt} points to next tier`}
+          aria-label={`${fmt(points)} of ${fmt(tier.nextAt)} points to next tier`}
         >
           <div
             className="h-full rounded-full bg-linear-to-r from-camel to-camel-soft"
@@ -39,9 +41,9 @@ export default function ProfileLoyaltyCard({ points = 0 }: { points?: number }) 
         </div>
         <div className="flex justify-between text-xs mt-2.5 text-cream/60">
           <span>
-            <strong className="text-cream font-medium">{points}</strong> points
+            <strong className="text-cream font-medium">{fmt(points)}</strong> points
           </span>
-          <span>{tier.nextAt} points</span>
+          <span>{fmt(tier.nextAt)} points</span>
         </div>
       </div>
 
