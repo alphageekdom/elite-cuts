@@ -6,13 +6,13 @@ import User from '@/models/User';
 import Order from '@/models/Order';
 import type { Types } from 'mongoose';
 
-import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader';
-import DashboardStatGrid from '@/components/dashboard/DashboardStatGrid';
-import DashboardRevenueChart from '@/components/dashboard/DashboardRevenueChart';
-import DashboardTopCuts from '@/components/dashboard/DashboardTopCuts';
-import DashboardQuickActions from '@/components/dashboard/DashboardQuickActions';
-import DashboardRecentOrders from '@/components/dashboard/DashboardRecentOrders';
-import type { OrderRow } from '@/components/dashboard/DashboardRecentOrders';
+import DashboardPageHeader from '@/components/admin/dashboard/DashboardPageHeader';
+import DashboardStatGrid from '@/components/admin/dashboard/DashboardStatGrid';
+import DashboardRevenueChart from '@/components/admin/dashboard/DashboardRevenueChart';
+import DashboardTopCuts from '@/components/admin/dashboard/DashboardTopCuts';
+import DashboardQuickActions from '@/components/admin/dashboard/DashboardQuickActions';
+import DashboardRecentOrders from '@/components/admin/dashboard/DashboardRecentOrders';
+import type { OrderRow } from '@/components/admin/dashboard/DashboardRecentOrders';
 
 type PopulatedUser = {
   _id: Types.ObjectId;
