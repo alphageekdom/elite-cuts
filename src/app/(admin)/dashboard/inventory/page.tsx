@@ -74,6 +74,7 @@ export default async function AdminInventoryPage() {
     images: p.images,
     stockCount: p.stockCount,
     isAged: p.isAged,
+    supplier: p.supplier ?? '',
     createdAt: p.createdAt.toISOString(),
   }));
 

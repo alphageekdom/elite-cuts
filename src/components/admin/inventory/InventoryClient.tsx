@@ -15,6 +15,7 @@ export type InventoryRow = {
   images: string[];
   stockCount: number;
   isAged: boolean;
+  supplier: string;
   createdAt: string;
 };
 
@@ -35,14 +36,6 @@ type Props = {
 type StatFilter = 'all' | 'inStock' | 'lowStock' | 'critical';
 type SortBy = 'stock-asc' | 'stock-desc' | 'name-asc' | 'price-desc' | 'newest';
 
-const CATEGORY_SUPPLIER: Record<string, { name: string; loc: string }> = {
-  Beef: { name: 'Hartwell Ranch', loc: 'CENTRAL VALLEY' },
-  Pork: { name: 'Wildwood Farm', loc: 'SAN LUIS OBISPO' },
-  Poultry: { name: 'Sunridge Farm', loc: 'VENTURA COUNTY' },
-  Lamb: { name: 'Coastal Lamb Co.', loc: 'CENTRAL COAST' },
-  Charcuterie: { name: 'Wildwood Farm', loc: 'SAN LUIS OBISPO' },
-  Other: { name: 'Local Supplier', loc: 'SAN DIEGO' },
-};
 
 const CATEGORY_COLORS: Record<string, string> = {
   Beef: 'bg-red-soft text-oxblood',
@@ -169,12 +162,11 @@ export default function InventoryClient({ rows, counts, categoryCounts }: Props)
 
     if (search.trim()) {
       const q = search.toLowerCase();
-      const supplier = CATEGORY_SUPPLIER;
       list = list.filter(
         (r) =>
           r.name.toLowerCase().includes(q) ||
           r.category.toLowerCase().includes(q) ||
-          (supplier[r.category]?.name ?? '').toLowerCase().includes(q),
+          (r.supplier ?? '').toLowerCase().includes(q),
       );
     }
 
@@ -413,7 +405,7 @@ export default function InventoryClient({ rows, counts, categoryCounts }: Props)
                   const state = getStockState(row.stockCount, par);
                   const barWidth = Math.min((row.stockCount / par) * 100, 100);
                   const thumb = row.images[0] ?? null;
-                  const supplier = CATEGORY_SUPPLIER[row.category];
+                  const supplierName = row.supplier || null;
 
                   return (
                     <tr
@@ -495,11 +487,8 @@ export default function InventoryClient({ rows, counts, categoryCounts }: Props)
 
                       {/* Supplier */}
                       <td className="px-4 py-3.5">
-                        {supplier ? (
-                          <div>
-                            <div className="text-[13px] font-medium text-ink leading-snug">{supplier.name}</div>
-                            <div className="font-mono text-[11px] text-muted tracking-[0.04em]">{supplier.loc}</div>
-                          </div>
+                        {supplierName ? (
+                          <div className="text-[13px] font-medium text-ink leading-snug">{supplierName}</div>
                         ) : (
                           <span className="text-muted text-[13px]">—</span>
                         )}

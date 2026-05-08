@@ -35,22 +35,93 @@ export default async function AdminDashboardPage() {
 
   await connectDB();
 
-  const [usersCount, ordersCount, revenueResult, rawOrders] = await Promise.all([
-    User.countDocuments({}),
-    Order.countDocuments({}),
-    Order.aggregate<{ total: number }>([
-      { $group: { _id: null, total: { $sum: '$totalCost' } } },
-    ]),
-    Order.find({})
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .populate<{ user: PopulatedUser }>('user', 'name email')
-      .lean()
-      .exec(),
-  ]);
+  const now = new Date();
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000);
+  const sixtyDaysAgo = new Date(now.getTime() - 60 * 86400000);
+
+  const [usersCount, ordersCount, revenueResult, rawOrders, topCutsRaw, weeklyRaw, weeklyPrevRaw] =
+    await Promise.all([
+      User.countDocuments({}),
+      Order.countDocuments({}),
+      Order.aggregate<{ total: number }>([
+        { $group: { _id: null, total: { $sum: '$totalCost' } } },
+      ]),
+      Order.find({})
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .populate<{ user: PopulatedUser }>('user', 'name email')
+        .lean()
+        .exec(),
+      // Top 5 cuts by revenue in last 30 days
+      Order.aggregate<{ _id: string; revenue: number; sold: number }>([
+        { $match: { createdAt: { $gte: thirtyDaysAgo } } },
+        { $unwind: '$orderItems' },
+        {
+          $group: {
+            _id: '$orderItems.name',
+            revenue: { $sum: { $multiply: ['$orderItems.price', '$orderItems.qty'] } },
+            sold: { $sum: '$orderItems.qty' },
+          },
+        },
+        { $sort: { revenue: -1 } },
+        { $limit: 5 },
+      ]),
+      // Weekly revenue buckets — current 30 days split into 5 weeks
+      Order.aggregate<{ _id: number; revenue: number }>([
+        { $match: { createdAt: { $gte: thirtyDaysAgo } } },
+        {
+          $group: {
+            _id: {
+              $floor: {
+                $divide: [{ $subtract: ['$createdAt', thirtyDaysAgo] }, 7 * 86400000],
+              },
+            },
+            revenue: { $sum: '$totalCost' },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]),
+      // Weekly revenue buckets — prior 30 days
+      Order.aggregate<{ _id: number; revenue: number }>([
+        { $match: { createdAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo } } },
+        {
+          $group: {
+            _id: {
+              $floor: {
+                $divide: [{ $subtract: ['$createdAt', sixtyDaysAgo] }, 7 * 86400000],
+              },
+            },
+            revenue: { $sum: '$totalCost' },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]),
+    ]);
 
   const revenue = revenueResult[0]?.total ?? 0;
   const avgOrder = ordersCount > 0 ? Math.round(revenue / ordersCount) : 0;
+
+  // Top cuts — normalize bar widths relative to the highest earner
+  const maxRevenue = topCutsRaw[0]?.revenue ?? 1;
+  const topCuts = topCutsRaw.map((c) => ({
+    name: c._id,
+    revenue: c.revenue,
+    sold: c.sold,
+    widthPct: Math.round((c.revenue / maxRevenue) * 100),
+  }));
+
+  // Weekly revenue — fill 5 buckets (weeks 0–4) with 0 for missing weeks
+  const toWeekBuckets = (raw: { _id: number; revenue: number }[]) => {
+    const buckets = [0, 0, 0, 0, 0];
+    for (const { _id, revenue: r } of raw) {
+      if (_id >= 0 && _id < 5) buckets[_id] = r;
+    }
+    return buckets;
+  };
+  const weeklyRevenue = {
+    current: toWeekBuckets(weeklyRaw),
+    prev: toWeekBuckets(weeklyPrevRaw),
+  };
 
   const orders: OrderRow[] = rawOrders.map((order) => {
     const idStr = order._id.toString();
@@ -80,8 +151,8 @@ export default async function AdminDashboardPage() {
         avgOrder={avgOrder}
       />
       <div className="grid grid-cols-1 lg:grid-cols-[1.7fr_1fr] gap-4 mb-4">
-        <DashboardRevenueChart />
-        <DashboardTopCuts />
+        <DashboardRevenueChart weeklyRevenue={weeklyRevenue} />
+        <DashboardTopCuts cuts={topCuts} />
       </div>
       <DashboardQuickActions />
       <DashboardRecentOrders orders={orders} />
