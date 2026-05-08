@@ -8,15 +8,14 @@ type Props = {
 };
 
 export default function ReceiptToolbar({ backHref, email, orderRef, orderId }: Props) {
-  const receiptUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/receipt/${orderId}`
-    : `/receipt/${orderId}`;
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const orderUrl = `${origin}/checkout/confirmation?orderId=${orderId}`;
 
   const mailtoHref = [
     `mailto:${email}`,
     `?subject=${encodeURIComponent(`Your EliteCuts Receipt ${orderRef}`)}`,
     `&body=${encodeURIComponent(
-      `Hi,\n\nThank you for your order at EliteCuts.\n\nYou can view your receipt here:\n${receiptUrl}\n\n` +
+      `Hi,\n\nThank you for your order at EliteCuts.\n\nYou can view your order here:\n${orderUrl}\n\n` +
       `Order reference: ${orderRef}\n\n` +
       `If you have any questions, reply to this email or call us at (619) 555-0142.\n\n` +
       `— EliteCuts\n3045 30th St, North Park, San Diego, CA 92104`
