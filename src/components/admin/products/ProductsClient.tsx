@@ -129,6 +129,40 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
     }
   }
 
+  async function handleArchive(id: string) {
+    try {
+      const res = await fetch(`/api/products/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: false }),
+      });
+      if (!res.ok) { const { message } = await res.json(); toast.error(message ?? 'Failed to archive product'); return; }
+      setOpenMenuId(null);
+      toast.success('Product archived');
+    } catch { toast.error('Failed to archive product'); }
+  }
+
+  async function handleDuplicate(product: ProductTableRow) {
+    try {
+      const fd = new FormData();
+      fd.append('name', `${product.name} (Copy)`);
+      fd.append('category', product.category);
+      fd.append('description', '');
+      fd.append('price', String(product.price));
+      fd.append('stockCount', '0');
+      const res = await fetch('/api/products', { method: 'POST', body: fd });
+      if (!res.ok) { const { message } = await res.json(); toast.error(message ?? 'Failed to duplicate product'); return; }
+      const data = await res.json();
+      const now = new Date().toISOString();
+      setLocalProducts((prev) => [
+        { ...product, id: data.id as string, name: `${product.name} (Copy)`, stockCount: 0, images: [], createdAt: now, updatedAt: now },
+        ...prev,
+      ]);
+      setOpenMenuId(null);
+      toast.success('Product duplicated');
+    } catch { toast.error('Failed to duplicate product'); }
+  }
+
   async function handleDelete(id: string) {
     try {
       const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
@@ -653,13 +687,19 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
                             </div>
                             {openMenuId === product.id && (
                               <div className="absolute right-0 top-full mt-1 z-20 w-44 rounded-lg shadow-xl overflow-hidden bg-ink border border-cream/12">
-                                <button className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left text-cream hover:bg-cream/10 transition-colors">
+                                <button
+                                  onClick={() => handleDuplicate(product)}
+                                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left text-cream hover:bg-cream/10 transition-colors"
+                                >
                                   <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                     <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
                                   </svg>
                                   Duplicate
                                 </button>
-                                <button className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left text-cream hover:bg-cream/10 transition-colors">
+                                <button
+                                  onClick={() => handleArchive(product.id)}
+                                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left text-cream hover:bg-cream/10 transition-colors"
+                                >
                                   <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                     <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
                                   </svg>

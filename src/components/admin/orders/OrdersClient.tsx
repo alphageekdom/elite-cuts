@@ -1,6 +1,7 @@
 'use client';
 import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
+import { printReceipt } from '@/lib/print-receipt';
 import { getInitials, formatDateTime, statCellBorderClasses } from '@/lib/admin-utils';
 import { AVATAR_COLORS } from '@/lib/admin-constants';
 import type { OrderTableRow, StatusCounts } from '@/types/admin';
@@ -122,6 +123,18 @@ export default function OrdersClient({ orders, counts }: Props) {
     setActiveStatus(key);
     setPage(1);
     setSelectedIds(new Set());
+  }
+
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  async function deleteOrder(id: string) {
+    try {
+      const res = await fetch(`/api/orders/${id}`, { method: 'DELETE' });
+      if (!res.ok) { const { message } = await res.json(); toast.error(message ?? 'Failed to delete order'); return; }
+      setLocalOrders((prev) => prev.filter((o) => o.id !== id));
+      setOpenMenuId(null);
+      toast.success('Order deleted');
+    } catch { toast.error('Failed to delete order'); }
   }
 
   const allPageSelected = pageRows.length > 0 && pageRows.every((r) => selectedIds.has(r.id));
@@ -410,7 +423,7 @@ export default function OrdersClient({ orders, counts }: Props) {
                         </td>
 
                         <td className="pr-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
-                          <div className="inline-flex gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+                          <div className="relative inline-flex gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
                             <button
                               onClick={() => openDrawer(order)}
                               aria-label="View order"
@@ -421,7 +434,8 @@ export default function OrdersClient({ orders, counts }: Props) {
                               </svg>
                             </button>
                             <button
-                              aria-label="Print"
+                              onClick={() => printReceipt(order)}
+                              aria-label="Print receipt"
                               className="w-7 h-7 rounded-full border border-line text-ink-soft grid place-items-center hover:border-ink hover:bg-cream hover:text-ink transition-colors"
                             >
                               <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -429,6 +443,7 @@ export default function OrdersClient({ orders, counts }: Props) {
                               </svg>
                             </button>
                             <button
+                              onClick={() => setOpenMenuId((prev) => prev === order.id ? null : order.id)}
                               aria-label="More"
                               className="w-7 h-7 rounded-full border border-line text-ink-soft grid place-items-center hover:border-ink hover:bg-cream hover:text-ink transition-colors"
                             >
@@ -436,6 +451,38 @@ export default function OrdersClient({ orders, counts }: Props) {
                                 <circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/>
                               </svg>
                             </button>
+                            {openMenuId === order.id && (
+                              <div className="absolute right-0 top-full mt-1 z-20 w-40 rounded-lg shadow-xl overflow-hidden bg-ink border border-cream/12">
+                                <button
+                                  onClick={() => { openDrawer(order); setOpenMenuId(null); }}
+                                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left text-cream hover:bg-cream/10 transition-colors"
+                                >
+                                  <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                                  </svg>
+                                  View details
+                                </button>
+                                <button
+                                  onClick={() => { printReceipt(order); setOpenMenuId(null); }}
+                                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left text-cream hover:bg-cream/10 transition-colors"
+                                >
+                                  <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>
+                                  </svg>
+                                  Print receipt
+                                </button>
+                                <div className="border-t border-cream/12" />
+                                <button
+                                  onClick={() => deleteOrder(order.id)}
+                                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left text-red-400 hover:bg-cream/10 transition-colors"
+                                >
+                                  <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+                                  </svg>
+                                  Delete order
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -514,6 +561,10 @@ export default function OrdersClient({ orders, counts }: Props) {
           </div>
         </div>
       </div>
+
+      {openMenuId && (
+        <div className="fixed inset-0 z-10" onClick={() => setOpenMenuId(null)} />
+      )}
 
       {/* Drawer backdrop */}
       {drawerOrder && (
