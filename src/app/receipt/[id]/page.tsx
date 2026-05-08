@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
 import { redirect, notFound } from 'next/navigation';
-import { GiMeatCleaver } from 'react-icons/gi';
 import { getSessionUser } from '@/utils/getSessionUser';
 import connectDB from '@/config/database';
 import Order from '@/models/Order';
 import { formatMoney } from '@/lib/admin-utils';
 import ReceiptToolbar from './ReceiptToolbar';
+import ReceiptHeader from './ReceiptHeader';
+import ReceiptItemsTable from './ReceiptItemsTable';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,12 +19,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 // ── helpers ─────────────────────────────────────────────────────────────────
-
-const MONTH = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
-
-function fmtDate(d: Date) {
-  return `${MONTH[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()} · ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
-}
 
 function getTierLabel(pts: number) {
   if (pts >= 1000) return 'Master Cut';
@@ -107,54 +102,13 @@ export default async function ReceiptPage({ params }: Props) {
           <div className="h-1 bg-linear-to-r from-oxblood via-camel to-oxblood" />
 
           {/* ── Header ── */}
-          <div className="px-10 sm:px-12 py-10 text-center border-b border-line-soft">
-            {/* Brand */}
-            <div className="flex items-center justify-center gap-3 mb-5">
-              <span className="w-10 h-10 rounded-full bg-oxblood text-cream grid place-items-center shrink-0">
-                <GiMeatCleaver className="text-xl" aria-hidden="true" />
-              </span>
-              <span className="font-display text-[26px] font-semibold tracking-tight leading-none">
-                Elite<em className="italic text-oxblood font-normal">Cuts</em>
-              </span>
-            </div>
-            <div className="font-mono text-[10px] tracking-[0.22em] uppercase text-muted mb-7">
-              3045 30th St · North Park, San Diego, CA 92104
-            </div>
-
-            {/* Order ref */}
-            <div className="font-display text-[42px] sm:text-[52px] font-normal tracking-tight leading-none mb-4">
-              {orderRef.slice(0, 3)}<em className="italic text-oxblood font-normal">{orderRef.slice(3)}</em>
-            </div>
-
-            {/* Status pill */}
-            <span className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-medium tracking-[0.08em] uppercase mb-5 ${pillCls}`}>
-              <span className="w-1.5 h-1.5 rounded-full bg-current" />
-              {order.orderStatus}
-            </span>
-
-            {/* Status notes */}
-            {order.orderStatus === 'Order Placed' && (
-              <p className="font-mono text-[11px] text-muted tracking-[0.04em] mb-4 -mt-1">
-                Order received — we&apos;ll notify you when it&apos;s ready.
-              </p>
-            )}
-            {order.orderStatus === 'Preparing' && (
-              <p className="font-mono text-[11px] text-muted tracking-[0.04em] mb-4 -mt-1">
-                Your cuts are being prepared — we&apos;ll notify you when they&apos;re ready.
-              </p>
-            )}
-
-            {/* Date row */}
-            <div className="flex items-center justify-center gap-4 font-mono text-[11px] text-muted tracking-[0.04em] flex-wrap">
-              <span>{fmtDate(new Date(order.createdAt))}</span>
-              {order.pickedUp && (
-                <>
-                  <span className="text-line">|</span>
-                  <span>Picked up</span>
-                </>
-              )}
-            </div>
-          </div>
+          <ReceiptHeader
+            orderRef={orderRef}
+            orderStatus={order.orderStatus}
+            pillCls={pillCls}
+            createdAt={new Date(order.createdAt)}
+            pickedUp={order.pickedUp}
+          />
 
           {/* ── Customer + Fulfillment ── */}
           <div className="grid grid-cols-1 sm:grid-cols-2 border-b border-line-soft">
@@ -242,39 +196,7 @@ export default async function ReceiptPage({ params }: Props) {
           )}
 
           {/* ── Items ── */}
-          <div className="px-8 sm:px-12">
-            {/* Column headers */}
-            <div className="grid grid-cols-[1fr_56px_88px] items-center py-4 border-b border-line-soft font-mono text-[10px] font-medium tracking-[0.22em] uppercase text-muted">
-
-              <span>Item</span>
-              <span className="text-center">Qty</span>
-              <span className="text-right">Total</span>
-            </div>
-
-            {order.orderItems.map((item, i) => (
-              <div
-                key={i}
-                className="grid grid-cols-[1fr_56px_88px] items-center py-5 border-b border-line-soft last:border-b-0"
-              >
-                <div className="min-w-0 pr-4">
-                  <div className="font-display text-[17px] font-medium tracking-tight leading-snug mb-1">{item.name}</div>
-                  <div className="flex items-center gap-2 font-mono text-[11px] text-muted tracking-[0.04em] flex-wrap">
-                    <span>{formatMoney(item.price)}/ea</span>
-                    {item.productType && (
-                      <>
-                        <span className="w-1 h-1 rounded-full bg-muted/40 inline-block" />
-                        <span className="uppercase">{item.productType}</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <div className="font-mono text-[13px] text-ink-soft text-center">× {item.qty}</div>
-                <div className="font-display text-[17px] font-medium tracking-tight text-right">
-                  {formatMoney(item.price * item.qty)}
-                </div>
-              </div>
-            ))}
-          </div>
+          <ReceiptItemsTable orderItems={order.orderItems} />
 
           {/* ── Totals ── */}
           <div className="px-8 sm:px-12 pb-6">
