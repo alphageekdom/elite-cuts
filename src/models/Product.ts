@@ -32,6 +32,8 @@ export type Product = {
   // `isNewArrival` not `isNew` — Mongoose reserves `doc.isNew` for its
   // own dirty-tracking; using `isNew` triggers a deprecation warning.
   isNewArrival: boolean;
+  sku?: string;
+  gradeBreed?: string;
   supplier?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -104,6 +106,16 @@ const ProductSchema = new Schema<Product>(
     isNewArrival: {
       type: Boolean,
       default: false,
+    },
+    sku: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    gradeBreed: {
+      type: String,
+      trim: true,
+      default: '',
     },
     supplier: {
       type: String,

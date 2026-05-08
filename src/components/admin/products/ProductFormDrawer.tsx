@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { PRODUCT_CATEGORIES } from '@/lib/admin-constants';
 import { toast } from 'sonner';
 import type { ProductTableRow } from '@/types/admin';
@@ -75,12 +75,21 @@ export default function ProductFormDrawer({ product, onClose, onSave }: Props) {
   const [name, setName] = useState(product?.name ?? '');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<string>(product?.category ?? PRODUCT_CATEGORIES[0]);
+  const [sku, setSku] = useState(product?.sku ?? '');
+  const [gradeBreed, setGradeBreed] = useState(product?.gradeBreed ?? '');
+  const [supplier, setSupplier] = useState(product?.supplier ?? '');
   const [price, setPrice] = useState(product ? product.price.toFixed(2) : '');
+  const [unit, setUnit] = useState('/lb');
+  const [comparePrice, setComparePrice] = useState('');
   const [stock, setStock] = useState(product ? String(product.stockCount) : '');
+  const [parLevel, setParLevel] = useState('');
+  const [reorderPoint, setReorderPoint] = useState('');
   const [published, setPublished] = useState(isEdit);
   const [featuredToggle, setFeaturedToggle] = useState(product?.isFeatured ?? false);
   const [membersOnly, setMembersOnly] = useState(false);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function handleSave() {
     if (!name.trim() || !price) {
@@ -91,8 +100,16 @@ export default function ProductFormDrawer({ product, onClose, onSave }: Props) {
     fd.append('name', name.trim());
     fd.append('category', category);
     fd.append('description', description.trim());
+    fd.append('sku', sku.trim());
+    fd.append('gradeBreed', gradeBreed.trim());
+    fd.append('supplier', supplier.trim());
     fd.append('price', price);
+    fd.append('unit', unit);
+    if (comparePrice) fd.append('comparePrice', comparePrice);
     fd.append('stockCount', stock || '0');
+    if (parLevel) fd.append('parLevel', parLevel);
+    if (reorderPoint) fd.append('reorderPoint', reorderPoint);
+    for (const file of imageFiles) fd.append('images', file);
     setSaving(true);
     await onSave(fd, product?.id);
     setSaving(false);
@@ -139,7 +156,7 @@ export default function ProductFormDrawer({ product, onClose, onSave }: Props) {
           </DrawerField>
           <div className="grid grid-cols-2 gap-4">
             <DrawerField label="SKU">
-              <input type="text" placeholder="SKU-0033" className={inputCls} />
+              <input type="text" value={sku} onChange={(e) => setSku(e.target.value)} placeholder="SKU-0033" className={inputCls} />
             </DrawerField>
             <DrawerField label="Category">
               <select
@@ -161,10 +178,10 @@ export default function ProductFormDrawer({ product, onClose, onSave }: Props) {
           </DrawerField>
           <div className="grid grid-cols-2 gap-4">
             <DrawerField label="Grade / breed">
-              <input type="text" placeholder="e.g. USDA Prime, Berkshire" className={inputCls} />
+              <input type="text" value={gradeBreed} onChange={(e) => setGradeBreed(e.target.value)} placeholder="e.g. USDA Prime, Berkshire" className={inputCls} />
             </DrawerField>
             <DrawerField label="Supplier">
-              <input type="text" placeholder="e.g. Hartwell Ranch" className={inputCls} />
+              <input type="text" value={supplier} onChange={(e) => setSupplier(e.target.value)} placeholder="e.g. Hartwell Ranch" className={inputCls} />
             </DrawerField>
           </div>
         </DrawerSection>
@@ -183,14 +200,14 @@ export default function ProductFormDrawer({ product, onClose, onSave }: Props) {
               />
             </DrawerField>
             <DrawerField label="Unit">
-              <select className={selectCls}>
+              <select value={unit} onChange={(e) => setUnit(e.target.value)} className={selectCls}>
                 <option>/lb</option>
                 <option>/ea</option>
                 <option>/kg</option>
               </select>
             </DrawerField>
             <DrawerField label="Compare price">
-              <input type="number" step="0.01" min="0" placeholder="49.99" className={inputCls} />
+              <input type="number" step="0.01" min="0" value={comparePrice} onChange={(e) => setComparePrice(e.target.value)} placeholder="49.99" className={inputCls} />
             </DrawerField>
           </div>
           <p className="text-[12px] text-muted">
@@ -211,10 +228,10 @@ export default function ProductFormDrawer({ product, onClose, onSave }: Props) {
               />
             </DrawerField>
             <DrawerField label="Par level">
-              <input type="number" min="0" placeholder="25" className={inputCls} />
+              <input type="number" min="0" value={parLevel} onChange={(e) => setParLevel(e.target.value)} placeholder="25" className={inputCls} />
             </DrawerField>
             <DrawerField label="Reorder point">
-              <input type="number" min="0" placeholder="8" className={inputCls} />
+              <input type="number" min="0" value={reorderPoint} onChange={(e) => setReorderPoint(e.target.value)} placeholder="8" className={inputCls} />
             </DrawerField>
           </div>
           <p className="text-[12px] text-muted">
@@ -223,7 +240,20 @@ export default function ProductFormDrawer({ product, onClose, onSave }: Props) {
         </DrawerSection>
 
         <DrawerSection label="Images">
-          <div className="border-2 border-dashed border-line rounded-lg p-8 text-center cursor-pointer hover:border-camel hover:bg-camel/5 transition-colors">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files) setImageFiles((prev) => [...prev, ...Array.from(e.target.files!)]);
+            }}
+          />
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            className="border-2 border-dashed border-line rounded-lg p-8 text-center cursor-pointer hover:border-camel hover:bg-camel/5 transition-colors"
+          >
             <div className="w-10 h-10 rounded-full bg-cream-deep text-ink-soft grid place-items-center mx-auto mb-3">
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" />
@@ -235,6 +265,23 @@ export default function ProductFormDrawer({ product, onClose, onSave }: Props) {
               <br />PNG, JPG up to 5MB · First image is the thumbnail
             </p>
           </div>
+          {imageFiles.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-3">
+              {imageFiles.map((f, i) => (
+                <div key={i} className="relative group w-16 h-16 rounded-md overflow-hidden bg-cream-deep border border-line shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={URL.createObjectURL(f)} alt={f.name} className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => setImageFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                    className="absolute inset-0 bg-ink/60 text-cream opacity-0 group-hover:opacity-100 transition-opacity grid place-items-center text-xs"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </DrawerSection>
 
         <DrawerSection label="Visibility">

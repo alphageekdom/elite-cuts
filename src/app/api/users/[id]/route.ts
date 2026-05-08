@@ -63,10 +63,20 @@ export const PUT = async (request: NextRequest, { params }: RouteContext) => {
       name?: string;
       email?: string;
       phone?: string;
+      adminNote?: string;
       currentPassword?: string;
       newPassword?: string;
     };
-    const { name, email, phone, currentPassword, newPassword } = body;
+    const { name, email, phone, adminNote, currentPassword, newPassword } = body;
+
+    // Admin note update — admin only
+    if (adminNote !== undefined) {
+      if (!isAdmin) {
+        return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+      }
+      await User.findByIdAndUpdate(id, { $set: { adminNote: adminNote.trim() } });
+      return NextResponse.json({ message: 'Note updated' });
+    }
 
     // Profile info update (name / email / phone) — also allowed for admin on any user
     if (name !== undefined || email !== undefined || phone !== undefined) {

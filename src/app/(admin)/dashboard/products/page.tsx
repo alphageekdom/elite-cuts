@@ -59,6 +59,9 @@ export default async function AdminProductsPage() {
     isFeatured: p.isFeatured,
     isAged: p.isAged,
     isNewArrival: p.isNewArrival,
+    sku: p.sku ?? '',
+    gradeBreed: p.gradeBreed ?? '',
+    supplier: p.supplier ?? '',
     createdAt: p.createdAt.toISOString(),
     updatedAt: p.updatedAt.toISOString(),
   }));

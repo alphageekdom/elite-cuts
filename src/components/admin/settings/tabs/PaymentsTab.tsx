@@ -1,3 +1,5 @@
+'use client';
+import { toast } from 'sonner';
 import { SelectField, inputCls, labelCls, sectionTitleCls, sectionSubCls, btnPrimary, btnGhost } from '../SettingsUI';
 
 const PROVIDERS = [
@@ -30,7 +32,7 @@ export default function PaymentsTab() {
                 <div className="font-display text-[15px] font-medium tracking-[-0.005em] mb-0.5">{p.name}</div>
                 <div className={`text-[11px] font-mono tracking-[0.04em] ${p.statusCls}`}>{p.status}</div>
               </div>
-              <button type="button" className={`${p.actionCls} py-1.5! px-3.5! text-xs! shrink-0`}>
+              <button type="button" onClick={() => toast.info('Coming soon')} className={`${p.actionCls} py-1.5! px-3.5! text-xs! shrink-0`}>
                 {p.action}
               </button>
             </div>

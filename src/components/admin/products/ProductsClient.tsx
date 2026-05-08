@@ -59,7 +59,7 @@ function stockFillWidth(count: number): number {
   return Math.min((count / 50) * 100, 100);
 }
 
-const PAGE_SIZE = 8;
+const PAGE_SIZES = [8, 20, 50];
 
 export default function ProductsClient({ products, counts, categoryCounts }: Props) {
   const [localProducts, setLocalProducts] = useState(products);
@@ -72,6 +72,7 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<SortBy>('newest');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [perPage, setPerPage] = useState(8);
 
   async function handleSave(fd: FormData, id?: string) {
     try {
@@ -203,8 +204,8 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
     return sorted;
   }, [localProducts, activeFilter, activeCategory, search, sortBy]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+  const pageRows = filtered.slice((page - 1) * perPage, page * perPage);
 
   function toggleSelect(id: string) {
     setSelectedIds((prev) => {
@@ -686,7 +687,7 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
                               </button>
                             </div>
                             {openMenuId === product.id && (
-                              <div className="absolute right-0 top-full mt-1 z-20 w-44 rounded-lg shadow-xl overflow-hidden bg-ink border border-cream/12">
+                              <div className="absolute right-0 top-full mt-1 z-20 w-44 rounded-lg shadow-xl overflow-hidden bg-ink border border-cream/25">
                                 <button
                                   onClick={() => handleDuplicate(product)}
                                   className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left text-cream hover:bg-cream/10 transition-colors"
@@ -705,7 +706,7 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
                                   </svg>
                                   Archive
                                 </button>
-                                <div className="border-t border-cream/12" />
+                                <div className="border-t border-cream/25" />
                                 <button
                                   onClick={() => handleDelete(product.id)}
                                   className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left text-red-400 hover:bg-cream/10 transition-colors"
@@ -736,7 +737,7 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
           <div className="font-mono text-[12px] text-muted tracking-[0.04em]">
             Showing{' '}
             <strong className="text-ink font-medium">
-              {filtered.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)}
+              {filtered.length === 0 ? 0 : (page - 1) * perPage + 1}–{Math.min(page * perPage, filtered.length)}
             </strong>{' '}
             of <strong className="text-ink font-medium">{filtered.length}</strong> cuts
           </div>
@@ -793,10 +794,12 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
 
           <div className="hidden sm:flex items-center gap-2 font-mono text-[12px] text-muted">
             <span>Per page</span>
-            <select className="appearance-none bg-paper border border-line rounded-full pl-3 pr-6 py-1.5 text-[12px] text-ink font-mono cursor-pointer">
-              <option>8</option>
-              <option>20</option>
-              <option>50</option>
+            <select
+              value={perPage}
+              onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }}
+              className="appearance-none bg-paper border border-line rounded-full pl-3 pr-6 py-1.5 text-[12px] text-ink font-mono cursor-pointer"
+            >
+              {PAGE_SIZES.map((n) => <option key={n} value={n}>{n}</option>)}
             </select>
           </div>
         </div>

@@ -174,7 +174,7 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
               <div className="font-mono text-[12px] text-muted tracking-[0.04em] uppercase">{order.customerEmail}</div>
             </div>
             <a
-              href="#"
+              href="/dashboard/customers"
               className="inline-flex items-center gap-1 bg-paper border border-line rounded-full px-3.5 py-1.5 text-[12px] text-ink-soft hover:border-ink hover:text-ink transition-colors"
             >
               View
@@ -270,12 +270,15 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
           </svg>
           Print receipt
         </button>
-        <button className="flex-1 inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-full bg-ink text-cream text-[13px] font-medium hover:bg-oxblood transition-colors">
+        <a
+          href={`mailto:${order.customerEmail}?subject=Your%20EliteCuts%20order%20${encodeURIComponent(order.orderRef)}`}
+          className="flex-1 inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-full bg-ink text-cream text-[13px] font-medium hover:bg-oxblood transition-colors"
+        >
           <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
           </svg>
           Email customer
-        </button>
+        </a>
       </div>
     </>
   );
