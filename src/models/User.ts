@@ -26,6 +26,7 @@ export type User = {
   savedCuts: Types.ObjectId[];
   addresses: Types.DocumentArray<Address>;
   isAdmin: boolean;
+  rewardPoints: number;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -76,6 +77,11 @@ const UserSchema = new Schema<User>(
       type: Boolean,
       default: false,
       immutable: true,
+    },
+    rewardPoints: {
+      type: Number,
+      default: 0,
+      min: 0,
     },
   },
   {

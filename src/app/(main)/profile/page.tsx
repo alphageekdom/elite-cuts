@@ -77,6 +77,7 @@ export default async function ProfilePage({ searchParams }: Props) {
       zip: string;
       isDefault: boolean;
     }[];
+    rewardPoints: number;
     createdAt: Date;
     updatedAt: Date;
   }>();
@@ -242,7 +243,7 @@ export default async function ProfilePage({ searchParams }: Props) {
             )}
 
             {activeTab === 'rewards' && (
-              <ProfileRewards />
+              <ProfileRewards points={rawUser.rewardPoints ?? 0} />
             )}
 
             {activeTab === 'settings' && (
@@ -268,7 +269,7 @@ export default async function ProfilePage({ searchParams }: Props) {
 
           {/* Right: sidebar */}
           <aside className="space-y-4">
-            <ProfileLoyaltyCard />
+            <ProfileLoyaltyCard points={rawUser.rewardPoints ?? 0} />
             <ProfileAccountInfo email={displayEmail} joinedAt={createdAt} />
             <ProfileRecentlyViewed products={recentProducts} />
           </aside>

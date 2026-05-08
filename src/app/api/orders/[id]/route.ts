@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 import connectDB from '@/config/database';
 import Order, { ORDER_STATUSES } from '@/models/Order';
+import User from '@/models/User';
 import { getSessionUser } from '@/utils/getSessionUser';
 import { requireAdmin } from '@/utils/requireAdmin';
 import { isIn } from '@/lib/validation';
@@ -55,14 +56,22 @@ export const PATCH = async (request: NextRequest, { params }: RouteContext) => {
       );
     }
 
+    // Fetch before update so we know the previous status
+    const existing = await Order.findById(id).lean();
+    if (!existing) {
+      return NextResponse.json({ message: 'Order not found' }, { status: 404 });
+    }
+
     const order = await Order.findByIdAndUpdate(
       id,
       { orderStatus },
       { new: true, runValidators: true },
     );
 
-    if (!order) {
-      return NextResponse.json({ message: 'Order not found' }, { status: 404 });
+    // Award 1 point per dollar when transitioning into Completed for the first time
+    if (orderStatus === 'Completed' && existing.orderStatus !== 'Completed') {
+      const pointsEarned = Math.floor(existing.totalCost);
+      await User.findByIdAndUpdate(existing.user, { $inc: { rewardPoints: pointsEarned } });
     }
 
     return NextResponse.json(order);
