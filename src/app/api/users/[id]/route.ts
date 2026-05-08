@@ -51,8 +51,9 @@ export const PUT = async (request: NextRequest, { params }: RouteContext) => {
     }
 
     const { id } = await params;
+    const isAdmin = sessionUser.user?.isAdmin ?? false;
 
-    if (sessionUser.userId !== id) {
+    if (sessionUser.userId !== id && !isAdmin) {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
 
@@ -67,7 +68,7 @@ export const PUT = async (request: NextRequest, { params }: RouteContext) => {
     };
     const { name, email, phone, currentPassword, newPassword } = body;
 
-    // Profile info update (name / email / phone)
+    // Profile info update (name / email / phone) — also allowed for admin on any user
     if (name !== undefined || email !== undefined || phone !== undefined) {
       if (name !== undefined) {
         const trimmed = name.trim();
@@ -104,7 +105,11 @@ export const PUT = async (request: NextRequest, { params }: RouteContext) => {
       return NextResponse.json({ message: 'Profile updated successfully' });
     }
 
-    // Password update
+    // Password update — self only, not allowed via admin path
+    if (isAdmin && sessionUser.userId !== id) {
+      return NextResponse.json({ message: 'Admins cannot change another user\'s password' }, { status: 403 });
+    }
+
     if (!newPassword) {
       return NextResponse.json({ message: 'New password is required' }, { status: 400 });
     }

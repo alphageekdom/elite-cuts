@@ -1,7 +1,9 @@
 'use client';
 import { useState, useMemo } from 'react';
+import { toast } from 'sonner';
 import { statCellBorderClasses } from '@/lib/admin-utils';
 import { PRODUCT_CATEGORIES, CATEGORY_COLORS } from '@/lib/admin-constants';
+import type { ProductCategory } from '@/lib/admin-constants';
 import type { ProductTableRow, ProductCounts } from '@/types/admin';
 import ProductFormDrawer from './ProductFormDrawer';
 
@@ -60,6 +62,7 @@ function stockFillWidth(count: number): number {
 const PAGE_SIZE = 8;
 
 export default function ProductsClient({ products, counts, categoryCounts }: Props) {
+  const [localProducts, setLocalProducts] = useState(products);
   const [activeFilter, setActiveFilter] = useState<StatFilter>('all');
   const [activeCategory, setActiveCategory] = useState<string>('');
   const [search, setSearch] = useState('');
@@ -70,8 +73,114 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
   const [sortBy, setSortBy] = useState<SortBy>('newest');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
+  async function handleSave(fd: FormData, id?: string) {
+    try {
+      const res = await fetch(id ? `/api/products/${id}` : '/api/products', {
+        method: id ? 'PUT' : 'POST',
+        body: fd,
+      });
+      if (!res.ok) {
+        const { message } = await res.json();
+        toast.error(message ?? 'Failed to save product');
+        return;
+      }
+      const data = await res.json();
+      const now = new Date().toISOString();
+      const cat = fd.get('category') as ProductCategory;
+      if (id) {
+        setLocalProducts((prev) =>
+          prev.map((p) =>
+            p.id === id
+              ? {
+                  ...p,
+                  name: fd.get('name') as string,
+                  category: cat,
+                  price: Number(fd.get('price')),
+                  stockCount: Number(fd.get('stockCount')),
+                  updatedAt: now,
+                }
+              : p,
+          ),
+        );
+        toast.success('Product updated');
+      } else {
+        setLocalProducts((prev) => [
+          {
+            id: data.id as string,
+            name: fd.get('name') as string,
+            category: cat,
+            price: Number(fd.get('price')),
+            stockCount: Number(fd.get('stockCount')),
+            images: [],
+            isFeatured: false,
+            isAged: false,
+            isNewArrival: true,
+            rating: 0,
+            createdAt: now,
+            updatedAt: now,
+          },
+          ...prev,
+        ]);
+        toast.success('Product created');
+      }
+      closeDrawer();
+    } catch {
+      toast.error('Failed to save product');
+    }
+  }
+
+  async function handleArchive(id: string) {
+    try {
+      const res = await fetch(`/api/products/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: false }),
+      });
+      if (!res.ok) { const { message } = await res.json(); toast.error(message ?? 'Failed to archive product'); return; }
+      setOpenMenuId(null);
+      toast.success('Product archived');
+    } catch { toast.error('Failed to archive product'); }
+  }
+
+  async function handleDuplicate(product: ProductTableRow) {
+    try {
+      const fd = new FormData();
+      fd.append('name', `${product.name} (Copy)`);
+      fd.append('category', product.category);
+      fd.append('description', '');
+      fd.append('price', String(product.price));
+      fd.append('stockCount', '0');
+      const res = await fetch('/api/products', { method: 'POST', body: fd });
+      if (!res.ok) { const { message } = await res.json(); toast.error(message ?? 'Failed to duplicate product'); return; }
+      const data = await res.json();
+      const now = new Date().toISOString();
+      setLocalProducts((prev) => [
+        { ...product, id: data.id as string, name: `${product.name} (Copy)`, stockCount: 0, images: [], createdAt: now, updatedAt: now },
+        ...prev,
+      ]);
+      setOpenMenuId(null);
+      toast.success('Product duplicated');
+    } catch { toast.error('Failed to duplicate product'); }
+  }
+
+  async function handleDelete(id: string) {
+    try {
+      const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const { message } = await res.json();
+        toast.error(message ?? 'Failed to delete product');
+        return;
+      }
+      setLocalProducts((prev) => prev.filter((p) => p.id !== id));
+      setOpenMenuId(null);
+      toast.success('Product deleted');
+    } catch {
+      toast.error('Failed to delete product');
+    }
+  }
+
   const filtered = useMemo(() => {
-    let rows = products;
+    let rows = localProducts;
 
     if (activeFilter === 'inStock') rows = rows.filter((p) => p.stockCount > 0);
     else if (activeFilter === 'outOfStock') rows = rows.filter((p) => p.stockCount === 0);
@@ -92,7 +201,7 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
     else if (sortBy === 'name-asc') sorted.sort((a, b) => a.name.localeCompare(b.name));
     else if (sortBy === 'top-rated') sorted.sort((a, b) => b.rating - a.rating);
     return sorted;
-  }, [products, activeFilter, activeCategory, search, sortBy]);
+  }, [localProducts, activeFilter, activeCategory, search, sortBy]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -137,6 +246,56 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
 
   const allPageSelected = pageRows.length > 0 && pageRows.every((r) => selectedIds.has(r.id));
   const someSelected = selectedIds.size > 0;
+  const [bulkLoading, setBulkLoading] = useState('');
+  const [editPriceMode, setEditPriceMode] = useState(false);
+  const [bulkPrice, setBulkPrice] = useState('');
+
+  async function bulkPatch(body: Record<string, unknown>, label: string) {
+    const ids = [...selectedIds];
+    setBulkLoading(label);
+    try {
+      await Promise.all(
+        ids.map((id) =>
+          fetch(`/api/products/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          }),
+        ),
+      );
+      if (body.isActive !== undefined) {
+        setLocalProducts((prev) => prev.map((p) => (selectedIds.has(p.id) ? { ...p } : p)));
+      }
+      if (body.price !== undefined) {
+        const price = body.price as number;
+        setLocalProducts((prev) =>
+          prev.map((p) => (selectedIds.has(p.id) ? { ...p, price } : p)),
+        );
+      }
+      setSelectedIds(new Set());
+      setEditPriceMode(false);
+      toast.success(`${ids.length} product${ids.length !== 1 ? 's' : ''} updated`);
+    } catch {
+      toast.error('Failed to update some products');
+    } finally {
+      setBulkLoading('');
+    }
+  }
+
+  async function bulkDelete() {
+    const ids = [...selectedIds];
+    setBulkLoading('delete');
+    try {
+      await Promise.all(ids.map((id) => fetch(`/api/products/${id}`, { method: 'DELETE' })));
+      setLocalProducts((prev) => prev.filter((p) => !selectedIds.has(p.id)));
+      setSelectedIds(new Set());
+      toast.success(`${ids.length} product${ids.length !== 1 ? 's' : ''} deleted`);
+    } catch {
+      toast.error('Failed to delete some products');
+    } finally {
+      setBulkLoading('');
+    }
+  }
 
   function statCellValue(key: StatFilter | 'avgPrice'): string {
     if (key === 'all') return String(counts.all);
@@ -285,15 +444,66 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
               </span>
               selected
             </div>
-            <div className="flex gap-1.5">
-              {['Publish', 'Unpublish', 'Edit price', 'Archive', 'Delete'].map((action) => (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button
+                onClick={() => bulkPatch({ isActive: true }, 'publish')}
+                disabled={!!bulkLoading}
+                className="bg-cream/10 text-cream border border-cream/20 rounded-full px-3 py-1.5 text-[12px] hover:bg-cream/20 hover:border-cream/40 transition-colors disabled:opacity-50"
+              >
+                {bulkLoading === 'publish' ? 'Updating…' : 'Publish'}
+              </button>
+              <button
+                onClick={() => bulkPatch({ isActive: false }, 'unpublish')}
+                disabled={!!bulkLoading}
+                className="bg-cream/10 text-cream border border-cream/20 rounded-full px-3 py-1.5 text-[12px] hover:bg-cream/20 hover:border-cream/40 transition-colors disabled:opacity-50"
+              >
+                {bulkLoading === 'unpublish' ? 'Updating…' : 'Unpublish'}
+              </button>
+              {editPriceMode ? (
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={bulkPrice}
+                    onChange={(e) => setBulkPrice(e.target.value)}
+                    placeholder="New price"
+                    autoFocus
+                    className="w-24 bg-cream/10 border border-cream/30 rounded-full px-3 py-1 text-[12px] text-cream outline-none placeholder:text-cream/40"
+                  />
+                  <button
+                    onClick={() => {
+                      const p = parseFloat(bulkPrice);
+                      if (!isNaN(p) && p >= 0) bulkPatch({ price: p }, 'price');
+                    }}
+                    disabled={!!bulkLoading || !bulkPrice}
+                    className="bg-camel text-ink rounded-full px-3 py-1.5 text-[12px] font-medium disabled:opacity-50"
+                  >
+                    {bulkLoading === 'price' ? '…' : 'Set'}
+                  </button>
+                  <button
+                    onClick={() => setEditPriceMode(false)}
+                    className="text-cream/60 text-[12px] px-2 hover:text-cream"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
                 <button
-                  key={action}
-                  className="bg-cream/10 text-cream border border-cream/20 rounded-full px-3 py-1.5 text-[12px] hover:bg-cream/20 hover:border-cream/40 transition-colors"
+                  onClick={() => setEditPriceMode(true)}
+                  disabled={!!bulkLoading}
+                  className="bg-cream/10 text-cream border border-cream/20 rounded-full px-3 py-1.5 text-[12px] hover:bg-cream/20 hover:border-cream/40 transition-colors disabled:opacity-50"
                 >
-                  {action}
+                  Edit price
                 </button>
-              ))}
+              )}
+              <button
+                onClick={bulkDelete}
+                disabled={!!bulkLoading}
+                className="bg-oxblood/70 text-cream border border-oxblood rounded-full px-3 py-1.5 text-[12px] hover:bg-oxblood transition-colors disabled:opacity-50"
+              >
+                {bulkLoading === 'delete' ? 'Deleting…' : 'Delete'}
+              </button>
             </div>
           </div>
         )}
@@ -477,20 +687,29 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
                             </div>
                             {openMenuId === product.id && (
                               <div className="absolute right-0 top-full mt-1 z-20 w-44 rounded-lg shadow-xl overflow-hidden bg-ink border border-cream/12">
-                                <button className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left text-cream hover:bg-cream/10 transition-colors">
+                                <button
+                                  onClick={() => handleDuplicate(product)}
+                                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left text-cream hover:bg-cream/10 transition-colors"
+                                >
                                   <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                     <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
                                   </svg>
                                   Duplicate
                                 </button>
-                                <button className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left text-cream hover:bg-cream/10 transition-colors">
+                                <button
+                                  onClick={() => handleArchive(product.id)}
+                                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left text-cream hover:bg-cream/10 transition-colors"
+                                >
                                   <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                     <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
                                   </svg>
                                   Archive
                                 </button>
                                 <div className="border-t border-cream/12" />
-                                <button className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left text-red-400 hover:bg-cream/10 transition-colors">
+                                <button
+                                  onClick={() => handleDelete(product.id)}
+                                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left text-red-400 hover:bg-cream/10 transition-colors"
+                                >
                                   <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                     <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
                                   </svg>
@@ -606,6 +825,7 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
           key={drawerProduct?.id ?? 'new'}
           product={drawerProduct}
           onClose={closeDrawer}
+          onSave={handleSave}
         />
       </aside>
     </>

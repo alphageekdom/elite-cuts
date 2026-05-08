@@ -1,11 +1,13 @@
 'use client';
 import { useState } from 'react';
 import { PRODUCT_CATEGORIES } from '@/lib/admin-constants';
+import { toast } from 'sonner';
 import type { ProductTableRow } from '@/types/admin';
 
 type Props = {
   product: ProductTableRow | null;
   onClose: () => void;
+  onSave: (data: FormData, id?: string) => Promise<void>;
 };
 
 const inputCls =
@@ -67,16 +69,34 @@ function ToggleRow({
   );
 }
 
-export default function ProductFormDrawer({ product, onClose }: Props) {
+export default function ProductFormDrawer({ product, onClose, onSave }: Props) {
   const isEdit = product !== null;
 
   const [name, setName] = useState(product?.name ?? '');
+  const [description, setDescription] = useState('');
   const [category, setCategory] = useState<string>(product?.category ?? PRODUCT_CATEGORIES[0]);
   const [price, setPrice] = useState(product ? product.price.toFixed(2) : '');
   const [stock, setStock] = useState(product ? String(product.stockCount) : '');
   const [published, setPublished] = useState(isEdit);
   const [featuredToggle, setFeaturedToggle] = useState(product?.isFeatured ?? false);
   const [membersOnly, setMembersOnly] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    if (!name.trim() || !price) {
+      toast.error('Name and price are required');
+      return;
+    }
+    const fd = new FormData();
+    fd.append('name', name.trim());
+    fd.append('category', category);
+    fd.append('description', description.trim());
+    fd.append('price', price);
+    fd.append('stockCount', stock || '0');
+    setSaving(true);
+    await onSave(fd, product?.id);
+    setSaving(false);
+  }
 
   return (
     <>
@@ -133,6 +153,8 @@ export default function ProductFormDrawer({ product, onClose }: Props) {
           </div>
           <DrawerField label="Description">
             <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe the cut, sourcing, and any preparation notes…"
               className={`${inputCls} resize-y min-h-20`}
             />
@@ -245,11 +267,17 @@ export default function ProductFormDrawer({ product, onClose }: Props) {
         >
           Cancel
         </button>
-        <button className="flex-1 inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-full bg-ink text-cream text-[13px] font-medium hover:bg-oxblood transition-colors">
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-          {isEdit ? 'Save changes' : 'Save product'}
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="flex-1 inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-full bg-ink text-cream text-[13px] font-medium hover:bg-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {!saving && (
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          )}
+          {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Save product'}
         </button>
       </div>
     </>

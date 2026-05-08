@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
+import { toast } from 'sonner';
 import { formatMoney, formatDate, relativeTime, getInitials, avatarColorForId, statCellBorderClasses } from '@/lib/admin-utils';
 import { AVATAR_COLORS } from '@/lib/admin-constants';
 import type { CustomerTableRow, CustomerCounts } from '@/types/admin';
@@ -56,6 +57,7 @@ function countForStat(key: StatFilter, counts: CustomerCounts): number {
 }
 
 export default function CustomersClient({ customers, counts }: Props) {
+  const [localCustomers, setLocalCustomers] = useState(customers);
   const [activeStatFilter, setActiveStatFilter] = useState<StatFilter>('all');
   const [activeTierFilter, setActiveTierFilter] = useState<TierFilter>('all');
   const [search, setSearch] = useState('');
@@ -63,8 +65,47 @@ export default function CustomersClient({ customers, counts }: Props) {
   const [drawerCustomer, setDrawerCustomer] = useState<CustomerTableRow | null>(null);
   const [page, setPage] = useState(1);
 
+  async function handleCustomerSave(id: string, data: { name: string; email: string; phone: string }) {
+    try {
+      const res = await fetch(`/api/users/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const { message } = await res.json();
+        toast.error(message ?? 'Failed to update customer');
+        return;
+      }
+      setLocalCustomers((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, ...data } : c)),
+      );
+      setDrawerCustomer((prev) => (prev ? { ...prev, ...data } : prev));
+      toast.success('Customer updated');
+    } catch {
+      toast.error('Failed to update customer');
+    }
+  }
+
+  async function handleCustomerDelete(id: string) {
+    try {
+      const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const { message } = await res.json();
+        toast.error(message ?? 'Failed to delete customer');
+        return;
+      }
+      setLocalCustomers((prev) => prev.filter((c) => c.id !== id));
+      setDrawerCustomer(null);
+      document.body.style.overflow = '';
+      toast.success('Customer deleted');
+    } catch {
+      toast.error('Failed to delete customer');
+    }
+  }
+
   const filtered = useMemo(() => {
-    let rows = customers;
+    let rows = localCustomers;
     rows = rows.filter((r) => matchesStatFilter(r, activeStatFilter));
     if (activeTierFilter !== 'all') {
       rows = rows.filter((r) => getTier(r.orderCount) === activeTierFilter);
@@ -76,7 +117,7 @@ export default function CustomersClient({ customers, counts }: Props) {
       );
     }
     return rows;
-  }, [customers, activeStatFilter, activeTierFilter, search]);
+  }, [localCustomers, activeStatFilter, activeTierFilter, search]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -117,8 +158,53 @@ export default function CustomersClient({ customers, counts }: Props) {
     setSelectedIds(new Set());
   }
 
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const allPageSelected = pageRows.length > 0 && pageRows.every((r) => selectedIds.has(r.id));
   const someSelected = selectedIds.size > 0;
+  const [bulkLoading, setBulkLoading] = useState('');
+  const [adjustPointsMode, setAdjustPointsMode] = useState(false);
+  const [pointsDelta, setPointsDelta] = useState('');
+
+  async function bulkAdjustPoints() {
+    const delta = parseInt(pointsDelta, 10);
+    if (isNaN(delta)) { toast.error('Enter a valid number'); return; }
+    const ids = [...selectedIds];
+    setBulkLoading('points');
+    try {
+      await Promise.all(
+        ids.map((id) =>
+          fetch(`/api/users/${id}/points`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ delta }),
+          }),
+        ),
+      );
+      setSelectedIds(new Set());
+      setAdjustPointsMode(false);
+      setPointsDelta('');
+      toast.success(`Points adjusted for ${ids.length} customer${ids.length !== 1 ? 's' : ''}`);
+    } catch {
+      toast.error('Failed to adjust points');
+    } finally {
+      setBulkLoading('');
+    }
+  }
+
+  async function bulkDeleteCustomers() {
+    const ids = [...selectedIds];
+    setBulkLoading('delete');
+    try {
+      await Promise.all(ids.map((id) => fetch(`/api/users/${id}`, { method: 'DELETE' })));
+      setLocalCustomers((prev) => prev.filter((c) => !selectedIds.has(c.id)));
+      setSelectedIds(new Set());
+      toast.success(`${ids.length} customer${ids.length !== 1 ? 's' : ''} deleted`);
+    } catch {
+      toast.error('Failed to delete some customers');
+    } finally {
+      setBulkLoading('');
+    }
+  }
 
   return (
     <>
@@ -228,11 +314,52 @@ export default function CustomersClient({ customers, counts }: Props) {
               <span className="bg-camel text-ink text-[12px] font-medium px-2 py-0.5 rounded-full">{selectedIds.size}</span>
               selected
             </div>
-            <div className="flex gap-1.5">
-              {['Email', 'Add tag', 'Adjust points', 'Export', 'Delete'].map((action) => (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {adjustPointsMode ? (
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    value={pointsDelta}
+                    onChange={(e) => setPointsDelta(e.target.value)}
+                    placeholder="+100 or -50"
+                    autoFocus
+                    className="w-28 bg-cream/10 border border-cream/30 rounded-full px-3 py-1 text-[12px] text-cream outline-none placeholder:text-cream/40"
+                  />
+                  <button
+                    onClick={bulkAdjustPoints}
+                    disabled={!!bulkLoading || !pointsDelta}
+                    className="bg-camel text-ink rounded-full px-3 py-1.5 text-[12px] font-medium disabled:opacity-50"
+                  >
+                    {bulkLoading === 'points' ? '…' : 'Apply'}
+                  </button>
+                  <button
+                    onClick={() => { setAdjustPointsMode(false); setPointsDelta(''); }}
+                    className="text-cream/60 text-[12px] px-2 hover:text-cream"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setAdjustPointsMode(true)}
+                  disabled={!!bulkLoading}
+                  className="bg-cream/10 text-cream border border-cream/20 rounded-full px-3 py-1.5 text-[12px] hover:bg-cream/20 hover:border-cream/40 transition-colors disabled:opacity-50"
+                >
+                  Adjust points
+                </button>
+              )}
+              <button
+                onClick={bulkDeleteCustomers}
+                disabled={!!bulkLoading}
+                className="bg-oxblood/70 text-cream border border-oxblood rounded-full px-3 py-1.5 text-[12px] hover:bg-oxblood transition-colors disabled:opacity-50"
+              >
+                {bulkLoading === 'delete' ? 'Deleting…' : 'Delete'}
+              </button>
+              {['Email', 'Add tag', 'Export'].map((action) => (
                 <button
                   key={action}
-                  className="bg-cream/10 text-cream border border-cream/20 rounded-full px-3 py-1.5 text-[12px] hover:bg-cream/20 hover:border-cream/40 transition-colors"
+                  disabled
+                  className="bg-cream/10 text-cream border border-cream/20 rounded-full px-3 py-1.5 text-[12px] opacity-40 cursor-not-allowed"
                 >
                   {action}
                 </button>
@@ -373,7 +500,7 @@ export default function CustomersClient({ customers, counts }: Props) {
                         </td>
 
                         <td className="pr-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
-                          <div className="inline-flex gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+                          <div className="relative inline-flex gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
                             <button
                               onClick={() => openDrawer(cust)}
                               aria-label="View customer"
@@ -384,6 +511,7 @@ export default function CustomersClient({ customers, counts }: Props) {
                               </svg>
                             </button>
                             <button
+                              onClick={() => window.open(`mailto:${cust.email}`)}
                               aria-label="Email customer"
                               className="w-7 h-7 rounded-full border border-line text-ink-soft grid place-items-center hover:border-ink hover:bg-cream hover:text-ink transition-colors"
                             >
@@ -392,6 +520,7 @@ export default function CustomersClient({ customers, counts }: Props) {
                               </svg>
                             </button>
                             <button
+                              onClick={() => setOpenMenuId((prev) => prev === cust.id ? null : cust.id)}
                               aria-label="More"
                               className="w-7 h-7 rounded-full border border-line text-ink-soft grid place-items-center hover:border-ink hover:bg-cream hover:text-ink transition-colors"
                             >
@@ -399,6 +528,38 @@ export default function CustomersClient({ customers, counts }: Props) {
                                 <circle cx="12" cy="12" r="1.5" /><circle cx="19" cy="12" r="1.5" /><circle cx="5" cy="12" r="1.5" />
                               </svg>
                             </button>
+                            {openMenuId === cust.id && (
+                              <div className="absolute right-0 top-full mt-1 z-20 w-40 rounded-lg shadow-xl overflow-hidden bg-ink border border-cream/12">
+                                <button
+                                  onClick={() => { openDrawer(cust); setOpenMenuId(null); }}
+                                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left text-cream hover:bg-cream/10 transition-colors"
+                                >
+                                  <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                                  </svg>
+                                  View profile
+                                </button>
+                                <button
+                                  onClick={() => { window.open(`mailto:${cust.email}`); setOpenMenuId(null); }}
+                                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left text-cream hover:bg-cream/10 transition-colors"
+                                >
+                                  <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+                                  </svg>
+                                  Email
+                                </button>
+                                <div className="border-t border-cream/12" />
+                                <button
+                                  onClick={() => { handleCustomerDelete(cust.id); setOpenMenuId(null); }}
+                                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left text-red-400 hover:bg-cream/10 transition-colors"
+                                >
+                                  <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+                                  </svg>
+                                  Delete
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -478,6 +639,10 @@ export default function CustomersClient({ customers, counts }: Props) {
         </div>
       </div>
 
+      {openMenuId && (
+        <div className="fixed inset-0 z-10" onClick={() => setOpenMenuId(null)} />
+      )}
+
       {/* Drawer backdrop */}
       {drawerCustomer && (
         <div className="fixed inset-0 bg-ink/40 backdrop-blur-sm z-50" onClick={closeDrawer} />
@@ -490,7 +655,12 @@ export default function CustomersClient({ customers, counts }: Props) {
         }`}
       >
         {drawerCustomer && (
-          <CustomerDetailDrawer customer={drawerCustomer} onClose={closeDrawer} />
+          <CustomerDetailDrawer
+            customer={drawerCustomer}
+            onClose={closeDrawer}
+            onSave={handleCustomerSave}
+            onDelete={handleCustomerDelete}
+          />
         )}
       </aside>
     </>

@@ -1,4 +1,6 @@
 'use client';
+import { useState } from 'react';
+import { toast } from 'sonner';
 import { formatMoney, formatDate, relativeTime, getInitials } from '@/lib/admin-utils';
 import type { CustomerTableRow } from '@/types/admin';
 
@@ -49,12 +51,25 @@ export function deriveTags(row: CustomerTableRow): Array<{ label: string; cls: s
   return tags;
 }
 
+const inputCls =
+  'w-full border border-line bg-paper font-sans text-[14px] text-ink px-4 py-3 rounded-lg outline-none focus:border-ink transition-colors placeholder:text-muted/60';
+
 type Props = {
   customer: CustomerTableRow;
   onClose: () => void;
+  onSave: (id: string, data: { name: string; email: string; phone: string }) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
 };
 
-export default function CustomerDetailDrawer({ customer, onClose }: Props) {
+export default function CustomerDetailDrawer({ customer, onClose, onSave, onDelete }: Props) {
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState(customer.name);
+  const [editEmail, setEditEmail] = useState(customer.email);
+  const [editPhone, setEditPhone] = useState(customer.phone ?? '');
+  const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   const tier = getTier(customer.orderCount);
   const activity = getActivity(customer);
   const tierCfg = TIER_CONFIG[tier];
@@ -63,6 +78,23 @@ export default function CustomerDetailDrawer({ customer, onClose }: Props) {
   const avgOrder = customer.orderCount > 0 ? customer.totalSpend / customer.orderCount : 0;
   const tags = deriveTags(customer);
   const custId = `CUST-${customer.id.slice(-5).toUpperCase()}`;
+
+  async function handleSave() {
+    if (!editName.trim() || !editEmail.trim()) {
+      toast.error('Name and email are required');
+      return;
+    }
+    setSaving(true);
+    await onSave(customer.id, { name: editName.trim(), email: editEmail.trim(), phone: editPhone.trim() });
+    setSaving(false);
+    setEditing(false);
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    await onDelete(customer.id);
+    setDeleting(false);
+  }
 
   return (
     <>
@@ -161,55 +193,98 @@ export default function CustomerDetailDrawer({ customer, onClose }: Props) {
 
         {/* Contact */}
         <div className="pb-6 mb-6 border-b border-line-soft">
-          <div className="text-[10px] font-medium tracking-[0.22em] uppercase text-muted mb-4">Contact</div>
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              {
-                label: 'Email',
-                value: customer.email,
-                icon: (
-                  <svg className="w-3.5 h-3.5 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
-                  </svg>
-                ),
-              },
-              {
-                label: 'Phone',
-                value: customer.phone ?? '—',
-                icon: (
-                  <svg className="w-3.5 h-3.5 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
-                  </svg>
-                ),
-              },
-              {
-                label: 'Location',
-                value: customer.defaultCity ?? '—',
-                icon: (
-                  <svg className="w-3.5 h-3.5 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" />
-                  </svg>
-                ),
-              },
-              {
-                label: 'Member since',
-                value: formatDate(customer.createdAt),
-                icon: (
-                  <svg className="w-3.5 h-3.5 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
-                  </svg>
-                ),
-              },
-            ].map(({ label, value, icon }) => (
-              <div key={label} className="flex items-start gap-2.5 p-3 bg-paper border border-line-soft rounded-sm">
-                <div className="text-ink-soft mt-0.5 shrink-0">{icon}</div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[10px] tracking-[0.18em] uppercase text-muted mb-0.5">{label}</div>
-                  <div className="font-mono text-[12px] text-ink tracking-[0.02em] truncate">{value}</div>
-                </div>
-              </div>
-            ))}
+          <div className="flex items-center justify-between mb-4">
+            <div className="text-[10px] font-medium tracking-[0.22em] uppercase text-muted">Contact</div>
+            {!editing && (
+              <button
+                onClick={() => setEditing(true)}
+                className="text-[12px] text-ink-soft border-b border-line hover:text-oxblood transition-colors"
+              >
+                Edit
+              </button>
+            )}
           </div>
+
+          {editing ? (
+            <div className="space-y-3">
+              <div>
+                <label className="block text-[11px] font-medium tracking-[0.18em] uppercase text-muted mb-1.5">Name</label>
+                <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium tracking-[0.18em] uppercase text-muted mb-1.5">Email</label>
+                <input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium tracking-[0.18em] uppercase text-muted mb-1.5">Phone</label>
+                <input type="tel" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder="Optional" className={inputCls} />
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button
+                  onClick={() => { setEditing(false); setEditName(customer.name); setEditEmail(customer.email); setEditPhone(customer.phone ?? ''); }}
+                  className="flex-1 px-4 py-2.5 rounded-full border border-line text-ink-soft text-[13px] font-medium hover:border-ink hover:text-ink transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="flex-1 px-4 py-2.5 rounded-full bg-ink text-cream text-[13px] font-medium hover:bg-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {saving ? 'Saving…' : 'Save'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                {
+                  label: 'Email',
+                  value: customer.email,
+                  icon: (
+                    <svg className="w-3.5 h-3.5 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
+                    </svg>
+                  ),
+                },
+                {
+                  label: 'Phone',
+                  value: customer.phone ?? '—',
+                  icon: (
+                    <svg className="w-3.5 h-3.5 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
+                    </svg>
+                  ),
+                },
+                {
+                  label: 'Location',
+                  value: customer.defaultCity ?? '—',
+                  icon: (
+                    <svg className="w-3.5 h-3.5 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" />
+                    </svg>
+                  ),
+                },
+                {
+                  label: 'Member since',
+                  value: formatDate(customer.createdAt),
+                  icon: (
+                    <svg className="w-3.5 h-3.5 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                  ),
+                },
+              ].map(({ label, value, icon }) => (
+                <div key={label} className="flex items-start gap-2.5 p-3 bg-paper border border-line-soft rounded-sm">
+                  <div className="text-ink-soft mt-0.5 shrink-0">{icon}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[10px] tracking-[0.18em] uppercase text-muted mb-0.5">{label}</div>
+                    <div className="font-mono text-[12px] text-ink tracking-[0.02em] truncate">{value}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Tags */}
@@ -272,25 +347,50 @@ export default function CustomerDetailDrawer({ customer, onClose }: Props) {
       </div>
 
       {/* Footer */}
-      <div className="flex gap-2 px-8 py-4.5 bg-paper border-t border-line-soft shrink-0">
-        <button className="flex-1 inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-full bg-paper border border-line text-ink-soft text-[13px] font-medium hover:border-ink hover:text-ink transition-colors">
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
-          </svg>
-          Email
-        </button>
-        <button className="flex-1 inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-full bg-paper border border-line text-ink-soft text-[13px] font-medium hover:border-ink hover:text-ink transition-colors">
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-          </svg>
-          Adjust points
-        </button>
-        <button className="flex-1 inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-full bg-ink text-cream text-[13px] font-medium hover:bg-oxblood transition-colors">
-          Edit profile
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-          </svg>
-        </button>
+      <div className="px-8 py-4.5 bg-paper border-t border-line-soft shrink-0">
+        {confirmDelete ? (
+          <div className="flex flex-col gap-2">
+            <p className="text-[13px] text-ink-soft text-center">
+              Delete <strong className="text-oxblood">{customer.name}</strong>? This cannot be undone.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirmDelete(false)}
+                className="flex-1 px-4 py-2.5 rounded-full border border-line text-ink-soft text-[13px] font-medium hover:border-ink hover:text-ink transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 px-4 py-2.5 rounded-full bg-oxblood text-cream text-[13px] font-medium hover:bg-oxblood/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deleting ? 'Deleting…' : 'Confirm delete'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            <button
+              onClick={() => setEditing(true)}
+              className="flex-1 inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-full bg-ink text-cream text-[13px] font-medium hover:bg-oxblood transition-colors"
+            >
+              Edit profile
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setConfirmDelete(true)}
+              aria-label="Delete customer"
+              className="w-10 h-10 rounded-full border border-line text-ink-soft grid place-items-center hover:border-oxblood hover:text-oxblood transition-colors shrink-0"
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+              </svg>
+            </button>
+          </div>
+        )}
       </div>
     </>
   );

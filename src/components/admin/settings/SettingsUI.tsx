@@ -1,13 +1,25 @@
 'use client';
 import { useState } from 'react';
 
-export function Toggle({ defaultOn = false }: { defaultOn?: boolean }) {
-  const [on, setOn] = useState(defaultOn);
+type ToggleProps =
+  | { checked: boolean; onChange: (v: boolean) => void; defaultOn?: never }
+  | { defaultOn?: boolean; checked?: never; onChange?: never };
+
+export function Toggle({ defaultOn = false, checked, onChange }: ToggleProps) {
+  const [internal, setInternal] = useState(defaultOn);
+  const controlled = checked !== undefined;
+  const on = controlled ? checked : internal;
+
+  function handleClick() {
+    if (controlled) onChange!(!on);
+    else setInternal((v) => !v);
+  }
+
   return (
     <button
       type="button"
       aria-pressed={on}
-      onClick={() => setOn((v) => !v)}
+      onClick={handleClick}
       className={`relative w-11 h-6 rounded-full border shrink-0 transition-colors duration-300 ${
         on ? 'bg-green border-green' : 'bg-cream-deep border-line'
       }`}

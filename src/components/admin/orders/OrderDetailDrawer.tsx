@@ -1,5 +1,7 @@
 'use client';
+import { useState } from 'react';
 import { formatMoney, getInitials, formatDateTime } from '@/lib/admin-utils';
+import { printReceipt } from '@/lib/print-receipt';
 import type { OrderTableRow } from '@/types/admin';
 
 type TimelineStep = {
@@ -42,11 +44,21 @@ type Props = {
   statusUpdate: string;
   setStatusUpdate: (s: string) => void;
   onClose: () => void;
+  onUpdate: (newStatus: string) => Promise<void>;
 };
 
-export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate, onClose }: Props) {
+export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate, onClose, onUpdate }: Props) {
+  const [updating, setUpdating] = useState(false);
   const initials = getInitials(order.customerName);
   const timeline = buildTimeline(order);
+
+  async function handleUpdate() {
+    setUpdating(true);
+    await onUpdate(statusUpdate);
+    setUpdating(false);
+  }
+
+  const handlePrint = () => printReceipt(order);
 
   return (
     <>
@@ -117,8 +129,12 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
               <option value="Completed">Completed</option>
               <option value="Cancelled">Cancelled</option>
             </select>
-            <button className="px-4 py-2.5 rounded-full bg-ink text-cream text-[13px] font-medium hover:bg-oxblood transition-colors">
-              Update
+            <button
+              onClick={handleUpdate}
+              disabled={updating || statusUpdate === order.status}
+              className="px-4 py-2.5 rounded-full bg-ink text-cream text-[13px] font-medium hover:bg-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {updating ? 'Saving…' : 'Update'}
             </button>
           </div>
         </div>
@@ -222,7 +238,10 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
 
       {/* Footer */}
       <div className="flex gap-2 px-8 py-4.5 bg-paper border-t border-line-soft shrink-0">
-        <button className="flex-1 inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-full bg-paper border border-line text-ink-soft text-[13px] font-medium hover:border-ink hover:text-ink transition-colors">
+        <button
+          onClick={handlePrint}
+          className="flex-1 inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-full bg-paper border border-line text-ink-soft text-[13px] font-medium hover:border-ink hover:text-ink transition-colors"
+        >
           <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" /><rect x="6" y="14" width="12" height="8" />
           </svg>
