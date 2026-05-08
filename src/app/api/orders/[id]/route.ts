@@ -66,7 +66,10 @@ export const PATCH = async (request: NextRequest, { params }: RouteContext) => {
     await connectDB();
 
     const { id } = await params;
-    const { orderStatus } = (await request.json()) as { orderStatus?: string };
+    const { orderStatus, cancellationReason } = (await request.json()) as {
+      orderStatus?: string;
+      cancellationReason?: string;
+    };
 
     if (!orderStatus || !isIn(ORDER_STATUSES, orderStatus)) {
       return NextResponse.json(
@@ -81,9 +84,16 @@ export const PATCH = async (request: NextRequest, { params }: RouteContext) => {
       return NextResponse.json({ message: 'Order not found' }, { status: 404 });
     }
 
+    const updateFields: Record<string, unknown> = { orderStatus };
+    if (orderStatus === 'Cancelled' && cancellationReason) {
+      updateFields.cancellationReason = cancellationReason;
+    } else if (orderStatus !== 'Cancelled') {
+      updateFields.cancellationReason = null;
+    }
+
     const order = await Order.findByIdAndUpdate(
       id,
-      { orderStatus },
+      { $set: updateFields },
       { new: true, runValidators: true },
     );
 

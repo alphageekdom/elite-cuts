@@ -65,13 +65,17 @@ export type OrderTableRow = {
   paymentMethod: string;
   pickupLocation: string;
   pickedUp: boolean;
+  fulfillmentType?: 'pickup' | 'delivery';
+  cancellationReason?: string;
   createdAt: string;
 };
 
 export type StatusCounts = {
   all: number;
-  pending: number;
+  orderPlaced: number;
+  preparing: number;
   readyForPickup: number;
+  outForDelivery: number;
   completed: number;
   cancelled: number;
 };

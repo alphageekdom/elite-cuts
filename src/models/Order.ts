@@ -7,12 +7,8 @@ import {
   type Types,
 } from 'mongoose';
 
-export const ORDER_STATUSES = [
-  'Pending',
-  'Ready for Pickup',
-  'Completed',
-  'Cancelled',
-] as const;
+import { ORDER_STATUSES, CANCELLATION_REASONS } from '@/lib/order-constants';
+export { ORDER_STATUSES, CANCELLATION_REASONS };
 
 export const PAYMENT_METHODS = [
   'Credit Card',
@@ -31,6 +27,7 @@ export const PAYMENT_STATUSES = [
 ] as const;
 
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
+export type CancellationReason = (typeof CANCELLATION_REASONS)[number];
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 
@@ -79,6 +76,7 @@ export type Order = {
   pickupSlot?: string;
   deliveryAddress?: DeliveryAddressData;
   orderNotes?: string;
+  cancellationReason?: CancellationReason;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -196,7 +194,7 @@ const OrderSchema = new Schema<Order>(
     orderStatus: {
       type: String,
       required: true,
-      default: 'Pending',
+      default: 'Order Placed',
       enum: [...ORDER_STATUSES],
     },
     paymentMethod: {
@@ -235,6 +233,7 @@ const OrderSchema = new Schema<Order>(
       ),
     },
     orderNotes: { type: String, trim: true },
+    cancellationReason: { type: String, enum: [...CANCELLATION_REASONS] },
   },
   {
     timestamps: true,
