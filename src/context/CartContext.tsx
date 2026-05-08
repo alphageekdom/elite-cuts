@@ -246,14 +246,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
           credentials: 'include',
           body: JSON.stringify({ productId: product._id, quantity: addBy }),
         });
-        if (!res.ok) throw new Error('Failed to add item to cart');
+        if (!res.ok) {
+          const err = (await res.json().catch(() => null)) as { message?: string } | null;
+          throw new Error(err?.message ?? 'Failed to add item to cart');
+        }
         const data = (await res.json()) as { items: CartLine[] };
         setCartItems(data.items ?? []);
         toast.success('Item added to cart');
       } catch (error) {
         setCartItems(snapshot);
         console.error('Error adding item to cart:', error);
-        toast.error('Failed to add item to cart');
+        toast.error(error instanceof Error ? error.message : 'Failed to add item to cart');
       }
     },
     [isLoggedIn],
@@ -284,13 +287,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
           credentials: 'include',
           body: JSON.stringify({ productId, quantity: next }),
         });
-        if (!res.ok) throw new Error('Failed to update quantity');
+        if (!res.ok) {
+          const err = (await res.json().catch(() => null)) as { message?: string } | null;
+          throw new Error(err?.message ?? 'Failed to update quantity');
+        }
         const data = (await res.json()) as { items: CartLine[] };
         setCartItems(data.items ?? []);
       } catch (error) {
         setCartItems(snapshot);
         console.error('Error updating quantity:', error);
-        toast.error('Failed to update quantity');
+        toast.error(error instanceof Error ? error.message : 'Failed to update quantity');
       }
     },
     [isLoggedIn],

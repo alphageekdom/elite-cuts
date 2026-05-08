@@ -8,7 +8,7 @@ import { useCartContext } from '@/context/CartContext';
 import { useCheckoutContext } from '@/context/CheckoutContext';
 import { validatePromoCode } from '@/actions/checkout';
 
-import { computeTotals, DELIVERY_FEE } from '@/lib/pricing';
+import { computeTotals, DELIVERY_FEE, fmtPrice } from '@/lib/pricing';
 
 const PROMO_SUGGESTIONS = ['ELITECUTS10', 'FIRSTORDER', 'NORTHPARK'];
 
@@ -107,7 +107,7 @@ const CheckoutOrderSummary = () => {
 
         <div className='border-t border-line-soft'>
           {cartItems.map((line) => {
-            const lineTotal = (line.price * line.quantity).toFixed(2);
+            const lineTotal = fmtPrice(line.price * line.quantity);
             return (
               <div
                 key={line.product._id}
@@ -128,7 +128,7 @@ const CheckoutOrderSummary = () => {
                   </p>
                   {!isEditing && (
                     <p className='font-mono text-[11px] tracking-[0.02em] text-muted'>
-                      {line.quantity} × ${line.price.toFixed(2)}
+                      {line.quantity} × ${fmtPrice(line.price)}
                     </p>
                   )}
                   {isEditing && (
@@ -247,19 +247,19 @@ const CheckoutOrderSummary = () => {
         <dl className='mt-5 space-y-2 border-t border-line-soft pt-5'>
           <div className='flex items-baseline justify-between text-[14px]'>
             <dt className='text-ink-soft'>Subtotal</dt>
-            <dd className='font-mono text-[13px]'>${totals.subtotal.toFixed(2)}</dd>
+            <dd className='font-mono text-[13px]'>${fmtPrice(totals.subtotal)}</dd>
           </div>
           <div className='flex items-baseline justify-between text-[14px]'>
             <dt className='text-ink-soft'>{isDelivery ? 'Delivery' : 'Pickup'}</dt>
             <dd className='font-mono text-[13px]'>
-              {isDelivery ? `$${DELIVERY_FEE.toFixed(2)}` : 'Free'}
+              {isDelivery ? `$${fmtPrice(DELIVERY_FEE)}` : 'Free'}
             </dd>
           </div>
           {isLoggedIn && (
             <div className='flex items-baseline justify-between text-[14px]'>
               <dt className='text-ink-soft'>Member discount (5%)</dt>
               <dd className='font-mono text-[13px] text-green'>
-                −${totals.memberDiscount.toFixed(2)}
+                −${fmtPrice(totals.memberDiscount)}
               </dd>
             </div>
           )}
@@ -267,13 +267,13 @@ const CheckoutOrderSummary = () => {
             <div className='flex items-baseline justify-between text-[14px]'>
               <dt className='text-ink-soft'>Promo — {appliedLabel}</dt>
               <dd className='font-mono text-[13px] text-green'>
-                −${promoDiscount.toFixed(2)}
+                −${fmtPrice(promoDiscount)}
               </dd>
             </div>
           )}
           <div className='flex items-baseline justify-between text-[14px]'>
             <dt className='text-ink-soft'>Estimated tax</dt>
-            <dd className='font-mono text-[13px]'>${totals.tax.toFixed(2)}</dd>
+            <dd className='font-mono text-[13px]'>${fmtPrice(totals.tax)}</dd>
           </div>
         </dl>
 
@@ -282,7 +282,7 @@ const CheckoutOrderSummary = () => {
             Total
           </span>
           <span className='font-display text-[28px] font-medium tracking-tight'>
-            ${totals.total.toFixed(2)}
+            ${fmtPrice(totals.total)}
             <em className='ml-1 text-[12px] font-normal not-italic text-muted'>
               USD
             </em>

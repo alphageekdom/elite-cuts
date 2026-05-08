@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 
 import { useCartContext } from '@/context/CartContext';
 import { useCheckoutContext } from '@/context/CheckoutContext';
-import { computeTotals } from '@/lib/pricing';
+import { computeTotals, fmtPrice } from '@/lib/pricing';
 import { EMAIL_RE } from '@/lib/validation';
 
 const SpinnerIcon = () => (
@@ -132,7 +132,7 @@ const PlaceOrderButton = () => {
       {isLoading ? 'Placing order…' : 'Place demo order'}
       {total > 0 && !isLoading && (
         <span className='rounded-full bg-cream/15 px-3 py-1 font-display text-[14px] font-medium'>
-          ${total.toFixed(2)}
+          ${fmtPrice(total)}
         </span>
       )}
       {isLoading ? <SpinnerIcon /> : canSubmit ? <ArrowIcon /> : null}

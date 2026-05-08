@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 
 import { useCartContext } from '@/context/CartContext';
-import { computeTotals } from '@/lib/pricing';
+import { computeTotals, fmtPrice } from '@/lib/pricing';
 
 type Fulfillment = 'pickup' | 'delivery';
 
@@ -68,7 +68,7 @@ const CartSummary = () => {
             <dt className='text-ink-soft'>
               Subtotal{itemCount > 0 ? ` (${itemCount} item${itemCount === 1 ? '' : 's'})` : ''}
             </dt>
-            <dd className='font-mono text-[13px]'>${totals.subtotal.toFixed(2)}</dd>
+            <dd className='font-mono text-[13px]'>${fmtPrice(totals.subtotal)}</dd>
           </div>
           <div className='flex items-baseline justify-between text-sm'>
             <dt className='text-ink-soft'>Pickup</dt>
@@ -78,13 +78,13 @@ const CartSummary = () => {
             <div className='flex items-baseline justify-between text-sm'>
               <dt className='text-ink-soft'>Member discount (5%)</dt>
               <dd className='font-mono text-[13px] text-green'>
-                −${totals.memberDiscount.toFixed(2)}
+                −${fmtPrice(totals.memberDiscount)}
               </dd>
             </div>
           )}
           <div className='flex items-baseline justify-between text-sm'>
             <dt className='text-ink-soft'>Estimated tax</dt>
-            <dd className='font-mono text-[13px]'>${totals.tax.toFixed(2)}</dd>
+            <dd className='font-mono text-[13px]'>${fmtPrice(totals.tax)}</dd>
           </div>
         </dl>
 
@@ -93,7 +93,7 @@ const CartSummary = () => {
             Total
           </span>
           <span className='font-display text-3xl font-medium tracking-tight'>
-            ${totals.total.toFixed(2)}
+            ${fmtPrice(totals.total)}
             <em className='ml-1.5 text-sm font-normal not-italic text-muted'>
               USD
             </em>

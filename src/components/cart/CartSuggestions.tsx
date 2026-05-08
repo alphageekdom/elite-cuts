@@ -5,6 +5,7 @@ import Link from 'next/link';
 
 import useHandleAddToCart from '@/hooks/useHandleAddToCart';
 import { useCartContext } from '@/context/CartContext';
+import { fmtPrice } from '@/lib/pricing';
 import type { SerializedProduct } from '@/models/Product';
 
 type SuggestProps = {
@@ -52,7 +53,7 @@ const SuggestionCard = ({ product }: SuggestProps) => {
           {product.name}
         </Link>
         <div className='font-mono text-[11px] text-muted'>
-          ${product.price.toFixed(2)}/lb
+          ${fmtPrice(product.price)}/lb
         </div>
       </div>
 

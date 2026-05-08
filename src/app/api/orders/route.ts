@@ -4,6 +4,7 @@ import type { Types } from 'mongoose';
 import connectDB from '@/config/database';
 import Order, { PAYMENT_METHODS, type PaymentMethod, type DeliveryAddressData } from '@/models/Order';
 import Cart from '@/models/Cart';
+import Product from '@/models/Product';
 import { getSessionUser } from '@/utils/getSessionUser';
 import { isIn } from '@/lib/validation';
 
@@ -86,6 +87,7 @@ export const POST = async (request: NextRequest) => {
       name: string;
       images?: { url: string }[];
       category?: string;
+      stockCount: number;
     };
 
     const TAX_RATE = 0.0775;
@@ -101,6 +103,23 @@ export const POST = async (request: NextRequest) => {
         productType: product.category ?? '',
       };
     });
+
+    // Verify every item has sufficient stock before committing anything
+    const stockErrors = cart.items
+      .map((line) => {
+        const product = line.product as unknown as PopulatedProduct;
+        return product.stockCount < line.quantity
+          ? `${product.name}: only ${product.stockCount} in stock (${line.quantity} requested)`
+          : null;
+      })
+      .filter(Boolean);
+
+    if (stockErrors.length > 0) {
+      return NextResponse.json(
+        { message: `Insufficient stock — ${stockErrors.join('; ')}` },
+        { status: 409 },
+      );
+    }
 
     const subtotal = Math.round(orderItems.reduce(
       (sum, item) => sum + item.price * item.qty,
@@ -134,6 +153,16 @@ export const POST = async (request: NextRequest) => {
       ...(body.deliveryAddress && { deliveryAddress: body.deliveryAddress }),
       ...(body.orderNotes && { orderNotes: body.orderNotes }),
     });
+
+    // Decrement stockCount for each ordered item
+    await Product.bulkWrite(
+      orderItems.map((item) => ({
+        updateOne: {
+          filter: { _id: item.product },
+          update: { $inc: { stockCount: -item.qty } },
+        },
+      })),
+    );
 
     await Cart.findOneAndUpdate({ user: sessionUser.userId }, { items: [] });
 

@@ -90,8 +90,21 @@ export const POST = async (request: NextRequest) => {
     const product = await Product.findById(productId);
     if (!product) return NextResponse.json({ message: 'Product not found' }, { status: 404 });
 
+    if (product.stockCount <= 0) {
+      return badRequest('This item is out of stock');
+    }
+
     const cart = await loadCart(sessionUser.userId);
     const existing = cart.items.find((item) => matchesProduct(item, productId));
+    const currentQty = existing ? existing.quantity : 0;
+
+    if (currentQty + addBy > product.stockCount) {
+      return badRequest(
+        currentQty > 0
+          ? `Only ${product.stockCount} in stock (${currentQty} already in your cart)`
+          : `Only ${product.stockCount} in stock`,
+      );
+    }
 
     if (existing) {
       existing.quantity += addBy;
@@ -135,16 +148,17 @@ export const PATCH = async (request: NextRequest) => {
 
     if (quantity <= 0) {
       if (idx !== -1) cart.items.splice(idx, 1);
-    } else if (idx !== -1) {
-      cart.items[idx].quantity = quantity;
     } else {
       const product = await Product.findById(productId);
       if (!product) return NextResponse.json({ message: 'Product not found' }, { status: 404 });
-      cart.items.push({
-        product: product._id,
-        quantity,
-        price: product.price,
-      });
+      if (quantity > product.stockCount) {
+        return badRequest(`Only ${product.stockCount} in stock`);
+      }
+      if (idx !== -1) {
+        cart.items[idx].quantity = quantity;
+      } else {
+        cart.items.push({ product: product._id, quantity, price: product.price });
+      }
     }
 
     await cart.save();

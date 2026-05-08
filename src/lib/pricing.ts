@@ -1,4 +1,7 @@
 export const TAX_RATE = 0.1;
+
+export const fmtPrice = (n: number): string =>
+  n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 export const MEMBER_DISCOUNT_RATE = 0.05;
 export const DELIVERY_FEE = 8;
 

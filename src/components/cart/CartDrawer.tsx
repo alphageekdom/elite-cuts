@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 
 import { useCartContext, type CartLine } from '@/context/CartContext';
-import { computeTotals } from '@/lib/pricing';
+import { computeTotals, fmtPrice } from '@/lib/pricing';
 
 type Props = {
   isOpen: boolean;
@@ -103,7 +103,7 @@ const DrawerLine = ({ line }: { line: CartLine }) => {
 
       <div className='self-start text-right'>
         <div className='font-display text-base font-medium tracking-tight'>
-          ${(line.price * line.quantity).toFixed(2)}
+          ${fmtPrice(line.price * line.quantity)}
         </div>
         <div className='font-mono text-[11px] text-muted'>
           {line.quantity}lb
@@ -221,13 +221,13 @@ const CartDrawer = ({ isOpen, onClose }: Props) => {
               <div className='flex items-baseline justify-between py-1.5 text-[13px] text-ink-soft'>
                 <dt>Subtotal</dt>
                 <dd className='font-mono text-[12px]'>
-                  ${totals.subtotal.toFixed(2)}
+                  ${fmtPrice(totals.subtotal)}
                 </dd>
               </div>
               <div className='flex items-baseline justify-between py-1.5 text-[13px] text-ink-soft'>
                 <dt>Estimated tax</dt>
                 <dd className='font-mono text-[12px]'>
-                  ${totals.tax.toFixed(2)}
+                  ${fmtPrice(totals.tax)}
                 </dd>
               </div>
               <div className='mt-1.5 flex items-baseline justify-between border-t border-line pt-3'>
@@ -235,7 +235,7 @@ const CartDrawer = ({ isOpen, onClose }: Props) => {
                   Total
                 </dt>
                 <dd className='font-display text-[22px] font-medium tracking-tight text-ink'>
-                  ${totals.total.toFixed(2)}
+                  ${fmtPrice(totals.total)}
                 </dd>
               </div>
             </dl>

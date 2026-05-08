@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 
 import { useCartContext, type CartLine } from '@/context/CartContext';
+import { fmtPrice } from '@/lib/pricing';
 
 const MinusIcon = () => (
   <svg
@@ -49,7 +50,7 @@ const CartItemRow = ({ line }: Props) => {
   const [savingForLater, setSavingForLater] = useState(false);
 
   const productId = line.product._id;
-  const lineTotal = (line.price * line.quantity).toFixed(2);
+  const lineTotal = fmtPrice(line.price * line.quantity);
 
   const decrement = () => void setItemQuantity(productId, line.quantity - 1);
   const increment = () => void setItemQuantity(productId, line.quantity + 1);
@@ -176,7 +177,7 @@ const CartItemRow = ({ line }: Props) => {
       </div>
 
       <div className='col-span-2 flex items-baseline gap-3 sm:col-span-1 sm:block sm:min-w-30 sm:text-right'>
-        <div className='text-[12px] text-muted'>${line.price.toFixed(2)} / lb</div>
+        <div className='text-[12px] text-muted'>${fmtPrice(line.price)} / lb</div>
         <div className='font-display text-xl font-medium tracking-tight sm:mt-1.5 sm:text-2xl'>
           ${lineTotal}
         </div>
