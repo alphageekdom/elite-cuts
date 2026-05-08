@@ -11,10 +11,9 @@ export const PATCH = async (request: NextRequest, { params }: RouteContext) => {
   try {
     await connectDB();
     const { id } = await params;
-    const body = await request.json();
-    const { _id, __v, createdAt, updatedAt, ...patch } = body;
-    void _id; void __v; void createdAt; void updatedAt;
-    const cut = await AgingCut.findByIdAndUpdate(id, { $set: patch }, { new: true });
+    const { cut: cutName, targetDays, rack, weightLb, startedAt, isActive } = await request.json();
+    const patch = { cut: cutName, targetDays, rack, weightLb, startedAt, isActive };
+    const cut = await AgingCut.findByIdAndUpdate(id, { $set: patch }, { new: true, runValidators: true });
     if (!cut) return NextResponse.json({ message: 'Not found' }, { status: 404 });
     return NextResponse.json(cut);
   } catch (error) {

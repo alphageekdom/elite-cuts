@@ -25,6 +25,13 @@ export const POST = async (request: NextRequest) => {
       );
     }
 
+    if (name.trim().length > 80) {
+      return NextResponse.json(
+        { message: 'Name must be 80 characters or fewer' },
+        { status: 400 },
+      );
+    }
+
     if (
       password.length < MIN_PASSWORD_LENGTH ||
       password.length > MAX_PASSWORD_LENGTH

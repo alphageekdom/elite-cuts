@@ -26,8 +26,8 @@ export const POST = async (request: NextRequest) => {
   if (adminError) return adminError;
   try {
     await connectDB();
-    const body = await request.json();
-    const shift = await Shift.create(body);
+    const { weekStart, dayOfWeek, hourIndex, staffName, role, color } = await request.json();
+    const shift = await Shift.create({ weekStart, dayOfWeek, hourIndex, staffName, role, color });
     return NextResponse.json(shift, { status: 201 });
   } catch (error) {
     console.error('[shifts POST]', error);

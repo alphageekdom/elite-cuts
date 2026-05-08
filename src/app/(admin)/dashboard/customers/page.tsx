@@ -35,7 +35,7 @@ export default async function AdminCustomersPage() {
   await connectDB();
 
   const [rawUsers, orderAgg] = await Promise.all([
-    UserModel.find({ role: 'customer' })
+    UserModel.find({ isAdmin: { $ne: true } })
       .sort({ createdAt: -1 })
       .limit(200)
       .lean()

@@ -23,8 +23,8 @@ export const POST = async (request: NextRequest) => {
   if (adminError) return adminError;
   try {
     await connectDB();
-    const body = await request.json();
-    const delivery = await Delivery.create(body);
+    const { deliveryDate, supplier, supplierSuffix, detail, status } = await request.json();
+    const delivery = await Delivery.create({ deliveryDate, supplier, supplierSuffix, detail, status });
     return NextResponse.json(delivery, { status: 201 });
   } catch (error) {
     console.error('[deliveries POST]', error);

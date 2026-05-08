@@ -147,6 +147,13 @@ export const POST = async (request: NextRequest, { params }: RouteContext) => {
       );
     }
 
+    if (comment.length > 1000) {
+      return NextResponse.json(
+        { message: 'Comment must be 1000 characters or fewer' },
+        { status: 400 },
+      );
+    }
+
     await connectDB();
 
     const product = await Product.findById(id);

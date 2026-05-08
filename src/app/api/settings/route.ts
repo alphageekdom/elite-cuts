@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import connectDB from '@/config/database';
-import ShopSettings from '@/models/ShopSettings';
+import ShopSettings, { type ShopSettings as ShopSettingsType } from '@/models/ShopSettings';
 import { requireAdmin } from '@/utils/requireAdmin';
 
 // GET /api/settings — returns the singleton settings doc (creates defaults on first call)
@@ -29,16 +29,37 @@ export const PUT = async (request: NextRequest) => {
 
   try {
     await connectDB();
-    const body = await request.json();
+    const {
+      shopName, tagline, description, phone, email, website,
+      street, suite, city, state, zip, timezone, opensAt,
+      slotsPerHour, leadTime, maxBookingWindow,
+      zoneLocalEnabled, zoneMetroEnabled, zoneExtendedEnabled,
+      notifNewOrder, notifLowStock, notifDailySummary,
+      notifWeeklyAnalytics, notifAgingRoom, notifDormantCustomers,
+      pointsPerDollar, weekendMultiplier, pointsExpiry,
+      redemptionRate, minToRedeem, connoisseurThreshold,
+      masterCutThreshold, tierReset,
+    } = await request.json() as Partial<ShopSettingsType>;
 
-    // Strip internal Mongoose fields so they can't be overwritten
-    const { _id, __v, createdAt, updatedAt, ...patch } = body;
-    void _id; void __v; void createdAt; void updatedAt;
+    const rawPatch = {
+      shopName, tagline, description, phone, email, website,
+      street, suite, city, state, zip, timezone, opensAt,
+      slotsPerHour, leadTime, maxBookingWindow,
+      zoneLocalEnabled, zoneMetroEnabled, zoneExtendedEnabled,
+      notifNewOrder, notifLowStock, notifDailySummary,
+      notifWeeklyAnalytics, notifAgingRoom, notifDormantCustomers,
+      pointsPerDollar, weekendMultiplier, pointsExpiry,
+      redemptionRate, minToRedeem, connoisseurThreshold,
+      masterCutThreshold, tierReset,
+    };
+    const patch = Object.fromEntries(
+      Object.entries(rawPatch).filter(([, v]) => v !== undefined),
+    );
 
     const settings = await ShopSettings.findOneAndUpdate(
       {},
       { $set: patch },
-      { upsert: true, new: true, setDefaultsOnInsert: true },
+      { upsert: true, new: true, setDefaultsOnInsert: true, runValidators: true },
     ).lean();
 
     return NextResponse.json(settings);

@@ -21,8 +21,8 @@ export const POST = async (request: NextRequest) => {
   if (adminError) return adminError;
   try {
     await connectDB();
-    const body = await request.json();
-    const cut = await AgingCut.create(body);
+    const { cut: cutName, targetDays, rack, weightLb, startedAt, isActive } = await request.json();
+    const cut = await AgingCut.create({ cut: cutName, targetDays, rack, weightLb, startedAt, isActive });
     return NextResponse.json(cut, { status: 201 });
   } catch (error) {
     console.error('[aging POST]', error);

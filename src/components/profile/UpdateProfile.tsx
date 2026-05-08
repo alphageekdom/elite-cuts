@@ -52,8 +52,8 @@ export default function UpdateProfile() {
         setSaved(true);
         toast.success('Password updated');
       } else {
-        const text = await res.text();
-        toast.error(text || 'Failed to update password');
+        const data = await res.json().catch(() => ({}));
+        toast.error((data as { message?: string }).message || 'Failed to update password');
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
