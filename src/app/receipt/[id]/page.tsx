@@ -4,6 +4,7 @@ import { GiMeatCleaver } from 'react-icons/gi';
 import { getSessionUser } from '@/utils/getSessionUser';
 import connectDB from '@/config/database';
 import Order from '@/models/Order';
+import { formatMoney } from '@/lib/admin-utils';
 import ReceiptToolbar from './ReceiptToolbar';
 
 export const dynamic = 'force-dynamic';
@@ -22,10 +23,6 @@ const MONTH = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV'
 
 function fmtDate(d: Date) {
   return `${MONTH[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()} · ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
-}
-
-function fmtMoney(n: number) {
-  return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function getTierLabel(pts: number) {
@@ -74,7 +71,7 @@ export default async function ReceiptPage({ params }: Props) {
 
   const pickupWindow = order.pickupSlot
     ? (() => {
-        const d = new Date(order.pickupSlot as string);
+        const d = new Date(order.pickupSlot!);
         const next = new Date(d.getTime() + 3600000);
         return `${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} – ${next.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
       })()
@@ -247,9 +244,8 @@ export default async function ReceiptPage({ params }: Props) {
           {/* ── Items ── */}
           <div className="px-8 sm:px-12">
             {/* Column headers */}
-            <div className="grid items-center py-4 border-b border-line-soft font-mono text-[10px] font-medium tracking-[0.22em] uppercase text-muted"
-              style={{ gridTemplateColumns: '1fr 56px 88px' }}
-            >
+            <div className="grid grid-cols-[1fr_56px_88px] items-center py-4 border-b border-line-soft font-mono text-[10px] font-medium tracking-[0.22em] uppercase text-muted">
+
               <span>Item</span>
               <span className="text-center">Qty</span>
               <span className="text-right">Total</span>
@@ -258,13 +254,12 @@ export default async function ReceiptPage({ params }: Props) {
             {order.orderItems.map((item, i) => (
               <div
                 key={i}
-                className="grid items-center py-5 border-b border-line-soft last:border-b-0"
-                style={{ gridTemplateColumns: '1fr 56px 88px' }}
+                className="grid grid-cols-[1fr_56px_88px] items-center py-5 border-b border-line-soft last:border-b-0"
               >
                 <div className="min-w-0 pr-4">
                   <div className="font-display text-[17px] font-medium tracking-tight leading-snug mb-1">{item.name}</div>
                   <div className="flex items-center gap-2 font-mono text-[11px] text-muted tracking-[0.04em] flex-wrap">
-                    <span>{fmtMoney(item.price)}/ea</span>
+                    <span>{formatMoney(item.price)}/ea</span>
                     {item.productType && (
                       <>
                         <span className="w-1 h-1 rounded-full bg-muted/40 inline-block" />
@@ -275,7 +270,7 @@ export default async function ReceiptPage({ params }: Props) {
                 </div>
                 <div className="font-mono text-[13px] text-ink-soft text-center">× {item.qty}</div>
                 <div className="font-display text-[17px] font-medium tracking-tight text-right">
-                  {fmtMoney(item.price * item.qty)}
+                  {formatMoney(item.price * item.qty)}
                 </div>
               </div>
             ))}
@@ -286,7 +281,7 @@ export default async function ReceiptPage({ params }: Props) {
             <div className="border-t border-line pt-5 space-y-2">
               <div className="flex justify-between items-baseline text-[14px]">
                 <span className="text-ink-soft">Subtotal ({order.orderItems.length} {order.orderItems.length === 1 ? 'item' : 'items'})</span>
-                <span className="font-mono text-[13px]">{fmtMoney(order.subtotal)}</span>
+                <span className="font-mono text-[13px]">{formatMoney(order.subtotal)}</span>
               </div>
               <div className="flex justify-between items-baseline text-[14px]">
                 <span className="text-ink-soft">Pickup</span>
@@ -294,13 +289,13 @@ export default async function ReceiptPage({ params }: Props) {
               </div>
               <div className="flex justify-between items-baseline text-[14px]">
                 <span className="text-ink-soft">Tax</span>
-                <span className="font-mono text-[13px]">{fmtMoney(order.tax)}</span>
+                <span className="font-mono text-[13px]">{formatMoney(order.tax)}</span>
               </div>
             </div>
             <div className="flex justify-between items-baseline mt-4 pt-4 border-t-2 border-ink">
               <span className="font-display text-[20px] font-medium tracking-tight">Total</span>
               <span className="font-display text-[36px] font-medium tracking-tight leading-none">
-                {fmtMoney(order.totalCost)}
+                {formatMoney(order.totalCost)}
                 <em className="not-italic font-sans text-[14px] text-muted font-normal ml-1">USD</em>
               </span>
             </div>
