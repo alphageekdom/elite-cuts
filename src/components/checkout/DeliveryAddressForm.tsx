@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import { useCheckoutContext } from '@/context/CheckoutContext';
 import CheckoutFieldCheck from '@/components/checkout/CheckoutFieldCheck';
 import { FIELD_CLASS, LABEL_CLASS } from '@/components/checkout/checkoutStyles';
 
@@ -85,6 +86,8 @@ const geocodeAddress = async (query: string): Promise<{ lat: number; lon: number
 };
 
 const DeliveryAddressForm = () => {
+  const { setDeliveryAddress } = useCheckoutContext();
+
   const [address1, setAddress1] = useState('');
   const [address2, setAddress2] = useState('');
   const [city, setCity] = useState('');
@@ -95,6 +98,11 @@ const DeliveryAddressForm = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const suggestionRef = useRef<HTMLDivElement>(null);
   const checkingRef = useRef(false);
+
+  // Sync address fields to context whenever they change
+  useEffect(() => {
+    setDeliveryAddress({ address1, address2, city, state: addressState, zip });
+  }, [address1, address2, city, addressState, zip, setDeliveryAddress]);
 
   useEffect(() => {
     if (address1.trim().length < 4) { setSuggestions([]); return; }

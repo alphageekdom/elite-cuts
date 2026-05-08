@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
 import { useCheckoutContext } from '@/context/CheckoutContext';
 import { LABEL_CLASS } from '@/components/checkout/checkoutStyles';
@@ -20,7 +20,14 @@ const SLOT_DEFINITIONS = [
 const FT_LABEL_CLASS = `mb-2.5 block ${LABEL_CLASS}`;
 
 const FulfillmentToggle = () => {
-  const { fulfillment, setFulfillment } = useCheckoutContext();
+  const {
+    fulfillment,
+    setFulfillment,
+    pickupSlot,
+    setPickupSlot,
+    orderNotes,
+    setOrderNotes,
+  } = useCheckoutContext();
 
   const currentHour = useMemo(() => new Date().getHours(), []);
 
@@ -43,9 +50,8 @@ const FulfillmentToggle = () => {
     [currentHour],
   );
 
-  const [selectedSlot, setSelectedSlot] = useState<string>(
-    () => slots.find((s) => !s.past)?.id ?? '',
-  );
+  // Auto-select first available slot if none selected yet
+  const effectiveSlot = pickupSlot || (slots.find((s) => !s.past)?.id ?? '');
 
   return (
     <div className='rounded-sm border border-line-soft bg-paper px-5 py-7 sm:px-8 sm:py-8'>
@@ -148,7 +154,7 @@ const FulfillmentToggle = () => {
           </label>
           <div className='mb-8 grid grid-cols-2 gap-2 sm:grid-cols-4'>
             {slots.map((slot) => {
-              const isSelected = selectedSlot === slot.id;
+              const isSelected = effectiveSlot === slot.id;
               const meta = slot.past
                 ? 'PAST'
                 : isSelected
@@ -162,7 +168,7 @@ const FulfillmentToggle = () => {
                   key={slot.id}
                   type='button'
                   disabled={slot.past}
-                  onClick={() => setSelectedSlot(slot.id)}
+                  onClick={() => setPickupSlot(slot.id)}
                   className={`rounded-sm border px-2.5 py-3 text-center transition-[background-color,border-color,color] duration-300 motion-reduce:transition-none ${
                     slot.past
                       ? 'cursor-not-allowed border-line opacity-35'
@@ -208,6 +214,8 @@ const FulfillmentToggle = () => {
           id='notes'
           name='notes'
           rows={2}
+          value={orderNotes}
+          onChange={(e) => setOrderNotes(e.target.value)}
           placeholder='Any special cutting requests, doneness preferences, or pickup notes…'
           className='w-full resize-y border-b border-line bg-transparent pb-3.5 pt-2 text-[16px] text-ink outline-none placeholder:text-muted/60 transition-[border-color] duration-300 focus:border-b-oxblood motion-reduce:transition-none'
         />

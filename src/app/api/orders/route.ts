@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import type { Types } from 'mongoose';
 
 import connectDB from '@/config/database';
-import Order, { PAYMENT_METHODS, type PaymentMethod } from '@/models/Order';
+import Order, { PAYMENT_METHODS, type PaymentMethod, type DeliveryAddressData } from '@/models/Order';
 import Cart from '@/models/Cart';
 import { getSessionUser } from '@/utils/getSessionUser';
 import { isIn } from '@/lib/validation';
@@ -56,6 +56,13 @@ export const POST = async (request: NextRequest) => {
     const body = (await request.json()) as {
       paymentMethod?: string;
       pickupLocation?: string;
+      contactName?: string;
+      contactEmail?: string;
+      contactPhone?: string;
+      fulfillmentType?: 'pickup' | 'delivery';
+      pickupSlot?: string;
+      deliveryAddress?: DeliveryAddressData;
+      orderNotes?: string;
     };
 
     if (!body.paymentMethod || !isIn(PAYMENT_METHODS, body.paymentMethod)) {
@@ -119,6 +126,13 @@ export const POST = async (request: NextRequest) => {
       },
       pickupLocation: body.pickupLocation.trim(),
       pickedUp: false,
+      ...(body.contactName && { contactName: body.contactName }),
+      ...(body.contactEmail && { contactEmail: body.contactEmail }),
+      ...(body.contactPhone && { contactPhone: body.contactPhone }),
+      ...(body.fulfillmentType && { fulfillmentType: body.fulfillmentType }),
+      ...(body.pickupSlot && { pickupSlot: body.pickupSlot }),
+      ...(body.deliveryAddress && { deliveryAddress: body.deliveryAddress }),
+      ...(body.orderNotes && { orderNotes: body.orderNotes }),
     });
 
     await Cart.findOneAndUpdate({ user: sessionUser.userId }, { items: [] });

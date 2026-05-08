@@ -20,6 +20,7 @@ export const PAYMENT_METHODS = [
   'Apple Pay',
   'PayPal',
   'Crypto',
+  'Demo',
 ] as const;
 
 export const PAYMENT_STATUSES = [
@@ -50,6 +51,14 @@ export type PaymentResult = {
   paymentDate: Date;
 };
 
+export type DeliveryAddressData = {
+  address1: string;
+  address2?: string;
+  city: string;
+  state: string;
+  zip: string;
+};
+
 export type Order = {
   user: Types.ObjectId;
   orderItems: OrderItem[];
@@ -63,6 +72,13 @@ export type Order = {
   paymentResult: PaymentResult;
   pickupLocation: string;
   pickedUp: boolean;
+  contactName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  fulfillmentType?: 'pickup' | 'delivery';
+  pickupSlot?: string;
+  deliveryAddress?: DeliveryAddressData;
+  orderNotes?: string;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -88,7 +104,7 @@ const OrderItemSchema = new Schema<OrderItem>(
     },
     image: {
       type: String,
-      required: [true, 'Product image is required'],
+      default: '',
     },
     price: {
       type: Number,
@@ -201,6 +217,24 @@ const OrderSchema = new Schema<Order>(
       type: Boolean,
       default: false,
     },
+    contactName: { type: String, trim: true },
+    contactEmail: { type: String, trim: true },
+    contactPhone: { type: String, trim: true },
+    fulfillmentType: { type: String, enum: ['pickup', 'delivery'] },
+    pickupSlot: { type: String, trim: true },
+    deliveryAddress: {
+      type: new Schema<DeliveryAddressData>(
+        {
+          address1: { type: String, trim: true },
+          address2: { type: String, trim: true },
+          city: { type: String, trim: true },
+          state: { type: String, trim: true },
+          zip: { type: String, trim: true },
+        },
+        { _id: false },
+      ),
+    },
+    orderNotes: { type: String, trim: true },
   },
   {
     timestamps: true,

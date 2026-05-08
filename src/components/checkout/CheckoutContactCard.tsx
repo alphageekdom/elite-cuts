@@ -1,20 +1,20 @@
 'use client';
 
-import { useState, type ChangeEvent } from 'react';
+import { type ChangeEvent } from 'react';
 import Link from 'next/link';
 
+import { useCheckoutContext } from '@/context/CheckoutContext';
 import CheckoutFieldCheck from '@/components/checkout/CheckoutFieldCheck';
 import { FIELD_CLASS, LABEL_CLASS } from '@/components/checkout/checkoutStyles';
 import { EMAIL_RE } from '@/lib/validation';
 
 const CheckoutContactCard = () => {
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
+  const { contactName, setContactName, contactEmail, setContactEmail, contactPhone, setContactPhone } =
+    useCheckoutContext();
 
-  const isNameValid = fullName.trim().length >= 5;
-  const isEmailValid = EMAIL_RE.test(email.trim());
-  const isPhoneValid = phone.replace(/\D/g, '').length >= 10;
+  const isNameValid = contactName.trim().length >= 5;
+  const isEmailValid = EMAIL_RE.test(contactEmail.trim());
+  const isPhoneValid = contactPhone.replace(/\D/g, '').length >= 10;
 
   const onPhone = (e: ChangeEvent<HTMLInputElement>) => {
     const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
@@ -26,7 +26,7 @@ const CheckoutContactCard = () => {
     } else if (digits.length > 0) {
       formatted = `(${digits}`;
     }
-    setPhone(formatted);
+    setContactPhone(formatted);
   };
 
   return (
@@ -54,8 +54,8 @@ const CheckoutContactCard = () => {
           id='fullName'
           type='text'
           name='name'
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
+          value={contactName}
+          onChange={(e) => setContactName(e.target.value)}
           placeholder='Tangelo Doe'
           autoComplete='name'
           className={FIELD_CLASS}
@@ -74,8 +74,8 @@ const CheckoutContactCard = () => {
             id='email'
             type='email'
             name='email'
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={contactEmail}
+            onChange={(e) => setContactEmail(e.target.value)}
             placeholder='you@example.com'
             autoComplete='email'
             className={FIELD_CLASS}
@@ -92,7 +92,7 @@ const CheckoutContactCard = () => {
             id='phone'
             type='tel'
             name='phone'
-            value={phone}
+            value={contactPhone}
             onChange={onPhone}
             placeholder='(619) 555-0123'
             autoComplete='tel'

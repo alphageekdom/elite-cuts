@@ -122,7 +122,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // The status effect below populates the real cart on mount: localStorage
   // for guests, API for logged-in users.
   const [cartItems, setCartItems] = useState<CartLine[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // Tracks the previous auth status across renders so we can detect the
   // unauthenticated → authenticated transition and run merge-on-login exactly
@@ -205,9 +205,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         void fetchServerCart();
       }
     } else {
-      // Guest: state already hydrated from localStorage in useState init.
-      // Sync once in case another tab wrote between init and mount.
+      // Guest: sync from localStorage and clear the loading flag.
       setCartItems(readGuestCart());
+      setLoading(false);
     }
   }, [status, fetchServerCart, mergeGuestCartIntoServer]);
 
