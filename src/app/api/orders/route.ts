@@ -5,6 +5,8 @@ import connectDB from '@/config/database';
 import Order, { PAYMENT_METHODS, type PaymentMethod, type DeliveryAddressData } from '@/models/Order';
 import Cart from '@/models/Cart';
 import Product from '@/models/Product';
+import User from '@/models/User';
+import Notification from '@/models/Notification';
 import { getSessionUser } from '@/utils/getSessionUser';
 import { isIn } from '@/lib/validation';
 
@@ -165,6 +167,20 @@ export const POST = async (request: NextRequest) => {
     );
 
     await Cart.findOneAndUpdate({ user: sessionUser.userId }, { items: [] });
+
+    // Notify all admins — fire and forget (does not block the response)
+    User.find({ isAdmin: true }, '_id').lean().then((admins) => {
+      if (!admins.length) return;
+      const orderRef = `#EC-${String(order._id).slice(-4).toUpperCase()}`;
+      const docs = admins.map((a) => ({
+        type: 'new_order' as const,
+        title: 'New order placed',
+        body: `${orderRef} — $${totalCost.toFixed(2)}`,
+        userId: a._id,
+        readAt: null,
+      }));
+      return Notification.insertMany(docs);
+    }).catch((err) => console.error('[orders POST] notification error', err));
 
     return NextResponse.json(order, { status: 201 });
   } catch (error) {

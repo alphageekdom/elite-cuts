@@ -35,6 +35,8 @@ export type Product = {
   sku?: string;
   gradeBreed?: string;
   supplier?: string;
+  parLevel?: number;
+  reorderPoint?: number;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -121,6 +123,16 @@ const ProductSchema = new Schema<Product>(
       type: String,
       trim: true,
       default: '',
+    },
+    parLevel: {
+      type: Number,
+      min: 0,
+      default: 0,
+    },
+    reorderPoint: {
+      type: Number,
+      min: 0,
+      default: 0,
     },
   },
   {
