@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
-import Link from 'next/link';
 import connectDB from '@/config/database';
 import { getSessionUser } from '@/utils/getSessionUser';
 import User from '@/models/User';

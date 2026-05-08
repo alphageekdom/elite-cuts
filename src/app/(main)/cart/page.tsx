@@ -8,6 +8,8 @@ import CartItemsPanel from '@/components/cart/CartItemsPanel';
 import CartSuggestions from '@/components/cart/CartSuggestions';
 import CartSummary from '@/components/cart/CartSummary';
 
+export const dynamic = 'force-dynamic';
+
 const ChevronIcon = () => (
   <svg
     viewBox='0 0 24 24'

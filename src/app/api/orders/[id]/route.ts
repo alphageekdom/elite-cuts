@@ -4,6 +4,7 @@ import connectDB from '@/config/database';
 import Order, { ORDER_STATUSES } from '@/models/Order';
 import { getSessionUser } from '@/utils/getSessionUser';
 import { requireAdmin } from '@/utils/requireAdmin';
+import { isIn } from '@/lib/validation';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -47,7 +48,7 @@ export const PATCH = async (request: NextRequest, { params }: RouteContext) => {
     const { id } = await params;
     const { orderStatus } = (await request.json()) as { orderStatus?: string };
 
-    if (!orderStatus || !ORDER_STATUSES.includes(orderStatus as never)) {
+    if (!orderStatus || !isIn(ORDER_STATUSES, orderStatus)) {
       return NextResponse.json(
         { message: `orderStatus must be one of: ${ORDER_STATUSES.join(', ')}` },
         { status: 400 },

@@ -5,6 +5,7 @@ import connectDB from '@/config/database';
 import Order, { PAYMENT_METHODS, type PaymentMethod } from '@/models/Order';
 import Cart from '@/models/Cart';
 import { getSessionUser } from '@/utils/getSessionUser';
+import { isIn } from '@/lib/validation';
 
 // GET /api/orders
 // Admin: all orders (paginated). Customer: own orders only.
@@ -57,7 +58,7 @@ export const POST = async (request: NextRequest) => {
       pickupLocation?: string;
     };
 
-    if (!body.paymentMethod || !PAYMENT_METHODS.includes(body.paymentMethod as never)) {
+    if (!body.paymentMethod || !isIn(PAYMENT_METHODS, body.paymentMethod)) {
       return NextResponse.json({ message: 'Valid payment method is required' }, { status: 400 });
     }
 

@@ -37,7 +37,7 @@ export const GET = async (request: NextRequest) => {
     return NextResponse.json({ total, products });
   } catch (error) {
     console.error(error);
-    return new Response('Something Went Wrong', { status: 500 });
+    return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
 };
 
@@ -86,6 +86,6 @@ export const POST = async (request: NextRequest) => {
     );
   } catch (error) {
     console.error(error);
-    return new Response('Failed to add product', { status: 500 });
+    return NextResponse.json({ message: 'Failed to add product' }, { status: 500 });
   }
 };
