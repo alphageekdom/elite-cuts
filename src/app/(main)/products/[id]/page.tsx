@@ -19,17 +19,20 @@ import ReviewForm from './ReviewForm';
 
 type PageProps = { params: Promise<{ id: string }> };
 
+type UserTier = 'Master Cut' | 'Connoisseur' | 'Regular';
+
 type SerializedReview = {
   _id: string;
   userName: string;
   rating: number;
   comment: string;
   createdAt: string;
+  userTier: UserTier;
 };
 
 type LeanReviewWithUser = {
   _id: Types.ObjectId;
-  user: { name: string } | null;
+  user: { name: string; rewardPoints: number } | null;
   rating: number;
   comment: string;
   createdAt: Date;
@@ -116,6 +119,19 @@ const COOKING_NOTES = [
   },
 ];
 
+// ─── Tier helpers ─────────────────────────────────────────────────────────────
+
+function getUserTier(pts: number): UserTier {
+  if (pts >= 1000) return 'Master Cut';
+  if (pts >= 250) return 'Connoisseur';
+  return 'Regular';
+}
+
+const TIER_PILL: Partial<Record<UserTier, { label: string; cls: string }>> = {
+  'Master Cut':  { label: 'Master Cut',  cls: 'bg-oxblood/10 text-oxblood' },
+  'Connoisseur': { label: 'Connoisseur', cls: 'bg-camel/15 text-camel'     },
+};
+
 // ─── Avatar initials helper ───────────────────────────────────────────────────
 
 function initials(name: string) {
@@ -141,7 +157,7 @@ export default async function ProductPage({ params }: PageProps) {
 
   // Reviews (populate user.name)
   const rawReviews = (await ReviewModel.find({ product: id })
-    .populate<{ user: { name: string } | null }>('user', 'name')
+    .populate<{ user: { name: string; rewardPoints: number } | null }>('user', 'name rewardPoints')
     .sort({ createdAt: -1 })
     .lean()) as unknown as LeanReviewWithUser[];
 
@@ -155,6 +171,7 @@ export default async function ProductPage({ params }: PageProps) {
       day: 'numeric',
       year: 'numeric',
     }),
+    userTier: getUserTier(r.user?.rewardPoints ?? 0),
   }));
 
   // Rating stats
@@ -453,7 +470,16 @@ export default async function ProductPage({ params }: PageProps) {
                           {initials(review.userName)}
                         </div>
                         <div className='flex-1 min-w-0'>
-                          <div className='text-[14px] font-medium'>{review.userName}</div>
+                          <div className='flex items-center gap-1.5 text-[14px] font-medium'>
+                            {review.userName}
+                            {TIER_PILL[review.userTier] && (
+                              <span
+                                className={`rounded-full px-2 py-0.5 font-mono text-[9px] tracking-[0.1em] uppercase ${TIER_PILL[review.userTier]?.cls}`}
+                              >
+                                {TIER_PILL[review.userTier]?.label}
+                              </span>
+                            )}
+                          </div>
                           <div className='mt-0.5 flex items-center gap-2 text-[11px] text-muted'>
                             <span className='inline-flex items-center gap-1 text-green'>
                               <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={3} aria-hidden className='h-2.5 w-2.5'>
