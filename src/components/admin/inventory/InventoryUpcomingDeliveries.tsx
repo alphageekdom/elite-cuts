@@ -19,7 +19,7 @@ const DELIVERY_PILL_LABEL: Record<DeliveryRow['status'], string> = {
   scheduled: 'Scheduled',
 };
 
-const MONTH_ABBR = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+import { MONTH_ABBR } from '@/lib/admin-utils';
 const DOW_ABBR = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
 type Props = { deliveries: DeliveryRow[] };
@@ -41,7 +41,7 @@ export default function InventoryUpcomingDeliveries({ deliveries }: Props) {
           {deliveries.map((d, idx) => {
             const date = new Date(d.deliveryDate);
             return (
-              <div key={d._id} className={`grid items-center gap-4 py-4 ${idx === 0 ? 'pt-0' : ''}`} style={{ gridTemplateColumns: '64px 1fr auto' }}>
+              <div key={d._id} className={`grid grid-cols-[64px_1fr_auto] items-center gap-4 py-4 ${idx === 0 ? 'pt-0' : ''}`}>
                 <div className="text-center">
                   <div className="font-display text-[26px] font-normal leading-none tracking-tight text-ink">
                     {String(date.getDate()).padStart(2, '0')}

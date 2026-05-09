@@ -13,7 +13,7 @@ import InventoryClient, {
 } from '@/components/admin/inventory/InventoryClient';
 import type { AgingCutRow } from '@/components/admin/inventory/InventoryAgingRoom';
 import type { DeliveryRow } from '@/components/admin/inventory/InventoryUpcomingDeliveries';
-import { CATEGORY_PAR } from '@/lib/inventory';
+import { CATEGORY_PAR, DEFAULT_PAR } from '@/lib/inventory';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,8 +31,8 @@ export default async function AdminInventoryPage() {
   await connectDB();
 
   const [rawProducts, rawAgingCuts, rawDeliveries] = await Promise.all([
-    ProductModel.find({}).sort({ stockCount: 1 }).limit(200).lean().exec(),
-    AgingCutModel.find({ isActive: true }).sort({ startedAt: 1 }).lean().exec(),
+    ProductModel.find({ isActive: { $ne: false } }).sort({ stockCount: 1 }).limit(200).lean().exec(),
+    AgingCutModel.find({}).sort({ startedAt: 1 }).lean().exec(),
     DeliveryModel.find({ deliveryDate: { $gte: new Date() } }).sort({ deliveryDate: 1 }).limit(10).lean().exec(),
   ]);
 
@@ -44,7 +44,7 @@ export default async function AdminInventoryPage() {
 
   for (const p of rawProducts) {
     if (p.stockCount === 0) continue;
-    const par = CATEGORY_PAR[p.category] ?? 15;
+    const par = CATEGORY_PAR[p.category] ?? DEFAULT_PAR;
     const ratio = p.stockCount / par;
     if (ratio < 0.3) {
       critical++;

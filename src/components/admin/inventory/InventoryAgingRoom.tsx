@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { MONTH_ABBR } from '@/lib/admin-utils';
 
 type AgingPhase = 'early' | 'mid' | 'ready' | 'past';
 
@@ -35,11 +36,9 @@ const AGING_BAR_COLOR: Record<AgingPhase, string> = {
   past: 'bg-oxblood',
 };
 
-const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-function fmtDate(iso: string) {
-  const d = new Date(iso);
-  return `${MONTH_ABBR[d.getMonth()]} ${d.getDate()}`;
+function fmtDate(d: Date | string) {
+  const date = typeof d === 'string' ? new Date(d) : d;
+  return `${MONTH_ABBR[date.getMonth()]} ${date.getDate()}`;
 }
 
 type Props = { cuts: AgingCutRow[] };
@@ -53,7 +52,7 @@ export default function InventoryAgingRoom({ cuts }: Props) {
     .map((c) => {
       const day = Math.floor((today - new Date(c.startedAt).getTime()) / 86400000);
       const readyDate = new Date(new Date(c.startedAt).getTime() + c.targetDays * 86400000);
-      return { ...c, day, readyLabel: fmtDate(readyDate.toISOString()), startedLabel: fmtDate(c.startedAt) };
+      return { ...c, day, readyLabel: fmtDate(readyDate), startedLabel: fmtDate(c.startedAt) };
     });
 
   return (
