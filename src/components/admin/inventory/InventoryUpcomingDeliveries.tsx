@@ -112,8 +112,9 @@ export default function InventoryUpcomingDeliveries({ deliveries, receivedDelive
   async function handleConfirm(d: DeliveryRow) {
     setSaving(d._id);
     try {
-      // Step 1 — mark delivery received (include receivedQty for history tracking)
       const receivedQty = d.productId ? parseInt(stockInputs[d._id] ?? '', 10) : NaN;
+
+      // Step 1 — mark delivery received (include receivedQty for history tracking)
       const deliveryRes = await fetch(`/api/deliveries/${d._id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -130,8 +131,7 @@ export default function InventoryUpcomingDeliveries({ deliveries, receivedDelive
 
       // Step 2 — add received units to current stock if a product is linked
       if (d.productId) {
-        const received = parseInt(stockInputs[d._id] ?? '', 10);
-        const newTotal = (d.currentStock ?? 0) + received;
+        const newTotal = (d.currentStock ?? 0) + receivedQty;
         const stockRes = await fetch(`/api/products/${d.productId}/stock`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
