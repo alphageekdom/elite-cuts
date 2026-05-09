@@ -19,8 +19,6 @@ const DELIVERY_PILL_LABEL: Record<DeliveryRow['status'], string> = {
   scheduled: 'Scheduled',
 };
 
-import { MONTH_ABBR } from '@/lib/admin-utils';
-const DOW_ABBR = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
 type Props = { deliveries: DeliveryRow[] };
 
@@ -39,7 +37,12 @@ export default function InventoryUpcomingDeliveries({ deliveries }: Props) {
       ) : (
         <div className="flex flex-col divide-y divide-line-soft">
           {deliveries.map((d, idx) => {
-            const date = new Date(d.deliveryDate);
+            const parts = new Intl.DateTimeFormat('en-US', {
+              day: '2-digit', month: 'short', weekday: 'short',
+              timeZone: 'America/Los_Angeles',
+            }).formatToParts(new Date(d.deliveryDate));
+            const get = (t: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === t)?.value ?? '';
+            const day = get('day'), month = get('month'), dow = get('weekday');
             return (
               <div key={d._id} className={`flex flex-col gap-2.5 py-4 ${idx === 0 ? 'pt-0' : ''}`}>
                 {/* Status pill — top */}
@@ -50,10 +53,10 @@ export default function InventoryUpcomingDeliveries({ deliveries }: Props) {
                 <div className="grid grid-cols-[56px_1fr] items-start gap-4">
                   <div className="text-center">
                     <div className="font-display text-[22px] font-normal leading-none tracking-tight text-ink">
-                      {String(date.getDate()).padStart(2, '0')}
+                      {day}
                     </div>
-                    <div className="font-mono text-[10px] tracking-[0.18em] uppercase text-muted mt-0.5">{MONTH_ABBR[date.getMonth()]}</div>
-                    <div className="text-[11px] text-muted mt-0.5">{DOW_ABBR[date.getDay()]}</div>
+                    <div className="font-mono text-[10px] tracking-[0.18em] uppercase text-muted mt-0.5">{month}</div>
+                    <div className="text-[11px] text-muted mt-0.5">{dow}</div>
                   </div>
                   <div className="min-w-0">
                     <div className="font-display text-[15px] font-medium tracking-tight mb-0.5 leading-snug">

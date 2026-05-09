@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { CATEGORY_PAR, DEFAULT_PAR } from '@/lib/inventory';
@@ -90,6 +90,7 @@ const PAGE_SIZE = 8;
 export default function InventoryClient({ rows, counts, categoryCounts, agingCuts, deliveries }: Props) {
   const router = useRouter();
   const [localRows, setLocalRows] = useState(rows);
+  useEffect(() => { setLocalRows(rows); }, [rows]);
   const [alertDismissed, setAlertDismissed] = useState(false);
   const [activeFilter, setActiveFilter] = useState<StatFilter>('all');
   const [activeCategory, setActiveCategory] = useState('');
