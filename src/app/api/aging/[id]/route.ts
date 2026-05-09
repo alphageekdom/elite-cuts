@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import mongoose from 'mongoose';
 import connectDB from '@/config/database';
 import AgingCut from '@/models/AgingCut';
 import { requireAdmin } from '@/utils/requireAdmin';
@@ -11,6 +12,9 @@ export const PATCH = async (request: NextRequest, { params }: RouteContext) => {
   try {
     await connectDB();
     const { id } = await params;
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ message: 'Not found' }, { status: 404 });
+    }
     const { cut: cutName, targetDays, rack, weightLb, startedAt, isActive } = await request.json();
     const patch = { cut: cutName, targetDays, rack, weightLb, startedAt, isActive };
     const cut = await AgingCut.findByIdAndUpdate(id, { $set: patch }, { returnDocument: 'after', runValidators: true });
@@ -28,6 +32,9 @@ export const DELETE = async (_request: NextRequest, { params }: RouteContext) =>
   try {
     await connectDB();
     const { id } = await params;
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ message: 'Not found' }, { status: 404 });
+    }
     await AgingCut.findByIdAndDelete(id);
     return NextResponse.json({ message: 'Deleted' });
   } catch (error) {

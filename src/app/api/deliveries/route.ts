@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import connectDB from '@/config/database';
 import Delivery from '@/models/Delivery';
+import Product from '@/models/Product';
 import { requireAdmin } from '@/utils/requireAdmin';
 
 export const GET = async () => {
@@ -24,6 +25,12 @@ export const POST = async (request: NextRequest) => {
   try {
     await connectDB();
     const { deliveryDate, supplier, supplierSuffix, detail, status, productId } = await request.json();
+    if (productId) {
+      const exists = await Product.exists({ _id: productId });
+      if (!exists) {
+        return NextResponse.json({ message: 'Product not found' }, { status: 404 });
+      }
+    }
     const delivery = await Delivery.create({
       deliveryDate, supplier, supplierSuffix, detail, status,
       ...(productId ? { productId } : {}),

@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import mongoose from 'mongoose';
 import connectDB from '@/config/database';
 import Delivery from '@/models/Delivery';
 import { requireAdmin } from '@/utils/requireAdmin';
@@ -13,6 +14,9 @@ export const PATCH = async (request: NextRequest, { params }: RouteContext) => {
   try {
     await connectDB();
     const { id } = await params;
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ message: 'Not found' }, { status: 404 });
+    }
     const body = (await request.json()) as { status?: string; receivedQty?: unknown };
     const { status, receivedQty } = body;
     if (!status || !isIn(DELIVERY_STATUSES, status)) {
@@ -22,7 +26,7 @@ export const PATCH = async (request: NextRequest, { params }: RouteContext) => {
     if (status === 'received' && typeof receivedQty === 'number' && receivedQty >= 0) {
       update.receivedQty = receivedQty;
     }
-    const delivery = await Delivery.findByIdAndUpdate(id, update, { returnDocument: 'after' });
+    const delivery = await Delivery.findByIdAndUpdate(id, update, { returnDocument: 'after', runValidators: true });
     if (!delivery) return NextResponse.json({ message: 'Not found' }, { status: 404 });
     return NextResponse.json(delivery);
   } catch (error) {

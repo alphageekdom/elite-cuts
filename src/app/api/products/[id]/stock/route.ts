@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import mongoose from 'mongoose';
 import connectDB from '@/config/database';
 import Product from '@/models/Product';
 import { requireAdmin } from '@/utils/requireAdmin';
@@ -13,6 +14,9 @@ export const PATCH = async (request: NextRequest, { params }: RouteContext) => {
   try {
     await connectDB();
     const { id } = await params;
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ message: 'Product not found' }, { status: 404 });
+    }
     const { stockCount } = (await request.json()) as { stockCount?: number };
 
     if (stockCount === undefined || !Number.isInteger(stockCount) || stockCount < 0) {
