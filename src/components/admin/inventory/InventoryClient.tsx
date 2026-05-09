@@ -109,6 +109,54 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
   const [stockEditValue, setStockEditValue] = useState('');
   const [stockSaving, setStockSaving] = useState(false);
 
+  // Reorder drawer
+  const [reorderRow, setReorderRow] = useState<InventoryRow | null>(null);
+  const [reorderSupplier, setReorderSupplier] = useState('');
+  const [reorderDetail, setReorderDetail] = useState('');
+  const [reorderDate, setReorderDate] = useState('');
+  const [reorderStatus, setReorderStatus] = useState<'scheduled' | 'pending' | 'confirmed'>('scheduled');
+  const [reorderSaving, setReorderSaving] = useState(false);
+
+  function openReorder(row: InventoryRow) {
+    const defaultDate = new Date();
+    defaultDate.setDate(defaultDate.getDate() + 7);
+    setReorderRow(row);
+    setReorderSupplier(row.supplier || '');
+    setReorderDetail(`Reorder: ${row.name}`);
+    setReorderDate(defaultDate.toISOString().slice(0, 10));
+    setReorderStatus('scheduled');
+  }
+
+  async function handleReorderSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!reorderRow || !reorderDate || !reorderSupplier.trim()) return;
+    setReorderSaving(true);
+    try {
+      const res = await fetch('/api/deliveries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          deliveryDate: reorderDate,
+          supplier: reorderSupplier.trim(),
+          detail: reorderDetail.trim(),
+          status: reorderStatus,
+        }),
+      });
+      if (!res.ok) {
+        const { message } = await res.json();
+        toast.error(message ?? 'Failed to create delivery');
+        return;
+      }
+      toast.success('Delivery scheduled');
+      setReorderRow(null);
+      router.refresh();
+    } catch {
+      toast.error('Failed to create delivery');
+    } finally {
+      setReorderSaving(false);
+    }
+  }
+
   async function handleStockSave(id: string) {
     const newCount = parseInt(stockEditValue, 10);
     if (isNaN(newCount) || newCount < 0) {
@@ -557,6 +605,7 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
                               </svg>
                             </button>
                             <button
+                              onClick={() => openReorder(row)}
                               className="w-7 h-7 rounded-full bg-transparent border border-line text-ink-soft hover:border-ink hover:bg-cream hover:text-ink transition-colors grid place-items-center"
                               aria-label="Order more"
                             >
@@ -628,6 +677,106 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
           className="fixed inset-0 z-10"
           onClick={() => setSortOpen(false)}
         />
+      )}
+
+      {/* Reorder drawer */}
+      {reorderRow && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          <div className="absolute inset-0 bg-ink/40" onClick={() => setReorderRow(null)} aria-hidden="true" />
+          <aside className="relative bg-paper w-full max-w-md h-full overflow-y-auto shadow-2xl flex flex-col">
+            {/* Header */}
+            <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-line-soft shrink-0">
+              <div className="pr-4">
+                <div className="text-[11px] tracking-widest uppercase text-muted mb-1.5">Order more</div>
+                <h2 className="font-display text-[20px] font-normal tracking-tight leading-snug">
+                  {reorderRow.name}
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReorderRow(null)}
+                aria-label="Close"
+                className="w-8 h-8 rounded-full grid place-items-center text-muted hover:text-ink hover:bg-cream-deep transition-colors shrink-0 mt-1"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleReorderSubmit} className="flex flex-col flex-1 px-6 py-5 gap-5">
+              {/* Supplier */}
+              <div>
+                <label className="block text-[12px] font-medium text-ink-soft tracking-widest uppercase mb-1.5">
+                  Supplier
+                </label>
+                <input
+                  type="text"
+                  value={reorderSupplier}
+                  onChange={(e) => setReorderSupplier(e.target.value)}
+                  required
+                  placeholder="Supplier name"
+                  className="w-full bg-cream border border-line-soft rounded-lg px-4 py-2.5 text-[14px] text-ink placeholder:text-muted focus:outline-none focus:border-ink transition-colors"
+                />
+              </div>
+
+              {/* Detail */}
+              <div>
+                <label className="block text-[12px] font-medium text-ink-soft tracking-widest uppercase mb-1.5">
+                  Notes
+                </label>
+                <input
+                  type="text"
+                  value={reorderDetail}
+                  onChange={(e) => setReorderDetail(e.target.value)}
+                  placeholder="e.g. Reorder: Tomahawk Ribeye"
+                  className="w-full bg-cream border border-line-soft rounded-lg px-4 py-2.5 text-[14px] text-ink placeholder:text-muted focus:outline-none focus:border-ink transition-colors"
+                />
+              </div>
+
+              {/* Expected delivery date */}
+              <div>
+                <label className="block text-[12px] font-medium text-ink-soft tracking-widest uppercase mb-1.5">
+                  Expected delivery
+                </label>
+                <input
+                  type="date"
+                  value={reorderDate}
+                  onChange={(e) => setReorderDate(e.target.value)}
+                  required
+                  className="w-full bg-cream border border-line-soft rounded-lg px-4 py-2.5 text-[14px] text-ink focus:outline-none focus:border-ink transition-colors"
+                />
+              </div>
+
+              {/* Status */}
+              <div>
+                <label className="block text-[12px] font-medium text-ink-soft tracking-widest uppercase mb-1.5">
+                  Status
+                </label>
+                <select
+                  value={reorderStatus}
+                  onChange={(e) => setReorderStatus(e.target.value as typeof reorderStatus)}
+                  className="w-full bg-cream border border-line-soft rounded-lg px-4 py-2.5 text-[14px] text-ink focus:outline-none focus:border-ink transition-colors"
+                >
+                  <option value="scheduled">Scheduled</option>
+                  <option value="pending">Pending</option>
+                  <option value="confirmed">Confirmed</option>
+                </select>
+              </div>
+
+              <div className="mt-auto pt-4 border-t border-line-soft">
+                <button
+                  type="submit"
+                  disabled={reorderSaving || !reorderSupplier.trim() || !reorderDate}
+                  className="w-full bg-ink text-cream text-[13px] font-medium tracking-[0.04em] py-3 rounded-full hover:bg-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {reorderSaving ? 'Scheduling…' : 'Schedule delivery'}
+                </button>
+              </div>
+            </form>
+          </aside>
+        </div>
       )}
     </div>
   );
