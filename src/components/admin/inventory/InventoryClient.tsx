@@ -2,7 +2,7 @@
 import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import { CATEGORY_PAR } from '@/lib/inventory';
-import { statCellBorderClasses } from '@/lib/admin-utils';
+import { productImageSrc, statCellBorderClasses } from '@/lib/admin-utils';
 import { PRODUCT_CATEGORIES, type ProductCategory } from '@/lib/admin-constants';
 import InventoryAgingRoom, { type AgingCutRow } from './InventoryAgingRoom';
 import InventoryUpcomingDeliveries, { type DeliveryRow } from './InventoryUpcomingDeliveries';
@@ -406,7 +406,7 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
                   const par = CATEGORY_PAR[row.category] ?? 15;
                   const state = getStockState(row.stockCount, par);
                   const barWidth = Math.min((row.stockCount / par) * 100, 100);
-                  const thumb = row.images[0] ?? null;
+                  const thumb = productImageSrc(row.images[0]);
                   const supplierName = row.supplier || null;
 
                   return (
@@ -418,7 +418,7 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
                       <td className="pl-6 pr-4 py-3.5 min-w-60">
                         <div className="flex items-center gap-3.5">
                           <div className="w-11 h-11 rounded bg-cream-deep shrink-0 overflow-hidden">
-                            {thumb?.startsWith('http') ? (
+                            {thumb ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img
                                 src={thumb}

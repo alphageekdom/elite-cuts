@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { formatMoney, getInitials, formatDateTime } from '@/lib/admin-utils';
+import { formatMoney, getInitials, formatDateTime, productImageSrc } from '@/lib/admin-utils';
 import { printReceipt } from '@/lib/print-receipt';
 import { CANCELLATION_REASONS } from '@/lib/order-constants';
 import type { OrderTableRow } from '@/types/admin';
@@ -191,7 +191,9 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
             Items ({order.items.length})
           </div>
           <div className="flex flex-col">
-            {order.items.map((item, i) => (
+            {order.items.map((item, i) => {
+              const src = productImageSrc(item.image);
+              return (
               <div
                 key={i}
                 className={`grid grid-cols-[56px_1fr_auto] gap-3.5 items-center py-3 ${
@@ -199,9 +201,9 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
                 } ${i === 0 ? 'pt-0' : ''}`}
               >
                 <div className="w-14 h-16 rounded bg-cream-deep overflow-hidden shrink-0">
-                  {item.image && (
+                  {src && (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                    <img src={src} alt={item.name} className="w-full h-full object-cover" />
                   )}
                 </div>
                 <div>
@@ -214,7 +216,8 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
                   {formatMoney(item.price * item.qty)}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

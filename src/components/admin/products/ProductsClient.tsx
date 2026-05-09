@@ -1,7 +1,7 @@
 'use client';
 import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
-import { statCellBorderClasses } from '@/lib/admin-utils';
+import { productImageSrc, statCellBorderClasses } from '@/lib/admin-utils';
 import { PRODUCT_CATEGORIES, CATEGORY_COLORS } from '@/lib/admin-constants';
 import type { ProductCategory } from '@/lib/admin-constants';
 import type { ProductTableRow, ProductCounts } from '@/types/admin';
@@ -546,7 +546,7 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
                     const state = stockState(product.stockCount);
                     const fillPct = stockFillWidth(product.stockCount);
                     const catClass = CATEGORY_COLORS[product.category] ?? 'bg-cream-deep text-ink-soft';
-                    const thumb = product.images[0] ?? null;
+                    const thumb = productImageSrc(product.images[0]);
 
                     return (
                       <tr

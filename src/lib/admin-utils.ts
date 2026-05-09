@@ -1,3 +1,13 @@
+/** Returns a usable src for a product image.
+ *  Cloudinary / absolute URLs are passed through unchanged.
+ *  Bare filenames (e.g. "beef-ribeye-dry-aged.jpg") are resolved
+ *  to the local public folder. */
+export function productImageSrc(image: string | undefined | null): string | null {
+  if (!image) return null;
+  if (image.startsWith('http') || image.startsWith('/')) return image;
+  return `/images/products/${image}`;
+}
+
 export function formatMoney(amount: number): string {
   return amount.toLocaleString('en-US', {
     style: 'currency',

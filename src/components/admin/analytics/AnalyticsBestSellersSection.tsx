@@ -1,5 +1,5 @@
-import Image from 'next/image';
-import { fmtDollarShort, fmtRank, isAbsoluteUrl } from './analytics-utils';
+import { fmtDollarShort, fmtRank } from './analytics-utils';
+import { productImageSrc } from '@/lib/admin-utils';
 import type { AnalyticsData } from './AnalyticsClient';
 
 export default function AnalyticsBestSellersSection({ data }: { data: AnalyticsData }) {
@@ -26,8 +26,9 @@ export default function AnalyticsBestSellersSection({ data }: { data: AnalyticsD
               >
                 <span className="font-display italic text-lg text-camel text-center">{fmtRank(p.rank)}</span>
                 <div className="w-12 h-12 rounded-[4px] bg-cream-deep overflow-hidden relative shrink-0">
-                  {p.image && isAbsoluteUrl(p.image) ? (
-                    <Image src={p.image} alt={p.name} fill className="object-cover" sizes="48px" />
+                  {productImageSrc(p.image) ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={productImageSrc(p.image)!} alt={p.name} className="w-full h-full object-cover" />
                   ) : null}
                 </div>
                 <div className="min-w-0">
