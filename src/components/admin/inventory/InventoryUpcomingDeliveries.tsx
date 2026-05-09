@@ -63,10 +63,22 @@ const STOCK_CHIP: Record<StockLevel, { label: string; cls: string }> = {
   over:     { label: 'Overstocked',    cls: 'bg-green-soft text-green' },
 };
 
-type Props = { deliveries: DeliveryRow[] };
+export type ReceivedDeliveryRow = {
+  _id: string;
+  receivedAt: string;
+  supplier: string;
+  productName: string | null;
+  receivedQty: number | null;
+};
 
-export default function InventoryUpcomingDeliveries({ deliveries }: Props) {
+type Props = {
+  deliveries: DeliveryRow[];
+  receivedDeliveries: ReceivedDeliveryRow[];
+};
+
+export default function InventoryUpcomingDeliveries({ deliveries, receivedDeliveries }: Props) {
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState<'upcoming' | 'received'>('upcoming');
   const [expanding, setExpanding] = useState<string | null>(null);
   const [stockInputs, setStockInputs] = useState<Record<string, string>>({});
   const [pendingConfirm, setPendingConfirm] = useState<string | null>(null);
@@ -100,11 +112,15 @@ export default function InventoryUpcomingDeliveries({ deliveries }: Props) {
   async function handleConfirm(d: DeliveryRow) {
     setSaving(d._id);
     try {
-      // Step 1 — mark delivery received
+      // Step 1 — mark delivery received (include receivedQty for history tracking)
+      const receivedQty = d.productId ? parseInt(stockInputs[d._id] ?? '', 10) : NaN;
       const deliveryRes = await fetch(`/api/deliveries/${d._id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'received' }),
+        body: JSON.stringify({
+          status: 'received',
+          ...(!isNaN(receivedQty) ? { receivedQty } : {}),
+        }),
       });
       if (!deliveryRes.ok) {
         const { message } = await deliveryRes.json().catch(() => ({}));
@@ -141,13 +157,37 @@ export default function InventoryUpcomingDeliveries({ deliveries }: Props) {
 
   return (
     <div className="bg-paper border border-line-soft rounded p-7">
-      <div className="mb-5">
-        <div className="font-display text-[22px] font-medium tracking-tight leading-snug">
-          Upcoming <em className="italic text-oxblood font-normal">deliveries</em>
+      {/* Header + tab toggle */}
+      <div className="flex items-start justify-between gap-4 mb-5">
+        <div>
+          <div className="font-display text-[22px] font-medium tracking-tight leading-snug">
+            Upcoming <em className="italic text-oxblood font-normal">deliveries</em>
+          </div>
+          <div className="text-[12px] text-muted mt-1">Next 14 days from active suppliers</div>
         </div>
-        <div className="text-[12px] text-muted mt-1">Next 14 days from active suppliers</div>
+        <div className="flex items-center gap-0.5 shrink-0 bg-[rgba(28,24,20,0.05)] rounded p-0.5">
+          <button
+            type="button"
+            onClick={() => setActiveTab('upcoming')}
+            className={`px-2.5 py-1 rounded text-[11px] font-mono tracking-[0.04em] transition-colors ${
+              activeTab === 'upcoming' ? 'bg-paper text-ink shadow-sm' : 'text-muted hover:text-ink'
+            }`}
+          >
+            Upcoming {deliveries.length > 0 ? `(${deliveries.length})` : ''}
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('received')}
+            className={`px-2.5 py-1 rounded text-[11px] font-mono tracking-[0.04em] transition-colors ${
+              activeTab === 'received' ? 'bg-paper text-ink shadow-sm' : 'text-muted hover:text-ink'
+            }`}
+          >
+            Received {receivedDeliveries.length > 0 ? `(${receivedDeliveries.length})` : ''}
+          </button>
+        </div>
       </div>
 
+      {activeTab === 'upcoming' && <>
       {/* Status legend */}
       <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-6 p-3.5 rounded bg-[rgba(28,24,20,0.03)] border border-line-soft">
         {LEGEND.map(({ status, label, desc }) => (
@@ -344,6 +384,44 @@ export default function InventoryUpcomingDeliveries({ deliveries }: Props) {
             );
           })}
         </div>
+      )}
+      </>}
+
+      {/* Received history tab */}
+      {activeTab === 'received' && (
+        receivedDeliveries.length === 0 ? (
+          <p className="text-muted text-[13px] py-8 text-center">No received deliveries recorded yet.</p>
+        ) : (
+          <div className="flex flex-col divide-y divide-line-soft">
+            {receivedDeliveries.map((d, idx) => {
+              const parts = new Intl.DateTimeFormat('en-US', {
+                day: '2-digit', month: 'short', weekday: 'short',
+                timeZone: 'America/Los_Angeles',
+              }).formatToParts(new Date(d.receivedAt));
+              const get = (t: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === t)?.value ?? '';
+              return (
+                <div key={d._id} className={`grid grid-cols-[56px_1fr] items-start gap-4 py-4 ${idx === 0 ? 'pt-0' : ''}`}>
+                  <div className="text-center">
+                    <div className="font-display text-[22px] font-normal leading-none tracking-tight text-ink">{get('day')}</div>
+                    <div className="font-mono text-[10px] tracking-[0.18em] uppercase text-muted mt-0.5">{get('month')}</div>
+                    <div className="text-[11px] text-muted mt-0.5">{get('weekday')}</div>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-display text-[15px] font-medium tracking-tight leading-snug mb-0.5">
+                      {d.supplier}
+                    </div>
+                    {d.productName && (
+                      <div className="font-mono text-[11px] text-muted tracking-[0.04em]">{d.productName}</div>
+                    )}
+                    <div className="font-mono text-[11px] text-green mt-1">
+                      {d.receivedQty !== null ? `+${d.receivedQty} units received` : 'Received'}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )
       )}
     </div>
   );

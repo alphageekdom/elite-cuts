@@ -10,6 +10,7 @@ export type Delivery = {
   detail: string;
   status: DeliveryStatus;
   productId?: Types.ObjectId;
+  receivedQty?: number;
 };
 
 const DeliverySchema = new Schema<Delivery>(
@@ -20,6 +21,7 @@ const DeliverySchema = new Schema<Delivery>(
     detail:         { type: String, default: '', trim: true },
     status:         { type: String, enum: [...DELIVERY_STATUSES], default: 'scheduled' },
     productId:      { type: Schema.Types.ObjectId, ref: 'Product', index: true },
+    receivedQty:    { type: Number, min: 0 },
   },
   { timestamps: true },
 );

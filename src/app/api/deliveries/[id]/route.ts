@@ -13,11 +13,16 @@ export const PATCH = async (request: NextRequest, { params }: RouteContext) => {
   try {
     await connectDB();
     const { id } = await params;
-    const { status } = (await request.json()) as { status?: string };
+    const body = (await request.json()) as { status?: string; receivedQty?: unknown };
+    const { status, receivedQty } = body;
     if (!status || !isIn(DELIVERY_STATUSES, status)) {
       return NextResponse.json({ message: `status must be one of: ${DELIVERY_STATUSES.join(', ')}` }, { status: 400 });
     }
-    const delivery = await Delivery.findByIdAndUpdate(id, { status }, { returnDocument: 'after' });
+    const update: Record<string, unknown> = { status };
+    if (status === 'received' && typeof receivedQty === 'number' && receivedQty >= 0) {
+      update.receivedQty = receivedQty;
+    }
+    const delivery = await Delivery.findByIdAndUpdate(id, update, { returnDocument: 'after' });
     if (!delivery) return NextResponse.json({ message: 'Not found' }, { status: 404 });
     return NextResponse.json(delivery);
   } catch (error) {
