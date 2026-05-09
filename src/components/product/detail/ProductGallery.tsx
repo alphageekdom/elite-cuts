@@ -30,7 +30,7 @@ export default function ProductGallery({
       : 'bg-ink text-cream';
 
   return (
-    <div className='relative aspect-4/5 overflow-hidden rounded-sm bg-cream-deep'>
+    <div className='relative aspect-square overflow-hidden rounded-sm bg-cream-deep md:aspect-4/5'>
       {tagLabel && (
         <div className='absolute top-4 left-4 z-10'>
           <span

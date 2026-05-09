@@ -128,7 +128,7 @@ export default function BuyBlock({ product }: Props) {
 
       {/* Qty selector + add to cart */}
       <div className='mb-4 flex gap-3'>
-        <div className='flex items-center overflow-hidden rounded-full border border-line bg-cream'>
+        <div className='flex shrink-0 items-center overflow-hidden rounded-full border border-line bg-cream'>
           <button
             type='button'
             onClick={decrement}

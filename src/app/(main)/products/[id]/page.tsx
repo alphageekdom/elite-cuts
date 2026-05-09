@@ -7,11 +7,13 @@ import connectDB from '@/config/database';
 import ProductModel, { type SerializedProduct } from '@/models/Product';
 import ReviewModel from '@/models/Review';
 import { convertToSerializableObject } from '@/utils/convertToObject';
+import { getSessionUser } from '@/utils/getSessionUser';
 import { AVATAR_COLORS } from '@/lib/admin-constants';
 import ProductGallery from '@/components/product/detail/ProductGallery';
 import BuyBlock from '@/components/product/detail/BuyBlock';
 import ProductCard from '@/components/product/ProductCard';
 import SectionHead from '@/components/ui/SectionHead';
+import ReviewForm from './ReviewForm';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -166,6 +168,11 @@ export default async function ProductPage({ params }: PageProps) {
     return { star, count, fraction: reviews.length > 0 ? count / reviews.length : 0 };
   });
 
+  const sessionUser = await getSessionUser();
+  const hasReviewed = sessionUser?.userId
+    ? (await ReviewModel.exists({ product: id, user: sessionUser.userId })) !== null
+    : false;
+
   // Related products (same category, exclude current, in stock, limit 3)
   const relatedDocs = await ProductModel.find({
     category: product.category,
@@ -218,11 +225,11 @@ export default async function ProductPage({ params }: PageProps) {
         </nav>
 
         {/* ── Product hero ── */}
-        <section className='py-8 pb-20 lg:grid lg:grid-cols-[1.4fr_1fr] lg:gap-16'>
+        <section className='pt-6 pb-10 md:grid md:grid-cols-[1.2fr_1fr] md:items-start md:gap-10 lg:gap-16 lg:pb-16 lg:pt-10'>
 
-          {/* Gallery — capped on tablet portrait so the buy block stays close to fold */}
+          {/* Gallery */}
           {primaryImage && (
-            <div className='mx-auto w-full md:max-w-xl lg:max-w-none'>
+            <div className='w-full'>
               <ProductGallery
                 image={primaryImage}
                 name={product.name}
@@ -234,7 +241,7 @@ export default async function ProductPage({ params }: PageProps) {
           )}
 
           {/* Sticky info sidebar */}
-          <aside className='mt-10 lg:sticky lg:top-24 lg:mt-0 lg:self-start'>
+          <aside className='mt-8 md:sticky md:top-24 md:mt-0 md:self-start'>
 
             {/* Meta */}
             <div className='mb-4 flex flex-wrap items-center gap-2.5 text-[11px] font-medium uppercase tracking-[0.22em] text-muted'>
@@ -333,7 +340,7 @@ export default async function ProductPage({ params }: PageProps) {
         </section>
 
         {/* ── Description ── */}
-        <section className='border-t border-line-soft py-20'>
+        <section className='border-t border-line-soft py-14 md:py-20'>
           <SectionHead label='About this cut' />
 
           <h2 className='mb-10 font-display text-[clamp(32px,4vw,52px)] font-normal leading-[1.05] tracking-tight'>
@@ -341,10 +348,10 @@ export default async function ProductPage({ params }: PageProps) {
             <em className='text-oxblood'>this</em> cut.
           </h2>
 
-          <div className='grid gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-start lg:gap-16'>
-            {/* Description body with drop cap — capped line length for comfortable reading */}
-            <div className='max-w-[58ch] text-[16px] leading-[1.75] text-ink-soft [&>p:first-of-type::first-letter]:float-left [&>p:first-of-type::first-letter]:mr-3 [&>p:first-of-type::first-letter]:mt-1.5 [&>p:first-of-type::first-letter]:font-display [&>p:first-of-type::first-letter]:text-[56px] [&>p:first-of-type::first-letter]:font-medium [&>p:first-of-type::first-letter]:leading-[0.9] [&>p:first-of-type::first-letter]:text-oxblood'>
-              <p>{product.description}</p>
+          <div className='grid gap-10 md:grid-cols-[1.05fr_0.95fr] md:items-start md:gap-14 lg:gap-16'>
+            {/* Description body with drop cap */}
+            <div className='text-[16px] leading-[1.75] text-ink-soft [&>p:first-of-type::first-letter]:float-left [&>p:first-of-type::first-letter]:mr-3 [&>p:first-of-type::first-letter]:mt-1.5 [&>p:first-of-type::first-letter]:font-display [&>p:first-of-type::first-letter]:text-[56px] [&>p:first-of-type::first-letter]:font-medium [&>p:first-of-type::first-letter]:leading-[0.9] [&>p:first-of-type::first-letter]:text-oxblood md:max-w-[58ch]'>
+              <p className='overflow-hidden'>{product.description}</p>
             </div>
 
             {/* Cooking notes */}
@@ -354,7 +361,7 @@ export default async function ProductPage({ params }: PageProps) {
               </h3>
               <div className='divide-y divide-line-soft'>
                 {COOKING_NOTES.map(({ title, desc }, i) => (
-                  <div key={title} className='flex gap-4 py-4 first:pt-0 last:pb-0'>
+                  <div key={title} className='flex gap-4 py-4 first:pt-0 last:pb-2'>
                     <span className='mt-0.5 w-6 shrink-0 font-mono text-[12px] text-muted'>
                       {String(i + 1).padStart(2, '0')}
                     </span>
@@ -374,7 +381,7 @@ export default async function ProductPage({ params }: PageProps) {
         </section>
 
         {/* ── Reviews ── */}
-        <section id='reviews' className='border-t border-line-soft py-20'>
+        <section id='reviews' className='border-t border-line-soft py-14 md:py-20'>
           <SectionHead label='Reviews' />
 
           <h2 className='mb-10 font-display text-[clamp(32px,4vw,52px)] font-normal leading-[1.05] tracking-tight'>
@@ -395,10 +402,10 @@ export default async function ProductPage({ params }: PageProps) {
               </p>
             </div>
           ) : (
-            <div className='grid gap-10 lg:grid-cols-[320px_1fr] lg:gap-16'>
+            <div className='grid gap-10 md:grid-cols-[280px_1fr] lg:grid-cols-[320px_1fr] lg:gap-16'>
 
               {/* Rating summary */}
-              <div className='rounded-sm border border-line-soft bg-paper p-7 lg:p-8 lg:self-start'>
+              <div className='rounded-sm border border-line-soft bg-paper p-6 md:p-7 lg:p-8 md:self-start'>
                 <div className='mb-6 border-b border-line-soft pb-6'>
                   <div className='mb-2 font-display text-[64px] font-normal leading-none tracking-[-0.03em]'>
                     {avgRating.toFixed(1)}
@@ -415,7 +422,7 @@ export default async function ProductPage({ params }: PageProps) {
                 {/* Distribution bars */}
                 <div className='flex flex-col gap-2'>
                   {dist.map(({ star, count, fraction }) => (
-                    <div key={star} className='grid grid-cols-[14px_1fr_28px] items-center gap-2.5 text-[12px] text-ink-soft'>
+                    <div key={star} className='grid grid-cols-[18px_1fr_24px] items-center gap-2.5 text-[12px] text-ink-soft'>
                       <span className='text-[11px] text-camel'>{star}</span>
                       <div className='h-1 overflow-hidden rounded-full bg-cream-deep'>
                         <div
@@ -472,18 +479,22 @@ export default async function ProductPage({ params }: PageProps) {
               </div>
             </div>
           )}
+
+          <div className='mt-10 border-t border-line-soft pt-10 md:mt-14 md:pt-12'>
+            <ReviewForm productId={id} hasReviewed={hasReviewed} />
+          </div>
         </section>
 
         {/* ── Related products ── */}
         {related.length > 0 && (
-          <section className='border-t border-line-soft py-20'>
+          <section className='border-t border-line-soft py-14 md:py-20'>
             <SectionHead label='You might also like' />
 
             <h2 className='mb-10 font-display text-[clamp(32px,4vw,52px)] font-normal leading-[1.05] tracking-tight'>
               Other cuts <em className='text-oxblood'>worth knowing.</em>
             </h2>
 
-            <div className='grid gap-6 sm:grid-cols-2 lg:grid-cols-3'>
+            <div className='grid gap-6 sm:grid-cols-2 md:grid-cols-3'>
               {related.map((p) => (
                 <ProductCard key={p._id} product={p} />
               ))}

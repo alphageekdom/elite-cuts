@@ -188,6 +188,17 @@ export const POST = async (request: NextRequest, { params }: RouteContext) => {
 
     return NextResponse.json(product, { status: 201 });
   } catch (error) {
+    if (
+      error !== null &&
+      typeof error === 'object' &&
+      'code' in error &&
+      (error as { code: unknown }).code === 11000
+    ) {
+      return NextResponse.json(
+        { message: 'You have already reviewed this product' },
+        { status: 409 },
+      );
+    }
     console.error(error);
     return NextResponse.json({ message: 'Failed to create review' }, { status: 500 });
   }

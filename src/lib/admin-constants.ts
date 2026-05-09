@@ -4,7 +4,7 @@ export const AVATAR_COLORS = [
   'bg-ink text-cream',
   'bg-camel-soft text-ink',
   'bg-green text-cream',
-  'bg-[#5C7E3F] text-cream',
+  'bg-[#3d5c2a] text-cream',
 ] as const;
 
 export const PRODUCT_CATEGORIES = ['Beef', 'Pork', 'Poultry', 'Lamb', 'Charcuterie', 'Other'] as const;
