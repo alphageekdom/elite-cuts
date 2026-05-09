@@ -41,24 +41,26 @@ export default function InventoryUpcomingDeliveries({ deliveries }: Props) {
           {deliveries.map((d, idx) => {
             const date = new Date(d.deliveryDate);
             return (
-              <div key={d._id} className={`grid grid-cols-[64px_1fr_auto] items-center gap-4 py-4 ${idx === 0 ? 'pt-0' : ''}`}>
-                <div className="text-center">
-                  <div className="font-display text-[26px] font-normal leading-none tracking-tight text-ink">
-                    {String(date.getDate()).padStart(2, '0')}
+              <div key={d._id} className={`flex flex-col gap-2.5 py-4 ${idx === 0 ? 'pt-0' : ''}`}>
+                {/* Status pill — top */}
+                <span className={`self-start inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium tracking-[0.04em] before:content-[''] before:w-1.5 before:h-1.5 before:rounded-full before:bg-current ${DELIVERY_PILL_STYLE[d.status]}`}>
+                  {DELIVERY_PILL_LABEL[d.status]}
+                </span>
+                {/* Date + supplier */}
+                <div className="grid grid-cols-[56px_1fr] items-start gap-4">
+                  <div className="text-center">
+                    <div className="font-display text-[22px] font-normal leading-none tracking-tight text-ink">
+                      {String(date.getDate()).padStart(2, '0')}
+                    </div>
+                    <div className="font-mono text-[10px] tracking-[0.18em] uppercase text-muted mt-0.5">{MONTH_ABBR[date.getMonth()]}</div>
+                    <div className="text-[11px] text-muted mt-0.5">{DOW_ABBR[date.getDay()]}</div>
                   </div>
-                  <div className="font-mono text-[10px] tracking-[0.18em] uppercase text-muted mt-0.5">{MONTH_ABBR[date.getMonth()]}</div>
-                  <div className="text-[11px] text-muted mt-0.5">{DOW_ABBR[date.getDay()]}</div>
-                </div>
-                <div className="min-w-0">
-                  <div className="font-display text-[15px] font-medium tracking-tight mb-0.5 leading-snug">
-                    {d.supplier}{d.supplierSuffix ? <em className="italic text-oxblood font-normal"> {d.supplierSuffix}</em> : null}
+                  <div className="min-w-0">
+                    <div className="font-display text-[15px] font-medium tracking-tight mb-0.5 leading-snug">
+                      {d.supplier}{d.supplierSuffix ? <em className="italic text-oxblood font-normal"> {d.supplierSuffix}</em> : null}
+                    </div>
+                    <div className="font-mono text-[11px] text-muted tracking-[0.04em] leading-relaxed">{d.detail}</div>
                   </div>
-                  <div className="font-mono text-[11px] text-muted tracking-[0.04em] leading-relaxed">{d.detail}</div>
-                </div>
-                <div>
-                  <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium tracking-[0.04em] before:content-[''] before:w-1.5 before:h-1.5 before:rounded-full before:bg-current ${DELIVERY_PILL_STYLE[d.status]}`}>
-                    {DELIVERY_PILL_LABEL[d.status]}
-                  </span>
                 </div>
               </div>
             );
