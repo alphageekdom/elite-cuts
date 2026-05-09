@@ -28,7 +28,6 @@ export default function InventoryUpcomingDeliveries({ deliveries }: Props) {
   return (
     <div className="bg-paper border border-line-soft rounded p-7">
       <div className="mb-6">
-        <div className="font-display italic text-[12px] text-camel mb-1">§ 02</div>
         <div className="font-display text-[22px] font-medium tracking-tight leading-snug">
           Upcoming <em className="italic text-oxblood font-normal">deliveries</em>
         </div>

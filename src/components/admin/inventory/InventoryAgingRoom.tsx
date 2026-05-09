@@ -60,7 +60,6 @@ export default function InventoryAgingRoom({ cuts }: Props) {
     <div className="bg-paper border border-line-soft rounded p-7">
       <div className="flex items-end justify-between mb-6 gap-5">
         <div>
-          <div className="font-display italic text-[12px] text-camel mb-1">§ 01</div>
           <div className="font-display text-[22px] font-medium tracking-tight leading-snug">
             Aging <em className="italic text-oxblood font-normal">room</em>
           </div>
