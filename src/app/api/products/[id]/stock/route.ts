@@ -25,7 +25,7 @@ export const PATCH = async (request: NextRequest, { params }: RouteContext) => {
     const product = await Product.findByIdAndUpdate(
       id,
       { stockCount },
-      { new: true, runValidators: true },
+      { returnDocument: 'after', runValidators: true },
     );
 
     if (!product) {

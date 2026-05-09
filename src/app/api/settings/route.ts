@@ -13,7 +13,7 @@ export const GET = async () => {
     const settings = await ShopSettings.findOneAndUpdate(
       {},
       {},
-      { upsert: true, new: true, setDefaultsOnInsert: true },
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true },
     ).lean();
     return NextResponse.json(settings);
   } catch (error) {
@@ -59,7 +59,7 @@ export const PUT = async (request: NextRequest) => {
     const settings = await ShopSettings.findOneAndUpdate(
       {},
       { $set: patch },
-      { upsert: true, new: true, setDefaultsOnInsert: true, runValidators: true },
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true, runValidators: true },
     ).lean();
 
     return NextResponse.json(settings);

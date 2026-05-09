@@ -11,7 +11,7 @@ export const GET = async () => {
     const doc = await ShopHoursModel.findOneAndUpdate(
       {},
       {},
-      { upsert: true, new: true, setDefaultsOnInsert: true },
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true },
     ).lean();
     return NextResponse.json(doc);
   } catch (error) {
@@ -29,7 +29,7 @@ export const PUT = async (request: NextRequest) => {
     const doc = await ShopHoursModel.findOneAndUpdate(
       {},
       { $set: { days } },
-      { upsert: true, new: true, setDefaultsOnInsert: true },
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true },
     ).lean();
     return NextResponse.json(doc);
   } catch (error) {

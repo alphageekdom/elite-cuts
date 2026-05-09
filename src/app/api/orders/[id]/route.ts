@@ -102,7 +102,7 @@ export const PATCH = async (request: NextRequest, { params }: RouteContext) => {
     const order = await Order.findByIdAndUpdate(
       id,
       { $set: updateFields },
-      { new: true, runValidators: true },
+      { returnDocument: 'after', runValidators: true },
     );
 
     // Award 1 point per dollar when transitioning into Completed for the first time

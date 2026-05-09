@@ -58,7 +58,7 @@ export const PATCH = async (request: NextRequest, { params }: RouteContext) => {
       return NextResponse.json({ message: 'No valid fields to update' }, { status: 400 });
     }
 
-    const product = await Product.findByIdAndUpdate(id, { $set: update }, { new: true, runValidators: true });
+    const product = await Product.findByIdAndUpdate(id, { $set: update }, { returnDocument: 'after', runValidators: true });
     if (!product) {
       return NextResponse.json({ message: 'Product not found' }, { status: 404 });
     }

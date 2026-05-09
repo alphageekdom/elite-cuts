@@ -44,8 +44,8 @@ export default async function AdminSchedulePage() {
 
   const [rawShifts, shopHoursDoc, settingsDoc, pickupOrders, deliveryCount, upcomingDeliveriesRaw] = await Promise.all([
     ShiftModel.find({ weekStart: { $gte: weekStart, $lt: weekEnd } }).lean(),
-    ShopHoursModel.findOneAndUpdate({}, {}, { upsert: true, new: true, setDefaultsOnInsert: true }).lean(),
-    ShopSettingsModel.findOneAndUpdate({}, {}, { upsert: true, new: true, setDefaultsOnInsert: true }).lean(),
+    ShopHoursModel.findOneAndUpdate({}, {}, { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }).lean(),
+    ShopSettingsModel.findOneAndUpdate({}, {}, { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }).lean(),
     Order.find({
       pickupSlot: { $gte: todayStart.toISOString(), $lt: todayEnd.toISOString() },
     }).select('pickupSlot totalCost').lean(),

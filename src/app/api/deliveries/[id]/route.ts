@@ -17,7 +17,7 @@ export const PATCH = async (request: NextRequest, { params }: RouteContext) => {
     if (!status || !isIn(DELIVERY_STATUSES, status)) {
       return NextResponse.json({ message: `status must be one of: ${DELIVERY_STATUSES.join(', ')}` }, { status: 400 });
     }
-    const delivery = await Delivery.findByIdAndUpdate(id, { status }, { new: true });
+    const delivery = await Delivery.findByIdAndUpdate(id, { status }, { returnDocument: 'after' });
     if (!delivery) return NextResponse.json({ message: 'Not found' }, { status: 404 });
     return NextResponse.json(delivery);
   } catch (error) {

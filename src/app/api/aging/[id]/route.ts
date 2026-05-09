@@ -13,7 +13,7 @@ export const PATCH = async (request: NextRequest, { params }: RouteContext) => {
     const { id } = await params;
     const { cut: cutName, targetDays, rack, weightLb, startedAt, isActive } = await request.json();
     const patch = { cut: cutName, targetDays, rack, weightLb, startedAt, isActive };
-    const cut = await AgingCut.findByIdAndUpdate(id, { $set: patch }, { new: true, runValidators: true });
+    const cut = await AgingCut.findByIdAndUpdate(id, { $set: patch }, { returnDocument: 'after', runValidators: true });
     if (!cut) return NextResponse.json({ message: 'Not found' }, { status: 404 });
     return NextResponse.json(cut);
   } catch (error) {
