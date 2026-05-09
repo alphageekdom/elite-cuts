@@ -91,6 +91,25 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
   const router = useRouter();
   const [localRows, setLocalRows] = useState(rows);
   useEffect(() => { setLocalRows(rows); }, [rows]);
+
+  // Snapshot of row IDs visible in the active tab — updated only when the tab changes,
+  // not on stock edits, so items don't vanish mid-session when stock crosses a threshold.
+  const [tabSnapshot, setTabSnapshot] = useState<Set<string>>(
+    () => new Set(rows.map((r) => r.id)),
+  );
+
+  const liveCounts = useMemo(() => {
+    let inStock = 0, lowStock = 0, critical = 0;
+    for (const r of localRows) {
+      if (r.stockCount === 0) continue;
+      const par = CATEGORY_PAR[r.category] ?? DEFAULT_PAR;
+      const ratio = r.stockCount / par;
+      if (ratio < 0.3) critical++;
+      else if (ratio < 0.7) lowStock++;
+      else inStock++;
+    }
+    return { all: localRows.length, inStock, lowStock, critical, agingRoom: counts.agingRoom };
+  }, [localRows, counts.agingRoom]);
   const [alertDismissed, setAlertDismissed] = useState(false);
   const [activeFilter, setActiveFilter] = useState<StatFilter>('all');
   const [activeCategory, setActiveCategory] = useState('');
@@ -174,7 +193,6 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
       );
       setStockEditId(null);
       toast.success('Stock updated');
-      router.refresh();
     } catch {
       toast.error('Failed to update stock');
     } finally {
@@ -183,25 +201,10 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
   }
 
   const filtered = useMemo(() => {
-    let list = localRows;
-
-    if (activeFilter === 'inStock') {
-      list = list.filter((r) => {
-        const par = CATEGORY_PAR[r.category] ?? DEFAULT_PAR;
-        return r.stockCount > 0 && r.stockCount / par >= 0.7;
-      });
-    } else if (activeFilter === 'lowStock') {
-      list = list.filter((r) => {
-        const par = CATEGORY_PAR[r.category] ?? DEFAULT_PAR;
-        const ratio = r.stockCount / par;
-        return r.stockCount > 0 && ratio >= 0.3 && ratio < 0.7;
-      });
-    } else if (activeFilter === 'critical') {
-      list = list.filter((r) => {
-        const par = CATEGORY_PAR[r.category] ?? DEFAULT_PAR;
-        return r.stockCount > 0 && r.stockCount / par < 0.3;
-      });
-    }
+    // For non-'all' tabs use the snapshot so items don't vanish when stock changes mid-session.
+    let list = activeFilter === 'all'
+      ? localRows
+      : localRows.filter((r) => tabSnapshot.has(r.id));
 
     if (activeCategory) {
       list = list.filter((r) => r.category === activeCategory);
@@ -225,12 +228,26 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
     else if (sortBy === 'newest') sorted.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 
     return sorted;
-  }, [localRows, activeFilter, activeCategory, search, sortBy]);
+  }, [localRows, activeFilter, tabSnapshot, activeCategory, search, sortBy]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   function handleFilter(f: StatFilter) {
+    // Re-snapshot which rows qualify for this tab at the moment the tab is clicked.
+    if (f === 'all') {
+      setTabSnapshot(new Set(localRows.map((r) => r.id)));
+    } else {
+      const matched = localRows.filter((r) => {
+        const par = CATEGORY_PAR[r.category] ?? DEFAULT_PAR;
+        const ratio = r.stockCount / par;
+        if (f === 'inStock') return r.stockCount > 0 && ratio >= 0.7;
+        if (f === 'lowStock') return r.stockCount > 0 && ratio >= 0.3 && ratio < 0.7;
+        if (f === 'critical') return r.stockCount > 0 && ratio < 0.3;
+        return true;
+      });
+      setTabSnapshot(new Set(matched.map((r) => r.id)));
+    }
     setActiveFilter(f);
     setPage(1);
   }
@@ -257,17 +274,17 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
     dotColor: string;
     suffix?: string;
   }> = [
-    { id: 'all-skus', key: 'all', label: 'All SKUs', value: counts.all, meta: 'TRACKED', dotColor: 'bg-muted' },
-    { id: 'in-stock', key: 'inStock', label: 'In stock', value: counts.inStock, meta: 'ABOVE PAR', dotColor: 'bg-green' },
-    { id: 'low-stock', key: 'lowStock', label: 'Low stock', value: counts.lowStock, meta: 'BELOW 70%', dotColor: 'bg-amber' },
-    { id: 'critical', key: 'critical', label: 'Critical', value: counts.critical, meta: 'REORDER NOW', dotColor: 'bg-oxblood', suffix: counts.critical > 0 ? '!' : undefined },
-    { id: 'aging-room', key: 'all', label: 'Aging room', value: counts.agingRoom, meta: 'IN CABINET', dotColor: 'bg-muted' },
+    { id: 'all-skus', key: 'all', label: 'All SKUs', value: liveCounts.all, meta: 'TRACKED', dotColor: 'bg-muted' },
+    { id: 'in-stock', key: 'inStock', label: 'In stock', value: liveCounts.inStock, meta: 'ABOVE PAR', dotColor: 'bg-green' },
+    { id: 'low-stock', key: 'lowStock', label: 'Low stock', value: liveCounts.lowStock, meta: 'BELOW 70%', dotColor: 'bg-amber' },
+    { id: 'critical', key: 'critical', label: 'Critical', value: liveCounts.critical, meta: 'REORDER NOW', dotColor: 'bg-oxblood', suffix: liveCounts.critical > 0 ? '!' : undefined },
+    { id: 'aging-room', key: 'all', label: 'Aging room', value: liveCounts.agingRoom, meta: 'IN CABINET', dotColor: 'bg-muted' },
   ];
 
   return (
     <div>
       {/* Alert banner */}
-      {counts.critical > 0 && !alertDismissed && (
+      {liveCounts.critical > 0 && !alertDismissed && (
         <div className="flex items-center gap-3.5 px-6 py-4 bg-red-soft border border-[rgba(107,31,31,0.2)] rounded mb-6 text-[14px] text-ink-soft">
           <span className="w-8 h-8 rounded-full bg-oxblood text-cream grid place-items-center shrink-0">
             <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -277,7 +294,7 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
             </svg>
           </span>
           <span>
-            <strong className="text-ink font-medium">{counts.critical} cut{counts.critical !== 1 ? 's' : ''} below reorder threshold.</strong>{' '}
+            <strong className="text-ink font-medium">{liveCounts.critical} cut{liveCounts.critical !== 1 ? 's' : ''} below reorder threshold.</strong>{' '}
             Take action now or place an order.
           </span>
           <button
@@ -553,7 +570,7 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
                             'bg-[rgba(28,24,20,0.06)] text-muted'
                           }`}>
                             <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                            {row.deliveryStatus.charAt(0).toUpperCase() + row.deliveryStatus.slice(1)}
+                            {row.deliveryStatus === 'received' ? 'Received' : row.deliveryStatus.charAt(0).toUpperCase() + row.deliveryStatus.slice(1)}
                           </span>
                         ) : (
                           <span className="text-[12px] text-muted">—</span>

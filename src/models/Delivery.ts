@@ -1,6 +1,6 @@
 import { Schema, model, models, type Model, type Types } from 'mongoose';
 
-export const DELIVERY_STATUSES = ['confirmed', 'pending', 'scheduled'] as const;
+export const DELIVERY_STATUSES = ['confirmed', 'pending', 'scheduled', 'received'] as const;
 export type DeliveryStatus = (typeof DELIVERY_STATUSES)[number];
 
 export type Delivery = {

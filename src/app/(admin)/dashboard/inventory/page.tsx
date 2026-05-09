@@ -102,14 +102,16 @@ export default async function AdminInventoryPage() {
     isActive: c.isActive,
   }));
 
-  const deliveries: DeliveryRow[] = rawDeliveries.map((d) => ({
-    _id: d._id.toString(),
-    deliveryDate: d.deliveryDate.toISOString(),
-    supplier: d.supplier,
-    supplierSuffix: d.supplierSuffix,
-    detail: d.detail,
-    status: d.status,
-  }));
+  const deliveries: DeliveryRow[] = rawDeliveries
+    .filter((d) => d.status !== 'received')
+    .map((d) => ({
+      _id: d._id.toString(),
+      deliveryDate: d.deliveryDate.toISOString(),
+      supplier: d.supplier,
+      supplierSuffix: d.supplierSuffix,
+      detail: d.detail,
+      status: d.status,
+    }));
 
   return (
     <>
