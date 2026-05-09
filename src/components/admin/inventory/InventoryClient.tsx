@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { CATEGORY_PAR } from '@/lib/inventory';
 import { productImageSrc, statCellBorderClasses } from '@/lib/admin-utils';
@@ -95,6 +96,7 @@ const SORT_OPTIONS: { value: SortBy; label: string }[] = [
 const PAGE_SIZE = 8;
 
 export default function InventoryClient({ rows, counts, categoryCounts, agingCuts, deliveries }: Props) {
+  const router = useRouter();
   const [localRows, setLocalRows] = useState(rows);
   const [alertDismissed, setAlertDismissed] = useState(false);
   const [activeFilter, setActiveFilter] = useState<StatFilter>('all');
@@ -130,6 +132,7 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
       );
       setStockEditId(null);
       toast.success('Stock updated');
+      router.refresh();
     } catch {
       toast.error('Failed to update stock');
     } finally {
