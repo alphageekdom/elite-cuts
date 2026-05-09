@@ -2,9 +2,9 @@
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { CATEGORY_PAR } from '@/lib/inventory';
-import { productImageSrc, statCellBorderClasses } from '@/lib/admin-utils';
-import { PRODUCT_CATEGORIES, type ProductCategory } from '@/lib/admin-constants';
+import { CATEGORY_PAR, DEFAULT_PAR } from '@/lib/inventory';
+import { productImageSrc, statCellBorderClasses, formatMoney } from '@/lib/admin-utils';
+import { PRODUCT_CATEGORIES, CATEGORY_COLORS, type ProductCategory } from '@/lib/admin-constants';
 import InventoryAgingRoom, { type AgingCutRow } from './InventoryAgingRoom';
 import InventoryUpcomingDeliveries, { type DeliveryRow } from './InventoryUpcomingDeliveries';
 
@@ -40,14 +40,6 @@ type StatFilter = 'all' | 'inStock' | 'lowStock' | 'critical';
 type SortBy = 'stock-asc' | 'stock-desc' | 'name-asc' | 'price-desc' | 'newest';
 
 
-const CATEGORY_COLORS: Record<string, string> = {
-  Beef: 'bg-red-soft text-oxblood',
-  Pork: 'bg-[rgba(184,137,90,0.18)] text-camel',
-  Lamb: 'bg-[rgba(28,24,20,0.08)] text-ink-soft',
-  Poultry: 'bg-green-soft text-green',
-  Charcuterie: 'bg-[rgba(184,137,90,0.12)] text-camel',
-  Other: 'bg-[rgba(28,24,20,0.06)] text-muted',
-};
 
 type StockState = 'healthy' | 'low' | 'critical' | 'out' | 'over';
 
@@ -193,18 +185,18 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
 
     if (activeFilter === 'inStock') {
       list = list.filter((r) => {
-        const par = CATEGORY_PAR[r.category] ?? 15;
+        const par = CATEGORY_PAR[r.category] ?? DEFAULT_PAR;
         return r.stockCount > 0 && r.stockCount / par >= 0.7;
       });
     } else if (activeFilter === 'lowStock') {
       list = list.filter((r) => {
-        const par = CATEGORY_PAR[r.category] ?? 15;
+        const par = CATEGORY_PAR[r.category] ?? DEFAULT_PAR;
         const ratio = r.stockCount / par;
         return r.stockCount > 0 && ratio >= 0.3 && ratio < 0.7;
       });
     } else if (activeFilter === 'critical') {
       list = list.filter((r) => {
-        const par = CATEGORY_PAR[r.category] ?? 15;
+        const par = CATEGORY_PAR[r.category] ?? DEFAULT_PAR;
         return r.stockCount > 0 && r.stockCount / par < 0.3;
       });
     }
@@ -454,7 +446,7 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
                 </tr>
               ) : (
                 pageRows.map((row) => {
-                  const par = CATEGORY_PAR[row.category] ?? 15;
+                  const par = CATEGORY_PAR[row.category] ?? DEFAULT_PAR;
                   const state = getStockState(row.stockCount, par);
                   const barWidth = Math.min((row.stockCount / par) * 100, 100);
                   const thumb = productImageSrc(row.images[0]);
@@ -533,7 +525,7 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
                       {/* Price */}
                       <td className="px-4 py-3.5">
                         <span className="font-display text-[15px] font-medium tracking-tight">
-                          ${(row.price / 100).toFixed(2)}
+                          {formatMoney(row.price)}
                           <em className="not-italic text-[11px] text-muted font-normal ml-0.5">/lb</em>
                         </span>
                       </td>
@@ -630,7 +622,7 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
         {/* Pagination */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-line-soft bg-cream flex-wrap gap-3">
           <div className="font-mono text-[12px] text-muted tracking-[0.04em]">
-            Showing <strong className="text-ink font-medium">{(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)}</strong>{' '}
+            Showing <strong className="text-ink font-medium">{Math.min((page - 1) * PAGE_SIZE + 1, filtered.length)}–{Math.min(page * PAGE_SIZE, filtered.length)}</strong>{' '}
             of <strong className="text-ink font-medium">{filtered.length}</strong> cuts
           </div>
           <div className="flex items-center gap-1.5">

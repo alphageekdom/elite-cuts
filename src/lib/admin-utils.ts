@@ -1,3 +1,5 @@
+export const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] as const;
+
 /** Returns a usable src for a product image.
  *  Cloudinary / absolute URLs are passed through unchanged.
  *  Bare filenames (e.g. "beef-ribeye-dry-aged.jpg") are resolved
