@@ -3,7 +3,7 @@ import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { CATEGORY_PAR, DEFAULT_PAR } from '@/lib/inventory';
-import { productImageSrc, statCellBorderClasses, formatMoney } from '@/lib/admin-utils';
+import { productImageSrc, statCellBorderClasses } from '@/lib/admin-utils';
 import { PRODUCT_CATEGORIES, CATEGORY_COLORS, type ProductCategory } from '@/lib/admin-constants';
 import InventoryAgingRoom, { type AgingCutRow } from './InventoryAgingRoom';
 import InventoryUpcomingDeliveries, { type DeliveryRow } from './InventoryUpcomingDeliveries';
@@ -18,6 +18,7 @@ export type InventoryRow = {
   isAged: boolean;
   supplier: string;
   createdAt: string;
+  deliveryStatus: string | null;
 };
 
 export type InventoryCounts = {
@@ -80,7 +81,6 @@ const SORT_OPTIONS: { value: SortBy; label: string }[] = [
   { value: 'stock-asc', label: 'Stock: Lowest first' },
   { value: 'stock-desc', label: 'Stock: Highest first' },
   { value: 'name-asc', label: 'Name: A → Z' },
-  { value: 'price-desc', label: 'Price: High → Low' },
   { value: 'newest', label: 'Newest first' },
 ];
 
@@ -116,7 +116,7 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
     setReorderSupplier(row.supplier || '');
     setReorderDetail(`Reorder: ${row.name}`);
     setReorderDate(defaultDate.toISOString().slice(0, 10));
-    setReorderStatus('scheduled');
+    setReorderStatus((row.deliveryStatus as typeof reorderStatus) ?? 'scheduled');
   }
 
   async function handleReorderSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -132,6 +132,7 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
           supplier: reorderSupplier.trim(),
           detail: reorderDetail.trim(),
           status: reorderStatus,
+          productId: reorderRow.id,
         }),
       });
       if (!res.ok) {
@@ -417,6 +418,9 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
                   Cut
                 </th>
                 <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">
+                  Aged
+                </th>
+                <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">
                   Category
                 </th>
                 <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">
@@ -426,13 +430,10 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
                   Status
                 </th>
                 <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">
-                  Price /lb
-                </th>
-                <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">
                   Supplier
                 </th>
                 <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">
-                  Aged
+                  Delivery
                 </th>
                 <th className="pr-6 pl-4 py-3.5" />
               </tr>
@@ -484,6 +485,17 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
                         </div>
                       </td>
 
+                      {/* Aging */}
+                      <td className="px-4 py-3.5">
+                        {row.isAged ? (
+                          <div className="font-mono text-[11px] text-muted tracking-[0.04em] leading-relaxed">
+                            <strong className="text-ink font-medium">Aged</strong>
+                          </div>
+                        ) : (
+                          <span className="text-[12px] text-muted">—</span>
+                        )}
+                      </td>
+
                       {/* Category */}
                       <td className="px-4 py-3.5">
                         <span
@@ -522,14 +534,6 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
                         </span>
                       </td>
 
-                      {/* Price */}
-                      <td className="px-4 py-3.5">
-                        <span className="font-display text-[15px] font-medium tracking-tight">
-                          {formatMoney(row.price)}
-                          <em className="not-italic text-[11px] text-muted font-normal ml-0.5">/lb</em>
-                        </span>
-                      </td>
-
                       {/* Supplier */}
                       <td className="px-4 py-3.5">
                         {supplierName ? (
@@ -539,12 +543,17 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
                         )}
                       </td>
 
-                      {/* Aging */}
+                      {/* Delivery status */}
                       <td className="px-4 py-3.5">
-                        {row.isAged ? (
-                          <div className="font-mono text-[11px] text-muted tracking-[0.04em] leading-relaxed">
-                            <strong className="text-ink font-medium">Aged</strong>
-                          </div>
+                        {row.deliveryStatus ? (
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-[0.04em] whitespace-nowrap ${
+                            row.deliveryStatus === 'confirmed' ? 'bg-green-soft text-green' :
+                            row.deliveryStatus === 'pending'   ? 'bg-amber-soft text-amber' :
+                            'bg-[rgba(28,24,20,0.06)] text-muted'
+                          }`}>
+                            <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                            {row.deliveryStatus.charAt(0).toUpperCase() + row.deliveryStatus.slice(1)}
+                          </span>
                         ) : (
                           <span className="text-[12px] text-muted">—</span>
                         )}
@@ -683,6 +692,19 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
                 <h2 className="font-display text-[20px] font-normal tracking-tight leading-snug">
                   {reorderRow.name}
                 </h2>
+                {reorderRow.deliveryStatus && (
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-[11px] text-muted">Existing delivery:</span>
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium ${
+                      reorderRow.deliveryStatus === 'confirmed' ? 'bg-green-soft text-green' :
+                      reorderRow.deliveryStatus === 'pending'   ? 'bg-amber-soft text-amber' :
+                      'bg-[rgba(28,24,20,0.06)] text-muted'
+                    }`}>
+                      <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                      {reorderRow.deliveryStatus.charAt(0).toUpperCase() + reorderRow.deliveryStatus.slice(1)}
+                    </span>
+                  </div>
+                )}
               </div>
               <button
                 type="button"

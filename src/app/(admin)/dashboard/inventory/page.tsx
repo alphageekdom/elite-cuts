@@ -33,7 +33,7 @@ export default async function AdminInventoryPage() {
   const [rawProducts, rawAgingCuts, rawDeliveries] = await Promise.all([
     ProductModel.find({ isActive: { $ne: false } }).sort({ stockCount: 1 }).limit(200).lean().exec(),
     AgingCutModel.find({}).sort({ startedAt: 1 }).lean().exec(),
-    DeliveryModel.find({ deliveryDate: { $gte: new Date() } }).sort({ deliveryDate: 1 }).limit(10).lean().exec(),
+    DeliveryModel.find({ deliveryDate: { $gte: new Date() } }).sort({ deliveryDate: 1 }).limit(50).lean().exec(),
   ]);
 
   const total = rawProducts.length;
@@ -68,6 +68,17 @@ export default async function AdminInventoryPage() {
     categoryCounts[p.category] = (categoryCounts[p.category] ?? 0) + 1;
   }
 
+  // Build a map from productId → earliest upcoming delivery status
+  const deliveryStatusMap = new Map<string, string>();
+  for (const d of rawDeliveries) {
+    if (d.productId) {
+      const pid = d.productId.toString();
+      if (!deliveryStatusMap.has(pid)) {
+        deliveryStatusMap.set(pid, d.status);
+      }
+    }
+  }
+
   const rows: InventoryRow[] = rawProducts.map((p) => ({
     id: p._id.toString(),
     name: p.name,
@@ -78,6 +89,7 @@ export default async function AdminInventoryPage() {
     isAged: p.isAged,
     supplier: p.supplier ?? '',
     createdAt: p.createdAt.toISOString(),
+    deliveryStatus: (deliveryStatusMap.get(p._id.toString()) ?? null) as string | null,
   }));
 
   const agingCuts: AgingCutRow[] = rawAgingCuts.map((c) => ({
