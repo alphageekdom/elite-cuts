@@ -45,8 +45,8 @@ export default async function AdminAnalyticsPage() {
   const [currentOrders, previousOrders, newCustomers, prevNewCustomers] = await Promise.all([
     OrderModel.find({ createdAt: { $gte: thirtyDaysAgo } }).lean().exec(),
     OrderModel.find({ createdAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo } }).lean().exec(),
-    User.countDocuments({ createdAt: { $gte: thirtyDaysAgo }, role: 'customer' }),
-    User.countDocuments({ createdAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo }, role: 'customer' }),
+    User.countDocuments({ createdAt: { $gte: thirtyDaysAgo }, isAdmin: { $ne: true } }),
+    User.countDocuments({ createdAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo }, isAdmin: { $ne: true } }),
   ]);
 
   // Revenue

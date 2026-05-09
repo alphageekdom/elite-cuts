@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { PRODUCT_CATEGORIES } from '@/lib/admin-constants';
 import { toast } from 'sonner';
 import type { ProductTableRow } from '@/types/admin';
@@ -88,7 +88,14 @@ export default function ProductFormDrawer({ product, onClose, onSave }: Props) {
   const [featuredToggle, setFeaturedToggle] = useState(product?.isFeatured ?? false);
   const [membersOnly, setMembersOnly] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const urls = imageFiles.map((f) => URL.createObjectURL(f));
+    setPreviewUrls(urls);
+    return () => { urls.forEach((url) => URL.revokeObjectURL(url)); };
+  }, [imageFiles]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function handleSave() {
@@ -270,7 +277,7 @@ export default function ProductFormDrawer({ product, onClose, onSave }: Props) {
               {imageFiles.map((f, i) => (
                 <div key={i} className="relative group w-16 h-16 rounded-md overflow-hidden bg-cream-deep border border-line shrink-0">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={URL.createObjectURL(f)} alt={f.name} className="w-full h-full object-cover" />
+                  {previewUrls[i] && <img src={previewUrls[i]} alt={f.name} className="w-full h-full object-cover" />}
                   <button
                     type="button"
                     onClick={() => setImageFiles((prev) => prev.filter((_, idx) => idx !== i))}

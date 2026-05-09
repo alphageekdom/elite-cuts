@@ -30,7 +30,7 @@ const TIER_PILLS: Array<{ key: TierFilter; label: string }> = [
   { key: 'connoisseur', label: 'Connoisseur' },
 ];
 
-const PAGE_SIZE = 8;
+const PAGE_SIZES = [8, 20, 50];
 
 function matchesStatFilter(row: CustomerTableRow, filter: StatFilter): boolean {
   if (filter === 'all') return true;
@@ -64,6 +64,7 @@ export default function CustomersClient({ customers, counts }: Props) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [drawerCustomer, setDrawerCustomer] = useState<CustomerTableRow | null>(null);
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(PAGE_SIZES[0]);
 
   async function handleCustomerSave(id: string, data: { name: string; email: string; phone: string }) {
     try {
@@ -119,8 +120,8 @@ export default function CustomersClient({ customers, counts }: Props) {
     return rows;
   }, [localCustomers, activeStatFilter, activeTierFilter, search]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+  const pageRows = filtered.slice((page - 1) * perPage, page * perPage);
 
   function toggleSelect(id: string) {
     setSelectedIds((prev) => {
@@ -219,7 +220,7 @@ export default function CustomersClient({ customers, counts }: Props) {
               onClick={() => handleStatFilter(cell.key)}
               className={[
                 'relative text-left px-4 py-4 sm:px-5 sm:py-5 transition-colors cursor-pointer',
-                statCellBorderClasses(idx),
+                statCellBorderClasses(idx, 5),
                 isActive ? 'bg-cream' : 'hover:bg-cream',
               ].join(' ')}
             >
@@ -568,7 +569,7 @@ export default function CustomersClient({ customers, counts }: Props) {
           <div className="font-mono text-[12px] text-muted tracking-[0.04em]">
             Showing{' '}
             <strong className="text-ink font-medium">
-              {filtered.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)}
+              {filtered.length === 0 ? 0 : (page - 1) * perPage + 1}–{Math.min(page * perPage, filtered.length)}
             </strong>{' '}
             of <strong className="text-ink font-medium">{filtered.length}</strong> customers
           </div>
@@ -621,10 +622,12 @@ export default function CustomersClient({ customers, counts }: Props) {
 
           <div className="hidden sm:flex items-center gap-2 font-mono text-[12px] text-muted">
             <span>Per page</span>
-            <select className="appearance-none bg-paper border border-line rounded-full pl-3 pr-6 py-1.5 text-[12px] text-ink font-mono cursor-pointer bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2210%22 height=%2210%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%238A7F73%22 stroke-width=%222%22><polyline points=%226 9 12 15 18 9%22/></svg>')] bg-no-repeat bg-position-[right_8px_center]">
-              <option>8</option>
-              <option>20</option>
-              <option>50</option>
+            <select
+              className="appearance-none bg-paper border border-line rounded-full pl-3 pr-6 py-1.5 text-[12px] text-ink font-mono cursor-pointer bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2210%22 height=%2210%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%238A7F73%22 stroke-width=%222%22><polyline points=%226 9 12 15 18 9%22/></svg>')] bg-no-repeat bg-position-[right_8px_center]"
+              value={perPage}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setPerPage(Number(e.target.value)); setPage(1); }}
+            >
+              {PAGE_SIZES.map((n) => <option key={n} value={n}>{n}</option>)}
             </select>
           </div>
         </div>

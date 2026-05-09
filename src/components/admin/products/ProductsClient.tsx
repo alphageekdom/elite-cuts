@@ -322,7 +322,7 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
               className={[
                 'relative text-left px-4 py-4 sm:px-5 sm:py-5 transition-colors',
                 cell.isInfo ? 'cursor-default' : 'cursor-pointer',
-                statCellBorderClasses(idx),
+                statCellBorderClasses(idx, 5),
                 isActive ? 'bg-cream' : cell.isInfo ? '' : 'hover:bg-cream',
               ].join(' ')}
             >

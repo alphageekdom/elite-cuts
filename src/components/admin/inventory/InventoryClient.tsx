@@ -258,7 +258,7 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
                 'relative px-5 py-5 transition-colors',
                 isAgingCell ? 'cursor-default' : 'cursor-pointer hover:bg-cream',
                 isActive ? 'bg-cream' : '',
-                statCellBorderClasses(idx),
+                statCellBorderClasses(idx, 5),
               ].join(' ')}
             >
               {isActive && (

@@ -46,7 +46,7 @@ function countForKey(key: StatKey, counts: StatusCounts): number {
   return 0;
 }
 
-const PAGE_SIZE = 8;
+const PAGE_SIZES = [8, 20, 50];
 
 export default function OrdersClient({ orders, counts }: Props) {
   const [localOrders, setLocalOrders] = useState(orders);
@@ -55,6 +55,7 @@ export default function OrdersClient({ orders, counts }: Props) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [drawerOrder, setDrawerOrder] = useState<OrderTableRow | null>(null);
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(PAGE_SIZES[0]);
   const [statusUpdate, setStatusUpdate] = useState<string>('');
 
   const filtered = useMemo(() => {
@@ -99,8 +100,8 @@ export default function OrdersClient({ orders, counts }: Props) {
     }
   }
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+  const pageRows = filtered.slice((page - 1) * perPage, page * perPage);
 
   function toggleSelect(id: string) {
     setSelectedIds((prev) => {
@@ -509,7 +510,7 @@ export default function OrdersClient({ orders, counts }: Props) {
           <div className="font-mono text-[12px] text-muted tracking-[0.04em]">
             Showing{' '}
             <strong className="text-ink font-medium">
-              {filtered.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)}
+              {filtered.length === 0 ? 0 : (page - 1) * perPage + 1}–{Math.min(page * perPage, filtered.length)}
             </strong>{' '}
             of <strong className="text-ink font-medium">{filtered.length}</strong> orders
           </div>
@@ -562,10 +563,12 @@ export default function OrdersClient({ orders, counts }: Props) {
 
           <div className="hidden sm:flex items-center gap-2 font-mono text-[12px] text-muted">
             <span>Per page</span>
-            <select className="appearance-none bg-paper border border-line rounded-full pl-3 pr-6 py-1.5 text-[12px] text-ink font-mono cursor-pointer bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2210%22 height=%2210%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%238A7F73%22 stroke-width=%222%22><polyline points=%226 9 12 15 18 9%22/></svg>')] bg-no-repeat bg-position-[right_8px_center]">
-              <option>8</option>
-              <option>20</option>
-              <option>50</option>
+            <select
+              className="appearance-none bg-paper border border-line rounded-full pl-3 pr-6 py-1.5 text-[12px] text-ink font-mono cursor-pointer bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2210%22 height=%2210%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%238A7F73%22 stroke-width=%222%22><polyline points=%226 9 12 15 18 9%22/></svg>')] bg-no-repeat bg-position-[right_8px_center]"
+              value={perPage}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setPerPage(Number(e.target.value)); setPage(1); }}
+            >
+              {PAGE_SIZES.map((n) => <option key={n} value={n}>{n}</option>)}
             </select>
           </div>
         </div>

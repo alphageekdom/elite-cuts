@@ -78,6 +78,7 @@ export const DELETE = async (
     const authError = await requireAdmin();
     if (authError) return authError;
 
+    await connectDB();
     const { id } = await params;
 
     const existingProduct = await Product.findById(id);
@@ -99,6 +100,7 @@ export const PUT = async (request: NextRequest, { params }: RouteContext) => {
     const authError = await requireAdmin();
     if (authError) return authError;
 
+    await connectDB();
     const { id } = await params;
     const formData = await request.formData();
 

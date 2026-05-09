@@ -29,9 +29,10 @@ export const GET = async (request: NextRequest) => {
 
     const skip = (page - 1) * pageSize;
 
+    const activeFilter = { isActive: { $ne: false } };
     const [total, products] = await Promise.all([
-      Product.countDocuments({}),
-      Product.find({}).sort(sort).skip(skip).limit(pageSize),
+      Product.countDocuments(activeFilter),
+      Product.find(activeFilter).sort(sort).skip(skip).limit(pageSize),
     ]);
 
     return NextResponse.json({ total, products });
