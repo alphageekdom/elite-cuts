@@ -7,6 +7,17 @@ export const AVATAR_COLORS = [
   'bg-[#3d5c2a] text-cream',
 ] as const;
 
+// Gradient avatars for members (Connoisseur / Master Cut, ≥ 250 pts).
+// Index 2 = oxblood — reserved for Tangerine Dev's hash slot.
+export const MEMBER_AVATAR_COLORS = [
+  'bg-linear-to-br from-camel to-[#a07445] text-ink',
+  'bg-linear-to-br from-ink to-[#2d2722] text-cream',
+  'bg-linear-to-br from-oxblood to-oxblood-deep text-cream',
+  'bg-linear-to-br from-[#4a6b3a] to-[#3d5c2a] text-cream',
+  'bg-linear-to-br from-[#7a5c3a] to-[#5a3820] text-cream',
+  'bg-linear-to-br from-camel-soft to-[#c4a381] text-ink',
+] as const;
+
 export const PRODUCT_CATEGORIES = ['Beef', 'Pork', 'Poultry', 'Lamb', 'Charcuterie', 'Other'] as const;
 export type ProductCategory = (typeof PRODUCT_CATEGORIES)[number];
 

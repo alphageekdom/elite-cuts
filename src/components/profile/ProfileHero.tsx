@@ -1,9 +1,18 @@
 import Link from 'next/link';
 
+import { AVATAR_COLORS, MEMBER_AVATAR_COLORS } from '@/lib/admin-constants';
+import { avatarColorForId } from '@/lib/admin-utils';
+
+// Dark ink-to-oxblood gradient with camel (gold) initials — admin only.
+const ADMIN_AVATAR_COLOR = 'bg-linear-to-br from-ink to-oxblood-deep text-camel';
+
 type Props = {
   name: string;
   email: string;
   createdAt: string;
+  userId: string;
+  rewardPoints: number;
+  isAdmin: boolean;
 };
 
 function initials(name: string): string {
@@ -28,28 +37,20 @@ function splitName(name: string): [string, string] {
   return [name.slice(0, idx), name.slice(idx + 1)];
 }
 
-export default function ProfileHero({ name, email, createdAt }: Props) {
+export default function ProfileHero({ name, email, createdAt, userId, rewardPoints, isAdmin }: Props) {
   const [firstName, lastName] = splitName(name);
+  const isMember = rewardPoints >= 250;
+  const colorClass = isAdmin
+    ? ADMIN_AVATAR_COLOR
+    : avatarColorForId(userId, isMember ? MEMBER_AVATAR_COLORS : AVATAR_COLORS);
 
   return (
     <section className="pt-10 pb-10 sm:pt-12 sm:pb-16 border-b border-line-soft">
       <div className="grid grid-cols-[auto_1fr] lg:grid-cols-[auto_1fr_auto] gap-8 lg:gap-10 items-center">
 
         {/* Avatar */}
-        <div className="relative self-start">
-          <div className="w-[100px] h-[100px] lg:w-[120px] lg:h-[120px] rounded-full bg-linear-to-br from-oxblood to-oxblood-deep flex items-center justify-center font-display font-medium text-cream text-4xl lg:text-[44px] tracking-tight shadow-[0_12px_40px_rgba(107,31,31,0.25)] ring-1 ring-line ring-offset-4 ring-offset-cream select-none">
-            {initials(name)}
-          </div>
-          <Link
-            href="/profile?tab=settings"
-            aria-label="Change photo"
-            className="absolute bottom-1 right-1 w-8 h-8 rounded-full bg-cream text-ink flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.15)] border-2 border-cream transition-transform hover:scale-110"
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
-              <circle cx="12" cy="13" r="4" />
-            </svg>
-          </Link>
+        <div className={`w-25 h-25 lg:w-30 lg:h-30 rounded-full flex items-center justify-center font-display font-medium text-4xl lg:text-[44px] tracking-tight shadow-[0_12px_40px_rgba(28,24,20,0.15)] ring-1 ring-line ring-offset-4 ring-offset-cream select-none self-start ${colorClass}`}>
+          {initials(name)}
         </div>
 
         {/* Identity */}

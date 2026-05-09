@@ -78,6 +78,7 @@ export default async function ProfilePage({ searchParams }: Props) {
       isDefault: boolean;
     }[];
     rewardPoints: number;
+    isAdmin: boolean;
     createdAt: Date;
     updatedAt: Date;
   }>();
@@ -151,7 +152,7 @@ export default async function ProfilePage({ searchParams }: Props) {
     <main className="bg-cream min-h-screen pt-20">
       <div className="max-w-300 mx-auto px-5 md:px-8">
 
-        <ProfileHero name={displayName} email={displayEmail} createdAt={createdAt} />
+        <ProfileHero name={displayName} email={displayEmail} createdAt={createdAt} userId={userId} rewardPoints={rawUser.rewardPoints ?? 0} isAdmin={rawUser.isAdmin ?? false} />
 
         <ProfileStats
           orderCount={serializedOrders.length}

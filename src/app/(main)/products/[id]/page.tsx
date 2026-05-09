@@ -8,7 +8,8 @@ import ProductModel, { type SerializedProduct } from '@/models/Product';
 import ReviewModel from '@/models/Review';
 import { convertToSerializableObject } from '@/utils/convertToObject';
 import { getSessionUser } from '@/utils/getSessionUser';
-import { AVATAR_COLORS } from '@/lib/admin-constants';
+import { AVATAR_COLORS, MEMBER_AVATAR_COLORS } from '@/lib/admin-constants';
+import { avatarColorForId } from '@/lib/admin-utils';
 import ProductGallery from '@/components/product/detail/ProductGallery';
 import BuyBlock from '@/components/product/detail/BuyBlock';
 import ProductCard from '@/components/product/ProductCard';
@@ -26,6 +27,7 @@ type OwnReview = { _id: string; rating: number; comment: string };
 
 type SerializedReview = {
   _id: string;
+  userId: string;
   isOwn: boolean;
   userName: string;
   rating: number;
@@ -169,6 +171,7 @@ export default async function ProductPage({ params }: PageProps) {
 
   const reviews: SerializedReview[] = rawReviews.map((r) => ({
     _id: String(r._id),
+    userId: r.user?._id?.toString() ?? 'anonymous',
     isOwn: r.user?._id?.toString() === sessionUser?.userId,
     userName: r.user?.name ?? 'Anonymous',
     rating: r.rating,
@@ -466,8 +469,12 @@ export default async function ProductPage({ params }: PageProps) {
 
               {/* Review list */}
               <div className='divide-y divide-line-soft'>
-                {reviews.map((review, i) => {
-                  const colorClass = AVATAR_COLORS[i % AVATAR_COLORS.length] ?? AVATAR_COLORS[0];
+                {reviews.map((review) => {
+                  const isMember = review.userTier !== 'Regular';
+                  const colorClass = avatarColorForId(
+                    review.userId,
+                    isMember ? MEMBER_AVATAR_COLORS : AVATAR_COLORS,
+                  );
                   return (
                     <article key={review._id} className='py-7 first:pt-0 last:pb-0'>
                       <div className='mb-3.5 flex items-center gap-3.5'>
