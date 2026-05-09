@@ -12,7 +12,7 @@ import InventoryClient, {
   type InventoryCounts,
 } from '@/components/admin/inventory/InventoryClient';
 import type { AgingCutRow } from '@/components/admin/inventory/InventoryAgingRoom';
-import type { DeliveryRow } from '@/components/admin/inventory/InventoryUpcomingDeliveries';
+import type { DeliveryRow, ReceivedDeliveryRow } from '@/components/admin/inventory/InventoryUpcomingDeliveries';
 import { CATEGORY_PAR, DEFAULT_PAR } from '@/lib/inventory';
 
 export const dynamic = 'force-dynamic';
@@ -30,10 +30,11 @@ export default async function AdminInventoryPage() {
 
   await connectDB();
 
-  const [rawProducts, rawAgingCuts, rawDeliveries] = await Promise.all([
+  const [rawProducts, rawAgingCuts, rawDeliveries, rawReceivedDeliveries] = await Promise.all([
     ProductModel.find({ isActive: { $ne: false } }).sort({ stockCount: 1 }).limit(200).lean().exec(),
     AgingCutModel.find({}).sort({ startedAt: 1 }).lean().exec(),
     DeliveryModel.find({ deliveryDate: { $gte: new Date() } }).sort({ deliveryDate: 1 }).limit(50).lean().exec(),
+    DeliveryModel.find({ status: 'received' }).sort({ updatedAt: -1 }).limit(20).lean().exec(),
   ]);
 
   const total = rawProducts.length;
@@ -112,16 +113,29 @@ export default async function AdminInventoryPage() {
   }));
 
   const deliveries: DeliveryRow[] = rawDeliveries.map((d) => ({
-      _id: d._id.toString(),
-      deliveryDate: d.deliveryDate.toISOString(),
-      supplier: d.supplier,
-      supplierSuffix: d.supplierSuffix,
-      detail: d.detail,
-      status: d.status,
-      productId: d.productId?.toString() ?? null,
-      currentStock: d.productId ? (productStockMap.get(d.productId.toString()) ?? null) : null,
-      parLevel: d.productId ? (productParMap.get(d.productId.toString()) ?? null) : null,
-    }));
+    _id: d._id.toString(),
+    deliveryDate: d.deliveryDate.toISOString(),
+    supplier: d.supplier,
+    supplierSuffix: d.supplierSuffix,
+    detail: d.detail,
+    status: d.status,
+    productId: d.productId?.toString() ?? null,
+    currentStock: d.productId ? (productStockMap.get(d.productId.toString()) ?? null) : null,
+    parLevel: d.productId ? (productParMap.get(d.productId.toString()) ?? null) : null,
+  }));
+
+  // productId → product name (for received delivery history)
+  const productNameMap = new Map<string, string>(
+    rawProducts.map((p) => [p._id.toString(), p.name]),
+  );
+
+  const receivedDeliveries: ReceivedDeliveryRow[] = rawReceivedDeliveries.map((d) => ({
+    _id: d._id.toString(),
+    receivedAt: ((d as unknown as { updatedAt: Date }).updatedAt ?? d.deliveryDate).toISOString(),
+    supplier: d.supplier,
+    productName: d.productId ? (productNameMap.get(d.productId.toString()) ?? null) : null,
+    receivedQty: d.receivedQty ?? null,
+  }));
 
   return (
     <>
@@ -132,6 +146,7 @@ export default async function AdminInventoryPage() {
         categoryCounts={categoryCounts}
         agingCuts={agingCuts}
         deliveries={deliveries}
+        receivedDeliveries={receivedDeliveries}
       />
     </>
   );

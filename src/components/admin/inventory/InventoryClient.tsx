@@ -6,7 +6,7 @@ import { CATEGORY_PAR, DEFAULT_PAR } from '@/lib/inventory';
 import { productImageSrc, statCellBorderClasses } from '@/lib/admin-utils';
 import { PRODUCT_CATEGORIES, CATEGORY_COLORS, type ProductCategory } from '@/lib/admin-constants';
 import InventoryAgingRoom, { type AgingCutRow } from './InventoryAgingRoom';
-import InventoryUpcomingDeliveries, { type DeliveryRow } from './InventoryUpcomingDeliveries';
+import InventoryUpcomingDeliveries, { type DeliveryRow, type ReceivedDeliveryRow } from './InventoryUpcomingDeliveries';
 
 export type InventoryRow = {
   id: string;
@@ -35,10 +35,11 @@ type Props = {
   categoryCounts: Record<string, number>;
   agingCuts: AgingCutRow[];
   deliveries: DeliveryRow[];
+  receivedDeliveries: ReceivedDeliveryRow[];
 };
 
 type StatFilter = 'all' | 'inStock' | 'lowStock' | 'critical';
-type SortBy = 'stock-asc' | 'stock-desc' | 'name-asc' | 'price-desc' | 'newest';
+type SortBy = 'stock-asc' | 'name-asc' | 'price-desc' | 'newest';
 
 
 
@@ -79,7 +80,6 @@ const STOCK_STATUS_LABEL: Record<StockState, string> = {
 
 const SORT_OPTIONS: { value: SortBy; label: string }[] = [
   { value: 'stock-asc', label: 'Stock: Lowest first' },
-  { value: 'stock-desc', label: 'Stock: Highest first' },
   { value: 'name-asc', label: 'Name: A → Z' },
   { value: 'newest', label: 'Newest first' },
 ];
@@ -87,7 +87,7 @@ const SORT_OPTIONS: { value: SortBy; label: string }[] = [
 
 const PAGE_SIZE = 8;
 
-export default function InventoryClient({ rows, counts, categoryCounts, agingCuts, deliveries }: Props) {
+export default function InventoryClient({ rows, counts, categoryCounts, agingCuts, deliveries, receivedDeliveries }: Props) {
   const router = useRouter();
   const [localRows, setLocalRows] = useState(rows);
   useEffect(() => { setLocalRows(rows); }, [rows]);
@@ -222,7 +222,6 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
 
     const sorted = [...list];
     if (sortBy === 'stock-asc') sorted.sort((a, b) => a.stockCount - b.stockCount);
-    else if (sortBy === 'stock-desc') sorted.sort((a, b) => b.stockCount - a.stockCount);
     else if (sortBy === 'name-asc') sorted.sort((a, b) => a.name.localeCompare(b.name));
     else if (sortBy === 'price-desc') sorted.sort((a, b) => b.price - a.price);
     else if (sortBy === 'newest') sorted.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
@@ -687,7 +686,7 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
       {/* Two-column grid: Aging room + Deliveries */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <InventoryAgingRoom cuts={agingCuts} />
-        <InventoryUpcomingDeliveries deliveries={deliveries} />
+        <InventoryUpcomingDeliveries deliveries={deliveries} receivedDeliveries={receivedDeliveries} />
       </div>
 
       {/* Click-outside handler for sort dropdown */}
