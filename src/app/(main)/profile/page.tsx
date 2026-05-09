@@ -23,6 +23,9 @@ import ProfileAddresses from '@/components/profile/ProfileAddresses';
 import ProfileInfoForm from '@/components/profile/ProfileInfoForm';
 import UpdateProfile from '@/components/profile/UpdateProfile';
 import ProfileRewards from '@/components/profile/ProfileRewards';
+import ProfileMessages from '@/components/profile/ProfileMessages';
+import type { SerializedMessage } from '@/components/profile/ProfileMessages';
+import MessageModel from '@/models/Message';
 import type { SerializedAddress } from '@/types/address';
 
 export type ProfileOrder = {
@@ -114,10 +117,15 @@ export default async function ProfilePage({ searchParams }: Props) {
     convertToSerializableObject(p as unknown as Record<string, unknown>),
   ) as SerializedProduct[];
 
-  const rawOrders = await Order.find({ user: userId })
-    .sort({ createdAt: -1 })
-    .limit(activeTab === 'orders' ? 50 : 5)
-    .lean();
+  const [rawOrders, rawMessages] = await Promise.all([
+    Order.find({ user: userId })
+      .sort({ createdAt: -1 })
+      .limit(activeTab === 'orders' ? 50 : 5)
+      .lean(),
+    MessageModel.find({ user: userId })
+      .sort({ createdAt: -1 })
+      .lean(),
+  ]);
 
   const serializedOrders: ProfileOrder[] = rawOrders.map((o) => ({
     _id: String(o._id),
@@ -139,6 +147,15 @@ export default async function ProfilePage({ searchParams }: Props) {
     pickedUp: o.pickedUp,
     createdAt: (o.createdAt as Date).toISOString(),
     updatedAt: (o.updatedAt as Date).toISOString(),
+  }));
+
+  const serializedMessages: SerializedMessage[] = rawMessages.map((m) => ({
+    _id: String(m._id),
+    subject: m.subject,
+    body: m.body,
+    ...(m.orderRef ? { orderRef: m.orderRef } : {}),
+    status: m.status,
+    createdAt: (m.createdAt as Date).toISOString(),
   }));
 
   const createdAt = (rawUser.createdAt as Date).toISOString();
@@ -167,6 +184,7 @@ export default async function ProfilePage({ searchParams }: Props) {
           orderCount={serializedOrders.length}
           savedCount={serializedSavedCuts.length}
           addressCount={serializedAddresses.length}
+          messageCount={serializedMessages.length}
         />
 
         {/* Main grid */}
@@ -242,6 +260,10 @@ export default async function ProfilePage({ searchParams }: Props) {
 
             {activeTab === 'addresses' && (
               <ProfileAddresses addresses={serializedAddresses} />
+            )}
+
+            {activeTab === 'messages' && (
+              <ProfileMessages messages={serializedMessages} />
             )}
 
             {activeTab === 'rewards' && (

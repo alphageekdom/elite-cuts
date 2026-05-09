@@ -7,9 +7,10 @@ import { NAV_WORKSPACE, NAV_OPERATIONS } from './navItems';
 type Props = {
   initial: string;
   criticalInventoryCount: number;
+  openMessageCount?: number;
 };
 
-export default function AdminTabletRail({ initial, criticalInventoryCount }: Props) {
+export default function AdminTabletRail({ initial, criticalInventoryCount, openMessageCount = 0 }: Props) {
   const pathname = usePathname();
 
   const isActive = (href: string) =>
@@ -66,7 +67,8 @@ export default function AdminTabletRail({ initial, criticalInventoryCount }: Pro
           <ul className="flex flex-col gap-0.5" role="list">
             {NAV_OPERATIONS.map((item) => {
               const isInventory = item.href === '/dashboard/inventory';
-              const showBadge = isInventory && criticalInventoryCount > 0;
+              const isMessages  = item.href === '/dashboard/messages';
+              const showBadge   = (isInventory && criticalInventoryCount > 0) || (isMessages && openMessageCount > 0);
               return (
                 <li key={item.href}>
                   <Link

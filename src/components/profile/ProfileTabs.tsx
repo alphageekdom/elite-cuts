@@ -11,6 +11,7 @@ const TABS: Tab[] = [
   { id: 'orders',    label: 'Orders',      href: '/profile?tab=orders' },
   { id: 'saved',     label: 'Saved cuts',  href: '/profile?tab=saved' },
   { id: 'addresses', label: 'Addresses',   href: '/profile?tab=addresses' },
+  { id: 'messages',  label: 'Messages',    href: '/profile?tab=messages' },
   { id: 'settings',  label: 'Settings',    href: '/profile?tab=settings' },
   { id: 'rewards',   label: 'Rewards',     href: '/profile?tab=rewards' },
 ];
@@ -20,13 +21,15 @@ type Props = {
   orderCount: number;
   savedCount: number;
   addressCount: number;
+  messageCount: number;
 };
 
-export default function ProfileTabs({ activeTab, orderCount, savedCount, addressCount }: Props) {
+export default function ProfileTabs({ activeTab, orderCount, savedCount, addressCount, messageCount }: Props) {
   function badge(id: string): number | null {
     if (id === 'orders') return orderCount || null;
     if (id === 'saved') return savedCount || null;
     if (id === 'addresses') return addressCount || null;
+    if (id === 'messages') return messageCount || null;
     return null;
   }
 

@@ -8,9 +8,10 @@ type Props = {
   name: string;
   initial: string;
   criticalInventoryCount: number;
+  openMessageCount: number;
 };
 
-export default function AdminSidebarClient({ name, initial, criticalInventoryCount }: Props) {
+export default function AdminSidebarClient({ name, initial, criticalInventoryCount, openMessageCount }: Props) {
   const [collapsed, setCollapsed] = useState(false);
 
   // Hydrate from localStorage after mount to avoid SSR mismatch
@@ -79,6 +80,7 @@ export default function AdminSidebarClient({ name, initial, criticalInventoryCou
       <div className={`flex-1 overflow-y-auto pt-1 ${collapsed ? 'px-2' : 'px-3'}`}>
         <AdminNavLinks
           criticalInventoryCount={criticalInventoryCount}
+          openMessageCount={openMessageCount}
           collapsed={collapsed}
         />
       </div>
