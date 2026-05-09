@@ -64,7 +64,7 @@ const ProductsPage = async ({
 
   const pageNum = Math.max(1, Number.parseInt(params.page ?? '1', 10) || 1);
 
-  const query: Record<string, unknown> = { 'images.0': { $exists: true } };
+  const query: Record<string, unknown> = { 'images.0': { $exists: true }, isActive: { $ne: false } };
   if (category) query.category = category;
   if (inStockOnly) query.stockCount = { $gt: 0 };
   if (q) {

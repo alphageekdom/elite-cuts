@@ -8,9 +8,6 @@ const CatalogHero = ({ stats }: CatalogHeroProps) => (
   <section className='bg-cream pt-36 pb-20 md:pt-40 md:pb-24'>
     <div className='mx-auto w-full max-w-7xl px-6 md:px-8'>
       <div className='mb-12 flex items-baseline gap-6'>
-        <span className='font-display text-sm font-medium text-camel'>
-          → 01
-        </span>
         <span className='text-xs font-medium tracking-[0.22em] uppercase text-muted'>
           The Shop
         </span>

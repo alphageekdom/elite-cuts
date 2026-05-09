@@ -7,6 +7,7 @@ import { useSession } from 'next-auth/react';
 
 import useHandleAddToCart from '@/hooks/useHandleAddToCart';
 import useHandleBookmark from '@/hooks/useHandleBookmark';
+import { productImageSrc } from '@/lib/admin-utils';
 
 import { type SerializedProduct } from '@/models/Product';
 
@@ -122,7 +123,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
           className='absolute inset-0 z-1'
         >
           <Image
-            src={`/images/products/${product.images[0]}`}
+            src={productImageSrc(product.images[0]) ?? ''}
             alt=''
             fill
             sizes='(min-width: 1024px) 50vw, 100vw'

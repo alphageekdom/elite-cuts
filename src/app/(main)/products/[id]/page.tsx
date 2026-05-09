@@ -334,7 +334,7 @@ export default async function ProductPage({ params }: PageProps) {
 
         {/* ── Description ── */}
         <section className='border-t border-line-soft py-20'>
-          <SectionHead num='02' label='About this cut' />
+          <SectionHead label='About this cut' />
 
           <h2 className='mb-10 font-display text-[clamp(32px,4vw,52px)] font-normal leading-[1.05] tracking-tight'>
             What makes{' '}
@@ -375,7 +375,7 @@ export default async function ProductPage({ params }: PageProps) {
 
         {/* ── Reviews ── */}
         <section id='reviews' className='border-t border-line-soft py-20'>
-          <SectionHead num='03' label='Reviews' />
+          <SectionHead label='Reviews' />
 
           <h2 className='mb-10 font-display text-[clamp(32px,4vw,52px)] font-normal leading-[1.05] tracking-tight'>
             What regulars are <em className='text-oxblood'>saying.</em>
@@ -477,7 +477,7 @@ export default async function ProductPage({ params }: PageProps) {
         {/* ── Related products ── */}
         {related.length > 0 && (
           <section className='border-t border-line-soft py-20'>
-            <SectionHead num='04' label='You might also like' />
+            <SectionHead label='You might also like' />
 
             <h2 className='mb-10 font-display text-[clamp(32px,4vw,52px)] font-normal leading-[1.05] tracking-tight'>
               Other cuts <em className='text-oxblood'>worth knowing.</em>
