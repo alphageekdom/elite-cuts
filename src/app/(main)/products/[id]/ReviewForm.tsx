@@ -6,20 +6,16 @@ import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
+type OwnReview = { _id: string; rating: number; comment: string };
+
 type Props = {
   productId: string;
-  hasReviewed: boolean;
+  ownReview: OwnReview | null;
 };
 
 const MAX_COMMENT = 1000;
 
-const Star = ({
-  filled,
-  size = 'md',
-}: {
-  filled: boolean;
-  size?: 'md' | 'lg';
-}) => {
+const Star = ({ filled, size = 'md' }: { filled: boolean; size?: 'md' | 'lg' }) => {
   const cls = size === 'lg' ? 'h-7 w-7' : 'h-5 w-5';
   return (
     <svg
@@ -35,16 +31,21 @@ const Star = ({
   );
 };
 
-export default function ReviewForm({ productId, hasReviewed }: Props) {
+const STAR_LABELS = ['Terrible', 'Poor', 'Okay', 'Good', 'Excellent'];
+
+export default function ReviewForm({ productId, ownReview }: Props) {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [rating, setRating] = useState(0);
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [rating, setRating] = useState(ownReview?.rating ?? 0);
   const [hovered, setHovered] = useState(0);
-  const [comment, setComment] = useState('');
+  const [comment, setComment] = useState(ownReview?.comment ?? '');
   const [submitting, setSubmitting] = useState(false);
 
   if (status === 'loading') return null;
 
+  // Not signed in
   if (!session) {
     return (
       <div className='rounded-sm border border-dashed border-line bg-paper px-6 py-10 text-center'>
@@ -61,9 +62,10 @@ export default function ReviewForm({ productId, hasReviewed }: Props) {
     );
   }
 
-  if (hasReviewed) {
+  // Signed in + already reviewed + not editing → placecard
+  if (ownReview && !isEditing) {
     return (
-      <div className='rounded-sm border border-line-soft bg-paper px-6 py-8 text-center'>
+      <div className='flex items-center justify-between gap-4 rounded-sm border border-line-soft bg-paper px-6 py-8'>
         <span className='inline-flex items-center gap-2 text-[14px] text-muted'>
           <svg
             viewBox='0 0 24 24'
@@ -71,39 +73,45 @@ export default function ReviewForm({ productId, hasReviewed }: Props) {
             stroke='currentColor'
             strokeWidth={2}
             aria-hidden
-            className='h-4 w-4 text-green'
+            className='h-4 w-4 shrink-0 text-green'
           >
             <polyline points='20 6 9 17 4 12' />
           </svg>
-          You've already reviewed this cut — thank you.
+          You&apos;ve already reviewed this cut.
         </span>
+        <button
+          type='button'
+          onClick={() => setIsEditing(true)}
+          className='shrink-0 text-[13px] font-medium text-ink-soft underline-offset-2 hover:text-ink hover:underline'
+        >
+          Edit my review
+        </button>
       </div>
     );
   }
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  // Edit or new submit form
+  const handleSubmit = async (e: { preventDefault(): void }) => {
     e.preventDefault();
-    if (!rating) {
-      toast.error('Please select a star rating');
-      return;
-    }
-    if (!comment.trim()) {
-      toast.error('Please write a comment');
-      return;
-    }
+    if (!rating) { toast.error('Please select a star rating'); return; }
+    if (!comment.trim()) { toast.error('Please write a comment'); return; }
 
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/products/${productId}`, {
-        method: 'POST',
+      const url = ownReview
+        ? `/api/reviews/${ownReview._id}`
+        : `/api/products/${productId}`;
+      const method = ownReview ? 'PATCH' : 'POST';
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rating, comment: comment.trim() }),
       });
 
       if (res.ok) {
-        toast.success('Review submitted — thanks!');
-        setRating(0);
-        setComment('');
+        toast.success(ownReview ? 'Review updated.' : 'Review submitted — thanks!');
+        setIsEditing(false);
         router.refresh();
       } else if (res.status === 409) {
         toast.error("You've already reviewed this cut.");
@@ -119,18 +127,24 @@ export default function ReviewForm({ productId, hasReviewed }: Props) {
     }
   };
 
-  const display = hovered || rating;
+  const handleCancel = () => {
+    setRating(ownReview?.rating ?? 0);
+    setComment(ownReview?.comment ?? '');
+    setIsEditing(false);
+  };
 
-  const STAR_LABELS = ['Terrible', 'Poor', 'Okay', 'Good', 'Excellent'];
+  const display = hovered || rating;
 
   return (
     <form onSubmit={handleSubmit} className='space-y-5 md:space-y-6'>
       <div>
         <h3 className='mb-1 font-display text-[22px] font-medium tracking-[-0.01em]'>
-          Leave a review
+          {ownReview ? 'Edit your review' : 'Leave a review'}
         </h3>
         <p className='text-[13px] text-muted'>
-          Share your experience with this cut.
+          {ownReview
+            ? 'Update your rating or comment below.'
+            : 'Share your experience with this cut.'}
         </p>
       </div>
 
@@ -171,20 +185,33 @@ export default function ReviewForm({ productId, hasReviewed }: Props) {
           maxLength={MAX_COMMENT}
           placeholder='Share your experience with this cut…'
           rows={4}
-          className='w-full resize-none rounded-sm border border-line bg-paper px-4 py-3 text-[14px] leading-[1.65] text-ink placeholder:text-muted focus:border-ink focus:outline-none transition-colors duration-200'
+          className='w-full resize-none rounded-sm border border-line bg-paper px-4 py-3 text-[14px] leading-[1.65] text-ink placeholder:text-muted transition-colors duration-200 focus:border-ink focus:outline-none'
         />
         <div className='mt-1 text-right font-mono text-[11px] text-muted'>
           {comment.length} / {MAX_COMMENT}
         </div>
       </div>
 
-      <button
-        type='submit'
-        disabled={submitting || !rating || !comment.trim()}
-        className='rounded-full bg-ink px-6 py-3 text-[13px] font-medium tracking-[0.04em] text-cream transition-colors duration-300 hover:bg-oxblood disabled:cursor-not-allowed disabled:opacity-50'
-      >
-        {submitting ? 'Submitting…' : 'Submit review'}
-      </button>
+      <div className='flex items-center gap-4'>
+        <button
+          type='submit'
+          disabled={submitting || !rating || !comment.trim()}
+          className='rounded-full bg-ink px-6 py-3 text-[13px] font-medium tracking-[0.04em] text-cream transition-colors duration-300 hover:bg-oxblood disabled:cursor-not-allowed disabled:opacity-50'
+        >
+          {submitting
+            ? ownReview ? 'Updating…' : 'Submitting…'
+            : ownReview ? 'Update review' : 'Submit review'}
+        </button>
+        {ownReview && (
+          <button
+            type='button'
+            onClick={handleCancel}
+            className='text-[13px] text-muted hover:text-ink'
+          >
+            Cancel
+          </button>
+        )}
+      </div>
     </form>
   );
 }

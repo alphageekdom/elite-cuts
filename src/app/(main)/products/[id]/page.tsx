@@ -14,6 +14,7 @@ import BuyBlock from '@/components/product/detail/BuyBlock';
 import ProductCard from '@/components/product/ProductCard';
 import SectionHead from '@/components/ui/SectionHead';
 import ReviewForm from './ReviewForm';
+import ReviewActions from './ReviewActions';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -21,8 +22,11 @@ type PageProps = { params: Promise<{ id: string }> };
 
 type UserTier = 'Master Cut' | 'Connoisseur' | 'Regular';
 
+type OwnReview = { _id: string; rating: number; comment: string };
+
 type SerializedReview = {
   _id: string;
+  isOwn: boolean;
   userName: string;
   rating: number;
   comment: string;
@@ -32,7 +36,7 @@ type SerializedReview = {
 
 type LeanReviewWithUser = {
   _id: Types.ObjectId;
-  user: { name: string; rewardPoints: number } | null;
+  user: { _id: Types.ObjectId; name: string; rewardPoints: number } | null;
   rating: number;
   comment: string;
   createdAt: Date;
@@ -155,14 +159,17 @@ export default async function ProductPage({ params }: PageProps) {
     productDoc as Record<string, unknown>,
   ) as SerializedProduct;
 
-  // Reviews (populate user.name)
+  const sessionUser = await getSessionUser();
+
+  // Reviews (populate user name + rewardPoints; _id included by default)
   const rawReviews = (await ReviewModel.find({ product: id })
-    .populate<{ user: { name: string; rewardPoints: number } | null }>('user', 'name rewardPoints')
+    .populate<{ user: { _id: Types.ObjectId; name: string; rewardPoints: number } | null }>('user', 'name rewardPoints')
     .sort({ createdAt: -1 })
     .lean()) as unknown as LeanReviewWithUser[];
 
   const reviews: SerializedReview[] = rawReviews.map((r) => ({
     _id: String(r._id),
+    isOwn: r.user?._id?.toString() === sessionUser?.userId,
     userName: r.user?.name ?? 'Anonymous',
     rating: r.rating,
     comment: r.comment,
@@ -174,6 +181,12 @@ export default async function ProductPage({ params }: PageProps) {
     userTier: getUserTier(r.user?.rewardPoints ?? 0),
   }));
 
+  // Derive the current user's own review for the edit form (no extra DB query)
+  const ownRaw = reviews.find((r) => r.isOwn);
+  const ownReview: OwnReview | null = ownRaw
+    ? { _id: ownRaw._id, rating: ownRaw.rating, comment: ownRaw.comment }
+    : null;
+
   // Rating stats
   const avgRating =
     reviews.length > 0
@@ -184,11 +197,6 @@ export default async function ProductPage({ params }: PageProps) {
     const count = reviews.filter((r) => r.rating === star).length;
     return { star, count, fraction: reviews.length > 0 ? count / reviews.length : 0 };
   });
-
-  const sessionUser = await getSessionUser();
-  const hasReviewed = sessionUser?.userId
-    ? (await ReviewModel.exists({ product: id, user: sessionUser.userId })) !== null
-    : false;
 
   // Related products (same category, exclude current, in stock, limit 3)
   const relatedDocs = await ProductModel.find({
@@ -499,6 +507,7 @@ export default async function ProductPage({ params }: PageProps) {
                       <p className='text-[14px] leading-[1.65] text-ink-soft'>
                         {review.comment}
                       </p>
+                      {review.isOwn && <ReviewActions reviewId={review._id} />}
                     </article>
                   );
                 })}
@@ -507,7 +516,7 @@ export default async function ProductPage({ params }: PageProps) {
           )}
 
           <div className='mt-10 border-t border-line-soft pt-10 md:mt-14 md:pt-12'>
-            <ReviewForm productId={id} hasReviewed={hasReviewed} />
+            <ReviewForm productId={id} ownReview={ownReview} />
           </div>
         </section>
 
