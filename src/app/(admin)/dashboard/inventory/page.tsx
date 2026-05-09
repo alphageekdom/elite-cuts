@@ -68,8 +68,17 @@ export default async function AdminInventoryPage() {
     categoryCounts[p.category] = (categoryCounts[p.category] ?? 0) + 1;
   }
 
-  // Build a map from productId → earliest upcoming delivery status
+  // productId → earliest upcoming delivery status
   const deliveryStatusMap = new Map<string, string>();
+  // productId → current stock count (for pre-filling the received qty input)
+  const productStockMap = new Map<string, number>(
+    rawProducts.map((p) => [p._id.toString(), p.stockCount]),
+  );
+  // productId → par level (for the status preview after receiving)
+  const productParMap = new Map<string, number>(
+    rawProducts.map((p) => [p._id.toString(), CATEGORY_PAR[p.category] ?? DEFAULT_PAR]),
+  );
+
   for (const d of rawDeliveries) {
     if (d.productId) {
       const pid = d.productId.toString();
@@ -102,15 +111,16 @@ export default async function AdminInventoryPage() {
     isActive: c.isActive,
   }));
 
-  const deliveries: DeliveryRow[] = rawDeliveries
-    .filter((d) => d.status !== 'received')
-    .map((d) => ({
+  const deliveries: DeliveryRow[] = rawDeliveries.map((d) => ({
       _id: d._id.toString(),
       deliveryDate: d.deliveryDate.toISOString(),
       supplier: d.supplier,
       supplierSuffix: d.supplierSuffix,
       detail: d.detail,
       status: d.status,
+      productId: d.productId?.toString() ?? null,
+      currentStock: d.productId ? (productStockMap.get(d.productId.toString()) ?? null) : null,
+      parLevel: d.productId ? (productParMap.get(d.productId.toString()) ?? null) : null,
     }));
 
   return (
