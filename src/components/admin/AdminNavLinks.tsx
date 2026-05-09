@@ -5,10 +5,11 @@ import { NAV_WORKSPACE, NAV_OPERATIONS } from './navItems';
 
 type Props = {
   criticalInventoryCount?: number;
+  openMessageCount?: number;
   collapsed?: boolean;
 };
 
-export default function AdminNavLinks({ criticalInventoryCount, collapsed }: Props) {
+export default function AdminNavLinks({ criticalInventoryCount, openMessageCount, collapsed }: Props) {
   const pathname = usePathname();
 
   const isActive = (href: string) =>
@@ -62,7 +63,11 @@ export default function AdminNavLinks({ criticalInventoryCount, collapsed }: Pro
         <ul className="flex flex-col gap-0.5">
           {NAV_OPERATIONS.map((item) => {
             const isInventory = item.href === '/dashboard/inventory';
-            const showBadge = isInventory && criticalInventoryCount && criticalInventoryCount > 0;
+            const isMessages  = item.href === '/dashboard/messages';
+            const showInventoryBadge = isInventory && criticalInventoryCount && criticalInventoryCount > 0;
+            const showMessageBadge   = isMessages  && openMessageCount       && openMessageCount > 0;
+            const showBadge = showInventoryBadge || showMessageBadge;
+            const badgeCount = showInventoryBadge ? criticalInventoryCount : openMessageCount;
             return (
               <li key={item.href}>
                 <Link
@@ -80,7 +85,7 @@ export default function AdminNavLinks({ criticalInventoryCount, collapsed }: Pro
                   {!collapsed && item.label}
                   {!collapsed && showBadge && (
                     <span className="ml-auto bg-oxblood text-cream text-[10px] font-semibold px-1.5 py-0.5 rounded-full tracking-[0.04em]">
-                      {criticalInventoryCount}
+                      {badgeCount}
                     </span>
                   )}
                 </Link>

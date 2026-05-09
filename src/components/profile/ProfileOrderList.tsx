@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import type { ProfileOrder } from '@/app/(main)/profile/page';
 import type { OrderStatus } from '@/models/Order';
+import OrderHelpButton from './OrderHelpButton';
 
 type Props = {
   orders: ProfileOrder[];
@@ -101,7 +102,7 @@ export default function ProfileOrderList({ orders, showAll = false }: Props) {
               </p>
             </div>
 
-            {/* Status + price */}
+            {/* Status + price + help */}
             <div className="flex flex-col items-end gap-1.5 shrink-0">
               <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium tracking-[0.04em] whitespace-nowrap ${statusChip(order.orderStatus)}`}>
                 <span className="w-1.5 h-1.5 rounded-full bg-current" aria-hidden="true" />
@@ -110,6 +111,7 @@ export default function ProfileOrderList({ orders, showAll = false }: Props) {
               <p className="font-display font-medium text-[20px] tabular-nums">
                 ${order.totalCost.toFixed(2)}
               </p>
+              <OrderHelpButton orderId={order._id} orderRef={order._id.slice(-4).toUpperCase()} />
             </div>
           </div>
         );
