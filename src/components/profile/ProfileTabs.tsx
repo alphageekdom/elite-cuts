@@ -29,7 +29,7 @@ export default function ProfileTabs({ activeTab, orderCount, savedCount, address
     if (id === 'orders') return orderCount || null;
     if (id === 'saved') return savedCount || null;
     if (id === 'addresses') return addressCount || null;
-    if (id === 'messages') return messageCount || null;
+    if (id === 'messages') return messageCount > 0 ? messageCount : null;
     return null;
   }
 
@@ -54,7 +54,7 @@ export default function ProfileTabs({ activeTab, orderCount, savedCount, address
                   }`}
               >
                 {label}
-                {count !== null && (
+                {!!count && (
                   <span
                     aria-label={`${count} ${label.toLowerCase()}`}
                     className={`text-[11px] px-2 py-0.5 rounded-full tracking-[0.02em] tabular-nums ${isActive ? 'bg-ink text-cream' : 'bg-cream-deep text-ink-soft'}`}

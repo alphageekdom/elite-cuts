@@ -263,7 +263,13 @@ export default async function ProfilePage({ searchParams }: Props) {
             )}
 
             {activeTab === 'messages' && (
-              <ProfileMessages messages={serializedMessages} />
+              <ProfileMessages
+                messages={serializedMessages}
+                userId={userId}
+                name={displayName}
+                rewardPoints={rawUser.rewardPoints ?? 0}
+                isAdmin={rawUser.isAdmin ?? false}
+              />
             )}
 
             {activeTab === 'rewards' && (

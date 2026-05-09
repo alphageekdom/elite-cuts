@@ -68,7 +68,7 @@ export default function AdminTabletRail({ initial, criticalInventoryCount, openM
             {NAV_OPERATIONS.map((item) => {
               const isInventory = item.href === '/dashboard/inventory';
               const isMessages  = item.href === '/dashboard/messages';
-              const showBadge   = (isInventory && criticalInventoryCount > 0) || (isMessages && openMessageCount > 0);
+              const showBadge   = (isInventory && criticalInventoryCount > 0) || (isMessages && (openMessageCount ?? 0) > 0);
               return (
                 <li key={item.href}>
                   <Link

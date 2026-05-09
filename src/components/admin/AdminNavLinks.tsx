@@ -64,8 +64,8 @@ export default function AdminNavLinks({ criticalInventoryCount, openMessageCount
           {NAV_OPERATIONS.map((item) => {
             const isInventory = item.href === '/dashboard/inventory';
             const isMessages  = item.href === '/dashboard/messages';
-            const showInventoryBadge = isInventory && criticalInventoryCount && criticalInventoryCount > 0;
-            const showMessageBadge   = isMessages  && openMessageCount       && openMessageCount > 0;
+            const showInventoryBadge = isInventory && (criticalInventoryCount ?? 0) > 0;
+            const showMessageBadge   = isMessages  && (openMessageCount ?? 0) > 0;
             const showBadge = showInventoryBadge || showMessageBadge;
             const badgeCount = showInventoryBadge ? criticalInventoryCount : openMessageCount;
             return (

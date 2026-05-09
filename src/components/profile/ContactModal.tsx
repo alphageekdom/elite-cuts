@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 type Props = {
@@ -21,6 +22,7 @@ export default function ContactModal({
   prefilledOrderId,
   prefilledOrderRef,
 }: Props) {
+  const router = useRouter();
   const [tab, setTab] = useState<'inapp' | 'email'>('inapp');
   const [subject, setSubject] = useState(prefilledSubject);
   const [body, setBody] = useState('');
@@ -84,6 +86,7 @@ export default function ContactModal({
       toast.success('Message sent — we\'ll be in touch.');
       setBody('');
       onClose();
+      router.refresh();
     } catch {
       toast.error('Something went wrong. Try again.');
     } finally {

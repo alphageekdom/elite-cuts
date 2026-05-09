@@ -1,6 +1,8 @@
 'use client';
 import { useState } from 'react';
 import ContactModal from './ContactModal';
+import { AVATAR_COLORS, MEMBER_AVATAR_COLORS } from '@/lib/admin-constants';
+import { avatarColorForId } from '@/lib/admin-utils';
 import type { MessageStatus } from '@/models/Message';
 
 export type SerializedMessage = {
@@ -12,8 +14,18 @@ export type SerializedMessage = {
   createdAt: string;
 };
 
+const ADMIN_AVATAR_COLOR = 'bg-linear-to-br from-ink to-oxblood-deep text-camel';
+
+function initials(name: string): string {
+  return name.split(' ').map((w) => w[0] ?? '').join('').slice(0, 2).toUpperCase();
+}
+
 type Props = {
   messages: SerializedMessage[];
+  userId: string;
+  name: string;
+  rewardPoints: number;
+  isAdmin: boolean;
 };
 
 function statusPill(status: MessageStatus) {
@@ -30,7 +42,11 @@ function formatDate(iso: string): string {
   });
 }
 
-export default function ProfileMessages({ messages }: Props) {
+export default function ProfileMessages({ messages, userId, name, rewardPoints, isAdmin }: Props) {
+  const isMember = rewardPoints >= 250;
+  const avatarColor = isAdmin
+    ? ADMIN_AVATAR_COLOR
+    : avatarColorForId(userId, isMember ? MEMBER_AVATAR_COLORS : AVATAR_COLORS);
   const [modalOpen, setModalOpen] = useState(false);
 
   return (
@@ -83,11 +99,9 @@ export default function ProfileMessages({ messages }: Props) {
                 key={msg._id}
                 className="bg-paper border border-line-soft rounded px-5 py-4 flex items-start gap-4"
               >
-                {/* Icon */}
-                <div className="w-10 h-10 rounded-full bg-cream-deep text-muted flex items-center justify-center shrink-0 mt-0.5" aria-hidden="true">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
-                  </svg>
+                {/* Avatar */}
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-display font-medium text-[13px] tracking-tight shrink-0 mt-0.5 select-none ${avatarColor}`}>
+                  {initials(name)}
                 </div>
 
                 {/* Content */}
