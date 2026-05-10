@@ -1,5 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
+import { getInitials } from '@/lib/admin-utils';
 import type { OrderRow } from '@/types/admin';
 export type { OrderRow };
 
@@ -33,14 +34,6 @@ function formatMoney(amount: number) {
   });
 }
 
-function getInitials(name: string) {
-  return name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
-}
 
 type Props = {
   orders: OrderRow[];

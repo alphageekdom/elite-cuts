@@ -1,12 +1,15 @@
 'use client';
 import { useState, useMemo, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { CATEGORY_PAR, DEFAULT_PAR } from '@/lib/inventory';
-import { productImageSrc, statCellBorderClasses } from '@/lib/admin-utils';
+import { productImageSrc } from '@/lib/admin-utils';
+import AdminSearchInput from '@/components/admin/AdminSearchInput';
+import AdminPagination from '@/components/admin/AdminPagination';
+import AdminStatStrip from '@/components/admin/AdminStatStrip';
 import { PRODUCT_CATEGORIES, CATEGORY_COLORS, type ProductCategory } from '@/lib/admin-constants';
 import InventoryAgingRoom, { type AgingCutRow } from './InventoryAgingRoom';
 import InventoryUpcomingDeliveries, { type DeliveryRow, type ReceivedDeliveryRow } from './InventoryUpcomingDeliveries';
+import InventoryReorderDrawer from './InventoryReorderDrawer';
 
 export type InventoryRow = {
   id: string;
@@ -88,7 +91,6 @@ const SORT_OPTIONS: { value: SortBy; label: string }[] = [
 const PAGE_SIZE = 8;
 
 export default function InventoryClient({ rows, counts, categoryCounts, agingCuts, deliveries, receivedDeliveries }: Props) {
-  const router = useRouter();
   const [localRows, setLocalRows] = useState(rows);
   useEffect(() => { setLocalRows(rows); }, [rows]);
 
@@ -121,54 +123,7 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
   const [stockEditValue, setStockEditValue] = useState('');
   const [stockSaving, setStockSaving] = useState(false);
 
-  // Reorder drawer
   const [reorderRow, setReorderRow] = useState<InventoryRow | null>(null);
-  const [reorderSupplier, setReorderSupplier] = useState('');
-  const [reorderDetail, setReorderDetail] = useState('');
-  const [reorderDate, setReorderDate] = useState('');
-  const [reorderStatus, setReorderStatus] = useState<'scheduled' | 'pending' | 'confirmed'>('scheduled');
-  const [reorderSaving, setReorderSaving] = useState(false);
-
-  function openReorder(row: InventoryRow) {
-    const defaultDate = new Date();
-    defaultDate.setDate(defaultDate.getDate() + 7);
-    setReorderRow(row);
-    setReorderSupplier(row.supplier || '');
-    setReorderDetail(`Reorder: ${row.name}`);
-    setReorderDate(defaultDate.toISOString().slice(0, 10));
-    setReorderStatus((row.deliveryStatus as typeof reorderStatus) ?? 'scheduled');
-  }
-
-  async function handleReorderSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (!reorderRow || !reorderDate || !reorderSupplier.trim()) return;
-    setReorderSaving(true);
-    try {
-      const res = await fetch('/api/deliveries', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          deliveryDate: reorderDate,
-          supplier: reorderSupplier.trim(),
-          detail: reorderDetail.trim(),
-          status: reorderStatus,
-          productId: reorderRow.id,
-        }),
-      });
-      if (!res.ok) {
-        const { message } = await res.json();
-        toast.error(message ?? 'Failed to create delivery');
-        return;
-      }
-      toast.success('Delivery scheduled');
-      setReorderRow(null);
-      router.refresh();
-    } catch {
-      toast.error('Failed to create delivery');
-    } finally {
-      setReorderSaving(false);
-    }
-  }
 
   async function handleStockSave(id: string) {
     const newCount = parseInt(stockEditValue, 10);
@@ -232,7 +187,7 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  function handleFilter(f: StatFilter) {
+  function handleFilter(f: string) {
     // Re-snapshot which rows qualify for this tab at the moment the tab is clicked.
     if (f === 'all') {
       setTabSnapshot(new Set(localRows.map((r) => r.id)));
@@ -247,7 +202,7 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
       });
       setTabSnapshot(new Set(matched.map((r) => r.id)));
     }
-    setActiveFilter(f);
+    setActiveFilter(f as StatFilter);
     setPage(1);
   }
 
@@ -264,21 +219,6 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
 
   const currentSortLabel = SORT_OPTIONS.find((o) => o.value === sortBy)?.label ?? 'Sort';
 
-  const statCells: Array<{
-    id: string;
-    key: StatFilter;
-    label: string;
-    value: number | string;
-    meta: string;
-    dotColor: string;
-    suffix?: string;
-  }> = [
-    { id: 'all-skus', key: 'all', label: 'All SKUs', value: liveCounts.all, meta: 'TRACKED', dotColor: 'bg-muted' },
-    { id: 'in-stock', key: 'inStock', label: 'In stock', value: liveCounts.inStock, meta: 'ABOVE PAR', dotColor: 'bg-green' },
-    { id: 'low-stock', key: 'lowStock', label: 'Low stock', value: liveCounts.lowStock, meta: 'BELOW 70%', dotColor: 'bg-amber' },
-    { id: 'critical', key: 'critical', label: 'Critical', value: liveCounts.critical, meta: 'REORDER NOW', dotColor: 'bg-oxblood', suffix: liveCounts.critical > 0 ? '!' : undefined },
-    { id: 'aging-room', key: 'all', label: 'Aging room', value: liveCounts.agingRoom, meta: 'IN CABINET', dotColor: 'bg-muted' },
-  ];
 
   return (
     <div>
@@ -306,63 +246,28 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
         </div>
       )}
 
-      {/* Stat strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 bg-paper border border-line-soft rounded overflow-hidden mb-6">
-        {statCells.map((cell, idx) => {
-          const isAgingCell = cell.id === 'aging-room';
-          const isActive = !isAgingCell && activeFilter === cell.key;
-          return (
-            <div
-              key={cell.id}
-              onClick={() => !isAgingCell && handleFilter(cell.key)}
-              className={[
-                'relative px-5 py-5 transition-colors',
-                isAgingCell ? 'cursor-default' : 'cursor-pointer hover:bg-cream',
-                isActive ? 'bg-cream' : '',
-                statCellBorderClasses(idx, 5),
-              ].join(' ')}
-            >
-              {isActive && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-oxblood" />
-              )}
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] tracking-[0.18em] uppercase text-muted font-medium">
-                  {cell.label}
-                </span>
-                <span className={`w-1.5 h-1.5 rounded-full ${cell.dotColor}`} />
-              </div>
-              <div className="font-display text-[22px] sm:text-[28px] font-normal leading-none tracking-tight mb-1">
-                {cell.value}
-                {cell.suffix && (
-                  <em className="not-italic text-oxblood text-sm ml-0.5">{cell.suffix}</em>
-                )}
-              </div>
-              <div className="text-[11px] text-muted font-mono tracking-[0.04em]">{cell.meta}</div>
-            </div>
-          );
-        })}
-      </div>
+      <AdminStatStrip
+        cells={[
+          { id: 'all-skus',   key: 'all',      label: 'All SKUs',  value: liveCounts.all,       meta: 'TRACKED',     dotClass: 'bg-muted' },
+          { id: 'in-stock',   key: 'inStock',  label: 'In stock',  value: liveCounts.inStock,   meta: 'ABOVE PAR',   dotClass: 'bg-green' },
+          { id: 'low-stock',  key: 'lowStock', label: 'Low stock', value: liveCounts.lowStock,  meta: 'BELOW 70%',   dotClass: 'bg-amber' },
+          { id: 'critical',   key: 'critical', label: 'Critical',  value: liveCounts.critical,  meta: 'REORDER NOW', dotClass: 'bg-oxblood', badge: liveCounts.critical > 0 ? '!' : undefined },
+          { id: 'aging-room', key: 'all',      label: 'Aging room',value: liveCounts.agingRoom, meta: 'IN CABINET',  dotClass: 'bg-muted', clickable: false },
+        ]}
+        activeKey={activeFilter}
+        onSelect={handleFilter}
+      />
 
       {/* Toolbar */}
       <div className="flex flex-col gap-3 mb-4">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2 flex-wrap flex-1">
-            {/* Search */}
-            <div className="flex items-center gap-2.5 bg-paper border border-line rounded-full px-4 py-2 focus-within:border-ink transition-colors w-full sm:w-auto sm:min-w-65">
-              <svg className="w-3 h-3 text-muted shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
-              </svg>
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                placeholder="Search by cut, SKU, supplier…"
-                className="flex-1 border-none bg-transparent outline-none text-[13px] text-ink placeholder:text-muted py-0.5"
-              />
-              <span className="hidden sm:inline font-mono text-[10px] text-muted bg-cream-deep px-1.5 py-0.5 rounded">
-                ⌘K
-              </span>
-            </div>
+            <AdminSearchInput
+              value={search}
+              onChange={(v) => { setSearch(v); setPage(1); }}
+              placeholder="Search by cut, SKU, supplier…"
+              className="w-full sm:w-auto sm:min-w-65"
+            />
 
             {/* Category filters */}
             <button
@@ -623,7 +528,7 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
                               </svg>
                             </button>
                             <button
-                              onClick={() => openReorder(row)}
+                              onClick={() => setReorderRow(row)}
                               className="w-7 h-7 rounded-full bg-transparent border border-line text-ink-soft hover:border-ink hover:bg-cream hover:text-ink transition-colors grid place-items-center"
                               aria-label="Order more"
                             >
@@ -645,42 +550,15 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
           </table>
         </div>
 
-        {/* Pagination */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-line-soft bg-cream flex-wrap gap-3">
-          <div className="font-mono text-[12px] text-muted tracking-[0.04em]">
-            Showing <strong className="text-ink font-medium">{Math.min((page - 1) * PAGE_SIZE + 1, filtered.length)}–{Math.min(page * PAGE_SIZE, filtered.length)}</strong>{' '}
-            of <strong className="text-ink font-medium">{filtered.length}</strong> cuts
-          </div>
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="w-8 h-8 rounded border border-line bg-paper text-ink-soft text-[13px] grid place-items-center hover:border-ink hover:text-ink transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              ‹
-            </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPage(p)}
-                className={`w-8 h-8 rounded border text-[13px] grid place-items-center transition-colors ${
-                  p === page
-                    ? 'bg-ink border-ink text-cream'
-                    : 'bg-paper border-line text-ink-soft hover:border-ink hover:text-ink'
-                }`}
-              >
-                {p}
-              </button>
-            ))}
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="w-8 h-8 rounded border border-line bg-paper text-ink-soft text-[13px] grid place-items-center hover:border-ink hover:text-ink transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              ›
-            </button>
-          </div>
-        </div>
+        <AdminPagination
+          page={page}
+          totalPages={totalPages}
+          filteredCount={filtered.length}
+          perPage={PAGE_SIZE}
+          noun="cuts"
+          showPerPage={false}
+          onPageChange={setPage}
+        />
       </div>
 
       {/* Two-column grid: Aging room + Deliveries */}
@@ -697,117 +575,8 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
         />
       )}
 
-      {/* Reorder drawer */}
       {reorderRow && (
-        <div className="fixed inset-0 z-50 flex justify-end">
-          <div className="absolute inset-0 bg-ink/40" onClick={() => setReorderRow(null)} aria-hidden="true" />
-          <aside className="relative bg-paper w-full max-w-md h-full overflow-y-auto shadow-2xl flex flex-col">
-            {/* Header */}
-            <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-line-soft shrink-0">
-              <div className="pr-4">
-                <div className="text-[11px] tracking-widest uppercase text-muted mb-1.5">Order more</div>
-                <h2 className="font-display text-[20px] font-normal tracking-tight leading-snug">
-                  {reorderRow.name}
-                </h2>
-                {reorderRow.deliveryStatus && (
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="text-[11px] text-muted">Existing delivery:</span>
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium ${
-                      reorderRow.deliveryStatus === 'confirmed' ? 'bg-green-soft text-green' :
-                      reorderRow.deliveryStatus === 'pending'   ? 'bg-amber-soft text-amber' :
-                      'bg-[rgba(28,24,20,0.06)] text-muted'
-                    }`}>
-                      <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                      {reorderRow.deliveryStatus.charAt(0).toUpperCase() + reorderRow.deliveryStatus.slice(1)}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={() => setReorderRow(null)}
-                aria-label="Close"
-                className="w-8 h-8 rounded-full grid place-items-center text-muted hover:text-ink hover:bg-cream-deep transition-colors shrink-0 mt-1"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 6L6 18M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Form */}
-            <form onSubmit={handleReorderSubmit} className="flex flex-col flex-1 px-6 py-5 gap-5">
-              {/* Supplier */}
-              <div>
-                <label className="block text-[12px] font-medium text-ink-soft tracking-widest uppercase mb-1.5">
-                  Supplier
-                </label>
-                <input
-                  type="text"
-                  value={reorderSupplier}
-                  onChange={(e) => setReorderSupplier(e.target.value)}
-                  required
-                  placeholder="Supplier name"
-                  className="w-full bg-cream border border-line-soft rounded-lg px-4 py-2.5 text-[14px] text-ink placeholder:text-muted focus:outline-none focus:border-ink transition-colors"
-                />
-              </div>
-
-              {/* Detail */}
-              <div>
-                <label className="block text-[12px] font-medium text-ink-soft tracking-widest uppercase mb-1.5">
-                  Notes
-                </label>
-                <input
-                  type="text"
-                  value={reorderDetail}
-                  onChange={(e) => setReorderDetail(e.target.value)}
-                  placeholder="e.g. Reorder: Tomahawk Ribeye"
-                  className="w-full bg-cream border border-line-soft rounded-lg px-4 py-2.5 text-[14px] text-ink placeholder:text-muted focus:outline-none focus:border-ink transition-colors"
-                />
-              </div>
-
-              {/* Expected delivery date */}
-              <div>
-                <label className="block text-[12px] font-medium text-ink-soft tracking-widest uppercase mb-1.5">
-                  Expected delivery
-                </label>
-                <input
-                  type="date"
-                  value={reorderDate}
-                  onChange={(e) => setReorderDate(e.target.value)}
-                  required
-                  className="w-full bg-cream border border-line-soft rounded-lg px-4 py-2.5 text-[14px] text-ink focus:outline-none focus:border-ink transition-colors"
-                />
-              </div>
-
-              {/* Status */}
-              <div>
-                <label className="block text-[12px] font-medium text-ink-soft tracking-widest uppercase mb-1.5">
-                  Status
-                </label>
-                <select
-                  value={reorderStatus}
-                  onChange={(e) => setReorderStatus(e.target.value as typeof reorderStatus)}
-                  className="w-full bg-cream border border-line-soft rounded-lg px-4 py-2.5 text-[14px] text-ink focus:outline-none focus:border-ink transition-colors"
-                >
-                  <option value="scheduled">Scheduled</option>
-                  <option value="pending">Pending</option>
-                  <option value="confirmed">Confirmed</option>
-                </select>
-              </div>
-
-              <div className="mt-auto pt-4 border-t border-line-soft">
-                <button
-                  type="submit"
-                  disabled={reorderSaving || !reorderSupplier.trim() || !reorderDate}
-                  className="w-full bg-ink text-cream text-[13px] font-medium tracking-[0.04em] py-3 rounded-full hover:bg-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {reorderSaving ? 'Scheduling…' : 'Schedule delivery'}
-                </button>
-              </div>
-            </form>
-          </aside>
-        </div>
+        <InventoryReorderDrawer row={reorderRow} onClose={() => setReorderRow(null)} />
       )}
     </div>
   );

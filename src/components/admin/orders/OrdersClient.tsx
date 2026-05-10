@@ -2,7 +2,10 @@
 import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import { printReceipt } from '@/lib/print-receipt';
-import { getInitials, formatDateTime, productImageSrc, statCellBorderClasses } from '@/lib/admin-utils';
+import { getInitials, formatDateTime, productImageSrc } from '@/lib/admin-utils';
+import AdminStatStrip from '@/components/admin/AdminStatStrip';
+import AdminSearchInput from '@/components/admin/AdminSearchInput';
+import AdminPagination from '@/components/admin/AdminPagination';
 import { AVATAR_COLORS } from '@/lib/admin-constants';
 import type { OrderTableRow, StatusCounts } from '@/types/admin';
 import OrderDetailDrawer from './OrderDetailDrawer';
@@ -128,8 +131,8 @@ export default function OrdersClient({ orders, counts }: Props) {
     document.body.style.overflow = '';
   }
 
-  function handleStatusFilter(key: StatKey) {
-    setActiveStatus(key);
+  function handleStatusFilter(key: string) {
+    setActiveStatus(key as StatKey);
     setPage(1);
     setSelectedIds(new Set());
   }
@@ -177,67 +180,31 @@ export default function OrdersClient({ orders, counts }: Props) {
 
   return (
     <>
-      {/* Stat strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 bg-paper border border-line-soft rounded-sm mb-6 overflow-hidden">
-        {STAT_CELLS.map((cell, idx) => {
-          const isActive = activeStatus === cell.key;
+      <AdminStatStrip
+        cells={STAT_CELLS.map((cell) => {
           const count = countForKey(cell.key, counts);
-          return (
-            <button
-              key={cell.key}
-              onClick={() => handleStatusFilter(cell.key)}
-              className={[
-                'relative text-left px-4 py-4 sm:px-5 sm:py-5 transition-colors cursor-pointer',
-                statCellBorderClasses(idx),
-                isActive ? 'bg-cream' : 'hover:bg-cream',
-              ].join(' ')}
-            >
-              {isActive && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-oxblood" />
-              )}
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] tracking-[0.18em] uppercase text-muted">{cell.label}</span>
-                <span
-                  className="w-2 h-2 rounded-full"
-                  style={{
-                    background:
-                      cell.dotClass === 'green'
-                        ? 'var(--color-green)'
-                        : cell.dotClass === 'camel'
-                        ? 'var(--color-camel)'
-                        : cell.dotClass === 'oxblood'
-                        ? 'var(--color-oxblood)'
-                        : 'var(--color-muted)',
-                  }}
-                />
-              </div>
-              <div className="font-display text-[22px] sm:text-[28px] font-normal leading-none tracking-tight mb-1">
-                {count}
-                {cell.key === 'Order Placed' && count > 0 && (
-                  <em className="italic text-oxblood text-[14px] ml-0.5 font-normal">new</em>
-                )}
-              </div>
-              <div className="font-mono text-[11px] text-muted tracking-[0.04em]">{cell.metaLabel}</div>
-            </button>
-          );
+          return {
+            key: String(cell.key),
+            label: cell.label,
+            value: count,
+            meta: cell.metaLabel,
+            dotClass: cell.dotClass === 'green' ? 'bg-green' : cell.dotClass === 'camel' ? 'bg-camel' : cell.dotClass === 'oxblood' ? 'bg-oxblood' : 'bg-muted',
+            badge: cell.key === 'Order Placed' && count > 0 ? 'new' : undefined,
+          };
         })}
-      </div>
+        activeKey={String(activeStatus)}
+        onSelect={handleStatusFilter}
+        cols="grid-cols-2 sm:grid-cols-4 lg:grid-cols-7"
+      />
 
       {/* Toolbar */}
       <div className="flex flex-col gap-2.5 mb-4">
-        <label className="flex items-center gap-2.5 bg-paper border border-line rounded-full px-4 py-2 w-full sm:max-w-xs focus-within:border-ink transition-colors">
-          <svg className="w-3.5 h-3.5 text-muted shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
-          </svg>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            placeholder="Search by order #, customer, email…"
-            className="flex-1 bg-transparent border-none outline-none text-[13px] text-ink placeholder:text-muted min-w-0"
-          />
-          <span className="hidden sm:inline font-mono text-[10px] text-muted bg-cream-deep px-1.5 py-0.5 rounded tracking-[0.04em] shrink-0">⌘ K</span>
-        </label>
+        <AdminSearchInput
+          value={search}
+          onChange={(v) => { setSearch(v); setPage(1); }}
+          placeholder="Search by order #, customer, email…"
+          className="w-full sm:max-w-xs"
+        />
 
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2 flex-wrap">
@@ -505,73 +472,16 @@ export default function OrdersClient({ orders, counts }: Props) {
           <div className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-linear-to-l from-paper to-transparent lg:hidden" />
         </div>
 
-        {/* Pagination */}
-        <div className="flex items-center justify-between px-6 py-4 bg-cream border-t border-line-soft flex-wrap gap-3">
-          <div className="font-mono text-[12px] text-muted tracking-[0.04em]">
-            Showing{' '}
-            <strong className="text-ink font-medium">
-              {filtered.length === 0 ? 0 : (page - 1) * perPage + 1}–{Math.min(page * perPage, filtered.length)}
-            </strong>{' '}
-            of <strong className="text-ink font-medium">{filtered.length}</strong> orders
-          </div>
-
-          <div className="flex items-center gap-1">
-            <button
-              disabled={page === 1}
-              onClick={() => setPage((p) => p - 1)}
-              className="w-8 h-8 rounded-full border border-line text-ink-soft grid place-items-center hover:border-ink hover:bg-paper hover:text-ink transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              <svg className="w-2.75 h-2.75" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
-            </button>
-
-            <div className="flex items-center gap-0.5 mx-2">
-              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                const n = i + 1;
-                return (
-                  <button
-                    key={n}
-                    onClick={() => setPage(n)}
-                    className={`w-8 h-8 rounded-full font-display text-[13px] transition-colors ${
-                      page === n ? 'bg-ink text-cream' : 'text-ink-soft hover:bg-paper hover:text-ink'
-                    }`}
-                  >
-                    {n}
-                  </button>
-                );
-              })}
-              {totalPages > 5 && <span className="px-1 text-muted">…</span>}
-              {totalPages > 5 && (
-                <button
-                  onClick={() => setPage(totalPages)}
-                  className={`w-8 h-8 rounded-full font-display text-[13px] transition-colors ${
-                    page === totalPages ? 'bg-ink text-cream' : 'text-ink-soft hover:bg-paper hover:text-ink'
-                  }`}
-                >
-                  {totalPages}
-                </button>
-              )}
-            </div>
-
-            <button
-              disabled={page === totalPages}
-              onClick={() => setPage((p) => p + 1)}
-              className="w-8 h-8 rounded-full border border-line text-ink-soft grid place-items-center hover:border-ink hover:bg-paper hover:text-ink transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              <svg className="w-2.75 h-2.75" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
-            </button>
-          </div>
-
-          <div className="hidden sm:flex items-center gap-2 font-mono text-[12px] text-muted">
-            <span>Per page</span>
-            <select
-              className="appearance-none bg-paper border border-line rounded-full pl-3 pr-6 py-1.5 text-[12px] text-ink font-mono cursor-pointer bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2210%22 height=%2210%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%238A7F73%22 stroke-width=%222%22><polyline points=%226 9 12 15 18 9%22/></svg>')] bg-no-repeat bg-position-[right_8px_center]"
-              value={perPage}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setPerPage(Number(e.target.value)); setPage(1); }}
-            >
-              {PAGE_SIZES.map((n) => <option key={n} value={n}>{n}</option>)}
-            </select>
-          </div>
-        </div>
+        <AdminPagination
+          page={page}
+          totalPages={totalPages}
+          filteredCount={filtered.length}
+          perPage={perPage}
+          pageSizes={PAGE_SIZES}
+          noun="orders"
+          onPageChange={setPage}
+          onPerPageChange={(n) => { setPerPage(n); setPage(1); }}
+        />
       </div>
 
       {openMenuId && (

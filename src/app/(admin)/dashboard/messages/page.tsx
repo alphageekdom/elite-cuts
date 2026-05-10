@@ -4,7 +4,7 @@ import { getSessionUser } from '@/utils/getSessionUser';
 import connectDB from '@/config/database';
 import MessageModel from '@/models/Message';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
-import MessagesClient, { type MessageRow, type MessageCounts } from './MessagesClient';
+import MessagesClient, { type MessageRow, type MessageCounts } from '@/components/admin/messages/MessagesClient';
 import type { Types } from 'mongoose';
 
 export const dynamic = 'force-dynamic';

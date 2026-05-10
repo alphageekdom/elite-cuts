@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { formatMoney, formatDate, relativeTime, getInitials } from '@/lib/admin-utils';
+import { inputCls } from '@/components/admin/settings/SettingsUI';
 import type { CustomerTableRow } from '@/types/admin';
 
 export type Tier = 'master' | 'connoisseur' | 'regular';
@@ -51,8 +52,7 @@ export function deriveTags(row: CustomerTableRow): Array<{ label: string; cls: s
   return tags;
 }
 
-const inputCls =
-  'w-full border border-line bg-paper font-sans text-[14px] text-ink px-4 py-3 rounded-lg outline-none focus:border-ink transition-colors placeholder:text-muted/60';
+
 
 type Props = {
   customer: CustomerTableRow;
