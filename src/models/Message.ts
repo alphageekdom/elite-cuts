@@ -22,7 +22,7 @@ const MessageSchema = new Schema<Message>(
     subject:  { type: String, required: true, trim: true, maxlength: 120 },
     body:     { type: String, required: true, trim: true, maxlength: 2000 },
     orderId:  { type: Schema.Types.ObjectId, ref: 'Order' },
-    orderRef: { type: String, trim: true },
+    orderRef: { type: String, trim: true, maxlength: 100 },
     status:   { type: String, enum: [...MESSAGE_STATUSES], default: 'open' },
   },
   { timestamps: true },

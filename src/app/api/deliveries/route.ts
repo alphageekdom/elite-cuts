@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import mongoose from 'mongoose';
 import connectDB from '@/config/database';
 import Delivery from '@/models/Delivery';
 import Product from '@/models/Product';
@@ -26,6 +27,9 @@ export const POST = async (request: NextRequest) => {
     await connectDB();
     const { deliveryDate, supplier, supplierSuffix, detail, status, productId } = await request.json();
     if (productId) {
+      if (!mongoose.isValidObjectId(productId)) {
+        return NextResponse.json({ message: 'Product not found' }, { status: 404 });
+      }
       const exists = await Product.exists({ _id: productId });
       if (!exists) {
         return NextResponse.json({ message: 'Product not found' }, { status: 404 });

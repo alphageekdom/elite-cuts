@@ -1,8 +1,10 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 
 import connectDB from '@/config/database';
 import Product, { type SerializedProduct } from '@/models/Product';
 import { convertToSerializableObject } from '@/utils/convertToObject';
+import { getSessionUser } from '@/utils/getSessionUser';
 
 import CartItemsPanel from '@/components/cart/CartItemsPanel';
 import CartSuggestions from '@/components/cart/CartSuggestions';
@@ -59,6 +61,9 @@ export const metadata = {
 };
 
 const CartPage = async () => {
+  const sessionUser = await getSessionUser();
+  if (!sessionUser?.userId) redirect('/login?from=/cart');
+
   // Suggestions strip: server fetches up to 6 in-stock featured products so
   // the client can drop any already in the cart and still render 3.
   await connectDB();

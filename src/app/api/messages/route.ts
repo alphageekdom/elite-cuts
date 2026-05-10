@@ -75,6 +75,9 @@ export const POST = async (request: NextRequest) => {
     if (orderId && !mongoose.isValidObjectId(orderId)) {
       return NextResponse.json({ message: 'Invalid orderId' }, { status: 400 });
     }
+    if (orderRef && orderRef.trim().length > 100) {
+      return NextResponse.json({ message: 'orderRef must be 100 characters or fewer' }, { status: 400 });
+    }
 
     await connectDB();
 

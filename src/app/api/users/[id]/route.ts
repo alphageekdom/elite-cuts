@@ -156,7 +156,7 @@ export const PUT = async (request: NextRequest, { params }: RouteContext) => {
       }
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
     await User.findByIdAndUpdate(id, { $set: { password: hashedPassword } });
 
     return NextResponse.json({ message: 'Password updated successfully' });

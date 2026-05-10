@@ -15,7 +15,15 @@ export const GET = withAdmin(async () => {
 export const POST = withAdmin(async (request) => {
   try {
     const { cut: cutName, targetDays, rack, weightLb, startedAt, isActive } = await request.json();
-    const cut = await AgingCut.create({ cut: cutName, targetDays, rack, weightLb, startedAt, isActive });
+
+    if (!cutName || typeof cutName !== 'string' || cutName.trim().length === 0 || cutName.length > 100) {
+      return NextResponse.json({ message: 'cut name is required (max 100 chars)' }, { status: 400 });
+    }
+    if (!startedAt || isNaN(new Date(startedAt).getTime())) {
+      return NextResponse.json({ message: 'startedAt must be a valid date' }, { status: 400 });
+    }
+
+    const cut = await AgingCut.create({ cut: cutName.trim(), targetDays, rack, weightLb, startedAt, isActive });
     return NextResponse.json(cut, { status: 201 });
   } catch (error) {
     console.error('[aging POST]', error);

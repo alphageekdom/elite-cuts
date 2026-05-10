@@ -56,7 +56,9 @@ export const POST = async (request: NextRequest) => {
       );
     }
 
-    const existingUser = await User.findOne({ email });
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const existingUser = await User.findOne({ email: normalizedEmail });
 
     if (existingUser) {
       return NextResponse.json(
@@ -65,9 +67,9 @@ export const POST = async (request: NextRequest) => {
       );
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 12);
 
-    await new User({ name, email, password: hashedPassword }).save();
+    await new User({ name, email: normalizedEmail, password: hashedPassword }).save();
 
     return NextResponse.json(
       { message: 'User registered successfully' },
