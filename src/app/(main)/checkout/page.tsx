@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 import CheckoutContactCard from '@/components/checkout/CheckoutContactCard';
 import CheckoutGuard from '@/components/checkout/CheckoutGuard';
 import CheckoutOrderSummary from '@/components/checkout/CheckoutOrderSummary';
@@ -6,6 +7,9 @@ import FulfillmentToggle from '@/components/checkout/FulfillmentToggle';
 import PaymentMethodSelector from '@/components/checkout/PaymentMethodSelector';
 import PlaceOrderButton from '@/components/checkout/PlaceOrderButton';
 import { CheckoutProvider } from '@/context/CheckoutContext';
+import { getSessionUser } from '@/utils/getSessionUser';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Checkout · EliteCuts',
@@ -26,7 +30,9 @@ const CheckIcon = () => (
   </svg>
 );
 
-export default function CheckoutPage() {
+export default async function CheckoutPage() {
+  const sessionUser = await getSessionUser();
+  if (!sessionUser?.userId) redirect('/login?from=/checkout');
   return (
     <CheckoutGuard>
       <div className='min-h-screen bg-cream'>

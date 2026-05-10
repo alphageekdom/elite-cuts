@@ -45,17 +45,17 @@ const CheckoutOrderSummary = () => {
     const result = await validatePromoCode(code, subtotal);
     if (!result.valid) {
       setPromoStatus('invalid');
-      dispatch({ type: 'SET_PROMO', payload: 0 });
+      dispatch({ type: 'SET_PROMO', payload: { code: '', amount: 0 } });
       setAppliedLabel('');
       return;
     }
-    dispatch({ type: 'SET_PROMO', payload: result.amount });
+    dispatch({ type: 'SET_PROMO', payload: { code, amount: result.amount } });
     setAppliedLabel(result.label);
     setPromoStatus('valid');
   };
 
   const onRemovePromo = () => {
-    dispatch({ type: 'SET_PROMO', payload: 0 });
+    dispatch({ type: 'SET_PROMO', payload: { code: '', amount: 0 } });
     setAppliedLabel('');
     setPromoStatus('idle');
     setPromo('');
