@@ -6,28 +6,14 @@ import { redirect } from 'next/navigation';
 import connectDB from '@/config/database';
 import OrderModel from '@/models/Order';
 import { getSessionUser } from '@/utils/getSessionUser';
+import { formatMoney } from '@/lib/format';
+import CheckoutStepRail from '@/components/checkout/CheckoutStepRail';
 
 export const metadata: Metadata = {
   title: 'Order Confirmed · EliteCuts',
 };
 
 export const dynamic = 'force-dynamic';
-
-const fmt = (n: number) =>
-  n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
-
-const CheckIcon = () => (
-  <svg
-    viewBox='0 0 24 24'
-    fill='none'
-    stroke='currentColor'
-    strokeWidth={2.5}
-    aria-hidden='true'
-    className='h-5 w-5'
-  >
-    <polyline points='20 6 9 17 4 12' />
-  </svg>
-);
 
 type Props = {
   searchParams: Promise<{ orderId?: string }>;
@@ -54,33 +40,7 @@ export default async function ConfirmationPage({ searchParams }: Props) {
 
   return (
     <div className='min-h-screen bg-cream'>
-      {/* Step rail */}
-      <div className='border-b border-line-soft py-7'>
-        <div className='mx-auto max-w-300 px-8'>
-          <nav aria-label='Checkout steps' className='flex items-center justify-center gap-4'>
-            <div className='flex items-center gap-2.5 text-[13px] font-medium text-ink'>
-              <span className='grid h-6.5 w-6.5 place-items-center rounded-full border border-green bg-green text-cream'>
-                <CheckIcon />
-              </span>
-              Cart
-            </div>
-            <span className='h-px w-7 bg-line' aria-hidden='true' />
-            <div className='flex items-center gap-2.5 text-[13px] font-medium text-ink'>
-              <span className='grid h-6.5 w-6.5 place-items-center rounded-full border border-green bg-green text-cream'>
-                <CheckIcon />
-              </span>
-              Checkout
-            </div>
-            <span className='h-px w-7 bg-line' aria-hidden='true' />
-            <div className='flex items-center gap-2.5 text-[13px] font-medium text-ink' aria-current='step'>
-              <span className='grid h-6.5 w-6.5 place-items-center rounded-full border border-green bg-green text-cream'>
-                <CheckIcon />
-              </span>
-              <span className='hidden sm:inline'>Confirmation</span>
-            </div>
-          </nav>
-        </div>
-      </div>
+      <CheckoutStepRail currentStep={3} />
 
       <div className='mx-auto max-w-300 px-6 pb-24 sm:px-8'>
         {/* Hero */}
@@ -102,7 +62,7 @@ export default async function ConfirmationPage({ searchParams }: Props) {
           </p>
         </div>
 
-        <div className='mx-auto max-w-[680px] space-y-5'>
+        <div className='mx-auto max-w-170 space-y-5'>
           {/* Order ref */}
           <div className='flex items-center justify-between rounded-sm border border-line-soft bg-paper px-6 py-5'>
             <div>
@@ -198,7 +158,7 @@ export default async function ConfirmationPage({ searchParams }: Props) {
                     </p>
                   </div>
                   <p className='shrink-0 font-mono text-[14px] text-ink'>
-                    {fmt(item.price * item.qty)}
+                    {formatMoney(item.price * item.qty)}
                   </p>
                 </li>
               ))}
@@ -208,7 +168,7 @@ export default async function ConfirmationPage({ searchParams }: Props) {
             <div className='mt-5 space-y-2 border-t border-line-soft pt-5'>
               <div className='flex justify-between text-[13px] text-ink-soft'>
                 <span>Subtotal</span>
-                <span>{fmt(order.subtotal)}</span>
+                <span>{formatMoney(order.subtotal)}</span>
               </div>
               {!isPickup && (
                 <div className='flex justify-between text-[13px] text-ink-soft'>
@@ -218,11 +178,11 @@ export default async function ConfirmationPage({ searchParams }: Props) {
               )}
               <div className='flex justify-between text-[13px] text-ink-soft'>
                 <span>Tax</span>
-                <span>{fmt(order.tax)}</span>
+                <span>{formatMoney(order.tax)}</span>
               </div>
               <div className='flex justify-between border-t border-line-soft pt-3 text-[15px] font-semibold text-ink'>
                 <span>Total</span>
-                <span>{fmt(order.totalCost)}</span>
+                <span>{formatMoney(order.totalCost)}</span>
               </div>
             </div>
           </div>

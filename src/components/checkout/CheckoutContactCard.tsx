@@ -6,15 +6,11 @@ import Link from 'next/link';
 import { useCheckoutContext } from '@/context/CheckoutContext';
 import CheckoutFieldCheck from '@/components/checkout/CheckoutFieldCheck';
 import { FIELD_CLASS, LABEL_CLASS } from '@/components/checkout/checkoutStyles';
-import { EMAIL_RE } from '@/lib/validation';
+import { isNameValid, isEmailValid, isPhoneValid } from '@/lib/checkoutValidation';
 
 const CheckoutContactCard = () => {
   const { state, dispatch } = useCheckoutContext();
   const { contactName, contactEmail, contactPhone } = state;
-
-  const isNameValid = contactName.trim().length >= 5;
-  const isEmailValid = EMAIL_RE.test(contactEmail.trim());
-  const isPhoneValid = contactPhone.replace(/\D/g, '').length >= 10;
 
   const onPhone = (e: ChangeEvent<HTMLInputElement>) => {
     const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
@@ -48,7 +44,7 @@ const CheckoutContactCard = () => {
           <label htmlFor='fullName' className={LABEL_CLASS}>
             Full name
           </label>
-          {isNameValid && <CheckoutFieldCheck />}
+          {isNameValid(contactName) && <CheckoutFieldCheck />}
         </div>
         <input
           id='fullName'
@@ -68,7 +64,7 @@ const CheckoutContactCard = () => {
             <label htmlFor='email' className={LABEL_CLASS}>
               Email
             </label>
-            {isEmailValid && <CheckoutFieldCheck />}
+            {isEmailValid(contactEmail) && <CheckoutFieldCheck />}
           </div>
           <input
             id='email'
@@ -86,7 +82,7 @@ const CheckoutContactCard = () => {
             <label htmlFor='phone' className={LABEL_CLASS}>
               Phone
             </label>
-            {isPhoneValid && <CheckoutFieldCheck />}
+            {isPhoneValid(contactPhone) && <CheckoutFieldCheck />}
           </div>
           <input
             id='phone'

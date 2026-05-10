@@ -7,8 +7,8 @@ import { toast } from 'sonner';
 
 import { useCartContext } from '@/context/CartContext';
 import { useCheckoutContext } from '@/context/CheckoutContext';
-import { computeTotals, fmtPrice } from '@/lib/pricing';
-import { EMAIL_RE } from '@/lib/validation';
+import { computeTotals, fmtPrice, DELIVERY_FEE } from '@/lib/pricing';
+import { isContactComplete } from '@/lib/checkoutValidation';
 
 const SpinnerIcon = () => (
   <svg
@@ -59,16 +59,16 @@ const PlaceOrderButton = () => {
   const isLoggedIn = Boolean(session?.user);
 
   const total = useMemo(
-    () => computeTotals(cartItems, { isLoggedIn, promoDiscount }).total,
-    [cartItems, isLoggedIn, promoDiscount],
+    () =>
+      computeTotals(cartItems, {
+        isLoggedIn,
+        promoDiscount,
+        deliveryFee: fulfillment === 'delivery' ? DELIVERY_FEE : 0,
+      }).total,
+    [cartItems, isLoggedIn, promoDiscount, fulfillment],
   );
 
-  const isContactReady =
-    contactName.trim().length >= 5 &&
-    EMAIL_RE.test(contactEmail.trim()) &&
-    contactPhone.replace(/\D/g, '').length >= 10;
-
-  const canSubmit = isPaymentReady && isContactReady && !isLoading;
+  const canSubmit = isPaymentReady && isContactComplete(state) && !isLoading;
 
   const handlePlaceOrder = async () => {
     if (!canSubmit) return;
