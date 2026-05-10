@@ -23,6 +23,7 @@ const EMPTY_ADDRESS: DeliveryAddress = { address1: '', address2: '', city: '', s
 export type CheckoutState = {
   isPaymentReady: boolean;
   fulfillment: Fulfillment;
+  promoCode: string;
   promoDiscount: number;
   contactName: string;
   contactEmail: string;
@@ -35,7 +36,7 @@ export type CheckoutState = {
 export type CheckoutAction =
   | { type: 'SET_FULFILLMENT'; payload: Fulfillment }
   | { type: 'SET_PAYMENT_READY'; payload: boolean }
-  | { type: 'SET_PROMO'; payload: number }
+  | { type: 'SET_PROMO'; payload: { code: string; amount: number } }
   | { type: 'SET_CONTACT'; payload: { name: string; email: string; phone: string } }
   | { type: 'SET_PICKUP_SLOT'; payload: string }
   | { type: 'SET_DELIVERY_ADDRESS'; payload: DeliveryAddress }
@@ -44,6 +45,7 @@ export type CheckoutAction =
 const initialState: CheckoutState = {
   isPaymentReady: false,
   fulfillment: 'pickup',
+  promoCode: '',
   promoDiscount: 0,
   contactName: '',
   contactEmail: '',
@@ -64,7 +66,7 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
     case 'SET_PAYMENT_READY':
       return { ...state, isPaymentReady: action.payload };
     case 'SET_PROMO':
-      return { ...state, promoDiscount: action.payload };
+      return { ...state, promoCode: action.payload.code, promoDiscount: action.payload.amount };
     case 'SET_CONTACT':
       return {
         ...state,

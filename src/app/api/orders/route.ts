@@ -8,7 +8,9 @@ import Product from '@/models/Product';
 import User from '@/models/User';
 import Notification from '@/models/Notification';
 import { getSessionUser } from '@/utils/getSessionUser';
-import { isIn } from '@/lib/validation';
+import { isIn, EMAIL_RE } from '@/lib/validation';
+import { validatePromoCode } from '@/actions/checkout';
+import { MEMBER_DISCOUNT_RATE, DELIVERY_FEE, TAX_RATE } from '@/lib/pricing';
 
 // GET /api/orders
 // Admin: all orders (paginated). Customer: own orders only.
@@ -66,6 +68,7 @@ export const POST = async (request: NextRequest) => {
       pickupSlot?: string;
       deliveryAddress?: DeliveryAddressData;
       orderNotes?: string;
+      promoCode?: string;
     };
 
     if (!body.paymentMethod || !isIn(PAYMENT_METHODS, body.paymentMethod)) {
@@ -74,6 +77,30 @@ export const POST = async (request: NextRequest) => {
 
     if (!body.pickupLocation?.trim()) {
       return NextResponse.json({ message: 'Pickup location is required' }, { status: 400 });
+    }
+
+    // Allowlist fulfillmentType
+    if (body.fulfillmentType && !['pickup', 'delivery'].includes(body.fulfillmentType)) {
+      return NextResponse.json({ message: 'Invalid fulfillmentType' }, { status: 400 });
+    }
+
+    // Validate contactEmail format
+    if (body.contactEmail && !EMAIL_RE.test(body.contactEmail)) {
+      return NextResponse.json({ message: 'Invalid contactEmail format' }, { status: 400 });
+    }
+
+    // Length guards on free-text fields
+    if (body.contactName && body.contactName.length > 120) {
+      return NextResponse.json({ message: 'contactName too long' }, { status: 400 });
+    }
+    if (body.contactPhone && body.contactPhone.length > 20) {
+      return NextResponse.json({ message: 'contactPhone too long' }, { status: 400 });
+    }
+    if (body.pickupLocation && body.pickupLocation.length > 200) {
+      return NextResponse.json({ message: 'pickupLocation too long' }, { status: 400 });
+    }
+    if (body.orderNotes && body.orderNotes.length > 1000) {
+      return NextResponse.json({ message: 'orderNotes too long' }, { status: 400 });
     }
 
     const cart = await Cart.findOne({ user: sessionUser.userId }).populate(
@@ -90,9 +117,8 @@ export const POST = async (request: NextRequest) => {
       images?: { url: string }[];
       category?: string;
       stockCount: number;
+      price: number;
     };
-
-    const TAX_RATE = 0.0775;
 
     const orderItems = cart.items.map((line) => {
       const product = line.product as unknown as PopulatedProduct;
@@ -101,7 +127,7 @@ export const POST = async (request: NextRequest) => {
         name: product.name,
         qty: line.quantity,
         image: product.images?.[0]?.url ?? '',
-        price: line.price,
+        price: product.price,   // authoritative: always read from Product, never from cart snapshot
         productType: product.category ?? '',
       };
     });
@@ -123,12 +149,23 @@ export const POST = async (request: NextRequest) => {
       );
     }
 
-    const subtotal = Math.round(orderItems.reduce(
-      (sum, item) => sum + item.price * item.qty,
-      0,
-    ) * 100) / 100;
-    const tax = Math.round(subtotal * TAX_RATE * 100) / 100;
-    const totalCost = Math.round((subtotal + tax) * 100) / 100;
+    // Compute totals server-side — mirrors computeTotals() in lib/pricing.ts
+    const subtotal = Math.round(
+      orderItems.reduce((sum, item) => sum + item.price * item.qty, 0) * 100,
+    ) / 100;
+
+    const memberDiscount = Math.round(subtotal * MEMBER_DISCOUNT_RATE * 100) / 100;
+
+    let promoDiscount = 0;
+    if (body.promoCode) {
+      const promoResult = await validatePromoCode(body.promoCode.trim().toUpperCase(), subtotal);
+      if (promoResult.valid) promoDiscount = promoResult.amount;
+    }
+
+    const deliveryFee = body.fulfillmentType === 'delivery' ? DELIVERY_FEE : 0;
+    const afterDiscounts = Math.max(0, subtotal - memberDiscount - promoDiscount);
+    const tax = Math.round((afterDiscounts + deliveryFee) * TAX_RATE * 100) / 100;
+    const totalCost = Math.round((afterDiscounts + deliveryFee + tax) * 100) / 100;
 
     const order = await Order.create({
       user: sessionUser.userId,
@@ -156,15 +193,24 @@ export const POST = async (request: NextRequest) => {
       ...(body.orderNotes && { orderNotes: body.orderNotes }),
     });
 
-    // Decrement stockCount for each ordered item
-    await Product.bulkWrite(
+    // Atomic conditional decrement — only fires if stock is still sufficient.
+    // Guards against TOCTOU: two concurrent checkouts for the same last unit.
+    const stockResult = await Product.bulkWrite(
       orderItems.map((item) => ({
         updateOne: {
-          filter: { _id: item.product },
+          filter: { _id: item.product, stockCount: { $gte: item.qty } },
           update: { $inc: { stockCount: -item.qty } },
         },
       })),
     );
+
+    if (stockResult.modifiedCount !== orderItems.length) {
+      await Order.findByIdAndDelete(order._id);
+      return NextResponse.json(
+        { message: 'One or more items sold out — please refresh your cart' },
+        { status: 409 },
+      );
+    }
 
     await Cart.findOneAndUpdate({ user: sessionUser.userId }, { items: [] });
 

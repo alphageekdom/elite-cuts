@@ -44,6 +44,7 @@ const PlaceOrderButton = () => {
   const { state } = useCheckoutContext();
   const {
     isPaymentReady,
+    promoCode,
     promoDiscount,
     fulfillment,
     contactName,
@@ -100,6 +101,7 @@ const PlaceOrderButton = () => {
           ...(fulfillment === 'pickup' && pickupSlot ? { pickupSlot } : {}),
           ...(fulfillment === 'delivery' ? { deliveryAddress } : {}),
           ...(orderNotes.trim() ? { orderNotes: orderNotes.trim() } : {}),
+          ...(promoCode ? { promoCode } : {}),
         }),
       });
 
