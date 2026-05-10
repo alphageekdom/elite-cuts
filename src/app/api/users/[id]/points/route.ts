@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import mongoose from 'mongoose';
 import connectDB from '@/config/database';
 import User from '@/models/User';
 import { requireAdmin } from '@/utils/requireAdmin';
@@ -15,6 +16,9 @@ export const PATCH = async (request: NextRequest, { params }: RouteContext) => {
   try {
     await connectDB();
     const { id } = await params;
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ message: 'Not found' }, { status: 404 });
+    }
     const { delta } = (await request.json()) as { delta?: number };
 
     if (delta === undefined || typeof delta !== 'number' || !Number.isFinite(delta)) {

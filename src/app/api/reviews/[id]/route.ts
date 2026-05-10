@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import type { Types } from 'mongoose';
+import mongoose, { type Types } from 'mongoose';
 
 import connectDB from '@/config/database';
 import Review from '@/models/Review';
@@ -28,6 +28,9 @@ export const PATCH = async (req: NextRequest, { params }: RouteContext) => {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
     const { id } = await params;
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ message: 'Not found' }, { status: 404 });
+    }
     await connectDB();
 
     const review = await Review.findById(id);
@@ -78,6 +81,9 @@ export const DELETE = async (_req: NextRequest, { params }: RouteContext) => {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
     const { id } = await params;
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ message: 'Not found' }, { status: 404 });
+    }
     await connectDB();
 
     const review = await Review.findById(id);

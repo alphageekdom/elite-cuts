@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import connectDB from '@/config/database';
 import MessageModel from '@/models/Message';
 import { getSessionUser } from '@/utils/getSessionUser';
-import type { Types } from 'mongoose';
+import mongoose, { type Types } from 'mongoose';
 
 export const dynamic = 'force-dynamic';
 
@@ -70,6 +70,9 @@ export const POST = async (request: NextRequest) => {
     }
     if (msgBody.trim().length > 2000) {
       return NextResponse.json({ message: 'Message must be 2000 characters or fewer' }, { status: 400 });
+    }
+    if (orderId && !mongoose.isValidObjectId(orderId)) {
+      return NextResponse.json({ message: 'Invalid orderId' }, { status: 400 });
     }
 
     await connectDB();

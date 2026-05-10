@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import mongoose from 'mongoose';
 import connectDB from '@/config/database';
 import MessageModel, { MESSAGE_STATUSES } from '@/models/Message';
 import { getSessionUser } from '@/utils/getSessionUser';
@@ -18,6 +19,9 @@ export const PATCH = async (
 
   try {
     const { id } = await params;
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ message: 'Not found' }, { status: 404 });
+    }
     const body = await request.json();
     const { status } = body as { status: string };
 

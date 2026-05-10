@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import mongoose from 'mongoose';
 
 import connectDB from '@/config/database';
 import Order, { ORDER_STATUSES, CANCELLATION_REASONS } from '@/models/Order';
@@ -22,6 +23,9 @@ export const GET = async (_request: NextRequest, { params }: RouteContext) => {
     await connectDB();
 
     const { id } = await params;
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ message: 'Not found' }, { status: 404 });
+    }
     const order = await Order.findById(id).populate('user', 'name email');
 
     if (!order) {
@@ -48,6 +52,9 @@ export const DELETE = async (_request: NextRequest, { params }: RouteContext) =>
   try {
     await connectDB();
     const { id } = await params;
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ message: 'Not found' }, { status: 404 });
+    }
     const deleted = await Order.findByIdAndDelete(id);
     if (!deleted) {
       return NextResponse.json({ message: 'Order not found' }, { status: 404 });
@@ -68,6 +75,9 @@ export const PATCH = async (request: NextRequest, { params }: RouteContext) => {
     await connectDB();
 
     const { id } = await params;
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ message: 'Not found' }, { status: 404 });
+    }
     const { orderStatus, cancellationReason } = (await request.json()) as {
       orderStatus?: string;
       cancellationReason?: string;

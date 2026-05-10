@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import mongoose from 'mongoose';
 import connectDB from '@/config/database';
 import Shift from '@/models/Shift';
 import { requireAdmin } from '@/utils/requireAdmin';
@@ -43,6 +44,9 @@ export const DELETE = async (request: NextRequest) => {
     await connectDB();
     const id = request.nextUrl.searchParams.get('id');
     if (!id) return NextResponse.json({ message: 'id required' }, { status: 400 });
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ message: 'Not found' }, { status: 404 });
+    }
     await Shift.findByIdAndDelete(id);
     return NextResponse.json({ message: 'Deleted' });
   } catch (error) {

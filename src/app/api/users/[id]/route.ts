@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import bcrypt from 'bcryptjs';
+import mongoose from 'mongoose';
 
 import connectDB from '@/config/database';
 import User from '@/models/User';
@@ -22,6 +23,9 @@ export const GET = async (_request: NextRequest, { params }: RouteContext) => {
 
   try {
     const { id } = await params;
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ message: 'Not found' }, { status: 404 });
+    }
 
     if (sessionUser.userId !== id && !sessionUser.user?.isAdmin) {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
@@ -51,6 +55,9 @@ export const PUT = async (request: NextRequest, { params }: RouteContext) => {
     }
 
     const { id } = await params;
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ message: 'Not found' }, { status: 404 });
+    }
     const isAdmin = sessionUser.user?.isAdmin ?? false;
 
     if (sessionUser.userId !== id && !isAdmin) {
@@ -168,6 +175,9 @@ export const DELETE = async (_request: NextRequest, { params }: RouteContext) =>
     await connectDB();
 
     const { id } = await params;
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ message: 'Not found' }, { status: 404 });
+    }
     const deleted = await User.findByIdAndDelete(id);
 
     if (!deleted) {

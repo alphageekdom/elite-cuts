@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import mongoose from 'mongoose';
 
 import connectDB from '@/config/database';
 import Product from '@/models/Product';
@@ -15,6 +16,9 @@ export const GET = async (_request: NextRequest, { params }: RouteContext) => {
   try {
     await connectDB();
     const { id } = await params;
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ message: 'Not found' }, { status: 404 });
+    }
 
     const product = await Product.findById(id);
     if (!product) {
@@ -38,6 +42,9 @@ export const PATCH = async (request: NextRequest, { params }: RouteContext) => {
   try {
     await connectDB();
     const { id } = await params;
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ message: 'Not found' }, { status: 404 });
+    }
     const body = (await request.json()) as {
       isActive?: boolean;
       isFeatured?: boolean;
@@ -80,6 +87,9 @@ export const DELETE = async (
 
     await connectDB();
     const { id } = await params;
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ message: 'Not found' }, { status: 404 });
+    }
 
     const existingProduct = await Product.findById(id);
     if (!existingProduct) {
@@ -102,6 +112,9 @@ export const PUT = async (request: NextRequest, { params }: RouteContext) => {
 
     await connectDB();
     const { id } = await params;
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ message: 'Not found' }, { status: 404 });
+    }
     const formData = await request.formData();
 
     const existingProduct = await Product.findById(id).lean();
@@ -136,6 +149,9 @@ export const POST = async (request: NextRequest, { params }: RouteContext) => {
     }
     const { userId } = sessionUser;
     const { id } = await params;
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ message: 'Not found' }, { status: 404 });
+    }
 
     const { rating, comment } = (await request.json()) as {
       rating?: number | string;
