@@ -6,11 +6,13 @@ declare module 'next-auth' {
     user?: {
       userId?: string;
       isAdmin?: boolean;
+      rewardPoints?: number;
     } & DefaultSession['user'];
   }
 
   interface User {
     isAdmin?: boolean;
+    rewardPoints?: number;
   }
 }
 
@@ -18,5 +20,6 @@ declare module 'next-auth/jwt' {
   interface JWT extends DefaultJWT {
     userId?: string;
     isAdmin?: boolean;
+    rewardPoints?: number;
   }
 }

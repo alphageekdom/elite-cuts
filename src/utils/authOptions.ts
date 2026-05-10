@@ -38,6 +38,7 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           email: user.email,
           isAdmin: user.isAdmin,
+          rewardPoints: (user.rewardPoints as number) ?? 0,
         };
       },
     }),
@@ -51,6 +52,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.userId = user.id;
         token.isAdmin = Boolean(user.isAdmin);
+        token.rewardPoints = (user.rewardPoints as number) ?? 0;
       }
       if (trigger === 'update' && session) {
         if (session.name) token.name = session.name as string;
@@ -62,6 +64,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.userId = token.userId;
         session.user.isAdmin = Boolean(token.isAdmin);
+        session.user.rewardPoints = token.rewardPoints ?? 0;
       }
       return session;
     },

@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 
+import ArrowIcon from '@/components/uielements/ArrowIcon';
 import useHandleAddToCart from '@/hooks/useHandleAddToCart';
 import useHandleBookmark from '@/hooks/useHandleBookmark';
 import { productImageSrc } from '@/lib/admin-utils';
@@ -203,6 +204,13 @@ const ProductCard = ({ product }: ProductCardProps) => {
             {stockLabel}
           </span>
         </div>
+        <Link
+          href={productHref}
+          className='group/view mt-3.5 inline-flex items-center gap-1.5 self-start border-b border-oxblood/30 pb-0.5 text-[13px] font-medium tracking-[0.04em] text-oxblood transition-[gap,border-color] duration-300 hover:gap-2.5 hover:border-oxblood motion-reduce:transition-none'
+        >
+          View cut
+          <ArrowIcon className='transition-transform duration-300 group-hover/view:translate-x-0.5 motion-reduce:transition-none' />
+        </Link>
       </div>
     </article>
   );

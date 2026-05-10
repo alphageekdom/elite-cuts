@@ -25,6 +25,10 @@ const Navbar = () => {
   const isLoggedIn = Boolean(session?.user);
   const isAdmin = Boolean(session?.user?.isAdmin);
   const profileImage = session?.user?.image ?? undefined;
+  const userName = session?.user?.name ?? '';
+  const userId = session?.user?.userId ?? '';
+  const rewardPoints = session?.user?.rewardPoints ?? 0;
+  const userInitials = userName.split(' ').map((n) => n[0]).join('').slice(0, 2);
 
   // Only the home route shows the navbar transparent over a hero;
   // every other route stays in the readable cream/ink state.
@@ -121,6 +125,10 @@ const Navbar = () => {
               {isLoggedIn ? (
                 <ProfileMenu
                   profileImage={profileImage}
+                  initials={userInitials}
+                  userId={userId}
+                  isAdmin={isAdmin}
+                  rewardPoints={rewardPoints}
                   isOpen={isProfileMenuOpen}
                   onToggle={() => setIsProfileMenuOpen((prev) => !prev)}
                   onClose={() => setIsProfileMenuOpen(false)}
