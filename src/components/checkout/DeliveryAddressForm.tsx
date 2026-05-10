@@ -5,85 +5,18 @@ import { useEffect, useRef, useState } from 'react';
 import { useCheckoutContext } from '@/context/CheckoutContext';
 import CheckoutFieldCheck from '@/components/checkout/CheckoutFieldCheck';
 import { FIELD_CLASS, LABEL_CLASS } from '@/components/checkout/checkoutStyles';
+import {
+  STATE_ABBR,
+  fetchSuggestions,
+  geocodeAddress,
+  isWithinDeliveryRadius,
+  formatPhotonSuggestion,
+  type PhotonFeature,
+} from '@/lib/geocoding';
 
 const LABEL = `mb-2.5 block ${LABEL_CLASS}`;
 
 type DeliveryCheck = 'idle' | 'checking' | 'valid' | 'invalid' | 'error';
-
-type PhotonFeature = {
-  properties: {
-    name?: string;
-    housenumber?: string;
-    street?: string;
-    city?: string;
-    state?: string;
-    postcode?: string;
-    country?: string;
-  };
-  geometry: { coordinates: [number, number] };
-};
-
-const STATE_ABBR: Record<string, string> = {
-  Alabama: 'AL', Alaska: 'AK', Arizona: 'AZ', Arkansas: 'AR',
-  California: 'CA', Colorado: 'CO', Connecticut: 'CT', Delaware: 'DE',
-  Florida: 'FL', Georgia: 'GA', Hawaii: 'HI', Idaho: 'ID',
-  Illinois: 'IL', Indiana: 'IN', Iowa: 'IA', Kansas: 'KS',
-  Kentucky: 'KY', Louisiana: 'LA', Maine: 'ME', Maryland: 'MD',
-  Massachusetts: 'MA', Michigan: 'MI', Minnesota: 'MN', Mississippi: 'MS',
-  Missouri: 'MO', Montana: 'MT', Nebraska: 'NE', Nevada: 'NV',
-  'New Hampshire': 'NH', 'New Jersey': 'NJ', 'New Mexico': 'NM', 'New York': 'NY',
-  'North Carolina': 'NC', 'North Dakota': 'ND', Ohio: 'OH', Oklahoma: 'OK',
-  Oregon: 'OR', Pennsylvania: 'PA', 'Rhode Island': 'RI', 'South Carolina': 'SC',
-  'South Dakota': 'SD', Tennessee: 'TN', Texas: 'TX', Utah: 'UT',
-  Vermont: 'VT', Virginia: 'VA', Washington: 'WA', 'West Virginia': 'WV',
-  Wisconsin: 'WI', Wyoming: 'WY',
-};
-
-const SHOP_LAT = 32.7491;
-const SHOP_LNG = -117.1294;
-const RADIUS_MILES = 25;
-
-const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-  const R = 3958.8;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.asin(Math.sqrt(a));
-};
-
-const fetchSuggestions = async (query: string): Promise<PhotonFeature[]> => {
-  try {
-    const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5&lang=en`;
-    const res = await fetch(url, { headers: { Accept: 'application/json' } });
-    if (!res.ok) return [];
-    const data = (await res.json()) as { features: PhotonFeature[] };
-    return (data.features ?? []).filter((f) => f.properties.country === 'United States');
-  } catch {
-    return [];
-  }
-};
-
-const geocodeAddress = async (query: string): Promise<{ lat: number; lon: number } | null> => {
-  try {
-    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
-    const res = await fetch(url, {
-      headers: {
-        Accept: 'application/json',
-        'User-Agent': 'EliteCuts/1.0 (luisasoto87@gmail.com)',
-      },
-    });
-    if (!res.ok) return null;
-    const data = (await res.json()) as { lat: string; lon: string }[];
-    if (!data.length) return null;
-    return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
-  } catch {
-    return null;
-  }
-};
 
 const DeliveryAddressForm = () => {
   const { dispatch } = useCheckoutContext();
@@ -123,8 +56,7 @@ const DeliveryAddressForm = () => {
     const coords = await geocodeAddress(query);
     checkingRef.current = false;
     if (!coords) { setDeliveryCheck('error'); return; }
-    const miles = haversineDistance(SHOP_LAT, SHOP_LNG, coords.lat, coords.lon);
-    setDeliveryCheck(miles <= RADIUS_MILES ? 'valid' : 'invalid');
+    setDeliveryCheck(isWithinDeliveryRadius(coords.lat, coords.lon) ? 'valid' : 'invalid');
   };
 
   // Auto-check when all fields are filled — catches autofill extensions that
@@ -147,8 +79,7 @@ const DeliveryAddressForm = () => {
     setZip(postcode ?? '');
     setSuggestions([]);
     setShowSuggestions(false);
-    const miles = haversineDistance(SHOP_LAT, SHOP_LNG, lat, lon);
-    setDeliveryCheck(miles <= RADIUS_MILES ? 'valid' : 'invalid');
+    setDeliveryCheck(isWithinDeliveryRadius(lat, lon) ? 'valid' : 'invalid');
   };
 
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
@@ -170,12 +101,6 @@ const DeliveryAddressForm = () => {
     setZip(zip);
     setShowSuggestions(false);
     setDeliveryCheck('idle');
-  };
-
-  const formatSuggestion = (f: PhotonFeature): string => {
-    const { housenumber, street, name, city, state, postcode } = f.properties;
-    const line1 = housenumber && street ? `${housenumber} ${street}` : (street ?? name ?? '');
-    return [line1, city, state, postcode].filter(Boolean).join(', ');
   };
 
   const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
@@ -214,7 +139,7 @@ const DeliveryAddressForm = () => {
                   onMouseDown={() => selectSuggestion(f)}
                   className='w-full px-4 py-3 text-left text-[13px] text-ink transition-colors duration-150 hover:bg-cream-deep'
                 >
-                  {formatSuggestion(f)}
+                  {formatPhotonSuggestion(f)}
                 </button>
               </li>
             ))}

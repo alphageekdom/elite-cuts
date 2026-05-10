@@ -21,7 +21,7 @@ const FT_LABEL_CLASS = `mb-2.5 block ${LABEL_CLASS}`;
 
 const FulfillmentToggle = () => {
   const { state, dispatch } = useCheckoutContext();
-  const { fulfillment, pickupSlot, orderNotes } = state;
+  const { fulfillment, pickupSlot } = state;
 
   const currentHour = useMemo(() => new Date().getHours(), []);
 
@@ -196,24 +196,6 @@ const FulfillmentToggle = () => {
       )}
 
       {fulfillment === 'delivery' && <DeliveryAddressForm />}
-
-      <div>
-        <label htmlFor='notes' className={FT_LABEL_CLASS}>
-          Notes for the butcher{' '}
-          <span className='ml-2 text-[11px] font-normal normal-case tracking-normal opacity-70'>
-            optional
-          </span>
-        </label>
-        <textarea
-          id='notes'
-          name='notes'
-          rows={2}
-          value={orderNotes}
-          onChange={(e) => dispatch({ type: 'SET_ORDER_NOTES', payload: e.target.value })}
-          placeholder='Any special cutting requests, doneness preferences, or pickup notes…'
-          className='w-full resize-y border-b border-line bg-transparent pb-3.5 pt-2 text-[16px] text-ink outline-none placeholder:text-muted/60 transition-[border-color] duration-300 focus:border-b-oxblood motion-reduce:transition-none'
-        />
-      </div>
     </div>
   );
 };

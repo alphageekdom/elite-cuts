@@ -2,7 +2,9 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import CheckoutContactCard from '@/components/checkout/CheckoutContactCard';
 import CheckoutGuard from '@/components/checkout/CheckoutGuard';
+import CheckoutOrderNotes from '@/components/checkout/CheckoutOrderNotes';
 import CheckoutOrderSummary from '@/components/checkout/CheckoutOrderSummary';
+import CheckoutStepRail from '@/components/checkout/CheckoutStepRail';
 import FulfillmentToggle from '@/components/checkout/FulfillmentToggle';
 import PaymentMethodSelector from '@/components/checkout/PaymentMethodSelector';
 import PlaceOrderButton from '@/components/checkout/PlaceOrderButton';
@@ -16,59 +18,13 @@ export const metadata: Metadata = {
   description: 'Complete your order — pickup-ready in ~1 hour.',
 };
 
-
-const CheckIcon = () => (
-  <svg
-    viewBox='0 0 24 24'
-    fill='none'
-    stroke='currentColor'
-    strokeWidth={3}
-    aria-hidden='true'
-    className='h-2.75 w-2.75'
-  >
-    <polyline points='20 6 9 17 4 12' />
-  </svg>
-);
-
 export default async function CheckoutPage() {
   const sessionUser = await getSessionUser();
   if (!sessionUser?.userId) redirect('/login?from=/checkout');
   return (
     <CheckoutGuard>
       <div className='min-h-screen bg-cream'>
-        {/* Step rail */}
-        <div className='border-b border-line-soft py-7'>
-          <div className='mx-auto max-w-300 px-8'>
-            <nav
-              aria-label='Checkout steps'
-              className='flex items-center justify-center gap-4'
-            >
-              <div className='flex items-center gap-2.5 text-[13px] font-medium text-ink'>
-                <span className='grid h-6.5 w-6.5 place-items-center rounded-full border border-green bg-green text-cream'>
-                  <CheckIcon />
-                </span>
-                Cart
-              </div>
-              <span className='h-px w-7 bg-line' aria-hidden='true' />
-              <div
-                className='flex items-center gap-2.5 text-[13px] font-medium text-ink'
-                aria-current='step'
-              >
-                <span className='grid h-6.5 w-6.5 place-items-center rounded-full border border-ink bg-ink font-display italic text-[12px] text-cream'>
-                  2
-                </span>
-                Checkout
-              </div>
-              <span className='h-px w-7 bg-line' aria-hidden='true' />
-              <div className='flex items-center gap-2.5 text-[13px] text-muted'>
-                <span className='grid h-6.5 w-6.5 place-items-center rounded-full border border-line bg-paper font-display italic text-[12px] text-muted'>
-                  3
-                </span>
-                <span className='hidden sm:inline'>Confirmation</span>
-              </div>
-            </nav>
-          </div>
-        </div>
+        <CheckoutStepRail currentStep={2} />
 
         <div className='mx-auto max-w-300 px-6 pb-20 sm:px-8'>
           {/* Page headline */}
@@ -96,7 +52,10 @@ export default async function CheckoutPage() {
               {/* Card 02: Fulfillment */}
               <FulfillmentToggle />
 
-              {/* Card 03: Payment */}
+              {/* Card 03: Order notes */}
+              <CheckoutOrderNotes />
+
+              {/* Card 04: Payment */}
               <PaymentMethodSelector />
 
               {/* Place order */}
