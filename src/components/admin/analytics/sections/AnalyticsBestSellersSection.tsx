@@ -1,6 +1,6 @@
 import { fmtDollarShort, fmtRank } from './analytics-utils';
 import { productImageSrc } from '@/lib/admin-utils';
-import type { AnalyticsData } from './AnalyticsClient';
+import type { AnalyticsData } from '../AnalyticsClient';
 
 export default function AnalyticsBestSellersSection({ data }: { data: AnalyticsData }) {
   return (

@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { fmtDollars } from './analytics-utils';
+import { fmtDollars } from './sections/analytics-utils';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
-import AnalyticsKpiGrid from './AnalyticsKpiGrid';
-import AnalyticsRevenueChart from './AnalyticsRevenueChart';
-import AnalyticsBestSellersSection from './AnalyticsBestSellersSection';
-import AnalyticsHeatmap from './AnalyticsHeatmap';
+import AnalyticsKpiGrid from './sections/AnalyticsKpiGrid';
+import AnalyticsRevenueChart from './sections/AnalyticsRevenueChart';
+import AnalyticsBestSellersSection from './sections/AnalyticsBestSellersSection';
+import AnalyticsHeatmap from './sections/AnalyticsHeatmap';
 
 export type AnalyticsData = {
   periodLabel: string;

@@ -1,6 +1,6 @@
-import ChangePill from '../ChangePill';
+import ChangePill from '../../ChangePill';
 import { fmtDollars } from './analytics-utils';
-import type { AnalyticsData } from './AnalyticsClient';
+import type { AnalyticsData } from '../AnalyticsClient';
 
 export default function AnalyticsKpiGrid({ data }: { data: AnalyticsData }) {
   const { whole: aovWhole, frac: aovFrac } = fmtDollars(data.aov);

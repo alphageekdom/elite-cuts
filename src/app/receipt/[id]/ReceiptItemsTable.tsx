@@ -1,4 +1,4 @@
-import { formatMoney } from '@/lib/admin-utils';
+import { formatMoney } from '@/lib/format';
 import type { OrderItem } from '@/models/Order';
 
 type Props = {

@@ -3,7 +3,7 @@ import { redirect, notFound } from 'next/navigation';
 import { getSessionUser } from '@/utils/getSessionUser';
 import connectDB from '@/config/database';
 import Order from '@/models/Order';
-import { formatMoney } from '@/lib/admin-utils';
+import { formatMoney } from '@/lib/format';
 import ReceiptToolbar from './ReceiptToolbar';
 import ReceiptHeader from './ReceiptHeader';
 import ReceiptItemsTable from './ReceiptItemsTable';
