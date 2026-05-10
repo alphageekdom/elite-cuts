@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import connectDB from '@/config/database';
 import MessageModel from '@/models/Message';
 import { getSessionUser } from '@/utils/getSessionUser';
+import { unauthorized } from '@/lib/api-handler';
 import mongoose, { type Types } from 'mongoose';
 
 export const dynamic = 'force-dynamic';
@@ -14,7 +15,7 @@ type PopulatedUser = { _id: Types.ObjectId; name: string; email: string };
 export const GET = async () => {
   const sessionUser = await getSessionUser();
   if (!sessionUser?.userId) {
-    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    return unauthorized();
   }
 
   try {
@@ -47,7 +48,7 @@ export const GET = async () => {
 export const POST = async (request: NextRequest) => {
   const sessionUser = await getSessionUser();
   if (!sessionUser?.userId) {
-    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    return unauthorized();
   }
 
   try {

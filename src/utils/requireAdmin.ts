@@ -7,7 +7,7 @@ export const requireAdmin = async (): Promise<NextResponse | null> => {
   const sessionUser = await getSessionUser();
 
   if (!sessionUser?.userId) {
-    return NextResponse.json({ message: 'User ID is required' }, { status: 401 });
+    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
   if (!sessionUser.user?.isAdmin) {

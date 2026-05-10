@@ -5,7 +5,7 @@ import { withAdmin } from '@/lib/api-handler';
 export const dynamic = 'force-dynamic';
 
 // GET /api/notifications — 20 most recent for the session admin
-export const GET = withAdmin(async (_req, userId) => {
+export const GET = withAdmin(async (_req, _ctx, userId) => {
   try {
     const [notifications, unreadCount] = await Promise.all([
       Notification.find({ userId }).sort({ createdAt: -1 }).limit(20).lean(),

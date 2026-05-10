@@ -4,6 +4,7 @@ import connectDB from '@/config/database';
 import User from '@/models/User';
 import Product from '@/models/Product';
 import { getSessionUser } from '@/utils/getSessionUser';
+import { unauthorized } from '@/lib/api-handler';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +14,7 @@ export const GET = async () => {
     const sessionUser = await getSessionUser();
 
     if (!sessionUser?.userId) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+      return unauthorized();
     }
 
     await connectDB();
@@ -38,7 +39,7 @@ export const POST = async (request: NextRequest) => {
     const sessionUser = await getSessionUser();
 
     if (!sessionUser?.userId) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+      return unauthorized();
     }
 
     await connectDB();

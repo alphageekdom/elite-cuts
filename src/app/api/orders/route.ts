@@ -10,6 +10,7 @@ import Product from '@/models/Product';
 import User from '@/models/User';
 import Notification from '@/models/Notification';
 import { getSessionUser } from '@/utils/getSessionUser';
+import { unauthorized, parsePagination } from '@/lib/api-handler';
 import { isIn, EMAIL_RE } from '@/lib/validation';
 import { validatePromoCode } from '@/actions/checkout';
 import { MEMBER_DISCOUNT_RATE, DELIVERY_FEE, TAX_RATE } from '@/lib/pricing';
@@ -19,16 +20,13 @@ import { MEMBER_DISCOUNT_RATE, DELIVERY_FEE, TAX_RATE } from '@/lib/pricing';
 export const GET = async (request: NextRequest) => {
   const sessionUser = await getSessionUser();
   if (!sessionUser?.userId) {
-    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    return unauthorized();
   }
 
   try {
     await connectDB();
 
-    const params = request.nextUrl.searchParams;
-    const page = Math.max(1, Number.parseInt(params.get('page') ?? '1', 10) || 1);
-    const pageSize = Math.max(1, Number.parseInt(params.get('pageSize') ?? '10', 10) || 10);
-    const skip = (page - 1) * pageSize;
+    const { skip, pageSize } = parsePagination(request.nextUrl.searchParams, { pageSize: 10 });
 
     const filter = sessionUser.user?.isAdmin
       ? {}
@@ -54,7 +52,7 @@ export const GET = async (request: NextRequest) => {
 export const POST = async (request: NextRequest) => {
   const sessionUser = await getSessionUser();
   if (!sessionUser?.userId) {
-    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    return unauthorized();
   }
 
   try {

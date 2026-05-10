@@ -4,6 +4,7 @@ import connectDB from '@/config/database';
 import Cart from '@/models/Cart';
 import Product from '@/models/Product';
 import { getSessionUser } from '@/utils/getSessionUser';
+import { unauthorized } from '@/lib/api-handler';
 
 // Lean line-item wire shape. CartItemSchema has `_id: false` so each line is
 // uniquely keyed by its product reference — that's the identifier callers use
@@ -13,9 +14,6 @@ type CartLineWire = {
   quantity: number;
   price: number;
 };
-
-const unauthorized = () =>
-  NextResponse.json({ message: 'unauthorized' }, { status: 401 });
 
 const badRequest = (message: string) =>
   NextResponse.json({ message }, { status: 400 });

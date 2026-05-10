@@ -1,15 +1,10 @@
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
-import connectDB from '@/config/database';
 import Shift from '@/models/Shift';
-import { requireAdmin } from '@/utils/requireAdmin';
+import { withAdmin } from '@/lib/api-handler';
 
-// GET /api/shifts?weekStart=ISO — shifts for one week
-export const GET = async (request: NextRequest) => {
-  const adminError = await requireAdmin();
-  if (adminError) return adminError;
+export const GET = withAdmin(async (request) => {
   try {
-    await connectDB();
     const weekStartParam = request.nextUrl.searchParams.get('weekStart');
     const weekStart = weekStartParam ? new Date(weekStartParam) : getMondayOf(new Date());
     const weekEnd = new Date(weekStart.getTime() + 7 * 86400000);
@@ -19,14 +14,10 @@ export const GET = async (request: NextRequest) => {
     console.error('[shifts GET]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
-};
+});
 
-// POST /api/shifts — create a shift
-export const POST = async (request: NextRequest) => {
-  const adminError = await requireAdmin();
-  if (adminError) return adminError;
+export const POST = withAdmin(async (request) => {
   try {
-    await connectDB();
     const { weekStart, dayOfWeek, hourIndex, staffName, role, color } = await request.json();
 
     if (!weekStart) {
@@ -48,14 +39,10 @@ export const POST = async (request: NextRequest) => {
     console.error('[shifts POST]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
-};
+});
 
-// DELETE /api/shifts?id=xxx — remove a shift
-export const DELETE = async (request: NextRequest) => {
-  const adminError = await requireAdmin();
-  if (adminError) return adminError;
+export const DELETE = withAdmin(async (request) => {
   try {
-    await connectDB();
     const id = request.nextUrl.searchParams.get('id');
     if (!id) return NextResponse.json({ message: 'id required' }, { status: 400 });
     if (!mongoose.isValidObjectId(id)) {
@@ -67,7 +54,7 @@ export const DELETE = async (request: NextRequest) => {
     console.error('[shifts DELETE]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
-};
+});
 
 function getMondayOf(date: Date): Date {
   const d = new Date(date);
