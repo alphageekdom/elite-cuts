@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import type { Types } from 'mongoose';
 
+export const dynamic = 'force-dynamic';
+
 import connectDB from '@/config/database';
 import Order, { PAYMENT_METHODS, type PaymentMethod, type DeliveryAddressData } from '@/models/Order';
 import Cart from '@/models/Cart';

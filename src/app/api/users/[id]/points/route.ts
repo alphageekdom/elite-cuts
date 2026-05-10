@@ -31,7 +31,7 @@ export const PATCH = async (request: NextRequest, { params }: RouteContext) => {
     }
 
     const newPoints = Math.max(0, (user.rewardPoints ?? 0) + delta);
-    await User.findByIdAndUpdate(id, { rewardPoints: newPoints });
+    await User.findByIdAndUpdate(id, { rewardPoints: newPoints }, { runValidators: true });
 
     return NextResponse.json({ id, rewardPoints: newPoints });
   } catch (error) {

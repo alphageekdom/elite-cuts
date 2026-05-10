@@ -8,7 +8,7 @@ export const GET = async () => {
   if (adminError) return adminError;
   try {
     await connectDB();
-    const cuts = await AgingCut.find({ isActive: true }).sort({ startedAt: 1 }).lean();
+    const cuts = await AgingCut.find({}).sort({ startedAt: 1 }).lean();
     return NextResponse.json(cuts);
   } catch (error) {
     console.error('[aging GET]', error);

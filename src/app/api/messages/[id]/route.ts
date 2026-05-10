@@ -34,7 +34,7 @@ export const PATCH = async (
     const updated = await MessageModel.findByIdAndUpdate(
       id,
       { status },
-      { new: true, runValidators: true },
+      { returnDocument: 'after', runValidators: true },
     ).lean();
 
     if (!updated) {

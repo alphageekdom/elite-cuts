@@ -149,7 +149,7 @@ export const PUT = async (request: NextRequest, { params }: RouteContext) => {
       isFeatured: existingProduct.isFeatured,
     };
 
-    const updatedProduct = await Product.findByIdAndUpdate(id, productData);
+    const updatedProduct = await Product.findByIdAndUpdate(id, productData, { returnDocument: 'after', runValidators: true });
     return NextResponse.json(updatedProduct);
   } catch (error) {
     console.error(error);

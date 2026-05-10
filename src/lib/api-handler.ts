@@ -3,13 +3,15 @@ import connectDB from '@/config/database';
 import { getSessionUser } from '@/utils/getSessionUser';
 
 type RouteHandler = (req: NextRequest, ctx?: unknown) => Promise<NextResponse>;
+type AdminHandler = (req: NextRequest, userId: string) => Promise<NextResponse>;
 
 /**
  * Wraps a route handler with `connectDB` + admin auth check.
- * Returns 401/403 before calling the handler if the request is not from an admin.
+ * Passes the verified userId to the handler so it does not need to call
+ * getSessionUser() a second time.
  */
-export function withAdmin(handler: RouteHandler): RouteHandler {
-  return async (req, ctx) => {
+export function withAdmin(handler: AdminHandler): RouteHandler {
+  return async (req) => {
     await connectDB();
 
     const sessionUser = await getSessionUser();
@@ -20,7 +22,7 @@ export function withAdmin(handler: RouteHandler): RouteHandler {
       return NextResponse.json({ message: 'Admin access required' }, { status: 403 });
     }
 
-    return handler(req, ctx);
+    return handler(req, sessionUser.userId);
   };
 }
 
