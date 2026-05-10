@@ -26,6 +26,9 @@ export const PUT = async (request: NextRequest) => {
   try {
     await connectDB();
     const { days } = await request.json();
+    if (!Array.isArray(days)) {
+      return NextResponse.json({ message: 'days must be an array' }, { status: 400 });
+    }
     const doc = await ShopHoursModel.findOneAndUpdate(
       {},
       { $set: { days } },

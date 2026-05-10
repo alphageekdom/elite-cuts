@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import mongoose from 'mongoose';
 
 import connectDB from '@/config/database';
-import Product from '@/models/Product';
+import Product, { PRODUCT_CATEGORIES } from '@/models/Product';
 import Review from '@/models/Review';
 import { getSessionUser } from '@/utils/getSessionUser';
 import { parseProductFormData } from '@/utils/parseProductFormData';
@@ -124,8 +124,26 @@ export const PUT = async (request: NextRequest, { params }: RouteContext) => {
 
     // rating/images/isFeatured preserved from existing doc — not editable via
     // the admin form (rating is review-derived; images via separate upload).
+    const parsed = parseProductFormData(formData);
+
+    if (!parsed.name.trim()) {
+      return NextResponse.json({ message: 'Name is required' }, { status: 400 });
+    }
+    if (typeof parsed.price !== 'number' || isNaN(parsed.price) || parsed.price < 0) {
+      return NextResponse.json({ message: 'price must be a non-negative number' }, { status: 400 });
+    }
+    if (!(PRODUCT_CATEGORIES as readonly string[]).includes(parsed.category)) {
+      return NextResponse.json(
+        { message: `category must be one of: ${PRODUCT_CATEGORIES.join(', ')}` },
+        { status: 400 },
+      );
+    }
+    if (!Number.isInteger(parsed.stockCount) || parsed.stockCount < 0) {
+      return NextResponse.json({ message: 'stockCount must be a non-negative integer' }, { status: 400 });
+    }
+
     const productData = {
-      ...parseProductFormData(formData),
+      ...parsed,
       rating: existingProduct.rating,
       images: existingProduct.images,
       isFeatured: existingProduct.isFeatured,
@@ -180,7 +198,7 @@ export const POST = async (request: NextRequest, { params }: RouteContext) => {
     }
 
     const parsedRating = Number.parseFloat(String(rating));
-    if (Number.isNaN(parsedRating) || parsedRating < 0 || parsedRating > 5) {
+    if (Number.isNaN(parsedRating) || parsedRating < 1 || parsedRating > 5) {
       return NextResponse.json({ message: 'Invalid rating value' }, { status: 400 });
     }
 

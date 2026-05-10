@@ -28,6 +28,20 @@ export const POST = async (request: NextRequest) => {
   try {
     await connectDB();
     const { weekStart, dayOfWeek, hourIndex, staffName, role, color } = await request.json();
+
+    if (!weekStart) {
+      return NextResponse.json({ message: 'weekStart is required' }, { status: 400 });
+    }
+    if (!Number.isInteger(dayOfWeek) || dayOfWeek < 0 || dayOfWeek > 6) {
+      return NextResponse.json({ message: 'dayOfWeek must be an integer 0–6' }, { status: 400 });
+    }
+    if (!Number.isInteger(hourIndex) || hourIndex < 0) {
+      return NextResponse.json({ message: 'hourIndex must be a non-negative integer' }, { status: 400 });
+    }
+    if (typeof staffName !== 'string' || !staffName.trim()) {
+      return NextResponse.json({ message: 'staffName is required' }, { status: 400 });
+    }
+
     const shift = await Shift.create({ weekStart, dayOfWeek, hourIndex, staffName, role, color });
     return NextResponse.json(shift, { status: 201 });
   } catch (error) {

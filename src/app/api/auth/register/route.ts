@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 
 import connectDB from '@/config/database';
 import User from '@/models/User';
+import { EMAIL_RE } from '@/lib/validation';
 
 const MIN_PASSWORD_LENGTH = 8;
 const MAX_PASSWORD_LENGTH = 128;
@@ -30,6 +31,10 @@ export const POST = async (request: NextRequest) => {
         { message: 'Name must be 80 characters or fewer' },
         { status: 400 },
       );
+    }
+
+    if (!EMAIL_RE.test(email)) {
+      return NextResponse.json({ message: 'Invalid email address' }, { status: 400 });
     }
 
     if (
