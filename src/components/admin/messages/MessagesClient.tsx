@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { avatarColorForId, relativeTime, statCellBorderClasses } from '@/lib/admin-utils';
+import { avatarColorForId, relativeTime, statCellBorderClasses, getInitials, formatDate } from '@/lib/admin-utils';
 import { AVATAR_COLORS } from '@/lib/admin-constants';
 
 import type { MessageStatus } from '@/models/Message';
@@ -31,13 +31,6 @@ function statusPill(status: MessageStatus) {
     : 'bg-cream-deep text-muted';
 }
 
-function getInitials(name: string): string {
-  return name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
-}
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
 
 const STAT_CELLS: { key: Filter; label: string }[] = [
   { key: 'all',    label: 'All' },

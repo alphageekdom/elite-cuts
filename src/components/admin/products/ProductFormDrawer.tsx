@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { PRODUCT_CATEGORIES } from '@/lib/admin-constants';
 import { toast } from 'sonner';
+import { inputCls } from '@/components/admin/settings/SettingsUI';
 import type { ProductTableRow } from '@/types/admin';
 
 type Props = {
@@ -10,8 +11,6 @@ type Props = {
   onSave: (data: FormData, id?: string) => Promise<void>;
 };
 
-const inputCls =
-  'w-full border border-line bg-paper font-sans text-[14px] text-ink px-4 py-3 rounded-lg outline-none focus:border-ink transition-colors placeholder:text-muted/60';
 const selectCls = `${inputCls} appearance-none cursor-pointer`;
 
 function DrawerSection({ label, children }: { label: string; children: React.ReactNode }) {

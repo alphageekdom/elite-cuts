@@ -1,7 +1,10 @@
 'use client';
 import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
-import { productImageSrc, statCellBorderClasses } from '@/lib/admin-utils';
+import { productImageSrc } from '@/lib/admin-utils';
+import AdminSearchInput from '@/components/admin/AdminSearchInput';
+import AdminPagination from '@/components/admin/AdminPagination';
+import AdminStatStrip from '@/components/admin/AdminStatStrip';
 import { PRODUCT_CATEGORIES, CATEGORY_COLORS } from '@/lib/admin-constants';
 import type { ProductCategory } from '@/lib/admin-constants';
 import type { ProductTableRow, ProductCounts } from '@/types/admin';
@@ -27,19 +30,6 @@ const SORT_OPTIONS: { value: SortBy; label: string }[] = [
   { value: 'top-rated', label: 'Top rated' },
 ];
 
-const STAT_CELLS: Array<{
-  key: StatFilter | 'avgPrice';
-  label: string;
-  meta: string;
-  dotStyle: string;
-  isInfo?: boolean;
-}> = [
-  { key: 'all', label: 'All cuts', meta: 'IN CATALOG', dotStyle: 'var(--color-muted)' },
-  { key: 'inStock', label: 'In Stock', meta: 'AVAILABLE', dotStyle: 'var(--color-green)' },
-  { key: 'outOfStock', label: 'Out of Stock', meta: 'UNAVAILABLE', dotStyle: 'var(--color-oxblood)' },
-  { key: 'avgPrice', label: 'Avg price', meta: 'PER LB', dotStyle: 'var(--color-camel)', isInfo: true },
-  { key: 'featured', label: 'Featured', meta: 'ON HOMEPAGE', dotStyle: 'var(--color-camel)' },
-];
 
 function stockState(count: number): 'healthy' | 'low' | 'critical' | 'out' {
   if (count === 0) return 'out';
@@ -232,9 +222,9 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
     document.body.style.overflow = '';
   }
 
-  function handleStatFilter(key: StatFilter | 'avgPrice') {
+  function handleStatFilter(key: string) {
     if (key === 'avgPrice') return;
-    setActiveFilter(key);
+    setActiveFilter(key as StatFilter);
     setPage(1);
     setSelectedIds(new Set());
   }
@@ -298,68 +288,29 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
     }
   }
 
-  function statCellValue(key: StatFilter | 'avgPrice'): string {
-    if (key === 'all') return String(counts.all);
-    if (key === 'inStock') return String(counts.inStock);
-    if (key === 'outOfStock') return String(counts.outOfStock);
-    if (key === 'featured') return String(counts.featured);
-    if (key === 'avgPrice') return `$${counts.avgPrice.toFixed(2)}`;
-    return '—';
-  }
-
   return (
     <>
-      {/* Stat strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 bg-paper border border-line-soft rounded-sm mb-6 overflow-hidden">
-        {STAT_CELLS.map((cell, idx) => {
-          const isActive = !cell.isInfo && activeFilter === cell.key;
-          const val = statCellValue(cell.key);
-          return (
-            <button
-              key={cell.key}
-              onClick={() => handleStatFilter(cell.key)}
-              disabled={cell.isInfo}
-              className={[
-                'relative text-left px-4 py-4 sm:px-5 sm:py-5 transition-colors',
-                cell.isInfo ? 'cursor-default' : 'cursor-pointer',
-                statCellBorderClasses(idx, 5),
-                isActive ? 'bg-cream' : cell.isInfo ? '' : 'hover:bg-cream',
-              ].join(' ')}
-            >
-              {isActive && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-oxblood" />
-              )}
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] tracking-[0.18em] uppercase text-muted">
-                  {cell.label}
-                </span>
-                <span className="w-2 h-2 rounded-full" style={{ background: cell.dotStyle }} />
-              </div>
-              <div className="font-display text-[22px] sm:text-[28px] font-normal leading-none tracking-tight mb-1">
-                {val}
-              </div>
-              <div className="font-mono text-[11px] text-muted tracking-[0.04em]">{cell.meta}</div>
-            </button>
-          );
-        })}
-      </div>
+      <AdminStatStrip
+        cells={[
+          { key: 'all',        label: 'All cuts',     meta: 'IN CATALOG',  dotClass: 'bg-muted',   value: counts.all },
+          { key: 'inStock',    label: 'In Stock',     meta: 'AVAILABLE',   dotClass: 'bg-green',   value: counts.inStock },
+          { key: 'outOfStock', label: 'Out of Stock', meta: 'UNAVAILABLE', dotClass: 'bg-oxblood', value: counts.outOfStock },
+          { key: 'avgPrice',   label: 'Avg price',    meta: 'PER LB',      dotClass: 'bg-camel',   value: `$${counts.avgPrice.toFixed(2)}`, clickable: false },
+          { key: 'featured',   label: 'Featured',     meta: 'ON HOMEPAGE', dotClass: 'bg-camel',   value: counts.featured },
+        ]}
+        activeKey={activeFilter}
+        onSelect={handleStatFilter}
+      />
 
       {/* Toolbar */}
       <div className="flex flex-col gap-2.5 mb-4">
         {/* Row 1: search */}
-        <label className="flex items-center gap-2.5 bg-paper border border-line rounded-full px-4 py-2 w-full sm:max-w-xs focus-within:border-ink transition-colors">
-          <svg className="w-3.5 h-3.5 text-muted shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
-          </svg>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            placeholder="Search cuts, categories…"
-            className="flex-1 bg-transparent border-none outline-none text-[13px] text-ink placeholder:text-muted min-w-0"
-          />
-          <span className="hidden sm:inline font-mono text-[10px] text-muted bg-cream-deep px-1.5 py-0.5 rounded tracking-[0.04em] shrink-0">⌘ K</span>
-        </label>
+        <AdminSearchInput
+          value={search}
+          onChange={(v) => { setSearch(v); setPage(1); }}
+          placeholder="Search cuts, categories…"
+          className="w-full sm:max-w-xs"
+        />
 
         {/* Row 2: category pills left, view/sort/add right */}
         <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -732,77 +683,16 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
           <div className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-linear-to-l from-paper to-transparent lg:hidden" />
         </div>
 
-        {/* Pagination */}
-        <div className="flex items-center justify-between px-6 py-4 bg-cream border-t border-line-soft flex-wrap gap-3">
-          <div className="font-mono text-[12px] text-muted tracking-[0.04em]">
-            Showing{' '}
-            <strong className="text-ink font-medium">
-              {filtered.length === 0 ? 0 : (page - 1) * perPage + 1}–{Math.min(page * perPage, filtered.length)}
-            </strong>{' '}
-            of <strong className="text-ink font-medium">{filtered.length}</strong> cuts
-          </div>
-
-          <div className="flex items-center gap-1">
-            <button
-              disabled={page === 1}
-              onClick={() => setPage((p) => p - 1)}
-              className="w-8 h-8 rounded-full border border-line text-ink-soft grid place-items-center hover:border-ink hover:bg-paper hover:text-ink transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              <svg className="w-2.75 h-2.75" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-            </button>
-
-            <div className="flex items-center gap-0.5 mx-2">
-              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                const n = i + 1;
-                return (
-                  <button
-                    key={n}
-                    onClick={() => setPage(n)}
-                    className={`w-8 h-8 rounded-full font-display text-[13px] transition-colors ${
-                      page === n ? 'bg-ink text-cream' : 'text-ink-soft hover:bg-paper hover:text-ink'
-                    }`}
-                  >
-                    {n}
-                  </button>
-                );
-              })}
-              {totalPages > 5 && <span className="px-1 text-muted">…</span>}
-              {totalPages > 5 && (
-                <button
-                  onClick={() => setPage(totalPages)}
-                  className={`w-8 h-8 rounded-full font-display text-[13px] transition-colors ${
-                    page === totalPages ? 'bg-ink text-cream' : 'text-ink-soft hover:bg-paper hover:text-ink'
-                  }`}
-                >
-                  {totalPages}
-                </button>
-              )}
-            </div>
-
-            <button
-              disabled={page === totalPages}
-              onClick={() => setPage((p) => p + 1)}
-              className="w-8 h-8 rounded-full border border-line text-ink-soft grid place-items-center hover:border-ink hover:bg-paper hover:text-ink transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              <svg className="w-2.75 h-2.75" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
-            </button>
-          </div>
-
-          <div className="hidden sm:flex items-center gap-2 font-mono text-[12px] text-muted">
-            <span>Per page</span>
-            <select
-              value={perPage}
-              onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }}
-              className="appearance-none bg-paper border border-line rounded-full pl-3 pr-6 py-1.5 text-[12px] text-ink font-mono cursor-pointer"
-            >
-              {PAGE_SIZES.map((n) => <option key={n} value={n}>{n}</option>)}
-            </select>
-          </div>
-        </div>
+        <AdminPagination
+          page={page}
+          totalPages={totalPages}
+          filteredCount={filtered.length}
+          perPage={perPage}
+          pageSizes={PAGE_SIZES}
+          noun="cuts"
+          onPageChange={setPage}
+          onPerPageChange={(n) => { setPerPage(n); setPage(1); }}
+        />
       </div>
 
       {/* Menu backdrop */}
