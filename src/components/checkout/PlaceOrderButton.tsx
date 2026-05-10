@@ -41,6 +41,7 @@ const PlaceOrderButton = () => {
   const router = useRouter();
   const { cartItems } = useCartContext();
   const { data: session } = useSession();
+  const { state } = useCheckoutContext();
   const {
     isPaymentReady,
     promoDiscount,
@@ -51,7 +52,7 @@ const PlaceOrderButton = () => {
     pickupSlot,
     deliveryAddress,
     orderNotes,
-  } = useCheckoutContext();
+  } = state;
 
   const [isLoading, setIsLoading] = useState(false);
   const isLoggedIn = Boolean(session?.user);

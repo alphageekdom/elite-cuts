@@ -9,8 +9,8 @@ import { FIELD_CLASS, LABEL_CLASS } from '@/components/checkout/checkoutStyles';
 import { EMAIL_RE } from '@/lib/validation';
 
 const CheckoutContactCard = () => {
-  const { contactName, setContactName, contactEmail, setContactEmail, contactPhone, setContactPhone } =
-    useCheckoutContext();
+  const { state, dispatch } = useCheckoutContext();
+  const { contactName, contactEmail, contactPhone } = state;
 
   const isNameValid = contactName.trim().length >= 5;
   const isEmailValid = EMAIL_RE.test(contactEmail.trim());
@@ -26,7 +26,7 @@ const CheckoutContactCard = () => {
     } else if (digits.length > 0) {
       formatted = `(${digits}`;
     }
-    setContactPhone(formatted);
+    dispatch({ type: 'SET_CONTACT', payload: { name: contactName, email: contactEmail, phone: formatted } });
   };
 
   return (
@@ -55,7 +55,7 @@ const CheckoutContactCard = () => {
           type='text'
           name='name'
           value={contactName}
-          onChange={(e) => setContactName(e.target.value)}
+          onChange={(e) => dispatch({ type: 'SET_CONTACT', payload: { name: e.target.value, email: contactEmail, phone: contactPhone } })}
           placeholder='Tangelo Doe'
           autoComplete='name'
           className={FIELD_CLASS}
@@ -75,7 +75,7 @@ const CheckoutContactCard = () => {
             type='email'
             name='email'
             value={contactEmail}
-            onChange={(e) => setContactEmail(e.target.value)}
+            onChange={(e) => dispatch({ type: 'SET_CONTACT', payload: { name: contactName, email: e.target.value, phone: contactPhone } })}
             placeholder='you@example.com'
             autoComplete='email'
             className={FIELD_CLASS}

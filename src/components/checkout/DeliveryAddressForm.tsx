@@ -86,7 +86,7 @@ const geocodeAddress = async (query: string): Promise<{ lat: number; lon: number
 };
 
 const DeliveryAddressForm = () => {
-  const { setDeliveryAddress } = useCheckoutContext();
+  const { dispatch } = useCheckoutContext();
 
   const [address1, setAddress1] = useState('');
   const [address2, setAddress2] = useState('');
@@ -101,8 +101,8 @@ const DeliveryAddressForm = () => {
 
   // Sync address fields to context whenever they change
   useEffect(() => {
-    setDeliveryAddress({ address1, address2, city, state: addressState, zip });
-  }, [address1, address2, city, addressState, zip, setDeliveryAddress]);
+    dispatch({ type: 'SET_DELIVERY_ADDRESS', payload: { address1, address2, city, state: addressState, zip } });
+  }, [address1, address2, city, addressState, zip, dispatch]);
 
   useEffect(() => {
     if (address1.trim().length < 4) { setSuggestions([]); return; }

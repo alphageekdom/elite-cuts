@@ -83,7 +83,7 @@ const PaymentMethodSelector = () => {
 
   const yearRef = useRef<HTMLInputElement>(null);
 
-  const { setIsPaymentReady } = useCheckoutContext();
+  const { dispatch } = useCheckoutContext();
 
   const isNameValid = cardName.trim().length >= 5;
   const isCardNumberValid = cardNumber.replace(/\s/g, '').length === 16;
@@ -96,14 +96,11 @@ const PaymentMethodSelector = () => {
   const isCvcValid = cvc.length === 3;
 
   useEffect(() => {
-    setIsPaymentReady(
-      method === 'card' &&
-        isNameValid &&
-        isCardNumberValid &&
-        isExpiryValid &&
-        isCvcValid,
-    );
-  }, [method, isNameValid, isCardNumberValid, isExpiryValid, isCvcValid, setIsPaymentReady]);
+    dispatch({
+      type: 'SET_PAYMENT_READY',
+      payload: method === 'card' && isNameValid && isCardNumberValid && isExpiryValid && isCvcValid,
+    });
+  }, [method, isNameValid, isCardNumberValid, isExpiryValid, isCvcValid, dispatch]);
 
   const onCardNumber = (e: ChangeEvent<HTMLInputElement>) =>
     setCardNumber(formatCardNumber(e.target.value));

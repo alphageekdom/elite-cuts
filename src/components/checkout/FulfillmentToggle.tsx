@@ -20,14 +20,8 @@ const SLOT_DEFINITIONS = [
 const FT_LABEL_CLASS = `mb-2.5 block ${LABEL_CLASS}`;
 
 const FulfillmentToggle = () => {
-  const {
-    fulfillment,
-    setFulfillment,
-    pickupSlot,
-    setPickupSlot,
-    orderNotes,
-    setOrderNotes,
-  } = useCheckoutContext();
+  const { state, dispatch } = useCheckoutContext();
+  const { fulfillment, pickupSlot, orderNotes } = state;
 
   const currentHour = useMemo(() => new Date().getHours(), []);
 
@@ -64,7 +58,7 @@ const FulfillmentToggle = () => {
       <div className='mb-7 grid grid-cols-1 gap-3 sm:grid-cols-2'>
         <button
           type='button'
-          onClick={() => setFulfillment('pickup')}
+          onClick={() => dispatch({ type: 'SET_FULFILLMENT', payload: 'pickup' })}
           aria-pressed={fulfillment === 'pickup'}
           className={`flex items-start gap-3.5 rounded-sm border px-5 py-5 text-left transition-[background-color,border-color,color] duration-300 motion-reduce:transition-none ${
             fulfillment === 'pickup'
@@ -106,7 +100,7 @@ const FulfillmentToggle = () => {
 
         <button
           type='button'
-          onClick={() => setFulfillment('delivery')}
+          onClick={() => dispatch({ type: 'SET_FULFILLMENT', payload: 'delivery' })}
           aria-pressed={fulfillment === 'delivery'}
           className={`flex items-start gap-3.5 rounded-sm border px-5 py-5 text-left transition-[background-color,border-color,color] duration-300 motion-reduce:transition-none ${
             fulfillment === 'delivery'
@@ -168,7 +162,7 @@ const FulfillmentToggle = () => {
                   key={slot.id}
                   type='button'
                   disabled={slot.past}
-                  onClick={() => setPickupSlot(slot.id)}
+                  onClick={() => dispatch({ type: 'SET_PICKUP_SLOT', payload: slot.id })}
                   className={`rounded-sm border px-2.5 py-3 text-center transition-[background-color,border-color,color] duration-300 motion-reduce:transition-none ${
                     slot.past
                       ? 'cursor-not-allowed border-line opacity-35'
@@ -215,7 +209,7 @@ const FulfillmentToggle = () => {
           name='notes'
           rows={2}
           value={orderNotes}
-          onChange={(e) => setOrderNotes(e.target.value)}
+          onChange={(e) => dispatch({ type: 'SET_ORDER_NOTES', payload: e.target.value })}
           placeholder='Any special cutting requests, doneness preferences, or pickup notes…'
           className='w-full resize-y border-b border-line bg-transparent pb-3.5 pt-2 text-[16px] text-ink outline-none placeholder:text-muted/60 transition-[border-color] duration-300 focus:border-b-oxblood motion-reduce:transition-none'
         />

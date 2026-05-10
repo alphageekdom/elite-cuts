@@ -17,7 +17,8 @@ type PromoStatus = 'idle' | 'valid' | 'invalid';
 const CheckoutOrderSummary = () => {
   const { cartItems, setItemQuantity } = useCartContext();
   const { data: session } = useSession();
-  const { fulfillment, promoDiscount, setPromoDiscount } = useCheckoutContext();
+  const { state, dispatch } = useCheckoutContext();
+  const { fulfillment, promoDiscount } = state;
   const isLoggedIn = Boolean(session?.user);
   const [promo, setPromo] = useState('');
   const [promoStatus, setPromoStatus] = useState<PromoStatus>('idle');
@@ -44,17 +45,17 @@ const CheckoutOrderSummary = () => {
     const result = await validatePromoCode(code, subtotal);
     if (!result.valid) {
       setPromoStatus('invalid');
-      setPromoDiscount(0);
+      dispatch({ type: 'SET_PROMO', payload: 0 });
       setAppliedLabel('');
       return;
     }
-    setPromoDiscount(result.amount);
+    dispatch({ type: 'SET_PROMO', payload: result.amount });
     setAppliedLabel(result.label);
     setPromoStatus('valid');
   };
 
   const onRemovePromo = () => {
-    setPromoDiscount(0);
+    dispatch({ type: 'SET_PROMO', payload: 0 });
     setAppliedLabel('');
     setPromoStatus('idle');
     setPromo('');
