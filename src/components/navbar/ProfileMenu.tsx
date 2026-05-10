@@ -1,14 +1,19 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import Image, { type StaticImageData } from 'next/image';
+import Image from 'next/image';
 import Link from 'next/link';
 
-import ProfileImage from '@/assets/images/user-default.png';
+import { AVATAR_COLORS, MEMBER_AVATAR_COLORS } from '@/lib/admin-constants';
+import { avatarColorForId } from '@/lib/admin-utils';
 import { FOCUS_RING } from '@/lib/styles';
 
 type ProfileMenuProps = {
-  profileImage?: string | StaticImageData;
+  profileImage?: string;
+  initials: string;
+  userId: string;
+  isAdmin: boolean;
+  rewardPoints: number;
   isOpen: boolean;
   onToggle: () => void;
   onClose: () => void;
@@ -18,8 +23,20 @@ type ProfileMenuProps = {
 const ITEM_CLASS =
   'block w-full px-4 py-2 text-left text-sm text-ink-soft transition-colors motion-reduce:transition-none hover:bg-cream-deep';
 
+const ADMIN_AVATAR = 'bg-linear-to-br from-ink to-oxblood-deep text-camel';
+
+const resolveAvatarColor = (userId: string, isAdmin: boolean, rewardPoints: number): string => {
+  if (isAdmin) return ADMIN_AVATAR;
+  if (rewardPoints >= 250) return avatarColorForId(userId, MEMBER_AVATAR_COLORS);
+  return avatarColorForId(userId, AVATAR_COLORS);
+};
+
 const ProfileMenu = ({
   profileImage,
+  initials,
+  userId,
+  isAdmin,
+  rewardPoints,
   isOpen,
   onToggle,
   onClose,
@@ -45,6 +62,8 @@ const ProfileMenu = ({
     return () => document.removeEventListener('mousedown', handlePointerDown);
   }, [isOpen, onClose]);
 
+  const avatarColor = resolveAvatarColor(userId, isAdmin, rewardPoints);
+
   return (
     <div ref={containerRef} className='relative'>
       <button
@@ -56,14 +75,23 @@ const ProfileMenu = ({
         className={`rounded-full ring-1 ring-line transition-shadow motion-reduce:transition-none hover:ring-camel ${FOCUS_RING}`}
       >
         <span className='sr-only'>Open user menu</span>
-        <Image
-          src={profileImage || ProfileImage}
-          width={72}
-          height={72}
-          sizes='36px'
-          alt='User profile'
-          className='h-9 w-9 rounded-full'
-        />
+        {profileImage ? (
+          <Image
+            src={profileImage}
+            width={72}
+            height={72}
+            sizes='36px'
+            alt='User profile'
+            className='h-9 w-9 rounded-full object-cover'
+          />
+        ) : (
+          <div
+            aria-hidden='true'
+            className={`grid h-9 w-9 place-items-center rounded-full text-[13px] font-semibold ${avatarColor}`}
+          >
+            {initials}
+          </div>
+        )}
       </button>
       {isOpen && (
         <div

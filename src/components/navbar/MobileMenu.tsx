@@ -51,7 +51,7 @@ const MobileMenu = ({
             aria-current={isActive(pathname, '/dashboard') ? 'page' : undefined}
             className={linkClass('/dashboard')}
           >
-            Dashboard
+            Admin
           </Link>
         )}
         {isLoggedIn ? (

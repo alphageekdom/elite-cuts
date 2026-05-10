@@ -1,6 +1,4 @@
-import JosephImage from '@/assets/images/joseph.jpg';
 import Reveal from '@/components/uielements/Reveal';
-import SoniaImage from '@/assets/images/sonia.jpg';
 
 import ReviewCard, { type ReviewCardProps } from './ReviewCard';
 import SectionEyebrow from './SectionEyebrow';
@@ -13,14 +11,13 @@ const REVIEWS: readonly ReviewCardProps[] = [
         Picked up a bone-in ribeye for our anniversary last month — they
         trimmed it on the spot and walked me through reverse-searing it at
         home.{' '}
-        <em className='italic'>
-          Best steak I&apos;ve cooked, hands down.
-        </em>
+        <em className='italic'>Best steak I&apos;ve cooked, hands down.</em>
       </>
     ),
-    name: 'Joseph Doe',
-    meta: 'Regular since 2022',
-    avatar: JosephImage,
+    name: 'Joseph Harmon',
+    meta: 'Master Cut member',
+    avatarColor: 'bg-linear-to-br from-oxblood to-oxblood-deep text-cream',
+    tier: 'master',
   },
   {
     variant: 'dark',
@@ -28,14 +25,28 @@ const REVIEWS: readonly ReviewCardProps[] = [
       <>
         Standing pickup for the dry-aged ribeyes every other Friday. The order
         is always ready when I am, and they remember the trim I like.{' '}
-        <em className='italic'>
-          Switched two years ago and never looked back.
-        </em>
+        <em className='italic'>Switched two years ago and never looked back.</em>
       </>
     ),
-    name: 'Sonia Smith',
-    meta: 'Verified Customer',
-    avatar: SoniaImage,
+    name: 'Sonia Park',
+    meta: 'Connoisseur member',
+    avatarColor: 'bg-linear-to-br from-camel to-[#a07445] text-ink',
+    tier: 'connoisseur',
+  },
+  {
+    variant: 'light',
+    quote: (
+      <>
+        Came in for a whole chicken, left with the heritage pork belly on the
+        butcher&apos;s recommendation — best impulse buy I&apos;ve made in
+        years.{' '}
+        <em className='italic'>Now I plan my Sundays around it.</em>
+      </>
+    ),
+    name: 'Marcus Webb',
+    meta: 'Connoisseur member',
+    avatarColor: 'bg-linear-to-br from-[#4a6b3a] to-[#3d5c2a] text-cream',
+    tier: 'connoisseur',
   },
 ] as const;
 
@@ -61,7 +72,7 @@ const Reviews = () => {
           </h2>
         </Reveal>
 
-        <div className='grid grid-cols-1 items-start gap-8 lg:grid-cols-2'>
+        <div className='grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3'>
           {REVIEWS.map((review, i) => (
             <Reveal key={review.name} delayMs={160 + i * 80}>
               <ReviewCard {...review} />

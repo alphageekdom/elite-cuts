@@ -56,7 +56,7 @@ const DesktopMenu = ({
       {isAdmin && (
         <NavLink
           href='/dashboard'
-          label='Dashboard'
+          label='Admin'
           scrolled={scrolled}
           active={isActive(pathname, '/dashboard')}
         />

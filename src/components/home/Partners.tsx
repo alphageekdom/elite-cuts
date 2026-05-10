@@ -56,7 +56,7 @@ const Partners = () => {
               <article className='group overflow-hidden rounded-sm bg-paper transition-transform duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:-translate-y-1 motion-reduce:hover:translate-y-0 motion-reduce:transition-none'>
                 <div className='relative h-56 overflow-hidden md:h-64 lg:h-72'>
                   <span className='absolute top-4 left-4 z-2 rounded-full bg-cream px-3 py-1 text-[10px] font-medium tracking-[0.15em] uppercase text-ink'>
-                    Sponsored
+                    Partner Pick
                   </span>
                   <Image
                     src={p.image}
