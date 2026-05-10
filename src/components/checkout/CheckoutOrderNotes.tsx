@@ -1,16 +1,14 @@
 'use client';
 
 import { useCheckoutContext } from '@/context/CheckoutContext';
-import { LABEL_CLASS } from '@/components/checkout/checkoutStyles';
-
-const LABEL = `mb-2.5 block ${LABEL_CLASS}`;
+import { BLOCK_LABEL_CLASS } from '@/components/checkout/checkoutStyles';
 
 const CheckoutOrderNotes = () => {
   const { state, dispatch } = useCheckoutContext();
 
   return (
     <div className='rounded-sm border border-line-soft bg-paper px-5 py-7 sm:px-8 sm:py-8'>
-      <label htmlFor='notes' className={LABEL}>
+      <label htmlFor='notes' className={BLOCK_LABEL_CLASS}>
         Notes for the butcher{' '}
         <span className='ml-2 text-[11px] font-normal normal-case tracking-normal opacity-70'>
           optional
