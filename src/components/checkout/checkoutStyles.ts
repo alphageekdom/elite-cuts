@@ -3,3 +3,5 @@ export const FIELD_CLASS =
 
 export const LABEL_CLASS =
   'text-[11px] font-medium uppercase tracking-[0.22em] text-muted';
+
+export const BLOCK_LABEL_CLASS = `mb-2.5 block ${LABEL_CLASS}`;

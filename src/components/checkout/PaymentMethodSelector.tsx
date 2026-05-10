@@ -116,7 +116,8 @@ const PaymentMethodSelector = () => {
   const onYear = (e: ChangeEvent<HTMLInputElement>) => {
     const digits = e.target.value.replace(/\D/g, '').slice(0, 2);
     const num = parseInt(digits, 10);
-    const clamped = digits.length === 2 && num < 26 ? '26' : digits;
+    const minYear = new Date().getFullYear() % 100;
+    const clamped = digits.length === 2 && num < minYear ? String(minYear) : digits;
     setYear(clamped);
   };
 

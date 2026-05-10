@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { useCheckoutContext } from '@/context/CheckoutContext';
 import CheckoutFieldCheck from '@/components/checkout/CheckoutFieldCheck';
-import { FIELD_CLASS, LABEL_CLASS } from '@/components/checkout/checkoutStyles';
+import { FIELD_CLASS, BLOCK_LABEL_CLASS } from '@/components/checkout/checkoutStyles';
 import {
   STATE_ABBR,
   fetchSuggestions,
@@ -13,8 +13,7 @@ import {
   formatPhotonSuggestion,
   type PhotonFeature,
 } from '@/lib/geocoding';
-
-const LABEL = `mb-2.5 block ${LABEL_CLASS}`;
+import { DELIVERY_RADIUS_MILES } from '@/lib/shopConfig';
 
 type DeliveryCheck = 'idle' | 'checking' | 'valid' | 'invalid' | 'error';
 
@@ -114,7 +113,7 @@ const DeliveryAddressForm = () => {
     <div className='mb-8 flex flex-col gap-6' onBlur={handleBlur}>
       <div className='relative' ref={suggestionRef}>
         <div className='mb-2.5 flex items-center justify-between'>
-          <label htmlFor='address1' className={LABEL}>Street address</label>
+          <label htmlFor='address1' className={BLOCK_LABEL_CLASS}>Street address</label>
           {address1.trim().length >= 5 && <CheckoutFieldCheck />}
         </div>
         <input
@@ -148,7 +147,7 @@ const DeliveryAddressForm = () => {
       </div>
 
       <div>
-        <label htmlFor='address2' className={LABEL}>
+        <label htmlFor='address2' className={BLOCK_LABEL_CLASS}>
           Apt, suite, etc.{' '}
           <span className='ml-2 text-[11px] font-normal normal-case tracking-normal opacity-70'>optional</span>
         </label>
@@ -167,7 +166,7 @@ const DeliveryAddressForm = () => {
       <div className='grid grid-cols-2 gap-3.5 sm:grid-cols-[2fr_1fr_1fr]'>
         <div className='col-span-2 sm:col-span-1'>
           <div className='mb-2.5 flex items-center justify-between'>
-            <label htmlFor='city' className={LABEL}>City</label>
+            <label htmlFor='city' className={BLOCK_LABEL_CLASS}>City</label>
             {city.trim().length >= 2 && <CheckoutFieldCheck />}
           </div>
           <input
@@ -183,7 +182,7 @@ const DeliveryAddressForm = () => {
         </div>
         <div>
           <div className='mb-2.5 flex items-center justify-between'>
-            <label htmlFor='state' className={LABEL}>State</label>
+            <label htmlFor='state' className={BLOCK_LABEL_CLASS}>State</label>
             {addressState.length === 2 && <CheckoutFieldCheck />}
           </div>
           <input
@@ -200,7 +199,7 @@ const DeliveryAddressForm = () => {
         </div>
         <div>
           <div className='mb-2.5 flex items-center justify-between'>
-            <label htmlFor='zip' className={LABEL}>ZIP</label>
+            <label htmlFor='zip' className={BLOCK_LABEL_CLASS}>ZIP</label>
             {deliveryCheck === 'valid' && <CheckoutFieldCheck />}
           </div>
           <input
@@ -235,7 +234,7 @@ const DeliveryAddressForm = () => {
             <circle cx='12' cy='12' r='10' />
             <line x1='4.93' y1='4.93' x2='19.07' y2='19.07' />
           </svg>
-          We can&apos;t deliver to this address — it&apos;s outside our 25-mile radius. Select pickup instead.
+          We can&apos;t deliver to this address — it&apos;s outside our {DELIVERY_RADIUS_MILES}-mile radius. Select pickup instead.
         </p>
       )}
       {deliveryCheck === 'error' && (

@@ -1,10 +1,11 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import { useCheckoutContext } from '@/context/CheckoutContext';
-import { LABEL_CLASS } from '@/components/checkout/checkoutStyles';
+import { BLOCK_LABEL_CLASS } from '@/components/checkout/checkoutStyles';
 import DeliveryAddressForm from '@/components/checkout/DeliveryAddressForm';
+import { SHOP_ADDRESS_DISPLAY, DELIVERY_RADIUS_MILES } from '@/lib/shopConfig';
 
 const SLOT_DEFINITIONS = [
   { id: '10-11a', label: '10–11a', startHour: 10 },
@@ -16,8 +17,6 @@ const SLOT_DEFINITIONS = [
   { id: '4-5p', label: '4–5p', startHour: 16 },
   { id: '5-6p', label: '5–6p', startHour: 17 },
 ] as const;
-
-const FT_LABEL_CLASS = `mb-2.5 block ${LABEL_CLASS}`;
 
 const FulfillmentToggle = () => {
   const { state, dispatch } = useCheckoutContext();
@@ -44,7 +43,15 @@ const FulfillmentToggle = () => {
     [currentHour],
   );
 
-  // Auto-select first available slot if none selected yet
+  // Persist the auto-selected slot to context so the POST body always includes it
+  useEffect(() => {
+    if (fulfillment !== 'pickup' || pickupSlot) return;
+    const firstAvailable = slots.find((s) => !s.past);
+    if (firstAvailable) {
+      dispatch({ type: 'SET_PICKUP_SLOT', payload: firstAvailable.id });
+    }
+  }, [fulfillment, pickupSlot, slots, dispatch]);
+
   const effectiveSlot = pickupSlot || (slots.find((s) => !s.past)?.id ?? '');
 
   return (
@@ -86,7 +93,7 @@ const FulfillmentToggle = () => {
                 fulfillment === 'pickup' ? 'text-cream/65' : 'text-muted'
               }`}
             >
-              3045 30th St · North Park, SD
+              {SHOP_ADDRESS_DISPLAY}
             </div>
             <div
               className={`mt-1.5 font-mono text-[11px] tracking-[0.04em] ${
@@ -128,7 +135,7 @@ const FulfillmentToggle = () => {
                 fulfillment === 'delivery' ? 'text-cream/65' : 'text-muted'
               }`}
             >
-              Within 25 miles of the shop
+              Within {DELIVERY_RADIUS_MILES} miles of the shop
             </div>
             <div
               className={`mt-1.5 font-mono text-[11px] tracking-[0.04em] ${
@@ -143,7 +150,7 @@ const FulfillmentToggle = () => {
 
       {fulfillment === 'pickup' && (
         <div>
-          <label className={FT_LABEL_CLASS}>
+          <label className={BLOCK_LABEL_CLASS}>
             Pickup time · {todayLabel}
           </label>
           <div className='mb-8 grid grid-cols-2 gap-2 sm:grid-cols-4'>

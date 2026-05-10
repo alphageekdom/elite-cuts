@@ -9,6 +9,7 @@ import { useCheckoutContext } from '@/context/CheckoutContext';
 import { validatePromoCode } from '@/actions/checkout';
 import { computeTotals, DELIVERY_FEE, fmtPrice } from '@/lib/pricing';
 import CheckoutTrustStrip from '@/components/checkout/CheckoutTrustStrip';
+import { productImageSrc } from '@/lib/admin-utils';
 
 const PROMO_SUGGESTIONS = ['ELITECUTS10', 'FIRSTORDER', 'NORTHPARK'];
 
@@ -116,7 +117,7 @@ const CheckoutOrderSummary = () => {
               >
                 <div className='relative h-17.5 w-14 overflow-hidden rounded-sm bg-cream-deep'>
                   <Image
-                    src={`/images/products/${line.product.images?.[0] ?? ''}`}
+                    src={productImageSrc((line.product.images as string[] | undefined)?.[0] ?? '') ?? ''}
                     alt=''
                     fill
                     sizes='56px'

@@ -9,6 +9,7 @@ import { useCartContext } from '@/context/CartContext';
 import { useCheckoutContext } from '@/context/CheckoutContext';
 import { computeTotals, fmtPrice, DELIVERY_FEE } from '@/lib/pricing';
 import { isContactComplete } from '@/lib/checkoutValidation';
+import { SHOP_ADDRESS_FULL } from '@/lib/shopConfig';
 
 const SpinnerIcon = () => (
   <svg
@@ -76,7 +77,7 @@ const PlaceOrderButton = () => {
 
     const pickupLocation =
       fulfillment === 'pickup'
-        ? `${pickupSlot ? `${pickupSlot} — ` : ''}3045 30th St, North Park, SD`
+        ? `${pickupSlot ? `${pickupSlot} — ` : ''}${SHOP_ADDRESS_FULL}`
         : [
             deliveryAddress.address1,
             deliveryAddress.address2,
