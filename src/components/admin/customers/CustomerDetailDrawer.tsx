@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { formatMoney, formatDate, relativeTime, getInitials } from '@/lib/admin-utils';
+import { useDrawerForm } from '@/hooks/useDrawerForm';
 import { inputCls } from '@/components/admin/settings/SettingsUI';
 import type { CustomerTableRow } from '@/types/admin';
 
@@ -62,11 +63,18 @@ type Props = {
 };
 
 export default function CustomerDetailDrawer({ customer, onClose, onSave, onDelete }: Props) {
-  const [editing, setEditing] = useState(false);
-  const [editName, setEditName] = useState(customer.name);
-  const [editEmail, setEditEmail] = useState(customer.email);
-  const [editPhone, setEditPhone] = useState(customer.phone ?? '');
-  const [saving, setSaving] = useState(false);
+  const {
+    editing, setEditing,
+    values: { name: editName, email: editEmail, phone: editPhone },
+    setField,
+    saving,
+    save: saveContact,
+    reset: resetContact,
+  } = useDrawerForm(
+    { name: customer.name, email: customer.email, phone: customer.phone ?? '' },
+    async (vals) => onSave(customer.id, { name: vals.name.trim(), email: vals.email.trim(), phone: vals.phone.trim() }),
+    '', // parent's onSave already shows the success toast
+  );
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [noteEditing, setNoteEditing] = useState(false);
@@ -87,10 +95,7 @@ export default function CustomerDetailDrawer({ customer, onClose, onSave, onDele
       toast.error('Name and email are required');
       return;
     }
-    setSaving(true);
-    await onSave(customer.id, { name: editName.trim(), email: editEmail.trim(), phone: editPhone.trim() });
-    setSaving(false);
-    setEditing(false);
+    await saveContact();
   }
 
   async function handleDelete() {
@@ -212,19 +217,19 @@ export default function CustomerDetailDrawer({ customer, onClose, onSave, onDele
             <div className="space-y-3">
               <div>
                 <label className="block text-[11px] font-medium tracking-[0.18em] uppercase text-muted mb-1.5">Name</label>
-                <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className={inputCls} />
+                <input type="text" value={editName} onChange={(e) => setField('name', e.target.value)} className={inputCls} />
               </div>
               <div>
                 <label className="block text-[11px] font-medium tracking-[0.18em] uppercase text-muted mb-1.5">Email</label>
-                <input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className={inputCls} />
+                <input type="email" value={editEmail} onChange={(e) => setField('email', e.target.value)} className={inputCls} />
               </div>
               <div>
                 <label className="block text-[11px] font-medium tracking-[0.18em] uppercase text-muted mb-1.5">Phone</label>
-                <input type="tel" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder="Optional" className={inputCls} />
+                <input type="tel" value={editPhone} onChange={(e) => setField('phone', e.target.value)} placeholder="Optional" className={inputCls} />
               </div>
               <div className="flex gap-2 pt-1">
                 <button
-                  onClick={() => { setEditing(false); setEditName(customer.name); setEditEmail(customer.email); setEditPhone(customer.phone ?? ''); }}
+                  onClick={resetContact}
                   className="flex-1 px-4 py-2.5 rounded-full border border-line text-ink-soft text-[13px] font-medium hover:border-ink hover:text-ink transition-colors"
                 >
                   Cancel

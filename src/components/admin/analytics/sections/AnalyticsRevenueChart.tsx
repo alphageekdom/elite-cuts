@@ -1,5 +1,5 @@
 import { fmtDollarShort, toSvgPath, toSvgArea, dotPositions } from './analytics-utils';
-import type { AnalyticsData } from './AnalyticsClient';
+import type { AnalyticsData } from '../AnalyticsClient';
 
 export default function AnalyticsRevenueChart({ data }: { data: AnalyticsData }) {
 

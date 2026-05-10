@@ -4,6 +4,7 @@ import { getSessionUser } from '@/utils/getSessionUser';
 import connectDB from '@/config/database';
 import ProductModel from '@/models/Product';
 
+import { serializeProductRow } from '@/lib/serializers';
 import ProductsPageHeader from '@/components/admin/products/ProductsPageHeader';
 import ProductsClient, { type ProductTableRow, type ProductCounts } from '@/components/admin/products/ProductsClient';
 
@@ -48,23 +49,7 @@ export default async function AdminProductsPage() {
     categoryCounts[p.category] = (categoryCounts[p.category] ?? 0) + 1;
   }
 
-  const products: ProductTableRow[] = rawProducts.map((p) => ({
-    id: p._id.toString(),
-    name: p.name,
-    category: p.category,
-    price: p.price,
-    rating: p.rating,
-    images: p.images,
-    stockCount: p.stockCount,
-    isFeatured: p.isFeatured,
-    isAged: p.isAged,
-    isNewArrival: p.isNewArrival,
-    sku: p.sku ?? '',
-    gradeBreed: p.gradeBreed ?? '',
-    supplier: p.supplier ?? '',
-    createdAt: p.createdAt.toISOString(),
-    updatedAt: p.updatedAt.toISOString(),
-  }));
+  const products: ProductTableRow[] = rawProducts.map(serializeProductRow);
 
   return (
     <>

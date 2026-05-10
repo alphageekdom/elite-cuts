@@ -6,6 +6,7 @@ import UserModel from '@/models/User';
 import OrderModel from '@/models/Order';
 import type { Types } from 'mongoose';
 
+import { serializeCustomerRow, type OrderStats } from '@/lib/serializers';
 import CustomersPageHeader from '@/components/admin/customers/CustomersPageHeader';
 import CustomersClient, {
   type CustomerTableRow,
@@ -52,7 +53,7 @@ export default async function AdminCustomersPage() {
     ]),
   ]);
 
-  const orderMap = new Map<string, { count: number; totalSpend: number; lastOrderAt: string }>();
+  const orderMap = new Map<string, OrderStats>();
   for (const entry of orderAgg) {
     orderMap.set(entry._id.toString(), {
       count: entry.count,
@@ -61,51 +62,25 @@ export default async function AdminCustomersPage() {
     });
   }
 
+  // Pure serialization — no side effects
+  const customers: CustomerTableRow[] = rawUsers.map((u) => serializeCustomerRow(u, orderMap));
+
+  // Aggregation — separate pass over the already-serialized rows
   const now = Date.now();
-  const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+  const ONE_WEEK_MS    =  7 * 24 * 60 * 60 * 1000;
   const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
   const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
 
-  let newThisWeek = 0;
-  let newThisMonth = 0;
-  let activeCount = 0;
-  let connoisseurPlusCount = 0;
-  let atRiskCount = 0;
-
-  const customers: CustomerTableRow[] = rawUsers.map((u) => {
-    const id = u._id.toString();
-    const stats = orderMap.get(id);
-    const createdAt = u.createdAt.toISOString();
-    const orderCount = stats?.count ?? 0;
-    const totalSpend = stats?.totalSpend ?? 0;
-    const lastOrderAt = stats?.lastOrderAt;
-    const accountAge = now - new Date(createdAt).getTime();
-
+  let newThisWeek = 0, newThisMonth = 0, activeCount = 0, connoisseurPlusCount = 0, atRiskCount = 0;
+  for (const c of customers) {
+    const accountAge = now - new Date(c.createdAt).getTime();
     if (accountAge < ONE_WEEK_MS) newThisWeek++;
     if (accountAge < THIRTY_DAYS_MS) newThisMonth++;
-    if (lastOrderAt && now - new Date(lastOrderAt).getTime() <= NINETY_DAYS_MS) activeCount++;
-    if (orderCount >= 10) connoisseurPlusCount++;
-    if (lastOrderAt && now - new Date(lastOrderAt).getTime() > NINETY_DAYS_MS) atRiskCount++;
-    else if (!lastOrderAt && accountAge > NINETY_DAYS_MS) atRiskCount++;
-
-    const defaultAddress = (u.addresses ?? []).find((a) => a.isDefault);
-
-    return {
-      id,
-      name: u.name,
-      email: u.email,
-      phone: u.phone,
-      createdAt,
-      orderCount,
-      totalSpend,
-      lastOrderAt,
-      defaultCity: defaultAddress
-        ? `${defaultAddress.city}, ${defaultAddress.state}`
-        : undefined,
-      savedCutsCount: (u.savedCuts ?? []).length,
-      adminNote: u.adminNote ?? '',
-    };
-  });
+    if (c.lastOrderAt && now - new Date(c.lastOrderAt).getTime() <= NINETY_DAYS_MS) activeCount++;
+    if (c.orderCount >= 10) connoisseurPlusCount++;
+    if (c.lastOrderAt && now - new Date(c.lastOrderAt).getTime() > NINETY_DAYS_MS) atRiskCount++;
+    else if (!c.lastOrderAt && accountAge > NINETY_DAYS_MS) atRiskCount++;
+  }
 
   const counts: CustomerCounts = {
     all: customers.length,

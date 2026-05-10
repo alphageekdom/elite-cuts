@@ -5,6 +5,7 @@ import connectDB from '@/config/database';
 import OrderModel from '@/models/Order';
 import type { Types } from 'mongoose';
 
+import { serializeOrderRow } from '@/lib/serializers';
 import OrdersPageHeader from '@/components/admin/orders/OrdersPageHeader';
 import OrdersClient, { type OrderTableRow, type StatusCounts } from '@/components/admin/orders/OrdersClient';
 
@@ -58,36 +59,9 @@ export default async function AdminOrdersPage() {
     cancelled: countMap['Cancelled'] ?? 0,
   };
 
-  const orders: OrderTableRow[] = rawOrders.map((order) => {
-    const idStr = order._id.toString();
-    const user = order.user as PopulatedUser | null;
-
-    return {
-      id: idStr,
-      orderRef: `#EC-${idStr.slice(-4).toUpperCase()}`,
-      customerName: user?.name ?? 'Unknown',
-      customerEmail: user?.email ?? '',
-      items: order.orderItems.map((item) => ({
-        name: item.name,
-        image: item.image,
-        qty: item.qty,
-        price: item.price,
-        productType: item.productType,
-      })),
-      subtotal: order.subtotal,
-      tax: order.tax,
-      total: order.totalCost,
-      status: order.orderStatus,
-      isPaid: order.isPaid,
-      paidAt: order.paidAt?.toISOString(),
-      paymentMethod: order.paymentMethod,
-      pickupLocation: order.pickupLocation,
-      pickedUp: order.pickedUp,
-      fulfillmentType: order.fulfillmentType,
-      cancellationReason: order.cancellationReason,
-      createdAt: order.createdAt.toISOString(),
-    };
-  });
+  const orders: OrderTableRow[] = rawOrders.map((order) =>
+    serializeOrderRow({ ...order, user: order.user as PopulatedUser | null }),
+  );
 
   return (
     <>
