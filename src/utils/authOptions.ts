@@ -5,6 +5,8 @@ import User from '@/models/User';
 import bcrypt from 'bcryptjs';
 
 const MAX_PASSWORD_LENGTH = 128;
+const MAX_FAILED_ATTEMPTS = 3;
+const LOCKOUT_DURATION_MS = 60 * 60 * 1000;
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -22,17 +24,39 @@ export const authOptions: NextAuthOptions = {
         await connectDB();
 
         const email = credentials.email?.toLowerCase().trim();
-        const user = await User.findOne({ email }).select('+password');
+        const user = await User.findOne({ email }).select(
+          '+password +failedLoginAttempts +lockoutUntil'
+        );
 
         if (!user) {
           throw new Error('Invalid credentials');
         }
 
+        if (user.lockoutUntil && user.lockoutUntil > new Date()) {
+          const minutesLeft = Math.ceil(
+            (user.lockoutUntil.getTime() - Date.now()) / 60_000
+          );
+          throw new Error(
+            `Too many failed login attempts. Try again in ${minutesLeft} minute${minutesLeft !== 1 ? 's' : ''}.`
+          );
+        }
+
         const isValid = await bcrypt.compare(credentials.password, user.password as string);
 
         if (!isValid) {
+          const attempts = (user.failedLoginAttempts ?? 0) + 1;
+          const update: Record<string, unknown> = { failedLoginAttempts: attempts };
+          if (attempts >= MAX_FAILED_ATTEMPTS) {
+            update.lockoutUntil = new Date(Date.now() + LOCKOUT_DURATION_MS);
+          }
+          await User.updateOne({ _id: user._id }, { $set: update });
           throw new Error('Invalid credentials');
         }
+
+        await User.updateOne(
+          { _id: user._id },
+          { $set: { failedLoginAttempts: 0, lockoutUntil: null } }
+        );
 
         return {
           id: (user._id as { toString(): string }).toString(),
