@@ -5,6 +5,7 @@ import connectDB from '@/config/database';
 import Product, { type SerializedProduct } from '@/models/Product';
 import { convertToSerializableObject } from '@/utils/convertToObject';
 import { getSessionUser } from '@/utils/getSessionUser';
+import { getActiveHoliday } from '@/lib/holidays';
 
 import CartItemsPanel from '@/components/cart/CartItemsPanel';
 import CartSuggestions from '@/components/cart/CartSuggestions';
@@ -78,6 +79,14 @@ const CartPage = async () => {
     convertToSerializableObject,
   ) as SerializedProduct[];
 
+  // Holiday badge gets serialized to plain primitives so the CartSummary
+  // client component can read it without crossing the function-prop boundary
+  // (Holiday.computeDate is a function and can't be passed through).
+  const active = getActiveHoliday();
+  const activeHoliday = active
+    ? { name: active.holiday.name, daysUntil: active.daysUntil }
+    : null;
+
   return (
     <div className='bg-cream pb-24'>
       <div className='mx-auto w-full max-w-7xl px-6 md:px-8'>
@@ -129,7 +138,7 @@ const CartPage = async () => {
           </div>
 
           <aside className='lg:sticky lg:top-24'>
-            <CartSummary />
+            <CartSummary activeHoliday={activeHoliday} />
           </aside>
         </div>
       </div>
