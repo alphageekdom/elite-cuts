@@ -41,11 +41,12 @@ export type AddItemArg = CartLineProduct & { quantity?: number };
 type CartContextValue = {
   cartItems: CartLine[];
   cartCount: number;
+  cartUpdatedAt: Date | null;
   loading: boolean;
   addItemToCart: (item: AddItemArg) => Promise<void>;
   removeItemFromCart: (productId: string) => Promise<void>;
   setItemQuantity: (productId: string, quantity: number) => Promise<void>;
-  clearCart: () => Promise<void>;
+  clearCart: (opts?: { silent?: boolean }) => Promise<void>;
 };
 
 const GUEST_CART_KEY = 'guestCart';
@@ -122,6 +123,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // The status effect below populates the real cart on mount: localStorage
   // for guests, API for logged-in users.
   const [cartItems, setCartItems] = useState<CartLine[]>([]);
+  const [cartUpdatedAt, setCartUpdatedAt] = useState<Date | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Tracks the previous auth status across renders so we can detect the
@@ -141,8 +143,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     try {
       const res = await fetch('/api/cart', { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to load cart');
-      const data = (await res.json()) as { items: CartLine[] };
+      const data = (await res.json()) as { items: CartLine[]; updatedAt: string | null };
       setCartItems(data.items ?? []);
+      setCartUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : null);
       clearGuestCart();
     } catch (error) {
       console.error('Error loading cart:', error);
@@ -227,6 +230,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           writeGuestCart(next);
           return next;
         });
+        setCartUpdatedAt(new Date());
         toast.success('Item added to cart');
         return;
       }
@@ -250,8 +254,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
           const err = (await res.json().catch(() => null)) as { message?: string } | null;
           throw new Error(err?.message ?? 'Failed to add item to cart');
         }
-        const data = (await res.json()) as { items: CartLine[] };
+        const data = (await res.json()) as { items: CartLine[]; updatedAt: string | null };
         setCartItems(data.items ?? []);
+        setCartUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : null);
         toast.success('Item added to cart');
       } catch (error) {
         setCartItems(snapshot);
@@ -272,6 +277,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           writeGuestCart(updated);
           return updated;
         });
+        setCartUpdatedAt(new Date());
         return;
       }
 
@@ -291,8 +297,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
           const err = (await res.json().catch(() => null)) as { message?: string } | null;
           throw new Error(err?.message ?? 'Failed to update quantity');
         }
-        const data = (await res.json()) as { items: CartLine[] };
+        const data = (await res.json()) as { items: CartLine[]; updatedAt: string | null };
         setCartItems(data.items ?? []);
+        setCartUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : null);
       } catch (error) {
         setCartItems(snapshot);
         console.error('Error updating quantity:', error);
@@ -310,6 +317,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           writeGuestCart(updated);
           return updated;
         });
+        setCartUpdatedAt(new Date());
         toast.success('Item removed from cart');
         return;
       }
@@ -327,8 +335,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
           body: JSON.stringify({ productId }),
         });
         if (!res.ok) throw new Error('Failed to remove item');
-        const data = (await res.json()) as { items: CartLine[] };
+        const data = (await res.json()) as { items: CartLine[]; updatedAt: string | null };
         setCartItems(data.items ?? []);
+        setCartUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : null);
         toast.success('Item removed from cart');
       } catch (error) {
         setCartItems(snapshot);
@@ -339,40 +348,37 @@ export function CartProvider({ children }: { children: ReactNode }) {
     [isLoggedIn],
   );
 
-  const clearCart = useCallback(async () => {
+  const clearCart = useCallback(async (opts?: { silent?: boolean }) => {
+    const silent = opts?.silent ?? false;
+
     if (!isLoggedIn) {
       setCartItems(() => {
         writeGuestCart([]);
         return [];
       });
-      toast.success('Cart cleared');
+      setCartUpdatedAt(null);
+      if (!silent) toast.success('Cart cleared');
       return;
     }
 
-    // Logged-in: DELETE every line in parallel, then refetch to pick up the
-    // canonical empty cart from the server. Optimistic clear with revert on
-    // failure (any single line failing reverts the whole snapshot).
+    // Logged-in: single atomic DELETE (no body = clear all) avoids concurrent
+    // write conflicts that occur when deleting each line in parallel.
     let snapshot: CartLine[] = [];
     setCartItems((prev) => {
       snapshot = prev;
       return [];
     });
+    setCartUpdatedAt(null);
     try {
-      await Promise.all(
-        snapshot.map((line) =>
-          fetch('/api/cart', {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ productId: line.product._id }),
-          }).then((res) => {
-            if (!res.ok) throw new Error('clear line failed');
-          }),
-        ),
-      );
-      toast.success('Cart cleared');
+      const res = await fetch('/api/cart', {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Failed to clear cart');
+      if (!silent) toast.success('Cart cleared');
     } catch (error) {
       setCartItems(snapshot);
+      setCartUpdatedAt(new Date());
       console.error('Error clearing cart:', error);
       toast.error('Failed to clear cart');
     }
@@ -382,6 +388,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     () => ({
       cartItems,
       cartCount: cartItems.length,
+      cartUpdatedAt,
       loading,
       addItemToCart,
       removeItemFromCart,
@@ -390,6 +397,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }),
     [
       cartItems,
+      cartUpdatedAt,
       loading,
       addItemToCart,
       removeItemFromCart,

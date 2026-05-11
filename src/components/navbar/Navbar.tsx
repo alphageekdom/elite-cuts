@@ -11,6 +11,7 @@ import ProfileMenu from './ProfileMenu';
 import AuthLinks from './AuthLinks';
 import DesktopMenu from './DesktopMenu';
 import CartButton from '../cart/CartButton';
+import CartExpiryBanner from '../cart/CartExpiryBanner';
 import Logo from './Logo';
 import { FOCUS_RING } from '@/lib/styles';
 
@@ -37,14 +38,19 @@ const Navbar = () => {
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(!isOverHero);
+  const [rawScrolled, setRawScrolled] = useState(!isOverHero);
+  const [bannerVisible, setBannerVisible] = useState(false);
+
+  // The cart expiry banner forces the navbar into its solid "scrolled" state
+  // so the transparent hero treatment doesn't bleed through behind the banner.
+  const scrolled = rawScrolled || bannerVisible;
 
   useEffect(() => {
     if (!isOverHero) {
-      setScrolled(true);
+      setRawScrolled(true);
       return;
     }
-    const handleScroll = () => setScrolled(window.scrollY > SCROLL_THRESHOLD);
+    const handleScroll = () => setRawScrolled(window.scrollY > SCROLL_THRESHOLD);
     handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
@@ -172,6 +178,12 @@ const Navbar = () => {
           onSignOut={handleSignOut}
         />
       )}
+      {/* Cart expiry banner sits flush against the navbar's bottom edge —
+          absolute top-full follows the header through its py-5 ↔ py-3.5 shrink
+          so there can never be a gap. */}
+      <div className='absolute top-full left-0 right-0'>
+        <CartExpiryBanner onVisibleChange={setBannerVisible} />
+      </div>
     </header>
   );
 };
