@@ -1,5 +1,5 @@
 'use client';
-import { productImageSrc } from '@/lib/admin-utils';
+import { productImageSrc, formatMoney } from '@/lib/admin-utils';
 import { CATEGORY_COLORS } from '@/lib/admin-constants';
 import type { ProductTableRow } from '@/types/admin';
 
@@ -106,7 +106,7 @@ export default function ProductTableRowComponent({
       {/* Price */}
       <td className="px-4 py-4">
         <span className="font-display text-[16px] font-medium tracking-[-0.01em]">
-          ${product.price.toFixed(2)}
+          {formatMoney(product.price)}
         </span>
         <span className="text-[11px] text-muted italic font-normal ml-0.5">/lb</span>
       </td>

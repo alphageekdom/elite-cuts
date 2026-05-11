@@ -1,17 +1,13 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import mongoose from 'mongoose';
-import connectDB from '@/config/database';
 import AgingCut from '@/models/AgingCut';
-import { requireAdmin } from '@/utils/requireAdmin';
+import { withAdmin } from '@/lib/api-handler';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export const PATCH = async (request: NextRequest, { params }: RouteContext) => {
-  const adminError = await requireAdmin();
-  if (adminError) return adminError;
+export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
   try {
-    await connectDB();
-    const { id } = await params;
+    const { id } = await (ctx as RouteContext).params;
     if (!mongoose.isValidObjectId(id)) {
       return NextResponse.json({ message: 'Not found' }, { status: 404 });
     }
@@ -24,14 +20,11 @@ export const PATCH = async (request: NextRequest, { params }: RouteContext) => {
     console.error('[aging/:id PATCH]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
-};
+});
 
-export const DELETE = async (_request: NextRequest, { params }: RouteContext) => {
-  const adminError = await requireAdmin();
-  if (adminError) return adminError;
+export const DELETE = withAdmin(async (_request: NextRequest, ctx: unknown) => {
   try {
-    await connectDB();
-    const { id } = await params;
+    const { id } = await (ctx as RouteContext).params;
     if (!mongoose.isValidObjectId(id)) {
       return NextResponse.json({ message: 'Not found' }, { status: 404 });
     }
@@ -41,4 +34,4 @@ export const DELETE = async (_request: NextRequest, { params }: RouteContext) =>
     console.error('[aging/:id DELETE]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
-};
+});

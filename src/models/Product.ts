@@ -5,17 +5,9 @@ import {
   models,
   type Model,
 } from 'mongoose';
+import { PRODUCT_CATEGORIES, type ProductCategory } from '@/lib/product-categories';
 
-export const PRODUCT_CATEGORIES = [
-  'Beef',
-  'Pork',
-  'Poultry',
-  'Lamb',
-  'Charcuterie',
-  'Other',
-] as const;
-
-export type ProductCategory = (typeof PRODUCT_CATEGORIES)[number];
+export { PRODUCT_CATEGORIES, type ProductCategory };
 
 // Server-side shape: what `.lean()` returns (sans `_id` / `__v`, which the
 // Mongoose generic adds back). Field types match the schema below.

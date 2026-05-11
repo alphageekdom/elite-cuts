@@ -1,4 +1,4 @@
-import { SHOP_LAT, SHOP_LNG, DELIVERY_RADIUS_MILES } from '@/lib/shopConfig';
+import { SHOP_LAT, SHOP_LNG, DELIVERY_RADIUS_MILES, NOMINATIM_USER_AGENT } from '@/lib/shopConfig';
 
 export type PhotonFeature = {
   properties: {
@@ -62,7 +62,7 @@ export const geocodeAddress = async (query: string): Promise<{ lat: number; lon:
     const res = await fetch(url, {
       headers: {
         Accept: 'application/json',
-        'User-Agent': 'EliteCuts/1.0 (luisasoto87@gmail.com)',
+        'User-Agent': NOMINATIM_USER_AGENT,
       },
     });
     if (!res.ok) return null;

@@ -8,7 +8,7 @@ import { useSession } from 'next-auth/react';
 import ArrowIcon from '@/components/uielements/ArrowIcon';
 import useHandleAddToCart from '@/hooks/useHandleAddToCart';
 import useHandleBookmark from '@/hooks/useHandleBookmark';
-import { productImageSrc } from '@/lib/admin-utils';
+import { productImageSrc, formatMoney } from '@/lib/admin-utils';
 
 import { type SerializedProduct } from '@/models/Product';
 
@@ -189,7 +189,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
 
         <div className='mt-auto flex items-baseline justify-between gap-3 border-t border-line-soft pt-4.5'>
           <div className='font-display text-xl font-medium tracking-[-0.01em] text-ink md:text-2xl'>
-            ${product.price.toFixed(2)}
+            {formatMoney(product.price)}
             <em className='ml-1 text-[13px] font-normal not-italic text-muted'>
               /lb
             </em>

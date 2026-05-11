@@ -1,19 +1,15 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import mongoose from 'mongoose';
-import connectDB from '@/config/database';
 import Delivery from '@/models/Delivery';
-import { requireAdmin } from '@/utils/requireAdmin';
+import { withAdmin } from '@/lib/api-handler';
 import { isIn } from '@/lib/validation';
 import { DELIVERY_STATUSES } from '@/models/Delivery';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export const PATCH = async (request: NextRequest, { params }: RouteContext) => {
-  const adminError = await requireAdmin();
-  if (adminError) return adminError;
+export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
   try {
-    await connectDB();
-    const { id } = await params;
+    const { id } = await (ctx as RouteContext).params;
     if (!mongoose.isValidObjectId(id)) {
       return NextResponse.json({ message: 'Not found' }, { status: 404 });
     }
@@ -33,4 +29,4 @@ export const PATCH = async (request: NextRequest, { params }: RouteContext) => {
     console.error('[deliveries/:id PATCH]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
-};
+});

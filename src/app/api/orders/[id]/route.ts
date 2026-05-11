@@ -7,7 +7,7 @@ import User from '@/models/User';
 import Product from '@/models/Product';
 import Notification from '@/models/Notification';
 import { getSessionUser } from '@/utils/getSessionUser';
-import { requireAdmin } from '@/utils/requireAdmin';
+import { withAdmin } from '@/lib/api-handler';
 import { isIn } from '@/lib/validation';
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -45,13 +45,9 @@ export const GET = async (_request: NextRequest, { params }: RouteContext) => {
 };
 
 // DELETE /api/orders/:id — admin only
-export const DELETE = async (_request: NextRequest, { params }: RouteContext) => {
-  const adminError = await requireAdmin();
-  if (adminError) return adminError;
-
+export const DELETE = withAdmin(async (_request: NextRequest, ctx: unknown) => {
   try {
-    await connectDB();
-    const { id } = await params;
+    const { id } = await (ctx as RouteContext).params;
     if (!mongoose.isValidObjectId(id)) {
       return NextResponse.json({ message: 'Not found' }, { status: 404 });
     }
@@ -64,17 +60,12 @@ export const DELETE = async (_request: NextRequest, { params }: RouteContext) =>
     console.error('[orders/:id DELETE]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
-};
+});
 
 // PATCH /api/orders/:id — admin updates order status
-export const PATCH = async (request: NextRequest, { params }: RouteContext) => {
-  const adminError = await requireAdmin();
-  if (adminError) return adminError;
-
+export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
   try {
-    await connectDB();
-
-    const { id } = await params;
+    const { id } = await (ctx as RouteContext).params;
     if (!mongoose.isValidObjectId(id)) {
       return NextResponse.json({ message: 'Not found' }, { status: 404 });
     }
@@ -146,4 +137,4 @@ export const PATCH = async (request: NextRequest, { params }: RouteContext) => {
     console.error('[orders/:id PATCH]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
-};
+});

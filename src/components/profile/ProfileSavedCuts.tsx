@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { formatMoney } from '@/lib/format';
 import type { SerializedProduct } from '@/models/Product';
 import useHandleAddToCart from '@/hooks/useHandleAddToCart';
 
@@ -62,7 +63,7 @@ function BookmarkCard({
         <p className="text-xs text-muted mb-3 capitalize">{bookmark.category}</p>
         <div className="flex items-center justify-between">
           <p className="font-display font-medium text-[18px]">
-            ${bookmark.price.toFixed(2)}
+            {formatMoney(bookmark.price)}
             <em className="not-italic text-muted text-xs font-normal ml-0.5">/lb</em>
           </p>
           <div className="flex items-center gap-1.5">

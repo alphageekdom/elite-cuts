@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 
 import useHandleAddToCart from '@/hooks/useHandleAddToCart';
 import useHandleBookmark from '@/hooks/useHandleBookmark';
+import { formatMoney } from '@/lib/format';
 import type { SerializedProduct } from '@/models/Product';
 
 type Props = {
@@ -65,7 +66,7 @@ export default function BuyBlock({ product }: Props) {
   const outOfStock = product.stockCount <= 0;
   const [qty, setQty] = useState(1);
 
-  const total = (qty * product.price).toFixed(2);
+  const total = formatMoney(qty * product.price);
 
   const {
     isBookmarked,
@@ -107,7 +108,7 @@ export default function BuyBlock({ product }: Props) {
       {/* Price + stock */}
       <div className='mb-6 flex items-baseline justify-between gap-4 border-b border-line-soft pb-6'>
         <div className='font-display text-[40px] font-medium leading-none tracking-[-0.02em]'>
-          ${product.price.toFixed(2)}
+          {formatMoney(product.price)}
           <em className='ml-1.5 text-base font-normal not-italic text-muted'>
             /lb
           </em>
@@ -169,7 +170,7 @@ export default function BuyBlock({ product }: Props) {
             ? 'Adding…'
             : outOfStock
               ? 'Sold out'
-              : `Add · $${total}`}
+              : `Add · ${total}`}
         </button>
       </div>
 

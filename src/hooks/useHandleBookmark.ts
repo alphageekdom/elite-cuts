@@ -1,3 +1,4 @@
+'use client';
 import { useCallback, useState, type MouseEvent } from 'react';
 import { toast } from 'sonner';
 

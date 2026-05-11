@@ -6,7 +6,7 @@ import Product, { PRODUCT_CATEGORIES } from '@/models/Product';
 import Review from '@/models/Review';
 import { getSessionUser } from '@/utils/getSessionUser';
 import { parseProductFormData } from '@/utils/parseProductFormData';
-import { requireAdmin } from '@/utils/requireAdmin';
+import { withAdmin } from '@/lib/api-handler';
 
 // Next 15+ params are async — must be awaited inside the handler.
 type RouteContext = { params: Promise<{ id: string }> };
@@ -35,13 +35,9 @@ export const GET = async (_request: NextRequest, { params }: RouteContext) => {
 };
 
 // PATCH /api/products/:id — admin-only partial update (isActive, isFeatured, price).
-export const PATCH = async (request: NextRequest, { params }: RouteContext) => {
-  const authError = await requireAdmin();
-  if (authError) return authError;
-
+export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
   try {
-    await connectDB();
-    const { id } = await params;
+    const { id } = await (ctx as RouteContext).params;
     if (!mongoose.isValidObjectId(id)) {
       return NextResponse.json({ message: 'Not found' }, { status: 404 });
     }
@@ -74,19 +70,12 @@ export const PATCH = async (request: NextRequest, { params }: RouteContext) => {
     console.error('[products/:id PATCH]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
-};
+});
 
 // DELETE /api/products/:id — admin-only.
-export const DELETE = async (
-  _request: NextRequest,
-  { params }: RouteContext,
-) => {
+export const DELETE = withAdmin(async (_request: NextRequest, ctx: unknown) => {
   try {
-    const authError = await requireAdmin();
-    if (authError) return authError;
-
-    await connectDB();
-    const { id } = await params;
+    const { id } = await (ctx as RouteContext).params;
     if (!mongoose.isValidObjectId(id)) {
       return NextResponse.json({ message: 'Not found' }, { status: 404 });
     }
@@ -102,16 +91,12 @@ export const DELETE = async (
     console.error(error);
     return NextResponse.json({ message: 'Failed to delete product' }, { status: 500 });
   }
-};
+});
 
 // PUT /api/products/:id — admin-only update from the dashboard form.
-export const PUT = async (request: NextRequest, { params }: RouteContext) => {
+export const PUT = withAdmin(async (request: NextRequest, ctx: unknown) => {
   try {
-    const authError = await requireAdmin();
-    if (authError) return authError;
-
-    await connectDB();
-    const { id } = await params;
+    const { id } = await (ctx as RouteContext).params;
     if (!mongoose.isValidObjectId(id)) {
       return NextResponse.json({ message: 'Not found' }, { status: 404 });
     }
@@ -155,7 +140,7 @@ export const PUT = async (request: NextRequest, { params }: RouteContext) => {
     console.error(error);
     return NextResponse.json({ message: 'Failed to update product' }, { status: 500 });
   }
-};
+});
 
 // POST /api/products/:id — submit a review. Updates product.rating using a
 // proper running mean: (stored_avg * existing_count + new_rating) / (existing_count + 1).

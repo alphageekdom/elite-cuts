@@ -1,15 +1,11 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import mongoose from 'mongoose';
-import connectDB from '@/config/database';
 import Delivery from '@/models/Delivery';
 import Product from '@/models/Product';
-import { requireAdmin } from '@/utils/requireAdmin';
+import { withAdmin } from '@/lib/api-handler';
 
-export const GET = async () => {
-  const adminError = await requireAdmin();
-  if (adminError) return adminError;
+export const GET = withAdmin(async () => {
   try {
-    await connectDB();
     const upcoming = await Delivery.find({
       deliveryDate: { $gte: new Date() },
     }).sort({ deliveryDate: 1 }).limit(10).lean();
@@ -18,13 +14,10 @@ export const GET = async () => {
     console.error('[deliveries GET]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
-};
+});
 
-export const POST = async (request: NextRequest) => {
-  const adminError = await requireAdmin();
-  if (adminError) return adminError;
+export const POST = withAdmin(async (request: NextRequest) => {
   try {
-    await connectDB();
     const { deliveryDate, supplier, supplierSuffix, detail, status, productId } = await request.json();
     if (productId) {
       if (!mongoose.isValidObjectId(productId)) {
@@ -44,4 +37,4 @@ export const POST = async (request: NextRequest) => {
     console.error('[deliveries POST]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
-};
+});

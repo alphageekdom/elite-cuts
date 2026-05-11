@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { formatMoney } from '@/lib/format';
 import type { SerializedProduct } from '@/models/Product';
 import useHandleAddToCart from '@/hooks/useHandleAddToCart';
 
@@ -39,7 +40,7 @@ function RecentItem({ product }: { product: SerializedProduct }) {
           </p>
         </Link>
         <p className="text-xs text-muted">
-          ${product.price.toFixed(2)}/lb · {product.category}
+          {formatMoney(product.price)}/lb · {product.category}
         </p>
       </div>
       <button

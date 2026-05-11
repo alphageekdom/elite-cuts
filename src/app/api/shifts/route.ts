@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import Shift from '@/models/Shift';
 import { withAdmin } from '@/lib/api-handler';
+import { getMondayOf } from '@/lib/schedule-utils';
 
 export const GET = withAdmin(async (request) => {
   try {
@@ -56,11 +57,3 @@ export const DELETE = withAdmin(async (request) => {
   }
 });
 
-function getMondayOf(date: Date): Date {
-  const d = new Date(date);
-  const day = d.getUTCDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  d.setUTCDate(d.getUTCDate() + diff);
-  d.setUTCHours(0, 0, 0, 0);
-  return d;
-}

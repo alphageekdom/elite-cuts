@@ -8,6 +8,7 @@ import AdminSearchInput from '@/components/admin/AdminSearchInput';
 import AdminPagination from '@/components/admin/AdminPagination';
 import AdminStatStrip from '@/components/admin/AdminStatStrip';
 import { PRODUCT_CATEGORIES } from '@/lib/admin-constants';
+import { formatMoney } from '@/lib/admin-utils';
 import type { ProductCategory } from '@/lib/admin-constants';
 import type { ProductTableRow, ProductCounts } from '@/types/admin';
 import ProductFormDrawer from './ProductFormDrawer';
@@ -271,7 +272,7 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
           { key: 'all',        label: 'All cuts',     meta: 'IN CATALOG',  dotClass: 'bg-muted',   value: counts.all },
           { key: 'inStock',    label: 'In Stock',     meta: 'AVAILABLE',   dotClass: 'bg-green',   value: counts.inStock },
           { key: 'outOfStock', label: 'Out of Stock', meta: 'UNAVAILABLE', dotClass: 'bg-oxblood', value: counts.outOfStock },
-          { key: 'avgPrice',   label: 'Avg price',    meta: 'PER LB',      dotClass: 'bg-camel',   value: `$${counts.avgPrice.toFixed(2)}`, clickable: false },
+          { key: 'avgPrice',   label: 'Avg price',    meta: 'PER LB',      dotClass: 'bg-camel',   value: formatMoney(counts.avgPrice), clickable: false },
           { key: 'featured',   label: 'Featured',     meta: 'ON HOMEPAGE', dotClass: 'bg-camel',   value: counts.featured },
         ]}
         activeKey={activeFilter}

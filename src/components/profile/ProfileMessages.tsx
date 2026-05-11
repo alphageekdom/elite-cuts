@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import ContactModal from './ContactModal';
 import { AVATAR_COLORS, MEMBER_AVATAR_COLORS } from '@/lib/admin-constants';
-import { avatarColorForId } from '@/lib/admin-utils';
+import { avatarColorForId, getInitials } from '@/lib/admin-utils';
 import type { MessageStatus } from '@/models/Message';
 
 export type SerializedMessage = {
@@ -15,10 +15,6 @@ export type SerializedMessage = {
 };
 
 const ADMIN_AVATAR_COLOR = 'bg-linear-to-br from-ink to-oxblood-deep text-camel';
-
-function initials(name: string): string {
-  return name.split(' ').map((w) => w[0] ?? '').join('').slice(0, 2).toUpperCase();
-}
 
 type Props = {
   messages: SerializedMessage[];
@@ -101,7 +97,7 @@ export default function ProfileMessages({ messages, userId, name, rewardPoints, 
               >
                 {/* Avatar */}
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-display font-medium text-[13px] tracking-tight shrink-0 mt-0.5 select-none ${avatarColor}`}>
-                  {initials(name)}
+                  {getInitials(name)}
                 </div>
 
                 {/* Content */}

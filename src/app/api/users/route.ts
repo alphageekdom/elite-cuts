@@ -1,20 +1,13 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import type { SortOrder } from 'mongoose';
 
-import connectDB from '@/config/database';
 import User from '@/models/User';
-import { requireAdmin } from '@/utils/requireAdmin';
-import { parsePagination } from '@/lib/api-handler';
+import { withAdmin, parsePagination } from '@/lib/api-handler';
 
 const ALLOWED_USER_SORT_FIELDS = new Set(['_id', 'name', 'email', 'createdAt', 'role']);
 
-export const GET = async (request: NextRequest) => {
-  const adminError = await requireAdmin();
-  if (adminError) return adminError;
-
+export const GET = withAdmin(async (request: NextRequest) => {
   try {
-    await connectDB();
-
     const params = request.nextUrl.searchParams;
     const { skip, pageSize } = parsePagination(params, { pageSize: 6 });
     const rawSortField = params.get('sortField') ?? '_id';
@@ -32,4 +25,4 @@ export const GET = async (request: NextRequest) => {
     console.error('[users GET]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
-};
+});

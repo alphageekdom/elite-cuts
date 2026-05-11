@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { formatMoney } from '@/lib/format';
 import type { ProfileOrder } from '@/app/(main)/profile/page';
 import type { OrderStatus } from '@/models/Order';
 import OrderHelpButton from './OrderHelpButton';
@@ -109,7 +110,7 @@ export default function ProfileOrderList({ orders, showAll = false }: Props) {
                 {order.orderStatus}
               </span>
               <p className="font-display font-medium text-[20px] tabular-nums">
-                ${order.totalCost.toFixed(2)}
+                {formatMoney(order.totalCost)}
               </p>
               <OrderHelpButton orderId={order._id} orderRef={order._id.slice(-4).toUpperCase()} />
             </div>

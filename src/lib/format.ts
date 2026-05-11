@@ -33,6 +33,21 @@ export function formatDateTime(iso: string): { day: string; time: string } {
   };
 }
 
+/** Returns a usable src for a product image.
+ *  Cloudinary / absolute URLs are passed through unchanged.
+ *  Bare filenames are resolved to the local public folder. */
+export function productImageSrc(image: string | undefined | null): string | null {
+  if (!image) return null;
+  if (image.startsWith('http') || image.startsWith('/')) return image;
+  return `/images/products/${image}`;
+}
+
+/** Deterministic color picker based on id hash. */
+export function avatarColorForId(id: string, colors: readonly string[]): string {
+  const hash = id.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+  return colors[hash % colors.length];
+}
+
 export function relativeTime(iso: string): string {
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
   if (days === 0) return 'TODAY';

@@ -1,3 +1,4 @@
+import { getInitials } from '@/lib/admin-utils';
 import type { ShiftColor } from '@/models/Shift';
 
 type StaffEntry = {
@@ -22,10 +23,6 @@ function ChevronRight() {
       <path d="M5 12h14M13 5l7 7-7 7" />
     </svg>
   );
-}
-
-function initials(name: string) {
-  return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
 }
 
 type Props = {
@@ -53,7 +50,7 @@ export default function ScheduleOnTodayCard({ todayStaff }: Props) {
               className={`flex items-center gap-3 py-3 ${i < todayStaff.length - 1 ? 'border-b border-line-soft' : ''} ${i === 0 ? 'pt-0' : ''}`}
             >
               <div className={`w-9 h-9 rounded-full grid place-items-center font-display font-semibold text-xs shrink-0 ${AVATAR_STYLES[staff.color] ?? 'bg-cream-deep text-ink-soft'}`}>
-                {initials(staff.name)}
+                {getInitials(staff.name)}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-display text-sm font-medium tracking-tight mb-0.5">{staff.name}</div>

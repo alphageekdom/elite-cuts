@@ -1,20 +1,4 @@
-export { MONTH_ABBR, formatMoney, getInitials, formatDate, formatDateTime, relativeTime } from './format';
-
-/** Returns a usable src for a product image.
- *  Cloudinary / absolute URLs are passed through unchanged.
- *  Bare filenames (e.g. "beef-ribeye-dry-aged.jpg") are resolved
- *  to the local public folder. */
-export function productImageSrc(image: string | undefined | null): string | null {
-  if (!image) return null;
-  if (image.startsWith('http') || image.startsWith('/')) return image;
-  return `/images/products/${image}`;
-}
-
-// Deterministic color picker based on id hash
-export function avatarColorForId(id: string, colors: readonly string[]): string {
-  const hash = id.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-  return colors[hash % colors.length];
-}
+export { MONTH_ABBR, formatMoney, getInitials, formatDate, formatDateTime, relativeTime, productImageSrc, avatarColorForId } from './format';
 
 // Shared responsive border classes for the stat strip used on all admin pages.
 export function statCellBorderClasses(idx: number, cellCount = 7): string {

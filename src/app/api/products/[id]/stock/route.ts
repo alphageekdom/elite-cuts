@@ -1,19 +1,14 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import mongoose from 'mongoose';
-import connectDB from '@/config/database';
 import Product from '@/models/Product';
-import { requireAdmin } from '@/utils/requireAdmin';
+import { withAdmin } from '@/lib/api-handler';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 // PATCH /api/products/:id/stock — admin-only stock count adjustment
-export const PATCH = async (request: NextRequest, { params }: RouteContext) => {
-  const adminError = await requireAdmin();
-  if (adminError) return adminError;
-
+export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
   try {
-    await connectDB();
-    const { id } = await params;
+    const { id } = await (ctx as RouteContext).params;
     if (!mongoose.isValidObjectId(id)) {
       return NextResponse.json({ message: 'Product not found' }, { status: 404 });
     }
@@ -41,4 +36,4 @@ export const PATCH = async (request: NextRequest, { params }: RouteContext) => {
     console.error('[products/:id/stock PATCH]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
-};
+});

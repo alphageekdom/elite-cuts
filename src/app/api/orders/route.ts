@@ -11,6 +11,7 @@ import User from '@/models/User';
 import Notification from '@/models/Notification';
 import { getSessionUser } from '@/utils/getSessionUser';
 import { unauthorized, parsePagination } from '@/lib/api-handler';
+import { formatMoney } from '@/lib/format';
 import { isIn, EMAIL_RE } from '@/lib/validation';
 import { validatePromoCode } from '@/actions/checkout';
 import { MEMBER_DISCOUNT_RATE, DELIVERY_FEE, TAX_RATE } from '@/lib/pricing';
@@ -221,7 +222,7 @@ export const POST = async (request: NextRequest) => {
       const docs = admins.map((a) => ({
         type: 'new_order' as const,
         title: 'New order placed',
-        body: `${orderRef} — $${totalCost.toFixed(2)}`,
+        body: `${orderRef} — ${formatMoney(totalCost)}`,
         userId: a._id,
         readAt: null,
       }));

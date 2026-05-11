@@ -1,15 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import connectDB from '@/config/database';
 import ShopSettings, { type ShopSettings as ShopSettingsType } from '@/models/ShopSettings';
-import { requireAdmin } from '@/utils/requireAdmin';
+import { withAdmin } from '@/lib/api-handler';
 
 // GET /api/settings — returns the singleton settings doc (creates defaults on first call)
-export const GET = async () => {
-  const adminError = await requireAdmin();
-  if (adminError) return adminError;
-
+export const GET = withAdmin(async () => {
   try {
-    await connectDB();
     const settings = await ShopSettings.findOneAndUpdate(
       {},
       {},
@@ -20,15 +15,11 @@ export const GET = async () => {
     console.error('[settings GET]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
-};
+});
 
 // PUT /api/settings — replaces writable fields on the singleton doc
-export const PUT = async (request: NextRequest) => {
-  const adminError = await requireAdmin();
-  if (adminError) return adminError;
-
+export const PUT = withAdmin(async (request: NextRequest) => {
   try {
-    await connectDB();
     const {
       shopName, tagline, description, phone, email, website,
       street, suite, city, state, zip, timezone, opensAt,
@@ -67,4 +58,4 @@ export const PUT = async (request: NextRequest) => {
     console.error('[settings PUT]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
-};
+});

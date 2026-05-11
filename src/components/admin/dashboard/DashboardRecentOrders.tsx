@@ -1,6 +1,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { getInitials } from '@/lib/admin-utils';
+import { getInitials, formatMoney, avatarColorForId } from '@/lib/admin-utils';
+import { AVATAR_COLORS } from '@/lib/admin-constants';
 import type { OrderRow } from '@/types/admin';
 export type { OrderRow };
 
@@ -17,22 +18,6 @@ const STATUS_LABELS: Record<string, string> = {
   Pending: 'Pending',
   Cancelled: 'Cancelled',
 };
-
-const AVATAR_COLORS = [
-  'bg-camel text-ink',
-  'bg-oxblood text-cream',
-  'bg-ink text-cream',
-  'bg-camel-soft text-ink',
-  'bg-green text-cream',
-];
-
-function formatMoney(amount: number) {
-  return amount.toLocaleString('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-  });
-}
 
 
 type Props = {
@@ -80,7 +65,7 @@ export default function DashboardRecentOrders({ orders }: Props) {
             </thead>
             <tbody>
               {orders.map((order, i) => {
-                const avatarColor = AVATAR_COLORS[i % AVATAR_COLORS.length];
+                const avatarColor = avatarColorForId(order.id, AVATAR_COLORS);
                 const initials = getInitials(order.customerName);
                 const statusStyle = STATUS_STYLES[order.status] ?? 'bg-line-soft text-ink-soft';
                 const statusLabel = STATUS_LABELS[order.status] ?? order.status;

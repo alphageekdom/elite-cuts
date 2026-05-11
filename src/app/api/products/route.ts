@@ -5,8 +5,7 @@ import cloudinary from '@/config/cloudinary';
 import connectDB from '@/config/database';
 import Product from '@/models/Product';
 import { parseProductFormData } from '@/utils/parseProductFormData';
-import { requireAdmin } from '@/utils/requireAdmin';
-import { parsePagination } from '@/lib/api-handler';
+import { withAdmin, parsePagination } from '@/lib/api-handler';
 
 const ALLOWED_PRODUCT_SORT_FIELDS = new Set(['_id', 'name', 'price', 'createdAt', 'stockCount']);
 
@@ -40,11 +39,8 @@ export const GET = async (request: NextRequest) => {
 // POST /api/products — admin-only product create. Form-encoded so the admin
 // dashboard can include image files; uploads go to Cloudinary first, then
 // the Mongo doc references the secure URLs.
-export const POST = async (request: NextRequest) => {
+export const POST = withAdmin(async (request: NextRequest) => {
   try {
-    const authError = await requireAdmin();
-    if (authError) return authError;
-
     const formData = await request.formData();
 
     // FormData entries are `string | File`; narrow to File and skip the
@@ -84,4 +80,4 @@ export const POST = async (request: NextRequest) => {
     console.error(error);
     return NextResponse.json({ message: 'Failed to add product' }, { status: 500 });
   }
-};
+});
