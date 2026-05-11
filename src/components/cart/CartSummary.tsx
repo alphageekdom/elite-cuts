@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 
 import { useCartContext } from '@/context/CartContext';
 import { computeTotals, fmtPrice } from '@/lib/pricing';
+import StoreInfoModal from '@/components/ui/StoreInfoModal';
 
 type Fulfillment = 'pickup' | 'delivery';
 
@@ -220,6 +221,12 @@ const CartSummary = () => {
           ~1 hr pickup
         </li>
       </ul>
+
+      <p className='mt-3 px-1 text-center text-[12px] leading-relaxed text-muted'>
+        Placing a large or advance order?{' '}
+        <StoreInfoModal label='Come in‑store' />{' '}
+        — we&rsquo;ll take full payment up front.
+      </p>
     </div>
   );
 };

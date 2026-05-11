@@ -1,5 +1,10 @@
 import Image from 'next/image';
 import Reveal from '@/components/uielements/Reveal';
+import {
+  SHOP_ADDRESS,
+  SHOP_CITY_STATE_ZIP,
+  SHOP_PHONE,
+} from '@/lib/shopConfig';
 
 const INFO_ROWS = [
   {
@@ -11,9 +16,9 @@ const INFO_ROWS = [
     ),
     text: (
       <>
-        <strong className='text-ink font-medium'>3045 30th Street</strong>
+        <strong className='text-ink font-medium'>{SHOP_ADDRESS}</strong>
         <br />
-        San Diego, CA 92104
+        {SHOP_CITY_STATE_ZIP}
       </>
     ),
   },
@@ -39,7 +44,7 @@ const INFO_ROWS = [
     ),
     text: (
       <>
-        <strong className='text-ink font-medium'>(619) 555-0142</strong> · Call
+        <strong className='text-ink font-medium'>{SHOP_PHONE}</strong> · Call
         to reserve a cut
       </>
     ),

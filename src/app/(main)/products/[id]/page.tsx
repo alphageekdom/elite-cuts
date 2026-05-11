@@ -14,6 +14,7 @@ import ProductGallery from '@/components/product/detail/ProductGallery';
 import BuyBlock from '@/components/product/detail/BuyBlock';
 import ProductCard from '@/components/product/ProductCard';
 import SectionHead from '@/components/ui/SectionHead';
+import StoreInfoModal from '@/components/ui/StoreInfoModal';
 import ReviewForm from './ReviewForm';
 import ReviewActions from './ReviewActions';
 
@@ -364,6 +365,13 @@ export default async function ProductPage({ params }: PageProps) {
                 </span>
               </div>
             </div>
+
+            {/* Bulk / advance-order note */}
+            <p className='mt-3 px-1 text-[12px] leading-relaxed text-muted'>
+              Need a larger order or want to reserve in advance?{' '}
+              <StoreInfoModal />{' '}
+              — we&rsquo;ll take full payment up front and have your cut ready.
+            </p>
           </aside>
         </section>
 
