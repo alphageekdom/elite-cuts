@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useState, type MouseEvent } from 'react';
+import { useCallback, useRef, useState, type MouseEvent } from 'react';
 import { toast } from 'sonner';
 
 type BookmarkResponse = { message: string; isBookmarked: boolean };
@@ -11,14 +11,17 @@ const useHandleBookmark = (
 ) => {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [loading, setLoading] = useState(false);
+  const inflightRef = useRef(false);
 
-  const handleBookmarkClick = async (e: MouseEvent<HTMLButtonElement>) => {
+  const handleBookmarkClick = useCallback(async (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
     if (!userId) {
       toast.error('You Need To Sign In To Bookmark A Product');
       return;
     }
+    if (inflightRef.current) return;
+    inflightRef.current = true;
 
     try {
       const res = await fetch('/api/saved-cuts', {
@@ -36,8 +39,10 @@ const useHandleBookmark = (
       }
     } catch {
       toast.error('Something Went Wrong');
+    } finally {
+      inflightRef.current = false;
     }
-  };
+  }, [userId, productId]);
 
   // useCallback so consumers can list it in useEffect deps without tripping
   // exhaustive-deps when productId/userId are stable.

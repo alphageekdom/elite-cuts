@@ -1,5 +1,5 @@
 import SectionHead from '@/components/ui/SectionHead';
-import OurStoryReveal from './OurStoryReveal';
+import Reveal from '@/components/uielements/Reveal';
 
 const MILESTONES = [
   {
@@ -71,20 +71,20 @@ export default function OurStoryTimeline() {
   return (
     <section className='bg-cream-deep px-4 py-24 sm:px-8 lg:px-16'>
       <div className='mx-auto max-w-7xl'>
-        <OurStoryReveal>
+        <Reveal>
           <SectionHead label='Eight years, in order' />
-        </OurStoryReveal>
-        <OurStoryReveal>
+        </Reveal>
+        <Reveal>
           <h2 className='font-display mb-16 max-w-[16ch] text-[clamp(38px,5vw,60px)] leading-[1.05] font-normal tracking-[-0.025em]'>
             A timeline of <em className='text-oxblood italic'>cuts.</em>
           </h2>
-        </OurStoryReveal>
+        </Reveal>
 
         <div className='relative max-w-[880px]'>
           <div className='bg-line absolute top-[18px] bottom-[18px] left-15 w-px sm:left-18' />
 
           {MILESTONES.map((m) => (
-            <OurStoryReveal key={m.year + m.month}>
+            <Reveal key={m.year + m.month}>
               <div className='relative grid grid-cols-[56px_1fr] gap-6 py-6 sm:grid-cols-[72px_1fr] sm:gap-10'>
                 <div
                   className={`border-oxblood absolute top-9 left-14.25 z-10 h-2.25 w-2.25 rounded-full border-2 sm:left-17.25 ${
@@ -122,7 +122,7 @@ export default function OurStoryTimeline() {
                   </span>
                 </div>
               </div>
-            </OurStoryReveal>
+            </Reveal>
           ))}
         </div>
       </div>

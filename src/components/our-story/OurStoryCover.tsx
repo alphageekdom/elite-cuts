@@ -1,11 +1,11 @@
 import Image from 'next/image';
-import OurStoryReveal from './OurStoryReveal';
+import Reveal from '@/components/uielements/Reveal';
 
 export default function OurStoryCover() {
   return (
     <section className='px-4 pb-24 sm:px-8 lg:px-16'>
       <div className='mx-auto max-w-7xl'>
-        <OurStoryReveal>
+        <Reveal>
           <div className='bg-ink relative aspect-4/3 overflow-hidden rounded-sm sm:aspect-video lg:aspect-21/9'>
             <Image
               src='/images/our-story/shop-cover.jpg'
@@ -19,7 +19,7 @@ export default function OurStoryCover() {
               The shop · San Diego, March 2018
             </div>
           </div>
-        </OurStoryReveal>
+        </Reveal>
       </div>
     </section>
   );

@@ -46,11 +46,11 @@ const PAGE_SIZES = [8, 20, 50];
 
 export default function OrdersClient({ orders, counts }: Props) {
   const [localOrders, setLocalOrders] = useState(orders);
-  const { activeKey: activeStatus, selectKey: _selectStatus } = useStatFilter('all');
+  const [page, setPage] = useState(1);
+  const { activeKey: activeStatus, selectKey: _selectStatus } = useStatFilter<string>('all', () => setPage(1));
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const { item: drawerOrder, isOpen: isDrawerOpen, open: _openDrawer, close: closeDrawer, setItem: setDrawerOrder } = useAdminDrawer<OrderTableRow>();
-  const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(PAGE_SIZES[0]);
   const [statusUpdate, setStatusUpdate] = useState<string>('');
 
@@ -120,7 +120,6 @@ export default function OrdersClient({ orders, counts }: Props) {
 
   function handleStatusFilter(key: string) {
     _selectStatus(key);
-    setPage(1);
     setSelectedIds(new Set());
   }
 

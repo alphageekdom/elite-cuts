@@ -20,9 +20,8 @@ const useHandleAddToCart = (product: AddItemArg) => {
     setIsAddingToCart(true);
     try {
       await addItemToCart(product);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      toast.error(`Failed to update server: ${message}`);
+    } catch {
+      toast.error('Could not add to cart');
     } finally {
       setIsAddingToCart(false);
     }

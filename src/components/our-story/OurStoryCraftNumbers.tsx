@@ -1,4 +1,4 @@
-import OurStoryReveal from './OurStoryReveal';
+import Reveal from '@/components/uielements/Reveal';
 
 const STATS = [
   { v: '28', unit: 'days', label: 'Aging room cycle, climate-controlled' },
@@ -12,7 +12,7 @@ export default function OurStoryCraftNumbers() {
     <section className='bg-ink relative overflow-hidden px-4 py-20 sm:px-8 lg:px-16'>
       <div className='pointer-events-none absolute -top-36 -right-36 h-96 w-96 rounded-full bg-[radial-gradient(circle,rgba(184,137,90,0.15)_0%,transparent_60%)]' />
       <div className='relative mx-auto max-w-7xl'>
-        <OurStoryReveal>
+        <Reveal>
           <p className='text-camel mb-4 text-[11px] tracking-[0.22em] uppercase'>
             § Eight years, by the numbers
           </p>
@@ -20,11 +20,11 @@ export default function OurStoryCraftNumbers() {
             The shop in <em className='text-camel-soft italic'>numbers</em>{' '}
             you can verify.
           </h2>
-        </OurStoryReveal>
+        </Reveal>
 
         <div className='grid grid-cols-2 gap-y-10 lg:grid-cols-4'>
           {STATS.map((stat, i) => (
-            <OurStoryReveal key={stat.label}>
+            <Reveal key={stat.label}>
               <div
                 className={[
                   'px-3 sm:px-6',
@@ -46,7 +46,7 @@ export default function OurStoryCraftNumbers() {
                   {stat.label}
                 </div>
               </div>
-            </OurStoryReveal>
+            </Reveal>
           ))}
         </div>
       </div>

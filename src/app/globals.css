@@ -157,19 +157,6 @@
   transform: rotate(45deg);
 }
 
-/* Our Story page — scroll-reveal */
-.os-reveal {
-  opacity: 0;
-  transform: translateY(20px);
-  transition: opacity 0.9s cubic-bezier(0.2, 0.8, 0.2, 1),
-              transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-.os-reveal.os-in {
-  opacity: 1;
-  transform: translateY(0);
-}
-
 /* Admin dashboard — stat card staggered fade-up */
 @keyframes dashStatRise {
   from {

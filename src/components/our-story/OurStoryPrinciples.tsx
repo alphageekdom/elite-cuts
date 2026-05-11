@@ -1,5 +1,5 @@
 import SectionHead from '@/components/ui/SectionHead';
-import OurStoryReveal from './OurStoryReveal';
+import Reveal from '@/components/uielements/Reveal';
 
 const PRINCIPLES = [
   {
@@ -44,19 +44,19 @@ export default function OurStoryPrinciples() {
   return (
     <section className='px-4 py-24 sm:px-8 lg:px-16'>
       <div className='mx-auto max-w-7xl'>
-        <OurStoryReveal>
+        <Reveal>
           <SectionHead label='What we stand for' />
-        </OurStoryReveal>
-        <OurStoryReveal>
+        </Reveal>
+        <Reveal>
           <h2 className='font-display mb-16 max-w-[16ch] text-[clamp(38px,5vw,60px)] leading-[1.05] font-normal tracking-[-0.025em]'>
             Six rules we don&apos;t{' '}
             <em className='text-oxblood italic'>break.</em>
           </h2>
-        </OurStoryReveal>
+        </Reveal>
 
         <div className='border-line-soft grid border-t sm:grid-cols-2 lg:grid-cols-3'>
           {PRINCIPLES.map((p, i) => (
-            <OurStoryReveal key={p.num}>
+            <Reveal key={p.num}>
               <div
                 className={[
                   'border-line-soft border-b py-7 sm:py-9',
@@ -81,7 +81,7 @@ export default function OurStoryPrinciples() {
                   {p.body}
                 </p>
               </div>
-            </OurStoryReveal>
+            </Reveal>
           ))}
         </div>
       </div>

@@ -1,24 +1,24 @@
-import OurStoryReveal from './OurStoryReveal';
+import Reveal from '@/components/uielements/Reveal';
 
 export default function OurStoryHero() {
   return (
     <section className='px-4 pt-14 pb-12 sm:pt-18 sm:px-8 lg:px-16'>
       <div className='mx-auto max-w-7xl'>
-        <OurStoryReveal>
+        <Reveal>
           <p className='text-muted mb-6 inline-flex items-center gap-3 text-[11px] font-medium tracking-[0.22em] uppercase before:h-px before:w-7 before:bg-current before:opacity-50'>
             Our Story · Est. 2018
           </p>
-        </OurStoryReveal>
+        </Reveal>
 
-        <OurStoryReveal>
+        <Reveal>
           <h1 className='font-display mb-0 max-w-[12ch] text-[clamp(36px,9vw,140px)] leading-[0.92] font-normal tracking-[-0.04em]'>
             A neighborhood <em className='text-oxblood italic'>butcher</em>{' '}
             shop, modernized.
           </h1>
-        </OurStoryReveal>
+        </Reveal>
 
         <div className='border-line-soft mt-8 grid gap-8 border-t pt-8 lg:gap-16 lg:grid-cols-[1fr_1.4fr]'>
-          <OurStoryReveal>
+          <Reveal>
             <div className='text-muted font-mono text-[11px] leading-[1.8] tracking-[0.04em]'>
               <p>
                 <strong className='text-ink'>Founded</strong> 2018
@@ -37,8 +37,8 @@ export default function OurStoryHero() {
                 climate-controlled
               </p>
             </div>
-          </OurStoryReveal>
-          <OurStoryReveal>
+          </Reveal>
+          <Reveal>
             <p className='font-display text-ink-soft max-w-[44ch] text-[19px] leading-[1.55] font-normal tracking-[-0.005em]'>
               We started with one rule —{' '}
               <em className='text-oxblood italic'>
@@ -48,7 +48,7 @@ export default function OurStoryHero() {
               Eight years later, that&apos;s still the only one we follow
               without exception.
             </p>
-          </OurStoryReveal>
+          </Reveal>
         </div>
       </div>
     </section>

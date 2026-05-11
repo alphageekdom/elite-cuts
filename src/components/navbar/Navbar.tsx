@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useScrollLock } from '@/hooks/useScrollLock';
 import { signOut, useSession } from 'next-auth/react';
 import { usePathname, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -74,15 +75,7 @@ const Navbar = () => {
     setIsProfileMenuOpen(false);
   }, [pathname]);
 
-  // Lock body scroll while the mobile menu is open.
-  useEffect(() => {
-    if (!isMobileMenuOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [isMobileMenuOpen]);
+  useScrollLock(isMobileMenuOpen);
 
   const handleSignOut = async () => {
     try {

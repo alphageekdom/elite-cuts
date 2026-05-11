@@ -63,12 +63,12 @@ function countForStat(key: StatFilter, counts: CustomerCounts): number {
 
 export default function CustomersClient({ customers, counts }: Props) {
   const [localCustomers, setLocalCustomers] = useState(customers);
-  const { activeKey: activeStatFilter, selectKey: _selectStatFilter } = useStatFilter('all');
+  const [page, setPage] = useState(1);
+  const { activeKey: activeStatFilter, selectKey: _selectStatFilter } = useStatFilter<string>('all', () => setPage(1));
   const [activeTierFilter, setActiveTierFilter] = useState<TierFilter>('all');
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const { item: drawerCustomer, isOpen: isDrawerOpen, open: openDrawer, close: closeDrawer, setItem: setDrawerCustomer } = useAdminDrawer<CustomerTableRow>();
-  const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(PAGE_SIZES[0]);
 
   async function handleCustomerSave(id: string, data: { name: string; email: string; phone: string }) {
@@ -143,7 +143,6 @@ export default function CustomersClient({ customers, counts }: Props) {
 
   function handleStatFilter(key: string) {
     _selectStatFilter(key);
-    setPage(1);
     setSelectedIds(new Set());
   }
 
@@ -398,6 +397,7 @@ export default function CustomersClient({ customers, counts }: Props) {
       >
         {drawerCustomer && (
           <CustomerDetailDrawer
+            key={drawerCustomer.id}
             customer={drawerCustomer}
             onClose={closeDrawer}
             onSave={handleCustomerSave}

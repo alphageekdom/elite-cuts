@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useAdminDrawer } from '@/hooks/useAdminDrawer';
 import { toast } from 'sonner';
 import { avatarColorForId, relativeTime, statCellBorderClasses, getInitials, formatDate } from '@/lib/format';
 import { AVATAR_COLORS } from '@/lib/admin-constants';
@@ -46,7 +47,7 @@ export default function MessagesClient({
   const [messages, setMessages] = useState(initialMessages);
   const [filter, setFilter] = useState<Filter>('all');
   const [search, setSearch] = useState('');
-  const [drawer, setDrawer] = useState<MessageRow | null>(null);
+  const { item: drawer, open: openDrawer, close: closeDrawer, setItem: setDrawerItem } = useAdminDrawer<MessageRow>({ scrollLock: false });
   const [toggling, setToggling] = useState(false);
 
   const filtered = messages.filter((m) => {
@@ -75,7 +76,7 @@ export default function MessagesClient({
       setMessages((prev) =>
         prev.map((m) => (m.id === msg.id ? { ...m, status: next } : m)),
       );
-      if (drawer?.id === msg.id) setDrawer((prev) => prev ? { ...prev, status: next } : prev);
+      if (drawer?.id === msg.id) setDrawerItem((prev) => prev ? { ...prev, status: next } : prev);
       toast.success(`Marked as ${next}`);
     } catch {
       toast.error('Failed to update status');
@@ -151,7 +152,7 @@ export default function MessagesClient({
                 <tr
                   key={msg.id}
                   className="hover:bg-cream-deep/40 cursor-pointer transition-colors"
-                  onClick={() => setDrawer(msg)}
+                  onClick={() => openDrawer(msg)}
                 >
                   {/* Customer */}
                   <td className="px-5 py-3.5">
@@ -216,7 +217,7 @@ export default function MessagesClient({
       {/* Drawer */}
       {drawer && (
         <div className="fixed inset-0 z-50 flex justify-end">
-          <div className="absolute inset-0 bg-ink/40" onClick={() => setDrawer(null)} aria-hidden="true" />
+          <div className="absolute inset-0 bg-ink/40" onClick={() => closeDrawer()} aria-hidden="true" />
           <aside className="relative bg-paper w-full max-w-md h-full overflow-y-auto shadow-2xl flex flex-col">
             {/* Header */}
             <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-line-soft shrink-0">
@@ -227,7 +228,7 @@ export default function MessagesClient({
                 </h2>
               </div>
               <button
-                onClick={() => setDrawer(null)}
+                onClick={() => closeDrawer()}
                 aria-label="Close"
                 className="w-8 h-8 rounded-full grid place-items-center text-muted hover:text-ink hover:bg-cream-deep transition-colors shrink-0 mt-1"
               >
