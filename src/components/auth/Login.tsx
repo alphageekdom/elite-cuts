@@ -79,7 +79,8 @@ export default function Login() {
         password: formData.password,
       });
       if (res?.error) {
-        toast.error('Invalid email or password');
+        const isLockout = res.error.startsWith('Too many failed login attempts');
+        toast.error(isLockout ? res.error : 'Invalid email or password');
       } else {
         toast.success('Signed in successfully');
         router.push('/');

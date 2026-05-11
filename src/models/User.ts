@@ -28,6 +28,8 @@ export type User = {
   isAdmin: boolean;
   rewardPoints: number;
   adminNote?: string;
+  failedLoginAttempts: number;
+  lockoutUntil?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -88,6 +90,16 @@ const UserSchema = new Schema<User>(
       type: String,
       trim: true,
       default: '',
+    },
+    failedLoginAttempts: {
+      type: Number,
+      default: 0,
+      select: false,
+    },
+    lockoutUntil: {
+      type: Date,
+      default: null,
+      select: false,
     },
   },
   {
