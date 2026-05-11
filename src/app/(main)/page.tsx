@@ -5,11 +5,13 @@ import Hero from '@/components/home/Hero';
 import Marquee from '@/components/home/Marquee';
 import Partners from '@/components/home/Partners';
 import Reviews from '@/components/home/Reviews';
+import HolidaySection from '@/components/holiday/HolidaySection';
 
 const HomePage = async () => {
   return (
     <>
       <Hero />
+      <HolidaySection />
       <Marquee />
       <FeaturedProducts />
       <About />

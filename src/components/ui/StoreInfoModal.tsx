@@ -109,7 +109,18 @@ function CopyButton({ text, label }: { text: string; label: string }) {
   );
 }
 
-export default function StoreInfoModal({ label = 'Visit us in‑store' }: { label?: string }) {
+type StoreInfoModalProps = {
+  label?: string;
+  triggerClassName?: string;
+};
+
+const DEFAULT_TRIGGER_CLASS =
+  'font-medium text-ink-soft underline underline-offset-2 transition-colors duration-200 hover:text-ink';
+
+export default function StoreInfoModal({
+  label = 'Visit us in‑store',
+  triggerClassName,
+}: StoreInfoModalProps) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -150,7 +161,7 @@ export default function StoreInfoModal({ label = 'Visit us in‑store' }: { labe
         ref={triggerRef}
         type='button'
         onClick={() => setOpen(true)}
-        className='font-medium text-ink-soft underline underline-offset-2 transition-colors duration-200 hover:text-ink'
+        className={triggerClassName ?? DEFAULT_TRIGGER_CLASS}
       >
         {label}
       </button>

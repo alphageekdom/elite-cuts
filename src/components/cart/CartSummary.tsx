@@ -7,9 +7,14 @@ import { toast } from 'sonner';
 
 import { useCartContext } from '@/context/CartContext';
 import { computeTotals, fmtPrice } from '@/lib/pricing';
+import { formatDaysUntil } from '@/lib/holidays';
 import StoreInfoModal from '@/components/ui/StoreInfoModal';
 
 type Fulfillment = 'pickup' | 'delivery';
+
+type Props = {
+  activeHoliday?: { name: string; daysUntil: number } | null;
+};
 
 const ArrowIcon = () => (
   <svg
@@ -24,7 +29,7 @@ const ArrowIcon = () => (
   </svg>
 );
 
-const CartSummary = () => {
+const CartSummary = ({ activeHoliday }: Props) => {
   const { cartItems } = useCartContext();
   const { data: session } = useSession();
   const isLoggedIn = Boolean(session?.user);
@@ -222,11 +227,19 @@ const CartSummary = () => {
         </li>
       </ul>
 
-      <p className='mt-3 px-1 text-center text-[12px] leading-relaxed text-muted'>
-        Placing a large or advance order?{' '}
-        <StoreInfoModal label='Come in‑store' />{' '}
-        — we&rsquo;ll take full payment up front.
-      </p>
+      {activeHoliday ? (
+        <p className='mt-3 px-1 text-center text-[12px] leading-relaxed text-muted'>
+          <em className='italic text-oxblood'>{activeHoliday.name}</em> is{' '}
+          {formatDaysUntil(activeHoliday.daysUntil).toLowerCase()} —{' '}
+          <StoreInfoModal label='visit us in‑store' /> to pre-order 1–2 weeks ahead.
+        </p>
+      ) : (
+        <p className='mt-3 px-1 text-center text-[12px] leading-relaxed text-muted'>
+          Placing a large or advance order?{' '}
+          <StoreInfoModal label='Come in‑store' />{' '}
+          — we&rsquo;ll take full payment up front.
+        </p>
+      )}
     </div>
   );
 };

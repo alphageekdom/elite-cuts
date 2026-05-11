@@ -10,6 +10,7 @@ import CatalogHero from '@/components/product/CatalogHero';
 import CatalogPagination from '@/components/product/CatalogPagination';
 import ProductCard from '@/components/product/ProductCard';
 import ResultsBar from '@/components/product/ResultsBar';
+import HolidayBanner from '@/components/holiday/HolidayBanner';
 import {
   PAGE_SIZE,
   isCategoryFilter,
@@ -156,6 +157,7 @@ const ProductsPage = async ({
   return (
     <>
       <CatalogHero stats={stats} />
+      <HolidayBanner />
       <CatalogFilterBar />
       <section className='bg-cream pb-25'>
         <div className='mx-auto w-full max-w-7xl px-6 md:px-8'>

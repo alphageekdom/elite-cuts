@@ -15,6 +15,8 @@ import BuyBlock from '@/components/product/detail/BuyBlock';
 import ProductCard from '@/components/product/ProductCard';
 import SectionHead from '@/components/ui/SectionHead';
 import StoreInfoModal from '@/components/ui/StoreInfoModal';
+import HolidayInlineNote from '@/components/holiday/HolidayInlineNote';
+import { getHolidayForCut } from '@/lib/holidays';
 import ReviewForm from './ReviewForm';
 import ReviewActions from './ReviewActions';
 
@@ -226,6 +228,10 @@ export default async function ProductPage({ params }: PageProps) {
     { label: 'Arrival', value: product.isNewArrival ? 'New' : '—' },
   ];
 
+  // Holiday match for this cut, if a window is active. Computed once and
+  // passed into HolidayInlineNote so the date math doesn't run twice.
+  const holidayMatch = getHolidayForCut(product.name);
+
   return (
     <div className='bg-cream min-h-screen'>
       <div className='mx-auto max-w-7xl px-5 md:px-8'>
@@ -366,12 +372,16 @@ export default async function ProductPage({ params }: PageProps) {
               </div>
             </div>
 
-            {/* Bulk / advance-order note */}
-            <p className='mt-3 px-1 text-[12px] leading-relaxed text-muted'>
-              Need a larger order or want to reserve in advance?{' '}
-              <StoreInfoModal />{' '}
-              — we&rsquo;ll take full payment up front and have your cut ready.
-            </p>
+            {/* Bulk / advance-order note — swaps to a holiday variant for matching cuts during an active window */}
+            {holidayMatch ? (
+              <HolidayInlineNote match={holidayMatch} />
+            ) : (
+              <p className='mt-3 px-1 text-[12px] leading-relaxed text-muted'>
+                Need a larger order or want to reserve in advance?{' '}
+                <StoreInfoModal />{' '}
+                — we&rsquo;ll take full payment up front and have your cut ready.
+              </p>
+            )}
           </aside>
         </section>
 
