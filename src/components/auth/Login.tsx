@@ -24,6 +24,15 @@ import { FieldValidationIcon as FieldIcon } from '@/components/auth/FieldValidat
 const INPUT_CLASS =
   'w-full border-0 border-b border-line bg-transparent text-ink text-base py-2 pb-3.5 pr-6 outline-none placeholder:text-muted/60 focus:border-oxblood transition-colors duration-300';
 
+const LOCKOUT_KEY = 'loginLockoutUntil';
+const LOCKOUT_RE = /Try again in (\d+) minute/;
+
+function fmtMMSS(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
 export default function Login() {
   const router = useRouter();
   const { data: session } = useSession();
@@ -38,9 +47,49 @@ export default function Login() {
   });
   const [loading, setLoading] = useState(false);
 
+  // Tracks the rate-limit lockout countdown. The backend is the source of truth
+  // for the actual block; this state just disables the UI so the user can see
+  // when they're allowed to try again. Persisted in sessionStorage so a refresh
+  // doesn't reset the visual lockout while the backend still rejects them.
+  const [lockedUntil, setLockedUntil] = useState<number | null>(null);
+  const [lockSecondsLeft, setLockSecondsLeft] = useState<number | null>(null);
+
   useEffect(() => {
     if (session) router.replace('/');
   }, [session, router]);
+
+  // Restore any in-flight lockout from a previous render of this tab.
+  useEffect(() => {
+    const stored = sessionStorage.getItem(LOCKOUT_KEY);
+    if (!stored) return;
+    const ts = parseInt(stored, 10);
+    if (ts > Date.now()) {
+      setLockedUntil(ts);
+    } else {
+      sessionStorage.removeItem(LOCKOUT_KEY);
+    }
+  }, []);
+
+  // Countdown tick — drives the button label and clears the lockout when it expires.
+  useEffect(() => {
+    if (lockedUntil === null) {
+      setLockSecondsLeft(null);
+      return;
+    }
+    const tick = () => {
+      const remaining = Math.max(0, Math.ceil((lockedUntil - Date.now()) / 1000));
+      setLockSecondsLeft(remaining);
+      if (remaining <= 0) {
+        setLockedUntil(null);
+        sessionStorage.removeItem(LOCKOUT_KEY);
+      }
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [lockedUntil]);
+
+  const isLocked = lockSecondsLeft !== null && lockSecondsLeft > 0;
 
   const anyTouched = Object.values(touched).some(Boolean);
 
@@ -67,6 +116,7 @@ export default function Login() {
 
   const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (isLocked) return;
     if (!formData.email || !formData.password) {
       toast.error('Please enter both email and password');
       return;
@@ -81,6 +131,13 @@ export default function Login() {
       if (res?.error) {
         const isLockout = res.error.startsWith('Too many failed login attempts');
         toast.error(isLockout ? res.error : 'Invalid email or password');
+        if (isLockout) {
+          const match = res.error.match(LOCKOUT_RE);
+          const minutes = match ? parseInt(match[1], 10) : 60;
+          const until = Date.now() + minutes * 60 * 1000;
+          sessionStorage.setItem(LOCKOUT_KEY, String(until));
+          setLockedUntil(until);
+        }
       } else {
         toast.success('Signed in successfully');
         router.push('/');
@@ -173,11 +230,12 @@ export default function Login() {
                     type="email"
                     placeholder="you@example.com"
                     required
+                    disabled={isLocked}
                     value={formData.email}
                     onChange={handleChange}
                     onBlur={handleBlur}
                     autoComplete="email"
-                    className={INPUT_CLASS}
+                    className={`${INPUT_CLASS} disabled:opacity-60 disabled:cursor-not-allowed`}
                   />
                   <FieldIcon show={showIcon('email')} valid={validity.email} />
                 </div>
@@ -195,11 +253,12 @@ export default function Login() {
                     type="password"
                     placeholder="Enter your password"
                     required
+                    disabled={isLocked}
                     value={formData.password}
                     onChange={handleChange}
                     onBlur={handleBlur}
                     autoComplete="current-password"
-                    className={INPUT_CLASS}
+                    className={`${INPUT_CLASS} disabled:opacity-60 disabled:cursor-not-allowed`}
                   />
                   <FieldIcon show={showIcon('password')} valid={validity.password} />
                 </div>
@@ -228,12 +287,16 @@ export default function Login() {
               {/* Submit */}
               <button
                 type="submit"
-                disabled={loading}
-                className="auth-reveal w-full flex items-center justify-center gap-3 px-7 py-4.5 bg-ink text-cream rounded-full text-sm font-medium tracking-[0.04em] hover:bg-oxblood hover:-translate-y-px transition-all duration-300 disabled:opacity-60"
+                disabled={loading || isLocked}
+                className="auth-reveal w-full flex items-center justify-center gap-3 px-7 py-4.5 bg-ink text-cream rounded-full text-sm font-medium tracking-[0.04em] hover:bg-oxblood hover:-translate-y-px transition-all duration-300 disabled:opacity-60 disabled:hover:bg-ink disabled:hover:translate-y-0 disabled:cursor-not-allowed"
                 style={{ animationDelay: '0.6s' }}
               >
-                {loading ? 'Signing in…' : 'Sign in'}
-                {!loading && (
+                {isLocked
+                  ? `Try again in ${fmtMMSS(lockSecondsLeft!)}`
+                  : loading
+                    ? 'Signing in…'
+                    : 'Sign in'}
+                {!loading && !isLocked && (
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M5 12h14M13 5l7 7-7 7" />
                   </svg>

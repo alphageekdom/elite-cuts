@@ -36,6 +36,8 @@ export const authOptions: NextAuthOptions = {
           const minutesLeft = Math.ceil(
             (user.lockoutUntil.getTime() - Date.now()) / 60_000
           );
+          // The phrase "Try again in N minute" is parsed by the login form to
+          // drive its disable-and-countdown UI — keep that wording intact.
           throw new Error(
             `Too many failed login attempts. Try again in ${minutesLeft} minute${minutesLeft !== 1 ? 's' : ''}.`
           );
