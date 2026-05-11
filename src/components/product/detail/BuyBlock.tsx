@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 import useHandleAddToCart from '@/hooks/useHandleAddToCart';
 import useHandleBookmark from '@/hooks/useHandleBookmark';
 import { formatMoney } from '@/lib/format';
+import { MAX_PER_LINE } from '@/lib/shopConfig';
 import type { SerializedProduct } from '@/models/Product';
 
 type Props = {
@@ -82,9 +83,9 @@ export default function BuyBlock({ product }: Props) {
     void checkBookmarkStatus();
   }, [checkBookmarkStatus]);
 
+  const qtyMax = Math.min(product.stockCount, MAX_PER_LINE);
   const decrement = () => setQty((v) => Math.max(1, v - 1));
-  const increment = () =>
-    setQty((v) => Math.min(product.stockCount, v + 1));
+  const increment = () => setQty((v) => Math.min(qtyMax, v + 1));
 
   const onAddClick = () => {
     if (outOfStock || isAddingToCart) return;
@@ -148,7 +149,7 @@ export default function BuyBlock({ product }: Props) {
           <button
             type='button'
             onClick={increment}
-            disabled={qty >= product.stockCount}
+            disabled={qty >= qtyMax}
             aria-label='Increase quantity'
             className='grid h-11 w-11 place-items-center transition-colors duration-300 hover:bg-cream-deep disabled:opacity-40 motion-reduce:transition-none'
           >

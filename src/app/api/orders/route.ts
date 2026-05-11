@@ -15,6 +15,7 @@ import { formatMoney } from '@/lib/format';
 import { isIn, EMAIL_RE } from '@/lib/validation';
 import { validatePromoCode } from '@/actions/checkout';
 import { MEMBER_DISCOUNT_RATE, DELIVERY_FEE, TAX_RATE } from '@/lib/pricing';
+import { MAX_PER_LINE } from '@/lib/shopConfig';
 
 // GET /api/orders
 // Admin: all orders (paginated). Customer: own orders only.
@@ -147,6 +148,16 @@ export const POST = async (request: NextRequest) => {
       return NextResponse.json(
         { message: `Insufficient stock — ${stockErrors.join('; ')}` },
         { status: 409 },
+      );
+    }
+
+    // Per-line cap — backstop in case a stale client snuck a tampered cart past
+    // the cart endpoint's caps. The cart API enforces the same limit on add/edit.
+    const overCap = cart.items.find((line) => line.quantity > MAX_PER_LINE);
+    if (overCap) {
+      return NextResponse.json(
+        { message: `Limit ${MAX_PER_LINE} per item` },
+        { status: 400 },
       );
     }
 

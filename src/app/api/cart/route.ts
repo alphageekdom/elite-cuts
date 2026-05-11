@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import Cart from '@/models/Cart';
 import Product from '@/models/Product';
 import { withAuth } from '@/lib/api-handler';
+import { MAX_PER_LINE } from '@/lib/shopConfig';
 
 // Lean line-item wire shape. CartItemSchema has `_id: false` so each line is
 // uniquely keyed by its product reference — that's the identifier callers use
@@ -95,6 +96,10 @@ export const POST = withAuth(async (request: NextRequest, _ctx, userId) => {
       );
     }
 
+    if (currentQty + addBy > MAX_PER_LINE) {
+      return badRequest(`Limit ${MAX_PER_LINE} per item`);
+    }
+
     if (existing) {
       existing.quantity += addBy;
     } else {
@@ -139,6 +144,9 @@ export const PATCH = withAuth(async (request: NextRequest, _ctx, userId) => {
       if (!product) return NextResponse.json({ message: 'Product not found' }, { status: 404 });
       if (quantity > product.stockCount) {
         return badRequest(`Only ${product.stockCount} in stock`);
+      }
+      if (quantity > MAX_PER_LINE) {
+        return badRequest(`Limit ${MAX_PER_LINE} per item`);
       }
       if (idx !== -1) {
         cart.items[idx].quantity = quantity;

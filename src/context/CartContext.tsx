@@ -14,6 +14,7 @@ import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 
 import type { SerializedProduct } from '@/models/Product';
+import { MAX_PER_LINE } from '@/lib/shopConfig';
 
 // Minimum product fields a cart line needs to render: id keys the line;
 // name + price + images drive the card UI; category drives the eyebrow meta
@@ -224,6 +225,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const { quantity: _quantity, ...productOnly } = item;
       const product = productOnly as CartLineProduct;
 
+      // Pre-flight cap check so the user sees the limit immediately rather than
+      // after a server round-trip. The server enforces the same cap as a backstop.
+      const existing = cartItems.find((l) => l.product._id === product._id);
+      const currentQty = existing?.quantity ?? 0;
+      if (currentQty + addBy > MAX_PER_LINE) {
+        toast.error(`Limit ${MAX_PER_LINE} per item`);
+        return;
+      }
+
       if (!isLoggedIn) {
         setCartItems((prev) => {
           const next = applyAddToLines(prev, product, addBy);
@@ -264,7 +274,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         toast.error(error instanceof Error ? error.message : 'Failed to add item to cart');
       }
     },
-    [isLoggedIn],
+    [isLoggedIn, cartItems],
   );
 
   const setItemQuantity = useCallback(
