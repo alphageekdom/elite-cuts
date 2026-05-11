@@ -1,8 +1,8 @@
 'use client';
-import { getInitials, formatMoney, formatDate, relativeTime } from '@/lib/format';
+import { getInitials, formatMoney, formatDate, relativeTime } from '@/lib/admin-utils';
 import { avatarColorForId } from '@/lib/admin-utils';
 import { AVATAR_COLORS } from '@/lib/admin-constants';
-import { getTier, getActivity, deriveTags, TIER_CONFIG, ACTIVITY_CONFIG } from './CustomerDetailDrawer';
+import { getTier, getActivity, deriveTags, TIER_CONFIG, ACTIVITY_CONFIG } from './customerUtils';
 import type { CustomerTableRow } from '@/types/admin';
 
 type Props = {

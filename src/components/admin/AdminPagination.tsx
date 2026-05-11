@@ -44,9 +44,8 @@ export default function AdminPagination({
         </button>
 
         <div className="flex items-center gap-0.5 mx-2">
-          {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-            const n = i + 1;
-            return (
+          {(() => {
+            const pageBtn = (n: number) => (
               <button
                 key={n}
                 onClick={() => onPageChange(n)}
@@ -57,18 +56,25 @@ export default function AdminPagination({
                 {n}
               </button>
             );
-          })}
-          {totalPages > 5 && <span className="px-1 text-muted">…</span>}
-          {totalPages > 5 && (
-            <button
-              onClick={() => onPageChange(totalPages)}
-              className={`w-8 h-8 rounded-full font-display text-[13px] transition-colors ${
-                page === totalPages ? 'bg-ink text-cream' : 'text-ink-soft hover:bg-paper hover:text-ink'
-              }`}
-            >
-              {totalPages}
-            </button>
-          )}
+            const ellipsis = (key: string) => (
+              <span key={key} className="px-1 text-muted">…</span>
+            );
+
+            if (totalPages <= 7) {
+              return Array.from({ length: totalPages }, (_, i) => pageBtn(i + 1));
+            }
+
+            const window = 2;
+            const lo = Math.max(2, page - window);
+            const hi = Math.min(totalPages - 1, page + window);
+            const items = [];
+            items.push(pageBtn(1));
+            if (lo > 2) items.push(ellipsis('lo'));
+            for (let n = lo; n <= hi; n++) items.push(pageBtn(n));
+            if (hi < totalPages - 1) items.push(ellipsis('hi'));
+            items.push(pageBtn(totalPages));
+            return items;
+          })()}
         </div>
 
         <button

@@ -2,6 +2,7 @@
 import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import { useStatFilter } from '@/hooks/useStatFilter';
+import { useAdminDrawer } from '@/hooks/useAdminDrawer';
 import OrderTableRowComponent from './OrderTableRow';
 import AdminStatStrip from '@/components/admin/AdminStatStrip';
 import AdminSearchInput from '@/components/admin/AdminSearchInput';
@@ -20,11 +21,11 @@ type Props = {
 const STAT_CELLS = [
   { key: 'all',               label: 'All',        metaLabel: 'THIS MONTH',      dotClass: '' },
   { key: 'Order Placed',      label: 'New',         metaLabel: 'ORDER PLACED',    dotClass: '' },
-  { key: 'Preparing',         label: 'Preparing',   metaLabel: 'IN PROGRESS',     dotClass: 'camel' },
-  { key: 'Ready for Pickup',  label: 'Ready',       metaLabel: 'AWAITING PICKUP', dotClass: 'camel' },
-  { key: 'Out for Delivery',  label: 'Delivering',  metaLabel: 'OUT FOR DELIVERY',dotClass: 'camel' },
-  { key: 'Completed',         label: 'Completed',   metaLabel: 'COMPLETED',       dotClass: 'green' },
-  { key: 'Cancelled',         label: 'Cancelled',   metaLabel: 'CANCELLED',       dotClass: 'oxblood' },
+  { key: 'Preparing',         label: 'Preparing',   metaLabel: 'IN PROGRESS',     dotClass: 'bg-camel' },
+  { key: 'Ready for Pickup',  label: 'Ready',       metaLabel: 'AWAITING PICKUP', dotClass: 'bg-camel' },
+  { key: 'Out for Delivery',  label: 'Delivering',  metaLabel: 'OUT FOR DELIVERY',dotClass: 'bg-camel' },
+  { key: 'Completed',         label: 'Completed',   metaLabel: 'COMPLETED',       dotClass: 'bg-green' },
+  { key: 'Cancelled',         label: 'Cancelled',   metaLabel: 'CANCELLED',       dotClass: 'bg-oxblood' },
 ] as const;
 
 type StatKey = (typeof STAT_CELLS)[number]['key'];
@@ -48,7 +49,7 @@ export default function OrdersClient({ orders, counts }: Props) {
   const { activeKey: activeStatus, selectKey: _selectStatus } = useStatFilter('all');
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [drawerOrder, setDrawerOrder] = useState<OrderTableRow | null>(null);
+  const { item: drawerOrder, isOpen: isDrawerOpen, open: _openDrawer, close: closeDrawer, setItem: setDrawerOrder } = useAdminDrawer<OrderTableRow>();
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(PAGE_SIZES[0]);
   const [statusUpdate, setStatusUpdate] = useState<string>('');
@@ -113,14 +114,8 @@ export default function OrdersClient({ orders, counts }: Props) {
   }
 
   function openDrawer(order: OrderTableRow) {
-    setDrawerOrder(order);
+    _openDrawer(order);
     setStatusUpdate(order.status);
-    document.body.style.overflow = 'hidden';
-  }
-
-  function closeDrawer() {
-    setDrawerOrder(null);
-    document.body.style.overflow = '';
   }
 
   function handleStatusFilter(key: string) {
@@ -180,7 +175,7 @@ export default function OrdersClient({ orders, counts }: Props) {
             label: cell.label,
             value: count,
             meta: cell.metaLabel,
-            dotClass: cell.dotClass === 'green' ? 'bg-green' : cell.dotClass === 'camel' ? 'bg-camel' : cell.dotClass === 'oxblood' ? 'bg-oxblood' : 'bg-muted',
+            dotClass: cell.dotClass || undefined,
             badge: cell.key === 'Order Placed' && count > 0 ? 'new' : undefined,
           };
         })}
@@ -327,7 +322,7 @@ export default function OrdersClient({ orders, counts }: Props) {
       )}
 
       {/* Drawer backdrop */}
-      {drawerOrder && (
+      {isDrawerOpen && (
         <div
           className="fixed inset-0 bg-ink/40 backdrop-blur-sm z-50"
           onClick={closeDrawer}
@@ -337,7 +332,7 @@ export default function OrdersClient({ orders, counts }: Props) {
       {/* Order detail drawer */}
       <aside
         className={`fixed top-0 right-0 w-full max-w-135 h-screen bg-cream z-51 flex flex-col shadow-2xl transition-transform duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
-          drawerOrder ? 'translate-x-0' : 'translate-x-full'
+          isDrawerOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         {drawerOrder && (

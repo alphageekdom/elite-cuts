@@ -1,5 +1,6 @@
+import { MONTH_ABBR } from '@/lib/admin-utils';
+
 const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 type Props = {
   staffCount: number;

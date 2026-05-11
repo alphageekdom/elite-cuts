@@ -1,3 +1,5 @@
+import { formatMoney } from '@/lib/admin-utils';
+
 type Stat = {
   label: string;
   value: string;
@@ -38,13 +40,6 @@ function countChange(current: number, prev: number): { label: string; dir: 'up' 
     label: diff >= 0 ? `+${diff} new` : `${diff} new`,
     dir: diff >= 0 ? 'up' : 'down',
   };
-}
-
-function formatMoney(amount: number) {
-  return amount.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
 }
 
 function StatCard({ stat }: { stat: Stat }) {
@@ -109,9 +104,9 @@ export default function DashboardStatGrid({
   currentMonthOrders, prevMonthOrders,
   currentMonthCustomers, prevMonthCustomers,
 }: Props) {
-  const revenueFormatted = revenue > 0 ? formatMoney(revenue) : '0.00';
+  const revenueFormatted = revenue > 0 ? formatMoney(revenue) : '$0.00';
   const [revMain, revCents] = revenueFormatted.split('.');
-  const avgFormatted = avgOrder > 0 ? formatMoney(avgOrder) : '0.00';
+  const avgFormatted = avgOrder > 0 ? formatMoney(avgOrder) : '$0.00';
   const [avgMain, avgCents] = avgFormatted.split('.');
 
   const currentMonthAvg = currentMonthOrders > 0 ? currentMonthRevenue / currentMonthOrders : 0;
@@ -125,7 +120,7 @@ export default function DashboardStatGrid({
   const stats: Stat[] = [
     {
       label: 'Revenue',
-      value: `$${revMain}`,
+      value: revMain,
       valueSuffix: `.${revCents}`,
       change: revChange?.label ?? '—',
       changeDir: revChange?.dir ?? 'up',
@@ -170,7 +165,7 @@ export default function DashboardStatGrid({
     },
     {
       label: 'Avg. Order',
-      value: `$${avgMain}`,
+      value: avgMain,
       valueSuffix: `.${avgCents}`,
       change: avgChange?.label ?? '—',
       changeDir: avgChange?.dir ?? 'up',

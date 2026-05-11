@@ -7,6 +7,8 @@ import ScheduleOnTodayCard from './ScheduleOnTodayCard';
 import SchedulePickupSlots, { type PickupSlotRow } from './SchedulePickupSlots';
 import ScheduleShopHours from './ScheduleShopHours';
 import ScheduleComingUp from './ScheduleComingUp';
+import { MONTH_ABBR } from '@/lib/admin-utils';
+import { getMondayOf } from '@/lib/schedule-utils';
 import type { ShopHoursDay } from '@/models/ShopHours';
 import type { ShiftColor } from '@/models/Shift';
 // ShiftColor re-exported for ScheduleOnTodayCard usage via ScheduleClient import
@@ -23,7 +25,6 @@ export type ShiftRow = {
 
 const HOURS = ['8 AM', '9 AM', '10 AM', '11 AM', '12 PM', '1 PM', '2 PM', '3 PM', '4 PM'];
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 const SHIFT_STYLES: Record<ShiftColor, string> = {
   tangelo:  'bg-oxblood text-cream',
@@ -33,15 +34,6 @@ const SHIFT_STYLES: Record<ShiftColor, string> = {
   maya:     'bg-camel-soft text-ink',
   delivery: 'bg-cream-deep border border-dashed border-line text-ink-soft',
 };
-
-function getMondayOf(date: Date): Date {
-  const d = new Date(date);
-  const day = d.getDay(); // 0=Sun
-  const diff = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + diff);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
 
 export type UpcomingDelivery = {
   id: string;

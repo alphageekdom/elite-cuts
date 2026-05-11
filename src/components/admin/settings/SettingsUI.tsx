@@ -71,3 +71,23 @@ export const btnGhost =
   'inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-paper text-ink-soft text-[13px] font-medium tracking-[0.02em] border border-line transition-colors hover:border-ink hover:text-ink cursor-pointer';
 export const btnDanger =
   'inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-transparent text-oxblood text-[13px] font-medium tracking-[0.02em] border border-oxblood/30 transition-colors hover:bg-red-soft hover:border-oxblood cursor-pointer';
+
+export function DrawerSection({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="pb-6 border-b border-line-soft last:border-b-0 last:pb-0 space-y-4">
+      <div className="text-[10px] font-medium tracking-[0.22em] uppercase text-muted">{label}</div>
+      {children}
+    </div>
+  );
+}
+
+export function DrawerField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="block text-[11px] font-medium tracking-[0.22em] uppercase text-muted mb-2">
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}

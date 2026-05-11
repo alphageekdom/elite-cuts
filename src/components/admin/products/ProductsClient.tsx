@@ -3,6 +3,7 @@ import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import ProductTableRowComponent from './ProductTableRow';
 import { useStatFilter } from '@/hooks/useStatFilter';
+import { useAdminDrawer } from '@/hooks/useAdminDrawer';
 import AdminSearchInput from '@/components/admin/AdminSearchInput';
 import AdminPagination from '@/components/admin/AdminPagination';
 import AdminStatStrip from '@/components/admin/AdminStatStrip';
@@ -40,8 +41,7 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
   const [activeCategory, setActiveCategory] = useState<string>('');
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [drawerProduct, setDrawerProduct] = useState<ProductTableRow | null>(null);
+  const { item: drawerProduct, isOpen: drawerOpen, open: _openDrawer, close: closeDrawer } = useAdminDrawer<ProductTableRow>();
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<SortBy>('newest');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -195,14 +195,7 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
   }
 
   function openDrawer(product?: ProductTableRow) {
-    setDrawerProduct(product ?? null);
-    setDrawerOpen(true);
-    document.body.style.overflow = 'hidden';
-  }
-
-  function closeDrawer() {
-    setDrawerOpen(false);
-    document.body.style.overflow = '';
+    _openDrawer(product ?? null);
   }
 
   function handleStatFilter(key: string) {

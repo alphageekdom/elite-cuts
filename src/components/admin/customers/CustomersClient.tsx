@@ -2,11 +2,13 @@
 import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import { useStatFilter } from '@/hooks/useStatFilter';
+import { useAdminDrawer } from '@/hooks/useAdminDrawer';
 import AdminSearchInput from '@/components/admin/AdminSearchInput';
 import AdminPagination from '@/components/admin/AdminPagination';
 import AdminStatStrip from '@/components/admin/AdminStatStrip';
 import type { CustomerTableRow, CustomerCounts } from '@/types/admin';
-import CustomerDetailDrawer, { getTier } from './CustomerDetailDrawer';
+import CustomerDetailDrawer from './CustomerDetailDrawer';
+import { getTier } from './customerUtils';
 import CustomerTableRowComponent from './CustomerTableRow';
 
 export type { CustomerTableRow, CustomerCounts };
@@ -21,10 +23,10 @@ type TierFilter = 'all' | 'master' | 'connoisseur' | 'regular';
 
 const STAT_CELLS = [
   { key: 'all' as StatFilter, label: 'All', metaLabel: 'REGISTERED', dotClass: '' },
-  { key: 'new' as StatFilter, label: 'New', metaLabel: 'JOINED IN 30 DAYS', dotClass: 'ink' },
-  { key: 'active' as StatFilter, label: 'Active', metaLabel: 'ORDERED IN 90 DAYS', dotClass: 'green' },
-  { key: 'connoisseurPlus' as StatFilter, label: 'Connoisseur+', metaLabel: '10+ ORDERS', dotClass: 'camel' },
-  { key: 'atRisk' as StatFilter, label: 'At risk', metaLabel: 'DORMANT 90+ DAYS', dotClass: 'oxblood' },
+  { key: 'new' as StatFilter, label: 'New', metaLabel: 'JOINED IN 30 DAYS', dotClass: 'bg-ink' },
+  { key: 'active' as StatFilter, label: 'Active', metaLabel: 'ORDERED IN 90 DAYS', dotClass: 'bg-green' },
+  { key: 'connoisseurPlus' as StatFilter, label: 'Connoisseur+', metaLabel: '10+ ORDERS', dotClass: 'bg-camel' },
+  { key: 'atRisk' as StatFilter, label: 'At risk', metaLabel: 'DORMANT 90+ DAYS', dotClass: 'bg-oxblood' },
 ];
 
 const TIER_PILLS: Array<{ key: TierFilter; label: string }> = [
@@ -65,7 +67,7 @@ export default function CustomersClient({ customers, counts }: Props) {
   const [activeTierFilter, setActiveTierFilter] = useState<TierFilter>('all');
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [drawerCustomer, setDrawerCustomer] = useState<CustomerTableRow | null>(null);
+  const { item: drawerCustomer, isOpen: isDrawerOpen, open: openDrawer, close: closeDrawer, setItem: setDrawerCustomer } = useAdminDrawer<CustomerTableRow>();
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(PAGE_SIZES[0]);
 
@@ -100,8 +102,7 @@ export default function CustomersClient({ customers, counts }: Props) {
         return;
       }
       setLocalCustomers((prev) => prev.filter((c) => c.id !== id));
-      setDrawerCustomer(null);
-      document.body.style.overflow = '';
+      closeDrawer();
       toast.success('Customer deleted');
     } catch {
       toast.error('Failed to delete customer');
@@ -138,16 +139,6 @@ export default function CustomersClient({ customers, counts }: Props) {
   function toggleAll(checked: boolean) {
     if (checked) setSelectedIds(new Set(pageRows.map((r) => r.id)));
     else setSelectedIds(new Set());
-  }
-
-  function openDrawer(customer: CustomerTableRow) {
-    setDrawerCustomer(customer);
-    document.body.style.overflow = 'hidden';
-  }
-
-  function closeDrawer() {
-    setDrawerCustomer(null);
-    document.body.style.overflow = '';
   }
 
   function handleStatFilter(key: string) {
@@ -220,7 +211,7 @@ export default function CustomersClient({ customers, counts }: Props) {
             label: cell.label,
             value: count,
             meta: cell.metaLabel,
-            dotClass: cell.dotClass === 'green' ? 'bg-green' : cell.dotClass === 'camel' ? 'bg-camel' : cell.dotClass === 'oxblood' ? 'bg-oxblood' : cell.dotClass === 'ink' ? 'bg-ink' : 'bg-muted',
+            dotClass: cell.dotClass || undefined,
             badge: cell.key === 'atRisk' && count > 0 ? '!' : undefined,
           };
         })}
@@ -395,14 +386,14 @@ export default function CustomersClient({ customers, counts }: Props) {
       )}
 
       {/* Drawer backdrop */}
-      {drawerCustomer && (
+      {isDrawerOpen && (
         <div className="fixed inset-0 bg-ink/40 backdrop-blur-sm z-50" onClick={closeDrawer} />
       )}
 
       {/* Customer detail drawer */}
       <aside
         className={`fixed top-0 right-0 w-full max-w-145 h-screen bg-cream z-51 flex flex-col shadow-2xl transition-transform duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
-          drawerCustomer ? 'translate-x-0' : 'translate-x-full'
+          isDrawerOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         {drawerCustomer && (

@@ -6,17 +6,13 @@ import User from '@/models/User';
 
 import type { Metadata } from 'next';
 import AnalyticsClient, { type AnalyticsData } from '@/components/admin/analytics/AnalyticsClient';
+import { MONTH_ABBR } from '@/lib/admin-utils';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Analytics · EliteCuts Admin',
 };
-
-const MONTHS = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-];
 
 // CSS variable values used as inline chart colors — intentionally separate from
 // the Tailwind-class-based CATEGORY_COLORS in admin-constants (those are for pills).
@@ -199,7 +195,7 @@ export default async function AdminAnalyticsPage() {
   );
 
   // Period label
-  const periodLabel = `${MONTHS[thirtyDaysAgo.getMonth()]} ${thirtyDaysAgo.getDate()} – ${MONTHS[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()} · Compared to previous 30 days`;
+  const periodLabel = `${MONTH_ABBR[thirtyDaysAgo.getMonth()]} ${thirtyDaysAgo.getDate()} – ${MONTH_ABBR[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()} · Compared to previous 30 days`;
 
   const data: AnalyticsData = {
     periodLabel,

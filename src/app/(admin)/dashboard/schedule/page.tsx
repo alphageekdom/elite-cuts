@@ -10,21 +10,13 @@ import DeliveryModel from '@/models/Delivery';
 import ScheduleClient, { type ShiftRow, type UpcomingDelivery } from '@/components/admin/schedule/ScheduleClient';
 import type { PickupSlotRow } from '@/components/admin/schedule/SchedulePickupSlots';
 import { SLOT_LABELS } from '@/components/admin/schedule/SchedulePickupSlots';
+import { getMondayOf } from '@/lib/schedule-utils';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Schedule · EliteCuts Admin',
 };
-
-function getMondayOf(date: Date): Date {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + diff);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
 
 export default async function AdminSchedulePage() {
   const sessionUser = await getSessionUser();

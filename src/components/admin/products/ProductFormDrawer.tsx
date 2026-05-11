@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { PRODUCT_CATEGORIES } from '@/lib/admin-constants';
 import { toast } from 'sonner';
-import { inputCls } from '@/components/admin/settings/SettingsUI';
+import { inputCls, Toggle, DrawerSection, DrawerField } from '@/components/admin/settings/SettingsUI';
 import type { ProductTableRow } from '@/types/admin';
 
 type Props = {
@@ -13,57 +13,14 @@ type Props = {
 
 const selectCls = `${inputCls} appearance-none cursor-pointer`;
 
-function DrawerSection({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="pb-6 border-b border-line-soft last:border-b-0 last:pb-0 space-y-4">
-      <div className="text-[10px] font-medium tracking-[0.22em] uppercase text-muted">{label}</div>
-      {children}
-    </div>
-  );
-}
-
-function DrawerField({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="block text-[11px] font-medium tracking-[0.22em] uppercase text-muted mb-2">
-        {label}
-      </label>
-      {children}
-    </div>
-  );
-}
-
-function ToggleRow({
-  label,
-  desc,
-  on,
-  onToggle,
-}: {
-  label: string;
-  desc: string;
-  on: boolean;
-  onToggle: () => void;
-}) {
+function ToggleRow({ label, desc, on, onToggle }: { label: string; desc: string; on: boolean; onToggle: () => void }) {
   return (
     <div className="flex items-center justify-between gap-4 py-3 border-b border-line-soft last:border-b-0">
       <div className="flex-1 min-w-0">
         <div className="font-display text-[14px] font-medium tracking-[-0.005em] mb-0.5">{label}</div>
         <div className="text-[12px] text-muted">{desc}</div>
       </div>
-      <button
-        role="switch"
-        aria-checked={on}
-        onClick={onToggle}
-        className={`w-11 h-6 rounded-full border relative shrink-0 transition-colors ${
-          on ? 'bg-green border-green' : 'bg-cream-deep border-line'
-        }`}
-      >
-        <span
-          className={`absolute top-0.5 left-0.5 w-4.5 h-4.5 rounded-full bg-white shadow-sm transition-transform ${
-            on ? 'translate-x-5' : 'translate-x-0'
-          }`}
-        />
-      </button>
+      <Toggle checked={on} onChange={onToggle} />
     </div>
   );
 }
