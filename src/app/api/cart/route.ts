@@ -35,9 +35,10 @@ const loadCart = async (userId: string) => {
   return cart;
 };
 
-// Returns the wire payload (populated items only). The client never needs the
-// envelope's `_id`, `user`, or timestamps.
-const respond = (items: CartLineWire[]) => NextResponse.json({ items });
+// Returns the wire payload with the cart's updatedAt so the client can anchor
+// the 30-minute expiry timer against the canonical server timestamp.
+const respond = (items: CartLineWire[], updatedAt: Date | null) =>
+  NextResponse.json({ items, updatedAt: updatedAt?.toISOString() ?? null });
 
 // Handles both populated ( { _id, ... } ) and unpopulated ( ObjectId string )
 // product references — Mongoose leaves the raw ObjectId when populate() hasn't
@@ -54,7 +55,8 @@ const matchesProduct = (
 export const GET = withAuth(async (_req, _ctx, userId) => {
   try {
     const cart = await loadCart(userId);
-    return respond(cart.toJSON().items as CartLineWire[]);
+    const json = cart.toJSON() as { items: CartLineWire[]; updatedAt: Date };
+    return respond(json.items, json.updatedAt);
   } catch (error) {
     console.error(error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
@@ -105,7 +107,8 @@ export const POST = withAuth(async (request: NextRequest, _ctx, userId) => {
 
     await cart.save();
     await cart.populate('items.product');
-    return respond(cart.toJSON().items as CartLineWire[]);
+    const json = cart.toJSON() as { items: CartLineWire[]; updatedAt: Date };
+    return respond(json.items, json.updatedAt);
   } catch (error) {
     console.error(error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
@@ -146,14 +149,15 @@ export const PATCH = withAuth(async (request: NextRequest, _ctx, userId) => {
 
     await cart.save();
     await cart.populate('items.product');
-    return respond(cart.toJSON().items as CartLineWire[]);
+    const json = cart.toJSON() as { items: CartLineWire[]; updatedAt: Date };
+    return respond(json.items, json.updatedAt);
   } catch (error) {
     console.error(error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
 });
 
-// DELETE /api/cart — remove one line. Body: { productId }.
+// DELETE /api/cart — remove one line (body: { productId }) or clear all (no body).
 export const DELETE = withAuth(async (request: NextRequest, _ctx, userId) => {
   try {
     const body = (await request.json().catch(() => null)) as
@@ -161,7 +165,11 @@ export const DELETE = withAuth(async (request: NextRequest, _ctx, userId) => {
       | null;
     const productId = body?.productId;
 
-    if (!productId) return badRequest('productId is required');
+    if (!productId) {
+      // Atomic clear-all — avoids concurrent-write conflicts from parallel deletes.
+      await Cart.findOneAndUpdate({ user: userId }, { $set: { items: [] } });
+      return respond([], new Date());
+    }
 
     const cart = await loadCart(userId);
 
@@ -173,7 +181,8 @@ export const DELETE = withAuth(async (request: NextRequest, _ctx, userId) => {
     }
 
     await cart.populate('items.product');
-    return respond(cart.toJSON().items as CartLineWire[]);
+    const json = cart.toJSON() as { items: CartLineWire[]; updatedAt: Date };
+    return respond(json.items, json.updatedAt);
   } catch (error) {
     console.error(error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
