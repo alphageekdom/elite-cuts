@@ -1,6 +1,6 @@
 'use client';
 import { getInitials, formatDateTime } from '@/lib/format';
-import { productImageSrc } from '@/lib/admin-utils';
+import { productImageSrc } from '@/lib/format';
 import { printReceipt } from '@/lib/print-receipt';
 import type { OrderTableRow } from '@/types/admin';
 

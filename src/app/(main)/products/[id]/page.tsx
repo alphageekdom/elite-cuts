@@ -9,7 +9,7 @@ import ReviewModel from '@/models/Review';
 import { convertToSerializableObject } from '@/utils/convertToObject';
 import { getSessionUser } from '@/utils/getSessionUser';
 import { AVATAR_COLORS, MEMBER_AVATAR_COLORS } from '@/lib/admin-constants';
-import { avatarColorForId } from '@/lib/admin-utils';
+import { avatarColorForId } from '@/lib/format';
 import ProductGallery from '@/components/product/detail/ProductGallery';
 import BuyBlock from '@/components/product/detail/BuyBlock';
 import ProductCard from '@/components/product/ProductCard';

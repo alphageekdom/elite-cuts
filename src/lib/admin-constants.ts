@@ -18,7 +18,8 @@ export const MEMBER_AVATAR_COLORS = [
   'bg-linear-to-br from-camel-soft to-[#c4a381] text-ink',
 ] as const;
 
-export { PRODUCT_CATEGORIES, type ProductCategory } from '@/lib/product-categories';
+export const PRODUCT_CATEGORIES = ['Beef', 'Pork', 'Poultry', 'Lamb', 'Charcuterie', 'Other'] as const;
+export type ProductCategory = (typeof PRODUCT_CATEGORIES)[number];
 
 export const CATEGORY_COLORS: Record<string, string> = {
   Beef: 'bg-red-soft text-oxblood',

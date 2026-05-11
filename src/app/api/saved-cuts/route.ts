@@ -1,25 +1,15 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-import connectDB from '@/config/database';
 import User from '@/models/User';
 import Product from '@/models/Product';
-import { getSessionUser } from '@/utils/getSessionUser';
-import { unauthorized } from '@/lib/api-handler';
+import { withAuth } from '@/lib/api-handler';
 
 export const dynamic = 'force-dynamic';
 
 // GET /api/saved-cuts
-export const GET = async () => {
+export const GET = withAuth(async (_req, _ctx, userId) => {
   try {
-    const sessionUser = await getSessionUser();
-
-    if (!sessionUser?.userId) {
-      return unauthorized();
-    }
-
-    await connectDB();
-
-    const user = await User.findById(sessionUser.userId);
+    const user = await User.findById(userId);
     if (!user) {
       return NextResponse.json({ message: 'User not found' }, { status: 404 });
     }
@@ -31,26 +21,18 @@ export const GET = async () => {
     console.error('[saved-cuts GET]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
-};
+});
 
 // POST /api/saved-cuts — toggles a product in/out of savedCuts
-export const POST = async (request: NextRequest) => {
+export const POST = withAuth(async (request: NextRequest, _ctx, userId) => {
   try {
-    const sessionUser = await getSessionUser();
-
-    if (!sessionUser?.userId) {
-      return unauthorized();
-    }
-
-    await connectDB();
-
     const { productId } = (await request.json()) as { productId?: string };
 
     if (!productId) {
       return NextResponse.json({ message: 'productId is required' }, { status: 400 });
     }
 
-    const user = await User.findById(sessionUser.userId, 'savedCuts');
+    const user = await User.findById(userId, 'savedCuts');
     if (!user) {
       return NextResponse.json({ message: 'User not found' }, { status: 404 });
     }
@@ -58,9 +40,9 @@ export const POST = async (request: NextRequest) => {
     const isBookmarked = user.savedCuts.some((id) => String(id) === productId);
 
     if (isBookmarked) {
-      await User.findByIdAndUpdate(sessionUser.userId, { $pull: { savedCuts: productId } });
+      await User.findByIdAndUpdate(userId, { $pull: { savedCuts: productId } });
     } else {
-      await User.findByIdAndUpdate(sessionUser.userId, { $addToSet: { savedCuts: productId } });
+      await User.findByIdAndUpdate(userId, { $addToSet: { savedCuts: productId } });
     }
 
     return NextResponse.json({
@@ -71,4 +53,4 @@ export const POST = async (request: NextRequest) => {
     console.error('[saved-cuts POST]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
-};
+});

@@ -1,5 +1,5 @@
 export const SHOP_ADDRESS = '3045 30th St';
-export const SHOP_CITY_STATE = 'North Park, SD';
+export const SHOP_CITY_STATE = 'San Diego, CA';
 export const SHOP_ADDRESS_DISPLAY = `${SHOP_ADDRESS} · ${SHOP_CITY_STATE}`;
 export const SHOP_ADDRESS_FULL = `${SHOP_ADDRESS}, ${SHOP_CITY_STATE}`;
 export const SHOP_LAT = 32.7491;

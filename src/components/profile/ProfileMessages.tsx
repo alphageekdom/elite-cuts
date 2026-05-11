@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import ContactModal from './ContactModal';
 import { AVATAR_COLORS, MEMBER_AVATAR_COLORS } from '@/lib/admin-constants';
-import { avatarColorForId, getInitials } from '@/lib/admin-utils';
+import { avatarColorForId, getInitials } from '@/lib/format';
 import type { MessageStatus } from '@/models/Message';
 
 export type SerializedMessage = {

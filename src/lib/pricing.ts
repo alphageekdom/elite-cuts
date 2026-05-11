@@ -1,5 +1,8 @@
+// Placeholder — replace with actual CA rate (~8.75% for San Diego) before go-live.
 export const TAX_RATE = 0.1;
 
+// Returns a bare numeric string ("12.34") without a currency symbol.
+// Used in checkout UI where the $ is rendered separately in JSX.
 export const fmtPrice = (n: number): string =>
   n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 export const MEMBER_DISCOUNT_RATE = 0.05;

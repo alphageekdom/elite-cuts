@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 import { AVATAR_COLORS, MEMBER_AVATAR_COLORS } from '@/lib/admin-constants';
-import { avatarColorForId } from '@/lib/admin-utils';
+import { avatarColorForId } from '@/lib/format';
 import { FOCUS_RING } from '@/lib/styles';
 
 type ProfileMenuProps = {

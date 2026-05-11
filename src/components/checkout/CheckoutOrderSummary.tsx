@@ -9,7 +9,7 @@ import { useCheckoutContext } from '@/context/CheckoutContext';
 import { validatePromoCode } from '@/actions/checkout';
 import { computeTotals, DELIVERY_FEE, fmtPrice } from '@/lib/pricing';
 import CheckoutTrustStrip from '@/components/checkout/CheckoutTrustStrip';
-import { productImageSrc } from '@/lib/admin-utils';
+import { productImageSrc } from '@/lib/format';
 
 const PROMO_SUGGESTIONS = ['ELITECUTS10', 'FIRSTORDER', 'NORTHPARK'];
 

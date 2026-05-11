@@ -1,4 +1,4 @@
-import { getInitials } from '@/lib/admin-utils';
+import { getInitials } from '@/lib/format';
 import type { ShiftColor } from '@/models/Shift';
 
 type StaffEntry = {

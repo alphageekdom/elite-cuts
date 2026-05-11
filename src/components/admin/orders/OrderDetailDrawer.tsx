@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { formatMoney, getInitials, formatDateTime, productImageSrc } from '@/lib/admin-utils';
+import { formatMoney, getInitials, formatDateTime, productImageSrc } from '@/lib/format';
 import { printReceipt } from '@/lib/print-receipt';
 import { CANCELLATION_REASONS } from '@/lib/order-constants';
 import type { OrderTableRow } from '@/types/admin';

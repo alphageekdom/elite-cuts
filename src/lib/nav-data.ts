@@ -14,7 +14,7 @@ export async function fetchNavBadges(): Promise<NavBadges> {
   try {
     await connectDB();
     const [products, msgCount] = await Promise.all([
-      ProductModel.find({ stockCount: { $gt: 0 } }).select('category stockCount').lean().exec(),
+      ProductModel.find({ isArchived: { $ne: true } }).select('category stockCount').lean().exec(),
       MessageModel.countDocuments({ status: 'open' }),
     ]);
     for (const p of products) {

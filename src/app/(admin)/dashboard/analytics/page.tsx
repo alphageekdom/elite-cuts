@@ -6,7 +6,7 @@ import User from '@/models/User';
 
 import type { Metadata } from 'next';
 import AnalyticsClient, { type AnalyticsData } from '@/components/admin/analytics/AnalyticsClient';
-import { MONTH_ABBR } from '@/lib/admin-utils';
+import { MONTH_ABBR } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 
 // CSS variable values used as inline chart colors — intentionally separate from
 // the Tailwind-class-based CATEGORY_COLORS in admin-constants (those are for pills).
-const CATEGORY_COLORS: Record<string, string> = {
+const CHART_CATEGORY_COLORS: Record<string, string> = {
   Beef: 'var(--color-oxblood)',
   Pork: 'var(--color-camel)',
   Poultry: 'var(--color-green)',
@@ -87,7 +87,7 @@ export default async function AdminAnalyticsPage() {
   const catOrders: Record<string, number> = {};
   for (const order of currentOrders) {
     for (const item of order.orderItems) {
-      const cat = item.productType in CATEGORY_COLORS ? item.productType : 'Other';
+      const cat = item.productType in CHART_CATEGORY_COLORS ? item.productType : 'Other';
       catRevenue[cat] = (catRevenue[cat] ?? 0) + item.price * item.qty;
       catOrders[cat] = (catOrders[cat] ?? 0) + 1;
     }
@@ -95,14 +95,14 @@ export default async function AdminAnalyticsPage() {
   const totalCatRevenue = Object.values(catRevenue).reduce((s, v) => s + v, 0);
   const maxCatRevenue = Math.max(1, ...Object.values(catRevenue));
 
-  const categories: AnalyticsData['categories'] = Object.keys(CATEGORY_COLORS)
+  const categories: AnalyticsData['categories'] = Object.keys(CHART_CATEGORY_COLORS)
     .filter((name) => (catRevenue[name] ?? 0) > 0)
     .map((name) => ({
       name,
       revenue: catRevenue[name] ?? 0,
       pct: totalCatRevenue > 0 ? Math.round(((catRevenue[name] ?? 0) / totalCatRevenue) * 100) : 0,
       orders: catOrders[name] ?? 0,
-      color: CATEGORY_COLORS[name],
+      color: CHART_CATEGORY_COLORS[name],
       barW: (catRevenue[name] ?? 0) / maxCatRevenue,
     }))
     .sort((a, b) => b.revenue - a.revenue);

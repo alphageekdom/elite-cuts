@@ -5,8 +5,9 @@ import { getSessionUser } from '@/utils/getSessionUser';
 type RouteHandler = (req: NextRequest, ctx?: unknown) => Promise<NextResponse>;
 // Handler receives (req, ctx, userId) — ctx is the Next.js route context (params, etc.).
 // Functions with fewer params are assignable in TypeScript, so handlers that
-// don't need ctx or userId can simply omit them: `withAdmin(async (req) => {...})`.
+// don't need ctx or userId can simply omit them.
 type AdminHandler = (req: NextRequest, ctx: unknown, userId: string) => Promise<NextResponse>;
+type AuthHandler  = (req: NextRequest, ctx: unknown, userId: string) => Promise<NextResponse>;
 
 export const unauthorized = () =>
   NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -34,18 +35,17 @@ export function withAdmin(handler: AdminHandler): RouteHandler {
 
 /**
  * Wraps a route handler with `connectDB` + session auth check.
- * Returns 401 before calling the handler if the user is not signed in.
+ * Passes the verified userId as the third argument so the handler does not
+ * need to call connectDB() or getSessionUser() again.
  */
-export function withAuth(handler: RouteHandler): RouteHandler {
+export function withAuth(handler: AuthHandler): RouteHandler {
   return async (req, ctx) => {
     await connectDB();
 
     const sessionUser = await getSessionUser();
-    if (!sessionUser?.userId) {
-      return NextResponse.json({ message: 'Authentication required' }, { status: 401 });
-    }
+    if (!sessionUser?.userId) return unauthorized();
 
-    return handler(req, ctx);
+    return handler(req, ctx, sessionUser.userId);
   };
 }
 

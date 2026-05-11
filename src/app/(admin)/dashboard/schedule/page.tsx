@@ -11,6 +11,7 @@ import ScheduleClient, { type ShiftRow, type UpcomingDelivery } from '@/componen
 import type { PickupSlotRow } from '@/components/admin/schedule/SchedulePickupSlots';
 import { SLOT_LABELS } from '@/components/admin/schedule/SchedulePickupSlots';
 import { getMondayOf } from '@/lib/schedule-utils';
+import { MONTH_ABBR } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,8 +64,7 @@ export default async function AdminSchedulePage() {
   const slotsBooked = pickupOrders.length;
   const projectedRevenue = pickupOrders.reduce((sum, o) => sum + ((o.totalCost as number) ?? 0), 0);
 
-  const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const DAY_ABBR   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const DAY_ABBR = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const upcomingDeliveries: UpcomingDelivery[] = upcomingDeliveriesRaw.map((d) => {
     const date = new Date(d.deliveryDate);
     const isToday = date >= todayStart && date < todayEnd;

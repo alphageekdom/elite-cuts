@@ -5,7 +5,7 @@ import {
   models,
   type Model,
 } from 'mongoose';
-import { PRODUCT_CATEGORIES, type ProductCategory } from '@/lib/product-categories';
+import { PRODUCT_CATEGORIES, type ProductCategory } from '@/lib/admin-constants';
 
 export { PRODUCT_CATEGORIES, type ProductCategory };
 

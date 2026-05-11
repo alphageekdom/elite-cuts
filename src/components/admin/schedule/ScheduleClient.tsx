@@ -7,7 +7,7 @@ import ScheduleOnTodayCard from './ScheduleOnTodayCard';
 import SchedulePickupSlots, { type PickupSlotRow } from './SchedulePickupSlots';
 import ScheduleShopHours from './ScheduleShopHours';
 import ScheduleComingUp from './ScheduleComingUp';
-import { MONTH_ABBR } from '@/lib/admin-utils';
+import { MONTH_ABBR } from '@/lib/format';
 import { getMondayOf } from '@/lib/schedule-utils';
 import type { ShopHoursDay } from '@/models/ShopHours';
 import type { ShiftColor } from '@/models/Shift';

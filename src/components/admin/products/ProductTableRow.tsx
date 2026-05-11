@@ -1,5 +1,5 @@
 'use client';
-import { productImageSrc, formatMoney } from '@/lib/admin-utils';
+import { productImageSrc, formatMoney } from '@/lib/format';
 import { CATEGORY_COLORS } from '@/lib/admin-constants';
 import type { ProductTableRow } from '@/types/admin';
 

@@ -1,5 +1,5 @@
 'use client';
-import { productImageSrc } from '@/lib/admin-utils';
+import { productImageSrc } from '@/lib/format';
 import { CATEGORY_COLORS } from '@/lib/admin-constants';
 import { CATEGORY_PAR, DEFAULT_PAR } from '@/lib/inventory';
 import type { InventoryRow } from './InventoryClient';

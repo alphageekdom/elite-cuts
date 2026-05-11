@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { formatMoney, formatDate, relativeTime, getInitials } from '@/lib/admin-utils';
+import { formatMoney, formatDate, relativeTime, getInitials } from '@/lib/format';
 import { useDrawerForm } from '@/hooks/useDrawerForm';
 import { inputCls } from '@/components/admin/settings/SettingsUI';
 import type { CustomerTableRow } from '@/types/admin';

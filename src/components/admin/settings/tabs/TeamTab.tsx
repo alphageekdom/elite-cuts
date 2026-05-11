@@ -1,7 +1,7 @@
 'use client';
 import { toast } from 'sonner';
 import { sectionTitleCls, sectionSubCls, btnPrimary } from '../SettingsUI';
-import { getInitials } from '@/lib/admin-utils';
+import { getInitials } from '@/lib/format';
 
 const AVATAR_PALETTE = [
   'bg-oxblood text-cream',

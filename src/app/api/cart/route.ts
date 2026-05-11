@@ -1,10 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-import connectDB from '@/config/database';
 import Cart from '@/models/Cart';
 import Product from '@/models/Product';
-import { getSessionUser } from '@/utils/getSessionUser';
-import { unauthorized } from '@/lib/api-handler';
+import { withAuth } from '@/lib/api-handler';
 
 // Lean line-item wire shape. CartItemSchema has `_id: false` so each line is
 // uniquely keyed by its product reference — that's the identifier callers use
@@ -53,28 +51,21 @@ const matchesProduct = (
     : String(item.product) === productId;
 
 // GET /api/cart — current user's cart.
-export const GET = async () => {
+export const GET = withAuth(async (_req, _ctx, userId) => {
   try {
-    const sessionUser = await getSessionUser();
-    if (!sessionUser?.userId) return unauthorized();
-
-    await connectDB();
-    const cart = await loadCart(sessionUser.userId);
+    const cart = await loadCart(userId);
     return respond(cart.toJSON().items as CartLineWire[]);
   } catch (error) {
     console.error(error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
-};
+});
 
 // POST /api/cart — incremental add. Body: { productId, quantity? }. If a line
 // already exists for the product, its quantity is incremented by `quantity`
 // (default 1); otherwise a new line is pushed with that starting quantity.
-export const POST = async (request: NextRequest) => {
+export const POST = withAuth(async (request: NextRequest, _ctx, userId) => {
   try {
-    const sessionUser = await getSessionUser();
-    if (!sessionUser?.userId) return unauthorized();
-
     const body = (await request.json().catch(() => null)) as
       | { productId?: string; quantity?: number }
       | null;
@@ -83,8 +74,6 @@ export const POST = async (request: NextRequest) => {
 
     if (!productId) return badRequest('productId is required');
 
-    await connectDB();
-
     const product = await Product.findById(productId);
     if (!product) return NextResponse.json({ message: 'Product not found' }, { status: 404 });
 
@@ -92,7 +81,7 @@ export const POST = async (request: NextRequest) => {
       return badRequest('This item is out of stock');
     }
 
-    const cart = await loadCart(sessionUser.userId);
+    const cart = await loadCart(userId);
     const existing = cart.items.find((item) => matchesProduct(item, productId));
     const currentQty = existing ? existing.quantity : 0;
 
@@ -121,16 +110,13 @@ export const POST = async (request: NextRequest) => {
     console.error(error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
-};
+});
 
 // PATCH /api/cart — set a line's quantity to an absolute value. Body:
 // { productId, quantity }. quantity ≤ 0 removes the line; otherwise it
 // upserts the line at exactly that quantity. Used by the +/- steppers.
-export const PATCH = async (request: NextRequest) => {
+export const PATCH = withAuth(async (request: NextRequest, _ctx, userId) => {
   try {
-    const sessionUser = await getSessionUser();
-    if (!sessionUser?.userId) return unauthorized();
-
     const body = (await request.json().catch(() => null)) as
       | { productId?: string; quantity?: number }
       | null;
@@ -139,8 +125,7 @@ export const PATCH = async (request: NextRequest) => {
 
     if (!productId) return badRequest('productId is required');
 
-    await connectDB();
-    const cart = await loadCart(sessionUser.userId);
+    const cart = await loadCart(userId);
 
     const idx = cart.items.findIndex((item) => matchesProduct(item, productId));
 
@@ -166,14 +151,11 @@ export const PATCH = async (request: NextRequest) => {
     console.error(error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
-};
+});
 
 // DELETE /api/cart — remove one line. Body: { productId }.
-export const DELETE = async (request: NextRequest) => {
+export const DELETE = withAuth(async (request: NextRequest, _ctx, userId) => {
   try {
-    const sessionUser = await getSessionUser();
-    if (!sessionUser?.userId) return unauthorized();
-
     const body = (await request.json().catch(() => null)) as
       | { productId?: string }
       | null;
@@ -181,8 +163,7 @@ export const DELETE = async (request: NextRequest) => {
 
     if (!productId) return badRequest('productId is required');
 
-    await connectDB();
-    const cart = await loadCart(sessionUser.userId);
+    const cart = await loadCart(userId);
 
     const idx = cart.items.findIndex((item) => matchesProduct(item, productId));
 
@@ -197,4 +178,4 @@ export const DELETE = async (request: NextRequest) => {
     console.error(error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
-};
+});

@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { MONTH_ABBR } from '@/lib/admin-utils';
+import { MONTH_ABBR } from '@/lib/format';
 
 type AgingPhase = 'early' | 'mid' | 'ready' | 'past';
 

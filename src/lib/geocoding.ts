@@ -29,7 +29,7 @@ export const STATE_ABBR: Record<string, string> = {
   Wisconsin: 'WI', Wyoming: 'WY',
 };
 
-export const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 3958.8;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
@@ -39,7 +39,7 @@ export const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2
       Math.cos((lat2 * Math.PI) / 180) *
       Math.sin(dLon / 2) ** 2;
   return R * 2 * Math.asin(Math.sqrt(a));
-};
+}
 
 export const isWithinDeliveryRadius = (lat: number, lon: number): boolean =>
   haversineDistance(SHOP_LAT, SHOP_LNG, lat, lon) <= DELIVERY_RADIUS_MILES;

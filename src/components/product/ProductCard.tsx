@@ -8,7 +8,7 @@ import { useSession } from 'next-auth/react';
 import ArrowIcon from '@/components/uielements/ArrowIcon';
 import useHandleAddToCart from '@/hooks/useHandleAddToCart';
 import useHandleBookmark from '@/hooks/useHandleBookmark';
-import { productImageSrc, formatMoney } from '@/lib/admin-utils';
+import { productImageSrc, formatMoney } from '@/lib/format';
 
 import { type SerializedProduct } from '@/models/Product';
 

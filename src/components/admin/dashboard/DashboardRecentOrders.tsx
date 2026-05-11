@@ -1,6 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { getInitials, formatMoney, avatarColorForId } from '@/lib/admin-utils';
+import { getInitials, formatMoney, avatarColorForId } from '@/lib/format';
 import { AVATAR_COLORS } from '@/lib/admin-constants';
 import type { OrderRow } from '@/types/admin';
 export type { OrderRow };

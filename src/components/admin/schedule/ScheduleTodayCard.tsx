@@ -1,4 +1,4 @@
-import { MONTH_ABBR } from '@/lib/admin-utils';
+import { MONTH_ABBR } from '@/lib/format';
 
 const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 

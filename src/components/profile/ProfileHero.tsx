@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 import { AVATAR_COLORS, MEMBER_AVATAR_COLORS } from '@/lib/admin-constants';
-import { avatarColorForId } from '@/lib/admin-utils';
+import { avatarColorForId } from '@/lib/format';
 
 // Dark ink-to-oxblood gradient with camel (gold) initials — admin only.
 const ADMIN_AVATAR_COLOR = 'bg-linear-to-br from-ink to-oxblood-deep text-camel';

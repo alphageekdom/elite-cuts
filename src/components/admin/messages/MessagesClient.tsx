@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { avatarColorForId, relativeTime, statCellBorderClasses, getInitials, formatDate } from '@/lib/admin-utils';
+import { avatarColorForId, relativeTime, statCellBorderClasses, getInitials, formatDate } from '@/lib/format';
 import { AVATAR_COLORS } from '@/lib/admin-constants';
 
 import type { MessageStatus } from '@/models/Message';

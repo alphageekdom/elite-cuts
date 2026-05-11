@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
-import { relativeTime } from '@/lib/admin-utils';
+import { relativeTime } from '@/lib/format';
 
 type NotificationRow = {
   _id: string;

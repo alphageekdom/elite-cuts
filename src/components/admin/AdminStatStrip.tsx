@@ -1,4 +1,4 @@
-import { statCellBorderClasses } from '@/lib/admin-utils';
+import { statCellBorderClasses } from '@/lib/format';
 
 export type StatCell = {
   id?: string;         // React key when multiple cells share the same filter key
