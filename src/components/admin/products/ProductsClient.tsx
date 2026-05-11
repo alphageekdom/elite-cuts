@@ -38,12 +38,12 @@ const PAGE_SIZES = [8, 20, 50];
 
 export default function ProductsClient({ products, counts, categoryCounts }: Props) {
   const [localProducts, setLocalProducts] = useState(products);
-  const { activeKey: activeFilter, selectKey: _selectFilter } = useStatFilter('all');
+  const [page, setPage] = useState(1);
+  const { activeKey: activeFilter, selectKey: _selectFilter } = useStatFilter<string>('all', () => setPage(1));
   const [activeCategory, setActiveCategory] = useState<string>('');
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const { item: drawerProduct, isOpen: drawerOpen, open: _openDrawer, close: closeDrawer } = useAdminDrawer<ProductTableRow>();
-  const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<SortBy>('newest');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [perPage, setPerPage] = useState(8);
@@ -202,7 +202,6 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
   function handleStatFilter(key: string) {
     if (key === 'avgPrice') return;
     _selectFilter(key);
-    setPage(1);
     setSelectedIds(new Set());
   }
 

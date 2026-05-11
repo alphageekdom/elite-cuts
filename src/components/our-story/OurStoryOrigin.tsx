@@ -1,16 +1,16 @@
 import SectionHead from '@/components/ui/SectionHead';
-import OurStoryReveal from './OurStoryReveal';
+import Reveal from '@/components/uielements/Reveal';
 
 export default function OurStoryOrigin() {
   return (
     <section className='px-4 pb-24 sm:px-8 lg:px-16'>
       <div className='mx-auto max-w-7xl'>
-        <OurStoryReveal>
+        <Reveal>
           <SectionHead label='How it started' />
-        </OurStoryReveal>
+        </Reveal>
 
         <div className='grid gap-12 lg:gap-20 lg:grid-cols-[1fr_1.4fr]'>
-          <OurStoryReveal>
+          <Reveal>
             <aside>
               <h3 className='font-display text-oxblood mb-4 text-[22px] leading-[1.2] font-normal tracking-[-0.01em] italic'>
                 Started with one tomahawk and a lot of optimism.
@@ -41,9 +41,9 @@ export default function OurStoryOrigin() {
                 </div>
               </div>
             </aside>
-          </OurStoryReveal>
+          </Reveal>
 
-          <OurStoryReveal>
+          <Reveal>
             <div>
               <h2 className='font-display mb-8 max-w-[18ch] text-[clamp(34px,4.5vw,52px)] leading-[1.05] font-normal tracking-[-0.025em]'>
                 The first month, we sold{' '}
@@ -78,7 +78,7 @@ export default function OurStoryOrigin() {
                 in the case.
               </p>
             </div>
-          </OurStoryReveal>
+          </Reveal>
         </div>
       </div>
     </section>

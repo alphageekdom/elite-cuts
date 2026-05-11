@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import SectionHead from '@/components/ui/SectionHead';
-import OurStoryReveal from './OurStoryReveal';
+import Reveal from '@/components/uielements/Reveal';
 
 const PARTNERS = [
   {
@@ -51,25 +51,25 @@ export default function OurStorySourcing() {
   return (
     <section className='px-4 py-24 sm:px-8 lg:px-16'>
       <div className='mx-auto max-w-7xl'>
-        <OurStoryReveal>
+        <Reveal>
           <SectionHead label='Where it comes from' />
-        </OurStoryReveal>
+        </Reveal>
 
-        <OurStoryReveal>
+        <Reveal>
           <h2 className='font-display mb-6 max-w-[16ch] text-[clamp(38px,5vw,60px)] leading-[1.05] font-normal tracking-tight'>
             Sources you can <em className='text-oxblood italic'>name.</em>
           </h2>
-        </OurStoryReveal>
-        <OurStoryReveal>
+        </Reveal>
+        <Reveal>
           <p className='text-ink-soft mb-16 max-w-[50ch] text-base'>
             We don&apos;t work with distributors. Every partner on this list —
             we&apos;ve walked their land, met their animals, and shaken hands
             on the deal.
           </p>
-        </OurStoryReveal>
+        </Reveal>
 
         {PARTNERS.map((partner) => (
-          <OurStoryReveal key={partner.title}>
+          <Reveal key={partner.title}>
             <div
               className={`border-line-soft last:border-line-soft grid items-center gap-12 border-t py-14 last:border-b lg:grid-cols-2 ${
                 partner.flip ? 'lg:*:first:order-2 lg:*:last:order-1' : ''
@@ -121,7 +121,7 @@ export default function OurStorySourcing() {
                 </div>
               </div>
             </div>
-          </OurStoryReveal>
+          </Reveal>
         ))}
       </div>
     </section>

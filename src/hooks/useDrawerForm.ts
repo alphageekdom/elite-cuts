@@ -12,7 +12,7 @@ import { toast } from 'sonner';
  * The caller provides `initialValues`, `onSave(values)`, and optional `successMsg`.
  * Call `reset()` to discard edits and close edit mode.
  */
-export function useDrawerForm<T extends Record<string, string>>(
+export function useDrawerForm<T extends Record<string, unknown>>(
   initialValues: T,
   onSave: (values: T) => Promise<void>,
   successMsg = 'Saved',

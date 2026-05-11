@@ -79,12 +79,12 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
     return { all: localRows.length, inStock, lowStock, critical, agingRoom: counts.agingRoom };
   }, [localRows, counts.agingRoom]);
   const [alertDismissed, setAlertDismissed] = useState(false);
-  const { activeKey: activeFilter, selectKey: _selectFilter } = useStatFilter('all');
+  const [page, setPage] = useState(1);
+  const { activeKey: activeFilter, selectKey: _selectFilter } = useStatFilter<string>('all', () => setPage(1));
   const [activeCategory, setActiveCategory] = useState('');
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<SortBy>('stock-asc');
   const [sortOpen, setSortOpen] = useState(false);
-  const [page, setPage] = useState(1);
   const [stockEditId, setStockEditId] = useState<string | null>(null);
   const [stockEditValue, setStockEditValue] = useState('');
   const [stockSaving, setStockSaving] = useState(false);
@@ -169,7 +169,6 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
       setTabSnapshot(new Set(matched.map((r) => r.id)));
     }
     _selectFilter(f);
-    setPage(1);
   }
 
   function handleCategory(cat: string) {

@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import SectionHead from '@/components/ui/SectionHead';
-import OurStoryReveal from './OurStoryReveal';
+import Reveal from '@/components/uielements/Reveal';
 
 const TEAM = [
   {
@@ -37,27 +37,27 @@ export default function OurStoryTeam() {
   return (
     <section className='bg-paper px-4 py-24 sm:px-8 lg:px-16'>
       <div className='mx-auto max-w-7xl'>
-        <OurStoryReveal>
+        <Reveal>
           <SectionHead label='The Counter' />
-        </OurStoryReveal>
+        </Reveal>
 
-        <OurStoryReveal>
+        <Reveal>
           <h2 className='font-display mb-6 max-w-[16ch] text-[clamp(38px,5vw,60px)] leading-[1.05] font-normal tracking-tight'>
             The people behind{' '}
             <em className='text-oxblood italic'>the case.</em>
           </h2>
-        </OurStoryReveal>
-        <OurStoryReveal>
+        </Reveal>
+        <Reveal>
           <p className='text-ink-soft mb-16 max-w-[50ch] text-base'>
             When you walk in on a Saturday morning, these are the faces. Most
             of us have been here longer than three years. Any of us will cut
             you a sample if you ask.
           </p>
-        </OurStoryReveal>
+        </Reveal>
 
         <div className='grid gap-5 sm:grid-cols-2 lg:grid-cols-4'>
           {TEAM.map((member) => (
-            <OurStoryReveal key={member.name}>
+            <Reveal key={member.name}>
               <div className='group border-line-soft bg-cream overflow-hidden rounded-sm border transition-transform duration-400 hover:-translate-y-1'>
                 <div className='bg-cream-deep relative aspect-square w-full sm:aspect-3/4'>
                   <Image
@@ -86,7 +86,7 @@ export default function OurStoryTeam() {
                   </p>
                 </div>
               </div>
-            </OurStoryReveal>
+            </Reveal>
           ))}
         </div>
       </div>

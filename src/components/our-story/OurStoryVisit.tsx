@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import OurStoryReveal from './OurStoryReveal';
+import Reveal from '@/components/uielements/Reveal';
 
 const INFO_ROWS = [
   {
@@ -50,7 +50,7 @@ export default function OurStoryVisit() {
   return (
     <section className='px-4 py-24 sm:px-8 lg:px-16'>
       <div className='mx-auto max-w-7xl'>
-        <OurStoryReveal>
+        <Reveal>
           <div className='border-line-soft bg-paper overflow-hidden rounded-sm border lg:grid lg:grid-cols-2'>
             <div className='p-8 lg:p-14'>
               <p className='text-camel mb-4 text-[11px] tracking-[0.22em] uppercase'>
@@ -122,7 +122,7 @@ export default function OurStoryVisit() {
               />
             </div>
           </div>
-        </OurStoryReveal>
+        </Reveal>
       </div>
     </section>
   );
