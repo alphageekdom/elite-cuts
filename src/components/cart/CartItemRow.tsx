@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 
 import { useCartContext, type CartLine } from '@/context/CartContext';
 import { fmtPrice } from '@/lib/pricing';
+import { MAX_PER_LINE } from '@/lib/shopConfig';
 
 const MinusIcon = () => (
   <svg
@@ -53,7 +54,13 @@ const CartItemRow = ({ line }: Props) => {
   const lineTotal = fmtPrice(line.price * line.quantity);
 
   const decrement = () => void setItemQuantity(productId, line.quantity - 1);
-  const increment = () => void setItemQuantity(productId, line.quantity + 1);
+  const increment = () => {
+    if (line.quantity >= MAX_PER_LINE) {
+      toast.error(`Limit ${MAX_PER_LINE} per item`);
+      return;
+    }
+    void setItemQuantity(productId, line.quantity + 1);
+  };
 
   const commitInput = () => {
     const parsed = Math.trunc(Number(qtyInput));
@@ -62,10 +69,14 @@ const CartItemRow = ({ line }: Props) => {
       setQtyInput(line.quantity.toString());
       return;
     }
-    if (parsed !== line.quantity) {
-      void setItemQuantity(productId, parsed);
+    const clamped = Math.min(parsed, MAX_PER_LINE);
+    if (clamped !== parsed) {
+      toast.error(`Limit ${MAX_PER_LINE} per item`);
     }
-    setQtyInput(parsed.toString());
+    if (clamped !== line.quantity) {
+      void setItemQuantity(productId, clamped);
+    }
+    setQtyInput(clamped.toString());
   };
 
   const handleRemove = () => {
@@ -137,6 +148,7 @@ const CartItemRow = ({ line }: Props) => {
             <input
               type='number'
               min={1}
+              max={MAX_PER_LINE}
               value={qtyInput}
               onChange={(e) => setQtyInput(e.target.value)}
               onBlur={commitInput}
@@ -150,8 +162,9 @@ const CartItemRow = ({ line }: Props) => {
             <button
               type='button'
               onClick={increment}
+              disabled={line.quantity >= MAX_PER_LINE}
               aria-label='Increase quantity'
-              className='grid h-8 w-8 place-items-center transition-colors duration-300 hover:bg-cream-deep motion-reduce:transition-none'
+              className='grid h-8 w-8 place-items-center transition-colors duration-300 hover:bg-cream-deep disabled:cursor-not-allowed disabled:opacity-30 motion-reduce:transition-none'
             >
               <PlusIcon />
             </button>
