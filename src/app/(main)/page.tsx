@@ -6,11 +6,14 @@ import Marquee from '@/components/home/Marquee';
 import Partners from '@/components/home/Partners';
 import Reviews from '@/components/home/Reviews';
 import HolidaySection from '@/components/holiday/HolidaySection';
+import GrillEventHero from '@/components/grill-event/GrillEventHero';
+import { getActiveEvent } from '@/lib/events';
 
 const HomePage = async () => {
+  const activeEvent = await getActiveEvent();
   return (
     <>
-      <Hero />
+      {activeEvent ? <GrillEventHero event={activeEvent} /> : <Hero />}
       <HolidaySection />
       <Marquee />
       <FeaturedProducts />

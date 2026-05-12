@@ -44,7 +44,7 @@ export default function HolidayDismissibleShell({ slug, year, children }: Props)
         type='button'
         onClick={handleDismiss}
         aria-label='Dismiss holiday reminder'
-        className='absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full text-muted transition-colors duration-200 hover:bg-cream-deep hover:text-ink'
+        className='absolute right-2 top-2 grid h-9 w-9 place-items-center rounded-full text-muted transition-colors duration-200 hover:bg-cream-deep hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cream focus-visible:ring-offset-2 focus-visible:ring-offset-ink/40'
       >
         <svg
           width='12'
