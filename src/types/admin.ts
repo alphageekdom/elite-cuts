@@ -59,6 +59,8 @@ export type OrderTableRow = {
     qty: number;
     price: number;
     productType: string;
+    refunded: boolean;
+    refundedAt?: string;
   }>;
   subtotal: number;
   tax: number;
@@ -67,6 +69,8 @@ export type OrderTableRow = {
   isPaid: boolean;
   paidAt?: string;
   paymentMethod: string;
+  paymentStatus: string;
+  refundedAmount: number;
   pickupLocation: string;
   pickedUp: boolean;
   fulfillmentType?: 'pickup' | 'delivery';

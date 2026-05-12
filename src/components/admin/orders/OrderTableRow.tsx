@@ -36,6 +36,9 @@ export default function OrderTableRowComponent({
   const pill     = STATUS_PILL[order.status] ?? { bg: 'bg-line-soft', text: 'text-muted', label: order.status };
   const initials = getInitials(order.customerName);
   const { day, time } = formatDateTime(order.createdAt);
+  const refundedCount = order.items.filter((it) => it.refunded).length;
+  const isFullyRefunded = order.paymentStatus === 'Refunded';
+  const isPartiallyRefunded = order.paymentStatus === 'Partially Refunded';
 
   return (
     <tr
@@ -72,6 +75,9 @@ export default function OrderTableRowComponent({
       <td className="px-4 py-4">
         <span className="text-[13px] text-ink-soft">
           {order.items.length} cut{order.items.length !== 1 ? 's' : ''}
+          {refundedCount > 0 && (
+            <span className="text-oxblood ml-1.5">· {refundedCount} refunded</span>
+          )}
         </span>
       </td>
 
@@ -82,13 +88,20 @@ export default function OrderTableRowComponent({
       </td>
 
       <td className="px-4 py-4">
-        <span
-          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-[0.04em] whitespace-nowrap ${pill.bg} ${pill.text}`}
-          style={pill.camel ? { background: 'rgba(184,137,90,0.18)' } : undefined}
-        >
-          <span className="w-1.5 h-1.5 rounded-full bg-current" />
-          {pill.label}
-        </span>
+        <div className="inline-flex items-center gap-1.5 flex-wrap">
+          <span
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-[0.04em] whitespace-nowrap ${pill.bg} ${pill.text}`}
+            style={pill.camel ? { background: 'rgba(184,137,90,0.18)' } : undefined}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-current" />
+            {pill.label}
+          </span>
+          {(isPartiallyRefunded || isFullyRefunded) && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-oxblood/10 text-oxblood text-[10px] font-medium tracking-[0.04em] uppercase whitespace-nowrap">
+              {isFullyRefunded ? 'Refunded' : 'Partial refund'}
+            </span>
+          )}
+        </div>
       </td>
 
       <td className="px-4 py-4">
@@ -108,7 +121,7 @@ export default function OrderTableRowComponent({
       </td>
 
       <td className="pr-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
-        <div className="relative inline-flex gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+        <div className={`relative inline-flex gap-1 transition-opacity ${openMenuId === order.id ? '' : 'opacity-40 group-hover:opacity-100'}`}>
           <button onClick={() => onView(order)} aria-label="View order" className="w-7 h-7 rounded-full border border-line text-ink-soft grid place-items-center hover:border-ink hover:bg-cream hover:text-ink transition-colors">
             <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>

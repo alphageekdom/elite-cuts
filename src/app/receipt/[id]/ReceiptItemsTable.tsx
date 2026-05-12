@@ -15,29 +15,43 @@ export default function ReceiptItemsTable({ orderItems }: Props) {
         <span className="text-right">Total</span>
       </div>
 
-      {orderItems.map((item, i) => (
-        <div
-          key={i}
-          className="grid grid-cols-[1fr_56px_88px] items-center py-5 border-b border-line-soft last:border-b-0"
-        >
-          <div className="min-w-0 pr-4">
-            <div className="font-display text-[17px] font-medium tracking-tight leading-snug mb-1">{item.name}</div>
-            <div className="flex items-center gap-2 font-mono text-[11px] text-muted tracking-[0.04em] flex-wrap">
-              <span>{formatMoney(item.price)}/ea</span>
-              {item.productType && (
-                <>
-                  <span className="w-1 h-1 rounded-full bg-muted/40 inline-block" />
-                  <span className="uppercase">{item.productType}</span>
-                </>
-              )}
+      {orderItems.map((item, i) => {
+        const isRefunded = item.refunded;
+        return (
+          <div
+            key={i}
+            className={`grid grid-cols-[1fr_56px_88px] items-center py-5 border-b border-line-soft last:border-b-0 transition-opacity ${
+              isRefunded ? 'opacity-60' : ''
+            }`}
+          >
+            <div className="min-w-0 pr-4">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <span className={`font-display text-[17px] font-medium tracking-tight leading-snug ${isRefunded ? 'line-through' : ''}`}>
+                  {item.name}
+                </span>
+                {isRefunded && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-oxblood/10 text-oxblood text-[10px] font-medium tracking-[0.04em] uppercase">
+                    Refunded
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 font-mono text-[11px] text-muted tracking-[0.04em] flex-wrap">
+                <span>{formatMoney(item.price)}/ea</span>
+                {item.productType && (
+                  <>
+                    <span className="w-1 h-1 rounded-full bg-muted/40 inline-block" />
+                    <span className="uppercase">{item.productType}</span>
+                  </>
+                )}
+              </div>
+            </div>
+            <div className={`font-mono text-[13px] text-ink-soft text-center ${isRefunded ? 'line-through' : ''}`}>× {item.qty}</div>
+            <div className={`font-display text-[17px] font-medium tracking-tight text-right ${isRefunded ? 'line-through' : ''}`}>
+              {formatMoney(item.price * item.qty)}
             </div>
           </div>
-          <div className="font-mono text-[13px] text-ink-soft text-center">× {item.qty}</div>
-          <div className="font-display text-[17px] font-medium tracking-tight text-right">
-            {formatMoney(item.price * item.qty)}
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

@@ -23,6 +23,7 @@ export const PAYMENT_STATUSES = [
   'Pending',
   'Completed',
   'Failed',
+  'Partially Refunded',
   'Refunded',
 ] as const;
 
@@ -38,6 +39,8 @@ export type OrderItem = {
   image: string;
   price: number;
   productType: string;
+  refunded: boolean;
+  refundedAt?: Date;
 };
 
 export type PaymentResult = {
@@ -113,6 +116,14 @@ const OrderItemSchema = new Schema<OrderItem>(
       type: String,
       required: [true, 'Product type is required'],
       trim: true,
+    },
+    refunded: {
+      type: Boolean,
+      required: true,
+      default: false,
+    },
+    refundedAt: {
+      type: Date,
     },
   },
   {

@@ -1,5 +1,6 @@
 import type { ProductTableRow, OrderTableRow, CustomerTableRow } from '@/types/admin';
 import type { ProductCategory } from '@/lib/admin-constants';
+import { refundSummary } from '@/lib/order-refunds';
 
 // Minimal shape of a lean Product document returned from ProductModel.find().lean()
 type RawProduct = {
@@ -30,6 +31,8 @@ type RawOrder = {
     qty: number;
     price: number;
     productType: string;
+    refunded?: boolean;
+    refundedAt?: Date | null;
   }>;
   subtotal: number;
   tax: number;
@@ -38,6 +41,7 @@ type RawOrder = {
   isPaid: boolean;
   paidAt?: Date | null;
   paymentMethod: string;
+  paymentResult?: { status?: string };
   pickupLocation: string;
   pickedUp: boolean;
   fulfillmentType?: 'pickup' | 'delivery';
@@ -67,18 +71,25 @@ export function serializeProductRow(p: RawProduct): ProductTableRow {
 
 export function serializeOrderRow(order: RawOrder): OrderTableRow {
   const idStr = order._id.toString();
+  const items = order.orderItems.map((item) => ({
+    name: item.name,
+    image: item.image,
+    qty: item.qty,
+    price: item.price,
+    productType: item.productType,
+    refunded: item.refunded ?? false,
+    refundedAt: item.refundedAt ? item.refundedAt.toISOString() : undefined,
+  }));
+  const summary = refundSummary(items, {
+    subtotal: order.subtotal,
+    tax: order.tax,
+  });
   return {
     id: idStr,
     orderRef: `#EC-${idStr.slice(-4).toUpperCase()}`,
     customerName: order.user?.name ?? 'Unknown',
     customerEmail: order.user?.email ?? '',
-    items: order.orderItems.map((item) => ({
-      name: item.name,
-      image: item.image,
-      qty: item.qty,
-      price: item.price,
-      productType: item.productType,
-    })),
+    items,
     subtotal: order.subtotal,
     tax: order.tax,
     total: order.totalCost,
@@ -86,6 +97,8 @@ export function serializeOrderRow(order: RawOrder): OrderTableRow {
     isPaid: order.isPaid,
     paidAt: order.paidAt?.toISOString(),
     paymentMethod: order.paymentMethod,
+    paymentStatus: order.paymentResult?.status ?? 'Pending',
+    refundedAmount: summary.refundedAmount,
     pickupLocation: order.pickupLocation,
     pickedUp: order.pickedUp,
     fulfillmentType: order.fulfillmentType,
