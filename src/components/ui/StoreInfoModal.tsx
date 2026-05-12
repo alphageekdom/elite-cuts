@@ -178,7 +178,7 @@ export default function StoreInfoModal({
             role='dialog'
             aria-modal='true'
             aria-label={label}
-            className='relative w-full max-w-sm rounded-xl border border-line-soft bg-paper shadow-2xl'
+            className='relative max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-xl border border-line-soft bg-paper shadow-2xl'
           >
             {/* Header */}
             <div className='flex items-start justify-between border-b border-line-soft px-6 pb-5 pt-6'>
