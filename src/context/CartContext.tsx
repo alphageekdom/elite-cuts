@@ -39,6 +39,10 @@ export type CartLine = {
 // (e.g. BuyBlock's stepper before the click).
 export type AddItemArg = CartLineProduct & { quantity?: number };
 
+// Wire shape returned by every /api/cart endpoint. `updatedAt` anchors the
+// 30-minute reservation timer to the canonical server timestamp.
+type CartApiResponse = { items: CartLine[]; updatedAt: string | null };
+
 type CartContextValue = {
   cartItems: CartLine[];
   cartCount: number;
@@ -48,6 +52,11 @@ type CartContextValue = {
   removeItemFromCart: (productId: string) => Promise<void>;
   setItemQuantity: (productId: string, quantity: number) => Promise<void>;
   clearCart: (opts?: { silent?: boolean }) => Promise<void>;
+  // Local-only reset for flows where the server cart is already known to be
+  // empty (e.g. immediately after a successful order). Skips the DELETE call
+  // so we don't race a failed network reply into a snapshot-restore that puts
+  // the just-purchased items back on screen.
+  resetCartLocal: () => void;
 };
 
 const GUEST_CART_KEY = 'guestCart';
@@ -130,6 +139,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // Tracks the previous auth status across renders so we can detect the
   // unauthenticated → authenticated transition and run merge-on-login exactly
   // once. Re-running the merge on hot reload or tab focus would double-count.
+  // On a hard refresh while authenticated the ref starts as 'loading', which
+  // intentionally falls through to fetchServerCart rather than the merge path
+  // — there's no guest cart to merge in that case.
   const prevStatusRef = useRef<typeof status>(status);
   // Guards parallel fetches when the auth status flips during an in-flight
   // request.
@@ -144,7 +156,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     try {
       const res = await fetch('/api/cart', { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to load cart');
-      const data = (await res.json()) as { items: CartLine[]; updatedAt: string | null };
+      const data = (await res.json()) as CartApiResponse;
       setCartItems(data.items ?? []);
       setCartUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : null);
       clearGuestCart();
@@ -235,11 +247,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
 
       if (!isLoggedIn) {
-        setCartItems((prev) => {
-          const next = applyAddToLines(prev, product, addBy);
-          writeGuestCart(next);
-          return next;
-        });
+        const next = applyAddToLines(cartItems, product, addBy);
+        writeGuestCart(next);
+        setCartItems(next);
         setCartUpdatedAt(new Date());
         toast.success('Item added to cart');
         return;
@@ -264,7 +274,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           const err = (await res.json().catch(() => null)) as { message?: string } | null;
           throw new Error(err?.message ?? 'Failed to add item to cart');
         }
-        const data = (await res.json()) as { items: CartLine[]; updatedAt: string | null };
+        const data = (await res.json()) as CartApiResponse;
         setCartItems(data.items ?? []);
         setCartUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : null);
         toast.success('Item added to cart');
@@ -282,11 +292,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const next = Math.trunc(quantity);
 
       if (!isLoggedIn) {
-        setCartItems((prev) => {
-          const updated = setQuantityOnLines(prev, productId, next);
-          writeGuestCart(updated);
-          return updated;
-        });
+        const updated = setQuantityOnLines(cartItems, productId, next);
+        writeGuestCart(updated);
+        setCartItems(updated);
         setCartUpdatedAt(new Date());
         return;
       }
@@ -307,7 +315,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           const err = (await res.json().catch(() => null)) as { message?: string } | null;
           throw new Error(err?.message ?? 'Failed to update quantity');
         }
-        const data = (await res.json()) as { items: CartLine[]; updatedAt: string | null };
+        const data = (await res.json()) as CartApiResponse;
         setCartItems(data.items ?? []);
         setCartUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : null);
       } catch (error) {
@@ -316,17 +324,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
         toast.error(error instanceof Error ? error.message : 'Failed to update quantity');
       }
     },
-    [isLoggedIn],
+    [isLoggedIn, cartItems],
   );
 
   const removeItemFromCart = useCallback(
     async (productId: string) => {
       if (!isLoggedIn) {
-        setCartItems((prev) => {
-          const updated = removeFromLines(prev, productId);
-          writeGuestCart(updated);
-          return updated;
-        });
+        const updated = removeFromLines(cartItems, productId);
+        writeGuestCart(updated);
+        setCartItems(updated);
         setCartUpdatedAt(new Date());
         toast.success('Item removed from cart');
         return;
@@ -345,7 +351,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           body: JSON.stringify({ productId }),
         });
         if (!res.ok) throw new Error('Failed to remove item');
-        const data = (await res.json()) as { items: CartLine[]; updatedAt: string | null };
+        const data = (await res.json()) as CartApiResponse;
         setCartItems(data.items ?? []);
         setCartUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : null);
         toast.success('Item removed from cart');
@@ -355,17 +361,21 @@ export function CartProvider({ children }: { children: ReactNode }) {
         toast.error('Failed to remove item from cart');
       }
     },
-    [isLoggedIn],
+    [isLoggedIn, cartItems],
   );
+
+  const resetCartLocal = useCallback(() => {
+    setCartItems([]);
+    setCartUpdatedAt(null);
+    clearGuestCart();
+  }, []);
 
   const clearCart = useCallback(async (opts?: { silent?: boolean }) => {
     const silent = opts?.silent ?? false;
 
     if (!isLoggedIn) {
-      setCartItems(() => {
-        writeGuestCart([]);
-        return [];
-      });
+      writeGuestCart([]);
+      setCartItems([]);
       setCartUpdatedAt(null);
       if (!silent) toast.success('Cart cleared');
       return;
@@ -404,6 +414,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       removeItemFromCart,
       setItemQuantity,
       clearCart,
+      resetCartLocal,
     }),
     [
       cartItems,
@@ -413,6 +424,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       removeItemFromCart,
       setItemQuantity,
       clearCart,
+      resetCartLocal,
     ],
   );
 
