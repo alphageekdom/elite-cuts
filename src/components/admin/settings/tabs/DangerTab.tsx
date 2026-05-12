@@ -3,17 +3,15 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { sectionTitleCls, btnGhost, btnDanger } from '../SettingsUI';
 
-type ActionKey = 'export' | 'reset' | 'pause' | 'delete';
+type ActionKey = 'reset' | 'pause' | 'delete';
 
-const ACTIONS: { key: ActionKey; label: string; desc: string; action: string; cls: string; destructive?: boolean }[] = [
-  { key: 'export',  label: 'Export all data',      desc: 'Download a complete export of orders, customers, inventory, and analytics as CSV files.', action: 'Export all',      cls: btnGhost },
-  { key: 'reset',   label: 'Reset analytics',       desc: 'Clear all analytics data and start tracking from scratch. Orders and customer records are preserved.',              action: 'Reset analytics', cls: btnDanger, destructive: true },
-  { key: 'pause',   label: 'Pause the storefront',  desc: 'Disables online ordering and hides the shop. Your dashboard stays accessible.',           action: 'Pause shop',      cls: btnDanger, destructive: true },
-  { key: 'delete',  label: 'Delete shop',           desc: 'Permanently deletes all orders, customers, stock, and analytics. This cannot be undone.', action: 'Delete shop',     cls: btnDanger, destructive: true },
+const ACTIONS: { key: ActionKey; label: string; desc: string; action: string }[] = [
+  { key: 'reset',  label: 'Reset analytics',      desc: 'Clear all analytics data and start tracking from scratch. Orders and customer records are preserved.', action: 'Reset analytics' },
+  { key: 'pause',  label: 'Pause the storefront', desc: 'Disables online ordering and hides the shop. Your dashboard stays accessible.',                         action: 'Pause shop' },
+  { key: 'delete', label: 'Delete shop',          desc: 'Permanently deletes all orders, customers, stock, and analytics. This cannot be undone.',               action: 'Delete shop' },
 ];
 
 const CONFIRM_LABELS: Record<ActionKey, string> = {
-  export: 'Export all data?',
   reset:  'Reset all analytics data?',
   pause:  'Pause the storefront?',
   delete: 'Permanently delete the shop?',
@@ -22,17 +20,9 @@ const CONFIRM_LABELS: Record<ActionKey, string> = {
 export default function DangerTab() {
   const [confirming, setConfirming] = useState<ActionKey | null>(null);
 
-  function handleAction(key: ActionKey) {
-    if (key === 'export') {
-      toast.success('Export started — you\'ll receive an email when it\'s ready');
-      return;
-    }
-    setConfirming(key);
-  }
-
-  function handleConfirm(key: ActionKey) {
+  function handleConfirm() {
     setConfirming(null);
-    toast.success(`${CONFIRM_LABELS[key].replace('?', '')} — coming soon`);
+    toast.info('Demo mode — no data was changed.');
   }
 
   return (
@@ -55,7 +45,7 @@ export default function DangerTab() {
                 <button type="button" onClick={() => setConfirming(null)} className={btnGhost}>
                   Cancel
                 </button>
-                <button type="button" onClick={() => handleConfirm(row.key)} className={btnDanger}>
+                <button type="button" onClick={handleConfirm} className={btnDanger}>
                   Confirm
                 </button>
               </div>
@@ -68,8 +58,8 @@ export default function DangerTab() {
               </div>
               <button
                 type="button"
-                onClick={() => handleAction(row.key)}
-                className={`${row.cls} shrink-0`}
+                onClick={() => setConfirming(row.key)}
+                className={`${btnDanger} shrink-0`}
               >
                 {row.action}
               </button>
