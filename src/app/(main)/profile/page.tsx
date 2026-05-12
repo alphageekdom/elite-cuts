@@ -37,6 +37,7 @@ export type ProfileOrder = {
     image: string;
     price: number;
     productType: string;
+    refunded: boolean;
   }[];
   subtotal: number;
   tax: number;
@@ -136,6 +137,7 @@ export default async function ProfilePage({ searchParams }: Props) {
       image: item.image,
       price: item.price,
       productType: item.productType,
+      refunded: item.refunded ?? false,
     })),
     subtotal: o.subtotal,
     tax: o.tax,

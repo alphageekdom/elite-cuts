@@ -64,6 +64,9 @@ export default function ProfileOrderList({ orders, showAll = false }: Props) {
         const first = order.orderItems[0];
         const itemCount = order.orderItems.reduce((s, i) => s + i.qty, 0);
         const extra = order.orderItems.length > 1 ? ` + ${order.orderItems.length - 1} more` : '';
+        const refundedCount = order.orderItems.filter((i) => i.refunded).length;
+        const isFullyRefunded = refundedCount > 0 && refundedCount >= order.orderItems.length;
+        const isPartiallyRefunded = refundedCount > 0 && !isFullyRefunded;
 
         return (
           <div
@@ -109,6 +112,11 @@ export default function ProfileOrderList({ orders, showAll = false }: Props) {
                 <span className="w-1.5 h-1.5 rounded-full bg-current" aria-hidden="true" />
                 {order.orderStatus}
               </span>
+              {(isFullyRefunded || isPartiallyRefunded) && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-oxblood/10 text-oxblood text-[10px] font-medium tracking-[0.04em] uppercase whitespace-nowrap">
+                  {isFullyRefunded ? 'Refunded' : `${refundedCount} item${refundedCount !== 1 ? 's' : ''} refunded`}
+                </span>
+              )}
               <p className="font-display font-medium text-[20px] tabular-nums">
                 {formatMoney(order.totalCost)}
               </p>

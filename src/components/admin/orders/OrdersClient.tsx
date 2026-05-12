@@ -1,6 +1,8 @@
 'use client';
 import { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { refundSummary } from '@/lib/order-refunds';
 import { useStatFilter } from '@/hooks/useStatFilter';
 import { useAdminDrawer } from '@/hooks/useAdminDrawer';
 import OrderTableRowComponent from './OrderTableRow';
@@ -45,6 +47,7 @@ function countForKey(key: StatKey, counts: StatusCounts): number {
 const PAGE_SIZES = [8, 20, 50];
 
 export default function OrdersClient({ orders, counts }: Props) {
+  const router = useRouter();
   const [localOrders, setLocalOrders] = useState(orders);
   const [page, setPage] = useState(1);
   const { activeKey: activeStatus, selectKey: _selectStatus } = useStatFilter<string>('all', () => setPage(1));
@@ -86,13 +89,114 @@ export default function OrdersClient({ orders, counts }: Props) {
         toast.error(message ?? 'Failed to update order');
         return;
       }
+      // Cancellation refunds every remaining line — reflect optimistically.
+      const isCancelTransition = newStatus === 'Cancelled' && drawerOrder.status !== 'Cancelled';
       setLocalOrders((prev) =>
-        prev.map((o) => (o.id === drawerOrder.id ? { ...o, status: newStatus, cancellationReason } : o)),
+        prev.map((o) => {
+          if (o.id !== drawerOrder.id) return o;
+          const items = isCancelTransition
+            ? o.items.map((it) => (it.refunded ? it : { ...it, refunded: true }))
+            : o.items;
+          const summary = refundSummary(items, { subtotal: o.subtotal, tax: o.tax });
+          return {
+            ...o,
+            status: newStatus,
+            cancellationReason,
+            items,
+            refundedAmount: summary.refundedAmount,
+            paymentStatus: isCancelTransition ? 'Refunded' : o.paymentStatus,
+          };
+        }),
       );
-      setDrawerOrder((prev) => (prev ? { ...prev, status: newStatus, cancellationReason } : prev));
-      toast.success('Order status updated');
+      setDrawerOrder((prev) => {
+        if (!prev) return prev;
+        const items = isCancelTransition
+          ? prev.items.map((it) => (it.refunded ? it : { ...it, refunded: true }))
+          : prev.items;
+        const summary = refundSummary(items, { subtotal: prev.subtotal, tax: prev.tax });
+        return {
+          ...prev,
+          status: newStatus,
+          cancellationReason,
+          items,
+          refundedAmount: summary.refundedAmount,
+          paymentStatus: isCancelTransition ? 'Refunded' : prev.paymentStatus,
+        };
+      });
+      router.refresh();
+      toast.success(isCancelTransition ? 'Order cancelled and refunded' : 'Order status updated');
     } catch {
       toast.error('Failed to update order');
+    }
+  }
+
+  async function refundItem(itemIndex: number) {
+    if (!drawerOrder) return;
+    try {
+      const res = await fetch(`/api/orders/${drawerOrder.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refundItemIndices: [itemIndex] }),
+      });
+      if (!res.ok) {
+        const { message } = await res.json();
+        toast.error(message ?? 'Failed to refund item');
+        return;
+      }
+      const apply = (o: OrderTableRow): OrderTableRow => {
+        const items = o.items.map((it, idx) => (idx === itemIndex ? { ...it, refunded: true } : it));
+        const summary = refundSummary(items, { subtotal: o.subtotal, tax: o.tax });
+        const allRefunded = summary.refundedCount >= items.length;
+        const cascadeCancel = allRefunded && o.status !== 'Cancelled';
+        return {
+          ...o,
+          items,
+          refundedAmount: summary.refundedAmount,
+          paymentStatus: allRefunded ? 'Refunded' : 'Partially Refunded',
+          status: cascadeCancel ? 'Cancelled' : o.status,
+          cancellationReason: cascadeCancel ? undefined : o.cancellationReason,
+        };
+      };
+      setLocalOrders((prev) => prev.map((o) => (o.id === drawerOrder.id ? apply(o) : o)));
+      setDrawerOrder((prev) => (prev ? apply(prev) : prev));
+      router.refresh();
+      toast.success('Item refunded');
+    } catch {
+      toast.error('Failed to refund item');
+    }
+  }
+
+  async function unrefundItem(itemIndex: number) {
+    if (!drawerOrder) return;
+    try {
+      const res = await fetch(`/api/orders/${drawerOrder.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ unrefundItemIndices: [itemIndex] }),
+      });
+      if (!res.ok) {
+        const { message } = await res.json();
+        toast.error(message ?? 'Failed to undo refund');
+        return;
+      }
+      const apply = (o: OrderTableRow): OrderTableRow => {
+        const items = o.items.map((it, idx) => (idx === itemIndex ? { ...it, refunded: false } : it));
+        const summary = refundSummary(items, { subtotal: o.subtotal, tax: o.tax });
+        const noneRefunded = summary.refundedCount === 0;
+        const allRefunded = !noneRefunded && summary.refundedCount >= items.length;
+        return {
+          ...o,
+          items,
+          refundedAmount: summary.refundedAmount,
+          paymentStatus: noneRefunded ? 'Completed' : allRefunded ? 'Refunded' : 'Partially Refunded',
+        };
+      };
+      setLocalOrders((prev) => prev.map((o) => (o.id === drawerOrder.id ? apply(o) : o)));
+      setDrawerOrder((prev) => (prev ? apply(prev) : prev));
+      router.refresh();
+      toast.success('Refund undone — item restored');
+    } catch {
+      toast.error('Failed to undo refund');
     }
   }
 
@@ -342,6 +446,8 @@ export default function OrdersClient({ orders, counts }: Props) {
             setStatusUpdate={setStatusUpdate}
             onClose={closeDrawer}
             onUpdate={updateOrder}
+            onRefundItem={refundItem}
+            onUnrefundItem={unrefundItem}
           />
         )}
       </aside>

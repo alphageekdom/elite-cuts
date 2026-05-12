@@ -4,6 +4,7 @@ import { getSessionUser } from '@/utils/getSessionUser';
 import connectDB from '@/config/database';
 import Order from '@/models/Order';
 import { formatMoney } from '@/lib/format';
+import { refundSummary } from '@/lib/order-refunds';
 import ReceiptToolbar from './ReceiptToolbar';
 import ReceiptHeader from './ReceiptHeader';
 import ReceiptItemsTable from './ReceiptItemsTable';
@@ -59,6 +60,14 @@ export default async function ReceiptPage({ params }: Props) {
   const rewardPoints = user?.rewardPoints ?? 0;
   const tier = getTierLabel(rewardPoints);
   const pointsEarned = Math.floor(order.totalCost);
+
+  const refund = refundSummary(order.orderItems, {
+    subtotal: order.subtotal,
+    tax: order.tax,
+  });
+  const isPartiallyRefunded =
+    refund.refundedCount > 0 && refund.refundedCount < order.orderItems.length;
+  const netPaid = Math.max(0, Math.round((order.totalCost - refund.refundedAmount) * 100) / 100);
 
   const displayName  = order.contactName  || user?.name  || 'Customer';
   const displayEmail = order.contactEmail || user?.email || '';
@@ -221,6 +230,18 @@ export default async function ReceiptPage({ params }: Props) {
                 <em className="not-italic font-sans text-[14px] text-muted font-normal ml-1">USD</em>
               </span>
             </div>
+            {refund.refundedAmount > 0 && (
+              <div className="mt-3 pt-3 border-t border-line-soft space-y-2">
+                <div className="flex justify-between items-baseline text-[14px] text-oxblood">
+                  <span>Refunded ({refund.refundedCount} {refund.refundedCount === 1 ? 'item' : 'items'})</span>
+                  <span className="font-mono text-[13px]">−{formatMoney(refund.refundedAmount)}</span>
+                </div>
+                <div className="flex justify-between items-baseline">
+                  <span className="font-display text-[16px] font-medium tracking-tight">Net paid</span>
+                  <span className="font-display text-[20px] font-medium tracking-tight">{formatMoney(netPaid)}</span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* ── Payment ── */}
@@ -249,6 +270,25 @@ export default async function ReceiptPage({ params }: Props) {
             <div className="mx-8 sm:mx-12 mb-5 px-5 py-4 rounded border border-camel/20 bg-camel/8">
               <div className="font-mono text-[10px] font-medium tracking-[0.22em] uppercase text-muted mb-2">Notes for the butcher</div>
               <p className="font-display italic text-[14px] text-ink-soft leading-relaxed">{order.orderNotes}</p>
+            </div>
+          )}
+
+          {/* ── Refund notice (partial only — fully refunded falls under cancelled below) ── */}
+          {isPartiallyRefunded && order.orderStatus !== 'Cancelled' && (
+            <div className="mx-8 sm:mx-12 mb-5 px-5 py-4 rounded border border-oxblood/20 bg-oxblood/5 flex items-start gap-3">
+              <span className="w-7 h-7 rounded-full bg-oxblood/15 text-oxblood grid place-items-center shrink-0 mt-0.5">
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M9 14l-4-4 4-4" /><path d="M5 10h11a4 4 0 014 4v2" />
+                </svg>
+              </span>
+              <div>
+                <div className="font-display text-[14px] font-medium tracking-tight text-ink leading-snug mb-0.5">
+                  Partial refund applied
+                </div>
+                <div className="font-mono text-[11px] text-muted tracking-[0.04em]">
+                  {refund.refundedCount} of {order.orderItems.length} items refunded — {formatMoney(refund.refundedAmount)} back to you. The remaining items are still being honored.
+                </div>
+              </div>
             </div>
           )}
 

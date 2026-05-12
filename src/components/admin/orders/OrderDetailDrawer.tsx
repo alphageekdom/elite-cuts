@@ -48,13 +48,44 @@ type Props = {
   setStatusUpdate: (s: string) => void;
   onClose: () => void;
   onUpdate: (newStatus: string, cancellationReason?: string) => Promise<void>;
+  onRefundItem: (itemIndex: number) => Promise<void>;
+  onUnrefundItem: (itemIndex: number) => Promise<void>;
 };
 
-export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate, onClose, onUpdate }: Props) {
+export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate, onClose, onUpdate, onRefundItem, onUnrefundItem }: Props) {
   const [updating, setUpdating] = useState(false);
+  const [pendingItemIndex, setPendingItemIndex] = useState<number | null>(null);
+  const [pendingAction, setPendingAction] = useState<'refund' | 'unrefund' | null>(null);
   const [cancellationReason, setCancellationReason] = useState(order.cancellationReason ?? '');
   const initials = getInitials(order.customerName);
   const timeline = buildTimeline(order);
+
+  async function handleRefund(itemIndex: number) {
+    if (pendingItemIndex !== null) return;
+    setPendingItemIndex(itemIndex);
+    setPendingAction('refund');
+    try {
+      await onRefundItem(itemIndex);
+    } finally {
+      setPendingItemIndex(null);
+      setPendingAction(null);
+    }
+  }
+
+  async function handleUnrefund(itemIndex: number) {
+    if (pendingItemIndex !== null) return;
+    setPendingItemIndex(itemIndex);
+    setPendingAction('unrefund');
+    try {
+      await onUnrefundItem(itemIndex);
+    } finally {
+      setPendingItemIndex(null);
+      setPendingAction(null);
+    }
+  }
+
+  const refundedAmount = order.refundedAmount ?? 0;
+  const netPaid = Math.max(0, Math.round((order.total - refundedAmount) * 100) / 100);
 
   async function handleUpdate() {
     setUpdating(true);
@@ -191,24 +222,59 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
             Items ({order.items.length})
           </div>
           <div className="flex flex-col">
-            {order.items.map((item, i) => (
-              <div
-                key={i}
-                className={`grid grid-cols-[1fr_auto] gap-3.5 items-center py-3 ${
-                  i < order.items.length - 1 ? 'border-b border-line-soft' : ''
-                } ${i === 0 ? 'pt-0' : ''}`}
-              >
-                <div>
-                  <div className="font-display text-[15px] font-medium tracking-[-0.005em] leading-snug mb-1">{item.name}</div>
-                  <div className="font-mono text-[11px] text-muted tracking-[0.04em] uppercase">
-                    {item.qty}x · {formatMoney(item.price)}/ea · {item.productType}
+            {order.items.map((item, i) => {
+              const isRefunded = item.refunded;
+              const isPending = pendingItemIndex === i;
+              return (
+                <div
+                  key={i}
+                  className={`grid grid-cols-[1fr_auto] gap-3.5 items-start py-3 transition-opacity ${
+                    i < order.items.length - 1 ? 'border-b border-line-soft' : ''
+                  } ${i === 0 ? 'pt-0' : ''} ${isRefunded ? 'opacity-60' : ''}`}
+                >
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className={`font-display text-[15px] font-medium tracking-[-0.005em] leading-snug ${isRefunded ? 'line-through' : ''}`}>
+                        {item.name}
+                      </div>
+                      {isRefunded && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-oxblood/10 text-oxblood text-[10px] font-medium tracking-[0.04em] uppercase">
+                          Refunded
+                        </span>
+                      )}
+                    </div>
+                    <div className="font-mono text-[11px] text-muted tracking-[0.04em] uppercase">
+                      {item.qty}x · {formatMoney(item.price)}/ea · {item.productType}
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1.5">
+                    <div className={`font-display text-[15px] font-medium text-right ${isRefunded ? 'line-through' : ''}`}>
+                      {formatMoney(item.price * item.qty)}
+                    </div>
+                    {!isRefunded && (
+                      <button
+                        type="button"
+                        onClick={() => handleRefund(i)}
+                        disabled={pendingItemIndex !== null}
+                        className="text-[11px] text-muted hover:text-ink border border-line hover:border-ink/30 px-2.5 py-1 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isPending && pendingAction === 'refund' ? 'Refunding…' : 'Refund'}
+                      </button>
+                    )}
+                    {isRefunded && (
+                      <button
+                        type="button"
+                        onClick={() => handleUnrefund(i)}
+                        disabled={pendingItemIndex !== null}
+                        className="text-[11px] text-muted hover:text-ink border border-line hover:border-ink/30 px-2.5 py-1 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isPending && pendingAction === 'unrefund' ? 'Restoring…' : 'Undo refund'}
+                      </button>
+                    )}
                   </div>
                 </div>
-                <div className="font-display text-[15px] font-medium text-right">
-                  {formatMoney(item.price * item.qty)}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -230,6 +296,18 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
               <span className="font-display text-[17px] font-medium text-ink">Total</span>
               <span className="font-display text-[22px] font-medium tracking-[-0.01em] text-ink">{formatMoney(order.total)}</span>
             </div>
+            {refundedAmount > 0 && (
+              <>
+                <div className="flex justify-between items-baseline text-[13px] text-oxblood mt-1">
+                  <span>Refunded</span>
+                  <span className="font-mono text-[12px]">−{formatMoney(refundedAmount)}</span>
+                </div>
+                <div className="flex justify-between items-baseline pt-2 border-t border-line-soft">
+                  <span className="font-display text-[14px] font-medium text-ink">Net paid</span>
+                  <span className="font-display text-[16px] font-medium tracking-[-0.01em] text-ink">{formatMoney(netPaid)}</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -240,7 +318,7 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
             {[
               { l: 'Method', v: order.fulfillmentType === 'delivery' ? 'DELIVERY' : 'PICKUP' },
               { l: 'Location', v: order.pickupLocation || 'San Diego, CA' },
-              { l: 'Paid', v: order.isPaid ? 'Yes' : 'No' },
+              { l: 'Payment', v: (order.paymentStatus ?? (order.isPaid ? 'Completed' : 'Pending')).toUpperCase() },
               { l: 'Picked up', v: order.pickedUp ? 'Yes' : 'Awaiting' },
             ].map(({ l, v }) => (
               <div key={l} className="flex justify-between items-baseline text-[13px] text-ink-soft">
