@@ -11,6 +11,8 @@ import CatalogPagination from '@/components/product/CatalogPagination';
 import ProductCard from '@/components/product/ProductCard';
 import ResultsBar from '@/components/product/ResultsBar';
 import HolidayBanner from '@/components/holiday/HolidayBanner';
+import GrillEventBanner from '@/components/grill-event/GrillEventBanner';
+import { getActiveEvent } from '@/lib/events';
 import {
   PAGE_SIZE,
   isCategoryFilter,
@@ -77,7 +79,7 @@ const ProductsPage = async ({
 
   // Live stats use the unfiltered counts so the hero numbers stay stable as
   // the user filters/searches.
-  const [total, productsRaw, totalAvailable, lowStock, featuredCount, categoryCount] =
+  const [total, productsRaw, totalAvailable, lowStock, featuredCount, categoryCount, activeEvent] =
     await Promise.all([
       Product.countDocuments(query),
       Product.find(query)
@@ -89,6 +91,7 @@ const ProductsPage = async ({
       Product.countDocuments({ stockCount: { $gt: 0, $lte: 5 } }),
       Product.countDocuments({ isFeatured: true }),
       Product.distinct('category').then((arr: string[]) => arr.length),
+      getActiveEvent(),
     ]);
 
   const products = productsRaw.map(
@@ -157,7 +160,10 @@ const ProductsPage = async ({
   return (
     <>
       <CatalogHero stats={stats} />
-      <HolidayBanner />
+      <div className='space-y-2 bg-cream'>
+        {activeEvent && <GrillEventBanner event={activeEvent} />}
+        <HolidayBanner activeEvent={activeEvent} />
+      </div>
       <CatalogFilterBar />
       <section className='bg-cream pb-25'>
         <div className='mx-auto w-full max-w-7xl px-6 md:px-8'>

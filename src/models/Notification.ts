@@ -1,6 +1,6 @@
 import { Schema, model, models, type HydratedDocument, type Model, type Types } from 'mongoose';
 
-export const NOTIFICATION_TYPES = ['new_order', 'low_stock'] as const;
+export const NOTIFICATION_TYPES = ['new_order', 'low_stock', 'new_event'] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
 export type Notification = {

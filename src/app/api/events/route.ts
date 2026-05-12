@@ -1,0 +1,107 @@
+import { NextResponse, type NextRequest } from 'next/server';
+
+import EventModel from '@/models/Event';
+import Notification from '@/models/Notification';
+import User from '@/models/User';
+import { withAdmin } from '@/lib/api-handler';
+import { serializeEvent } from '@/lib/events';
+import {
+  DEFAULT_EVENT_MESSAGE,
+  EVENT_MESSAGE_MAX,
+  parseLaDayString,
+  validateEventInput,
+} from '@/lib/event-config';
+
+export const GET = withAdmin(async (request: NextRequest) => {
+  try {
+    const scope = new URL(request.url).searchParams.get('scope') ?? 'upcoming';
+    const baseQuery: Record<string, unknown> =
+      scope === 'past'
+        ? { $or: [{ status: { $in: ['completed', 'cancelled'] } }, { date: { $lt: new Date(Date.now() - 86400000) } }] }
+        : { status: { $in: ['scheduled', 'live'] }, date: { $gte: new Date(Date.now() - 86400000) } };
+
+    const docs = await EventModel.find(baseQuery)
+      .sort(scope === 'past' ? { date: -1, startHour: -1 } : { date: 1, startHour: 1 })
+      .limit(100)
+      .lean();
+
+    return NextResponse.json(docs.map((d) => serializeEvent({ ...d, _id: d._id })));
+  } catch (error) {
+    console.error('[events GET]', error);
+    return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
+  }
+});
+
+export const POST = withAdmin(async (request: NextRequest) => {
+  try {
+    const body = (await request.json()) as {
+      date?: string;
+      startHour?: number;
+      endHour?: number;
+      message?: string;
+    };
+
+    if (
+      typeof body.date !== 'string' ||
+      typeof body.startHour !== 'number' ||
+      typeof body.endHour !== 'number'
+    ) {
+      return NextResponse.json({ message: 'date, startHour, and endHour are required' }, { status: 400 });
+    }
+
+    const errors = validateEventInput({
+      date: body.date,
+      startHour: body.startHour,
+      endHour: body.endHour,
+      message: body.message,
+    });
+    if (errors.length) {
+      return NextResponse.json({ message: errors[0].message, errors }, { status: 400 });
+    }
+
+    const day = parseLaDayString(body.date)!;
+    const dayStart = new Date(day.getTime() - 86400000);
+    const dayEnd = new Date(day.getTime() + 86400000);
+
+    const overlap = await EventModel.findOne({
+      status: { $in: ['scheduled', 'live'] },
+      date: { $gte: dayStart, $lte: dayEnd },
+    }).lean();
+    if (overlap) {
+      return NextResponse.json(
+        { message: 'There is already an event scheduled on that day.' },
+        { status: 409 },
+      );
+    }
+
+    const event = await EventModel.create({
+      kind: 'grill',
+      date: day,
+      startHour: body.startHour,
+      endHour: body.endHour,
+      message: body.message?.trim() ? body.message.trim().slice(0, EVENT_MESSAGE_MAX) : DEFAULT_EVENT_MESSAGE,
+      status: 'scheduled',
+    });
+
+    const isoDate = day.toISOString().slice(0, 10);
+    User.find({ isAdmin: true }, '_id')
+      .lean()
+      .then((admins) => {
+        if (!admins.length) return;
+        const docs = admins.map((a) => ({
+          type: 'new_event' as const,
+          title: 'Grill event scheduled',
+          body: `${isoDate} · ${body.startHour}:00–${body.endHour}:00`,
+          userId: a._id,
+          readAt: null,
+        }));
+        return Notification.insertMany(docs);
+      })
+      .catch((err) => console.error('[events POST] notification error', err));
+
+    return NextResponse.json(serializeEvent({ ...event.toObject(), _id: event._id }), { status: 201 });
+  } catch (error) {
+    console.error('[events POST]', error);
+    return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
+  }
+});
