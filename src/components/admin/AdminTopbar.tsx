@@ -1,7 +1,21 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { toast } from 'sonner';
 import { relativeTime } from '@/lib/format';
+
+const PAGE_TITLES: Record<string, string> = {
+  dashboard: 'Dashboard',
+  orders: 'Orders',
+  products: 'Products',
+  customers: 'Customers',
+  inventory: 'Inventory',
+  messages: 'Messages',
+  schedule: 'Schedule',
+  settings: 'Settings',
+  analytics: 'Analytics',
+};
 
 type NotificationRow = {
   _id: string;
@@ -14,7 +28,15 @@ type NotificationRow = {
 
 const POLL_INTERVAL = 30_000;
 
-export default function AdminTopbar() {
+type AdminTopbarProps = {
+  openMessageCount?: number;
+};
+
+export default function AdminTopbar({ openMessageCount = 0 }: AdminTopbarProps) {
+  const pathname = usePathname();
+  const lastSegment = pathname.split('/').filter(Boolean).pop() ?? '';
+  const pageTitle = PAGE_TITLES[lastSegment] ?? 'Dashboard';
+
   const [notifications, setNotifications] = useState<NotificationRow[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
@@ -81,30 +103,14 @@ export default function AdminTopbar() {
   }
 
   const badgeLabel = unreadCount > 9 ? '9+' : String(unreadCount);
+  const messagesBadgeLabel = openMessageCount > 9 ? '9+' : String(openMessageCount);
 
   return (
     <div className="flex items-center justify-between px-5 md:px-10 py-4 md:py-5 gap-4 border-b border-line-soft bg-cream shrink-0">
-      {/* Search */}
-      <div className="flex-1 max-w-105 bg-paper border border-line rounded-full px-4.5 py-2.5 flex items-center gap-3 focus-within:border-ink transition-colors">
-        <svg
-          className="w-3.5 h-3.5 text-muted shrink-0"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <circle cx="11" cy="11" r="8" />
-          <path d="M21 21l-4.35-4.35" />
-        </svg>
-        <input
-          type="text"
-          placeholder="Search cuts, orders, customers…"
-          className="flex-1 bg-transparent border-none outline-none font-sans text-[14px] text-ink placeholder:text-muted"
-        />
-        <span className="hidden sm:inline text-[11px] tracking-widest text-muted bg-cream-deep px-1.5 py-0.5 rounded">
-          ⌘ K
-        </span>
-      </div>
+      {/* Page title */}
+      <h1 className="font-display font-medium text-[20px] tracking-[-0.01em] text-ink truncate">
+        {pageTitle}
+      </h1>
 
       {/* Action buttons */}
       <div className="flex items-center gap-3">
@@ -121,7 +127,7 @@ export default function AdminTopbar() {
               <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" />
             </svg>
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-oxblood text-cream text-[10px] font-medium grid place-items-center px-1 border-2 border-cream">
+              <span className="absolute -top-1 -right-1 min-w-4.5 h-4.5 rounded-full bg-oxblood text-cream text-[10px] font-medium grid place-items-center px-1 border-2 border-cream">
                 {badgeLabel}
               </span>
             )}
@@ -210,16 +216,23 @@ export default function AdminTopbar() {
           )}
         </div>
 
-        {/* Messages — stub */}
-        <button
-          onClick={() => toast.info('No new messages')}
-          aria-label="Messages"
-          className="w-10 h-10 rounded-full bg-paper border border-line grid place-items-center text-ink hover:border-ink transition-colors"
-        >
-          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
-          </svg>
-        </button>
+        {/* Messages */}
+        <div className="relative">
+          <Link
+            href="/dashboard/messages"
+            aria-label={openMessageCount > 0 ? `Messages — ${openMessageCount} open` : 'Messages'}
+            className="w-10 h-10 rounded-full bg-paper border border-line grid place-items-center text-ink hover:border-ink transition-colors"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+            </svg>
+          </Link>
+          {openMessageCount > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-4.5 h-4.5 rounded-full bg-oxblood text-cream text-[10px] font-medium grid place-items-center px-1 border-2 border-cream pointer-events-none">
+              {messagesBadgeLabel}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );

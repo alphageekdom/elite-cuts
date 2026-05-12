@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 type Cut = {
   name: string;
   revenue: number;
@@ -14,7 +16,7 @@ export default function DashboardTopCuts({ cuts }: Props) {
         <div className="font-display font-medium text-[22px] tracking-[-0.015em] leading-snug">
           Top <em className="italic text-oxblood font-normal">cuts</em>
         </div>
-        <a
+        <Link
           href="/dashboard/products"
           className="text-ink-soft text-[13px] font-medium inline-flex items-center gap-1.5 border-b border-current pb-px hover:text-oxblood transition-colors hover:gap-2.5"
         >
@@ -22,7 +24,7 @@ export default function DashboardTopCuts({ cuts }: Props) {
           <svg className="w-2.75 h-2.75" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M5 12h14M13 5l7 7-7 7" />
           </svg>
-        </a>
+        </Link>
       </div>
 
       {cuts.length === 0 ? (
