@@ -10,15 +10,21 @@ import MobileMenu from './MobileMenu';
 import ProfileMenu from './ProfileMenu';
 import AuthLinks from './AuthLinks';
 import DesktopMenu from './DesktopMenu';
+import AnnouncementBell from './AnnouncementBell';
 import CartButton from '../cart/CartButton';
 import CartExpiryBanner from '../cart/CartExpiryBanner';
 import Logo from './Logo';
 import { FOCUS_RING } from '@/lib/styles';
+import type { Announcement } from '@/lib/announcements';
 
 const SCROLL_THRESHOLD = 60;
 const LG_BREAKPOINT_PX = 1024;
 
-const Navbar = () => {
+type NavbarProps = {
+  announcements?: Announcement[];
+};
+
+const Navbar = ({ announcements = [] }: NavbarProps) => {
   const { data: session, status } = useSession();
   const router = useRouter();
   const pathname = usePathname();
@@ -118,6 +124,10 @@ const Navbar = () => {
 
         <div className='flex items-center gap-4'>
           <CartButton scrolled={scrolled} />
+          <AnnouncementBell
+            announcements={announcements}
+            scrolled={scrolled}
+          />
 
           {!isSessionLoading && (
             <div className='hidden items-center gap-4 lg:flex'>
