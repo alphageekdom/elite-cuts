@@ -1,6 +1,5 @@
 'use client';
-import { toast } from 'sonner';
-import { Toggle, SelectField, inputCls, labelCls, sectionTitleCls, sectionSubCls, btnPrimary, btnGhost } from '../SettingsUI';
+import { Toggle, SelectField, inputCls, labelCls, sectionTitleCls, sectionSubCls, btnPrimary } from '../SettingsUI';
 import type { ShopSettings } from '@/models/ShopSettings';
 
 const ZONES = [
@@ -67,12 +66,7 @@ export default function FulfillmentTab({ values, onChange, onSave, saving }: Pro
             </div>
           ))}
         </div>
-        <button type="button" onClick={() => toast.info('Coming soon')} className={`${btnGhost} mt-4`}>
-          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          Add zone
-        </button>
+        <p className="text-xs text-muted mt-4">Pickup-only is the documented MVP scope.</p>
       </section>
 
       <div className="flex gap-2 pt-2">
