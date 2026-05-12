@@ -179,52 +179,73 @@ export const POST = async (request: NextRequest) => {
     const tax = Math.round((afterDiscounts + deliveryFee) * TAX_RATE * 100) / 100;
     const totalCost = Math.round((afterDiscounts + deliveryFee + tax) * 100) / 100;
 
+    // Atomic per-item decrement with TOCTOU guard (`$gte` filter). Done before
+    // order creation so a partial failure compensates exactly the items that
+    // succeeded — bulkWrite gives us only a total `modifiedCount`, not per-op
+    // outcomes, so we sequence the writes to track them individually.
+    const restoreStock = async (
+      decremented: { productId: Types.ObjectId; qty: number }[],
+    ) => {
+      if (decremented.length === 0) return;
+      await Product.bulkWrite(
+        decremented.map((d) => ({
+          updateOne: {
+            filter: { _id: d.productId },
+            update: { $inc: { stockCount: d.qty } },
+          },
+        })),
+      );
+    };
+
+    const decremented: { productId: Types.ObjectId; qty: number }[] = [];
+    for (const item of orderItems) {
+      const updated = await Product.findOneAndUpdate(
+        { _id: item.product, stockCount: { $gte: item.qty } },
+        { $inc: { stockCount: -item.qty } },
+      );
+      if (!updated) {
+        await restoreStock(decremented);
+        return NextResponse.json(
+          { message: 'One or more items sold out — please refresh your cart' },
+          { status: 409 },
+        );
+      }
+      decremented.push({ productId: item.product, qty: item.qty });
+    }
+
     const paidAt = new Date();
 
-    const order = await Order.create({
-      user: sessionUser.userId,
-      orderItems,
-      subtotal,
-      tax,
-      totalCost,
-      isPaid: true,
-      paidAt,
-      orderStatus: 'Order Placed',
-      paymentMethod: body.paymentMethod as PaymentMethod,
-      paymentResult: {
-        status: 'Completed',
-        amountPaid: totalCost,
-        currency: 'USD',
-        paymentDate: paidAt,
-      },
-      pickupLocation: body.pickupLocation.trim(),
-      pickedUp: false,
-      ...(body.contactName && { contactName: body.contactName }),
-      ...(body.contactEmail && { contactEmail: body.contactEmail }),
-      ...(body.contactPhone && { contactPhone: body.contactPhone }),
-      ...(body.fulfillmentType && { fulfillmentType: body.fulfillmentType }),
-      ...(body.pickupSlot && { pickupSlot: body.pickupSlot }),
-      ...(body.deliveryAddress && { deliveryAddress: body.deliveryAddress }),
-      ...(body.orderNotes && { orderNotes: body.orderNotes }),
-    });
-
-    // Atomic conditional decrement — only fires if stock is still sufficient.
-    // Guards against TOCTOU: two concurrent checkouts for the same last unit.
-    const stockResult = await Product.bulkWrite(
-      orderItems.map((item) => ({
-        updateOne: {
-          filter: { _id: item.product, stockCount: { $gte: item.qty } },
-          update: { $inc: { stockCount: -item.qty } },
+    let order;
+    try {
+      order = await Order.create({
+        user: sessionUser.userId,
+        orderItems,
+        subtotal,
+        tax,
+        totalCost,
+        isPaid: true,
+        paidAt,
+        orderStatus: 'Order Placed',
+        paymentMethod: body.paymentMethod as PaymentMethod,
+        paymentResult: {
+          status: 'Completed',
+          amountPaid: totalCost,
+          currency: 'USD',
+          paymentDate: paidAt,
         },
-      })),
-    );
-
-    if (stockResult.modifiedCount !== orderItems.length) {
-      await Order.findByIdAndDelete(order._id);
-      return NextResponse.json(
-        { message: 'One or more items sold out — please refresh your cart' },
-        { status: 409 },
-      );
+        pickupLocation: body.pickupLocation.trim(),
+        pickedUp: false,
+        ...(body.contactName && { contactName: body.contactName }),
+        ...(body.contactEmail && { contactEmail: body.contactEmail }),
+        ...(body.contactPhone && { contactPhone: body.contactPhone }),
+        ...(body.fulfillmentType && { fulfillmentType: body.fulfillmentType }),
+        ...(body.pickupSlot && { pickupSlot: body.pickupSlot }),
+        ...(body.deliveryAddress && { deliveryAddress: body.deliveryAddress }),
+        ...(body.orderNotes && { orderNotes: body.orderNotes }),
+      });
+    } catch (err) {
+      await restoreStock(decremented);
+      throw err;
     }
 
     await Cart.findOneAndUpdate({ user: sessionUser.userId }, { items: [] });

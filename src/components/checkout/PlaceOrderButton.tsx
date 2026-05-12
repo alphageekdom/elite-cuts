@@ -112,9 +112,16 @@ const PlaceOrderButton = () => {
         return;
       }
 
-      const order = (await res.json()) as { _id: string };
+      const order = (await res.json()) as { _id?: unknown };
+      if (typeof order._id !== 'string' || !order._id) {
+        toast.error('Order created but response was malformed.');
+        return;
+      }
+      // Cart reset happens on the confirmation page (ConfirmationCartReset)
+      // — clearing here would trip CheckoutGuard and bounce to /cart mid-nav.
       router.push(`/checkout/confirmation?orderId=${order._id}`);
-    } catch {
+    } catch (err) {
+      console.error('[PlaceOrderButton] place order failed', err);
       toast.error('Something went wrong. Please try again.');
     } finally {
       setIsLoading(false);
