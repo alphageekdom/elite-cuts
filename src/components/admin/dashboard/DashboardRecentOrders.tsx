@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getInitials, formatMoney, avatarColorForId } from '@/lib/format';
 import { AVATAR_COLORS } from '@/lib/admin-constants';
@@ -6,17 +7,21 @@ import type { OrderRow } from '@/types/admin';
 export type { OrderRow };
 
 const STATUS_STYLES: Record<string, string> = {
-  Completed: 'bg-ink text-cream',
-  'Ready for Pickup': 'bg-green-soft text-green',
-  Pending: 'bg-line-soft text-ink-soft',
-  Cancelled: 'bg-red-soft text-oxblood',
+  'Order Placed':     'bg-line-soft text-ink-soft',
+  'Preparing':        'bg-camel/15 text-camel',
+  'Ready for Pickup': 'bg-camel/15 text-camel',
+  'Out for Delivery': 'bg-camel/15 text-camel',
+  'Completed':        'bg-green-soft text-green',
+  'Cancelled':        'bg-red-soft text-oxblood',
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  Completed: 'Delivered',
+  'Order Placed':     'Placed',
+  'Preparing':        'Preparing',
   'Ready for Pickup': 'Ready',
-  Pending: 'Pending',
-  Cancelled: 'Cancelled',
+  'Out for Delivery': 'Out',
+  'Completed':        'Completed',
+  'Cancelled':        'Cancelled',
 };
 
 
@@ -33,7 +38,7 @@ export default function DashboardRecentOrders({ orders }: Props) {
         <div className="font-display font-medium text-[22px] tracking-[-0.015em] leading-snug">
           Recent <em className="italic text-oxblood font-normal">orders</em>
         </div>
-        <a
+        <Link
           href="/dashboard/orders"
           className="text-ink-soft text-[13px] font-medium inline-flex items-center gap-1.5 border-b border-current pb-px hover:text-oxblood transition-colors hover:gap-2.5"
         >
@@ -41,7 +46,7 @@ export default function DashboardRecentOrders({ orders }: Props) {
           <svg className="w-2.75 h-2.75" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M5 12h14M13 5l7 7-7 7" />
           </svg>
-        </a>
+        </Link>
       </div>
 
       {orders.length === 0 ? (
@@ -107,29 +112,16 @@ export default function DashboardRecentOrders({ orders }: Props) {
                       </span>
                     </td>
                     <td className="py-[18px] px-2.5 border-b border-line-soft text-right">
-                      <div className="inline-flex gap-1.5">
-                        <button
-                          onClick={() => router.push('/dashboard/orders')}
-                          aria-label="View order"
-                          className="w-[30px] h-[30px] rounded-full bg-transparent border border-line text-ink-soft grid place-items-center hover:border-ink hover:bg-cream transition-colors"
-                        >
-                          <svg className="w-[13px] h-[13px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                            <circle cx="12" cy="12" r="3" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => router.push('/dashboard/orders')}
-                          aria-label="More options"
-                          className="w-[30px] h-[30px] rounded-full bg-transparent border border-line text-ink-soft grid place-items-center hover:border-ink hover:bg-cream transition-colors"
-                        >
-                          <svg className="w-[13px] h-[13px]" viewBox="0 0 24 24" fill="currentColor">
-                            <circle cx="12" cy="12" r="1.5" />
-                            <circle cx="19" cy="12" r="1.5" />
-                            <circle cx="5" cy="12" r="1.5" />
-                          </svg>
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => router.push('/dashboard/orders')}
+                        aria-label="View order"
+                        className="w-7.5 h-7.5 rounded-full bg-transparent border border-line text-ink-soft grid place-items-center hover:border-ink hover:bg-cream transition-colors"
+                      >
+                        <svg className="w-3.25 h-3.25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                      </button>
                     </td>
                   </tr>
                 );

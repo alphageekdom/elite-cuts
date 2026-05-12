@@ -17,7 +17,7 @@ export default function DashboardPageHeader({ name }: Props) {
           Welcome back, {name}
         </p>
         <h1 className="font-display font-normal text-[clamp(40px,4.5vw,56px)] leading-none tracking-tight mb-1.5">
-          Today&apos;s{' '}
+          This month&apos;s{' '}
           <em className="italic text-oxblood font-normal">counter.</em>
         </h1>
         <p className="text-muted text-sm tracking-[0.02em]">

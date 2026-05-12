@@ -84,12 +84,12 @@ export default function DashboardRevenueChart({ weeklyRevenue }: Props) {
         <svg className="w-full h-full" viewBox="0 0 600 240" preserveAspectRatio="none">
           <defs>
             <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#6B1F1F" stopOpacity="0.18" />
-              <stop offset="100%" stopColor="#6B1F1F" stopOpacity="0" />
+              <stop offset="0%" stopColor="var(--color-oxblood)" stopOpacity="0.18" />
+              <stop offset="100%" stopColor="var(--color-oxblood)" stopOpacity="0" />
             </linearGradient>
             <linearGradient id="areaGrad2" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#B8895A" stopOpacity="0.14" />
-              <stop offset="100%" stopColor="#B8895A" stopOpacity="0" />
+              <stop offset="0%" stopColor="var(--color-camel)" stopOpacity="0.14" />
+              <stop offset="100%" stopColor="var(--color-camel)" stopOpacity="0" />
             </linearGradient>
           </defs>
 
@@ -98,12 +98,12 @@ export default function DashboardRevenueChart({ weeklyRevenue }: Props) {
           <line x1="0" y1="180" x2="600" y2="180" stroke="rgba(28,24,20,0.06)" strokeDasharray="2 4" />
 
           <path d={prevArea} fill="url(#areaGrad2)" />
-          <path d={prevPath} fill="none" stroke="#B8895A" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.7" />
+          <path d={prevPath} fill="none" stroke="var(--color-camel)" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.7" />
 
           <path d={currentArea} fill="url(#areaGrad)" />
-          <path d={currentPath} fill="none" stroke="#6B1F1F" strokeWidth="2" />
+          <path d={currentPath} fill="none" stroke="var(--color-oxblood)" strokeWidth="2" />
 
-          <circle cx={lastPt.x} cy={lastPt.y} r="5" fill="#FBF7F0" stroke="#6B1F1F" strokeWidth="2" />
+          <circle cx={lastPt.x} cy={lastPt.y} r="5" fill="var(--color-paper)" stroke="var(--color-oxblood)" strokeWidth="2" />
         </svg>
       </div>
 

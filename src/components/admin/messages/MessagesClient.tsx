@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAdminDrawer } from '@/hooks/useAdminDrawer';
 import { toast } from 'sonner';
 import { avatarColorForId, relativeTime, statCellBorderClasses, getInitials, formatDate } from '@/lib/format';
@@ -44,6 +45,7 @@ export default function MessagesClient({
 }: {
   messages: MessageRow[];
 }) {
+  const router = useRouter();
   const [messages, setMessages] = useState(initialMessages);
   const [filter, setFilter] = useState<Filter>('all');
   const [search, setSearch] = useState('');
@@ -77,6 +79,7 @@ export default function MessagesClient({
         prev.map((m) => (m.id === msg.id ? { ...m, status: next } : m)),
       );
       if (drawer?.id === msg.id) setDrawerItem((prev) => prev ? { ...prev, status: next } : prev);
+      router.refresh();
       toast.success(`Marked as ${next}`);
     } catch {
       toast.error('Failed to update status');
@@ -151,7 +154,11 @@ export default function MessagesClient({
               {filtered.map((msg) => (
                 <tr
                   key={msg.id}
-                  className="hover:bg-cream-deep/40 cursor-pointer transition-colors"
+                  className={`cursor-pointer transition-colors ${
+                    msg.status === 'closed'
+                      ? 'bg-cream-deep/30 opacity-60 hover:opacity-100 hover:bg-cream-deep/50'
+                      : 'hover:bg-cream-deep/40'
+                  }`}
                   onClick={() => openDrawer(msg)}
                 >
                   {/* Customer */}
