@@ -179,20 +179,23 @@ export const POST = async (request: NextRequest) => {
     const tax = Math.round((afterDiscounts + deliveryFee) * TAX_RATE * 100) / 100;
     const totalCost = Math.round((afterDiscounts + deliveryFee + tax) * 100) / 100;
 
+    const paidAt = new Date();
+
     const order = await Order.create({
       user: sessionUser.userId,
       orderItems,
       subtotal,
       tax,
       totalCost,
-      isPaid: false,
+      isPaid: true,
+      paidAt,
       orderStatus: 'Order Placed',
       paymentMethod: body.paymentMethod as PaymentMethod,
       paymentResult: {
-        status: 'Pending',
-        amountPaid: 0,
+        status: 'Completed',
+        amountPaid: totalCost,
         currency: 'USD',
-        paymentDate: new Date(),
+        paymentDate: paidAt,
       },
       pickupLocation: body.pickupLocation.trim(),
       pickedUp: false,

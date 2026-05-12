@@ -1,6 +1,5 @@
 'use client';
 import { getInitials, formatDateTime } from '@/lib/format';
-import { productImageSrc } from '@/lib/format';
 import { printReceipt } from '@/lib/print-receipt';
 import type { OrderTableRow } from '@/types/admin';
 
@@ -71,29 +70,9 @@ export default function OrderTableRowComponent({
       </td>
 
       <td className="px-4 py-4">
-        <div className="flex items-center gap-2">
-          <div className="flex">
-            {order.items.slice(0, 3).map((item, idx) => {
-              const src = productImageSrc(item.image);
-              return (
-                <div key={idx} className="w-7 h-7 rounded bg-cream-deep border-2 border-paper -ml-2 first:ml-0 shrink-0 overflow-hidden">
-                  {src && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={src} alt={item.name} className="w-full h-full object-cover" />
-                  )}
-                </div>
-              );
-            })}
-            {order.items.length > 3 && (
-              <span className="font-mono text-[10px] text-ink-soft bg-cream-deep px-1.5 py-1 rounded ml-1">
-                +{order.items.length - 3}
-              </span>
-            )}
-          </div>
-          <span className="text-[13px] text-ink-soft">
-            {order.items.length} cut{order.items.length !== 1 ? 's' : ''}
-          </span>
-        </div>
+        <span className="text-[13px] text-ink-soft">
+          {order.items.length} cut{order.items.length !== 1 ? 's' : ''}
+        </span>
       </td>
 
       <td className="px-4 py-4">
