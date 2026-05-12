@@ -2,6 +2,9 @@ import StoreInfoModal from '@/components/ui/StoreInfoModal';
 import Reveal from '@/components/uielements/Reveal';
 import { formatDaysUntil, getActiveHoliday } from '@/lib/holidays';
 
+const titleCaseCut = (slug: string) =>
+  slug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join('-');
+
 export default function HolidaySection() {
   const active = getActiveHoliday();
   if (!active) return null;
@@ -43,16 +46,39 @@ export default function HolidaySection() {
         </Reveal>
 
         <Reveal delayMs={160}>
-          <p className='mb-10 max-w-[48ch] text-[17px] leading-relaxed text-cream/85'>
+          <p className='mb-8 max-w-[48ch] text-[clamp(15px,1.5vw,17px)] leading-relaxed text-cream/85'>
             {holiday.name} is {whenLower}. Pre-order at the counter 1–2 weeks
             ahead — premium cuts go fast.
           </p>
         </Reveal>
 
-        <Reveal delayMs={240}>
+        {holiday.cuts.length > 0 && (
+          <Reveal delayMs={220}>
+            <div className='mb-10'>
+              <div
+                id='holiday-cuts-label'
+                className='mb-3 text-[10px] font-medium uppercase tracking-[0.22em] text-cream/60'
+              >
+                What to reserve
+              </div>
+              <ul aria-labelledby='holiday-cuts-label' className='flex flex-wrap gap-2'>
+                {holiday.cuts.map((cut) => (
+                  <li
+                    key={cut}
+                    className='rounded-full border border-cream/20 bg-cream/10 px-3.5 py-1.5 text-[11px] font-medium tracking-[0.18em] uppercase text-cream/90 backdrop-blur-sm'
+                  >
+                    {titleCaseCut(cut)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </Reveal>
+        )}
+
+        <Reveal delayMs={300}>
           <StoreInfoModal
             label='Visit us in‑store →'
-            triggerClassName='inline-flex items-center gap-2.5 rounded-full bg-cream px-7 py-4 text-[14px] font-medium tracking-[0.04em] text-ink transition-colors duration-300 hover:bg-cream-deep'
+            triggerClassName='inline-flex items-center gap-2.5 rounded-full bg-cream px-7 py-4 text-[14px] font-medium tracking-[0.04em] text-ink transition-colors duration-300 hover:bg-cream-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cream focus-visible:ring-offset-2 focus-visible:ring-offset-ink/40'
           />
         </Reveal>
       </div>
