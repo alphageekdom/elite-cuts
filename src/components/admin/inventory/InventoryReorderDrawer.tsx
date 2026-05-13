@@ -5,32 +5,63 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import type { InventoryRow } from './InventoryClient';
 
+export type ReorderDrawerMode = 'reorder' | 'log-delivery';
+
 type Props = {
-  row: InventoryRow;
+  row: InventoryRow | null;
+  mode?: ReorderDrawerMode;
+  rows?: InventoryRow[];
   onClose: () => void;
 };
 
-type ReorderStatus = 'scheduled' | 'pending' | 'confirmed';
+type DeliveryStatus = 'scheduled' | 'pending' | 'confirmed' | 'received';
 
-export default function InventoryReorderDrawer({ row, onClose }: Props) {
+function defaultIsoDate(mode: ReorderDrawerMode): string {
+  const d = new Date();
+  if (mode === 'reorder') d.setDate(d.getDate() + 7);
+  return d.toISOString().slice(0, 10);
+}
+
+export default function InventoryReorderDrawer({ row, mode = 'reorder', rows = [], onClose }: Props) {
   const router = useRouter();
 
-  const defaultDate = new Date();
-  defaultDate.setDate(defaultDate.getDate() + 7);
+  const [productId, setProductId] = useState<string>(row?.id ?? '');
+  const selectedRow = row ?? rows.find((r) => r.id === productId) ?? null;
 
-  const [supplier, setSupplier] = useState(row.supplier || '');
-  const [detail, setDetail] = useState(`Reorder: ${row.name}`);
-  const [date, setDate] = useState(defaultDate.toISOString().slice(0, 10));
-  const [status, setStatus] = useState<ReorderStatus>(
-    (row.deliveryStatus as ReorderStatus) ?? 'scheduled',
+  const [supplier, setSupplier] = useState(selectedRow?.supplier ?? '');
+  const [detail, setDetail] = useState(
+    selectedRow ? `${mode === 'reorder' ? 'Reorder' : 'Received'}: ${selectedRow.name}` : '',
   );
+  const [date, setDate] = useState(defaultIsoDate(mode));
+  const [status, setStatus] = useState<DeliveryStatus>(
+    mode === 'log-delivery'
+      ? 'received'
+      : (selectedRow?.deliveryStatus as DeliveryStatus) ?? 'scheduled',
+  );
+  const [receivedQty, setReceivedQty] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // When a product is picked in the log-delivery picker, prefill the supplier
+  // and detail fields if they're still untouched.
+  function handleProductPick(id: string) {
+    setProductId(id);
+    const picked = rows.find((r) => r.id === id);
+    if (!picked) return;
+    setSupplier((prev) => prev.trim() === '' ? picked.supplier ?? '' : prev);
+    setDetail((prev) =>
+      prev.trim() === '' || /^(Reorder|Received): /.test(prev)
+        ? `${mode === 'reorder' ? 'Reorder' : 'Received'}: ${picked.name}`
+        : prev,
+    );
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!date || !supplier.trim()) return;
+    const effectiveProductId = row?.id ?? productId;
+    if (!date || !supplier.trim() || !effectiveProductId) return;
     setSaving(true);
     try {
+      const qty = receivedQty.trim() ? Number.parseInt(receivedQty, 10) : null;
       const res = await fetch('/api/deliveries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -39,19 +70,28 @@ export default function InventoryReorderDrawer({ row, onClose }: Props) {
           supplier: supplier.trim(),
           detail: detail.trim(),
           status,
-          productId: row.id,
+          productId: effectiveProductId,
+          ...(status === 'received' && qty !== null && qty >= 0 ? { receivedQty: qty } : {}),
         }),
       });
       if (!res.ok) {
         const { message } = await res.json();
-        toast.error(message ?? 'Failed to create delivery');
+        toast.error(message ?? 'Failed to log delivery');
         return;
       }
-      toast.success('Delivery scheduled');
+      if (status === 'received') {
+        toast.success(
+          qty && qty > 0
+            ? `Delivery logged · +${qty} added to stock`
+            : 'Delivery logged',
+        );
+      } else {
+        toast.success('Delivery scheduled');
+      }
       onClose();
       router.refresh();
     } catch {
-      toast.error('Failed to create delivery');
+      toast.error('Failed to log delivery');
     } finally {
       setSaving(false);
     }
@@ -60,6 +100,19 @@ export default function InventoryReorderDrawer({ row, onClose }: Props) {
   const fieldCls =
     'w-full bg-cream border border-line-soft rounded-lg px-4 py-2.5 text-[14px] text-ink placeholder:text-muted focus:outline-none focus:border-ink transition-colors';
 
+  const isLogDelivery = mode === 'log-delivery';
+  const eyebrow = isLogDelivery ? 'Log delivery' : 'Order more';
+  const headlineRow = row ?? selectedRow;
+  const headline = headlineRow?.name ?? (isLogDelivery ? 'Received delivery' : 'Reorder');
+  const submitLabel = saving
+    ? isLogDelivery
+      ? 'Logging…'
+      : 'Scheduling…'
+    : isLogDelivery
+      ? 'Log delivery'
+      : 'Schedule delivery';
+  const submitDisabled = saving || !supplier.trim() || !date || (!row && !productId);
+
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-ink/40" onClick={onClose} aria-hidden="true" />
@@ -67,11 +120,11 @@ export default function InventoryReorderDrawer({ row, onClose }: Props) {
         {/* Header */}
         <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-line-soft shrink-0">
           <div className="pr-4">
-            <div className="text-[11px] tracking-widest uppercase text-muted mb-1.5">Order more</div>
+            <div className="text-[11px] tracking-widest uppercase text-muted mb-1.5">{eyebrow}</div>
             <h2 className="font-display text-[20px] font-normal tracking-tight leading-snug">
-              {row.name}
+              {headline}
             </h2>
-            {row.deliveryStatus && (
+            {row?.deliveryStatus && (
               <div className="flex items-center gap-2 mt-2">
                 <span className="text-[11px] text-muted">Existing delivery:</span>
                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium ${
@@ -99,6 +152,30 @@ export default function InventoryReorderDrawer({ row, onClose }: Props) {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 px-6 py-5 gap-5">
+          {!row && isLogDelivery && (
+            <div>
+              <label className="block text-[12px] font-medium text-ink-soft tracking-widest uppercase mb-1.5">
+                Cut
+              </label>
+              <select
+                value={productId}
+                onChange={(e) => handleProductPick(e.target.value)}
+                required
+                className={fieldCls}
+              >
+                <option value="" disabled>Pick a cut…</option>
+                {rows
+                  .slice()
+                  .sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name))
+                  .map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.category} · {r.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          )}
+
           <div>
             <label className="block text-[12px] font-medium text-ink-soft tracking-widest uppercase mb-1.5">
               Supplier
@@ -128,7 +205,7 @@ export default function InventoryReorderDrawer({ row, onClose }: Props) {
 
           <div>
             <label className="block text-[12px] font-medium text-ink-soft tracking-widest uppercase mb-1.5">
-              Expected delivery
+              {isLogDelivery ? 'Received on' : 'Expected delivery'}
             </label>
             <input
               type="date"
@@ -145,22 +222,44 @@ export default function InventoryReorderDrawer({ row, onClose }: Props) {
             </label>
             <select
               value={status}
-              onChange={(e) => setStatus(e.target.value as ReorderStatus)}
+              onChange={(e) => setStatus(e.target.value as DeliveryStatus)}
               className={fieldCls}
             >
               <option value="scheduled">Scheduled</option>
               <option value="pending">Pending</option>
               <option value="confirmed">Confirmed</option>
+              <option value="received">Received</option>
             </select>
           </div>
+
+          {status === 'received' && (
+            <div>
+              <label className="block text-[12px] font-medium text-ink-soft tracking-widest uppercase mb-1.5">
+                Received qty
+              </label>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                step={1}
+                value={receivedQty}
+                onChange={(e) => setReceivedQty(e.target.value)}
+                placeholder="e.g. 24"
+                className={fieldCls}
+              />
+              <p className="text-[11px] text-muted mt-1.5">
+                Stock count gets bumped by this amount on save.
+              </p>
+            </div>
+          )}
 
           <div className="mt-auto pt-4 border-t border-line-soft">
             <button
               type="submit"
-              disabled={saving || !supplier.trim() || !date}
+              disabled={submitDisabled}
               className="w-full bg-ink text-cream text-[13px] font-medium tracking-[0.04em] py-3 rounded-full hover:bg-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {saving ? 'Scheduling…' : 'Schedule delivery'}
+              {submitLabel}
             </button>
           </div>
         </form>
