@@ -8,11 +8,13 @@ import type { Types } from 'mongoose';
 
 import DashboardPageHeader from '@/components/admin/dashboard/DashboardPageHeader';
 import DashboardStatGrid from '@/components/admin/dashboard/DashboardStatGrid';
-import DashboardRevenueChart from '@/components/admin/dashboard/DashboardRevenueChart';
 import DashboardTopCuts from '@/components/admin/dashboard/DashboardTopCuts';
 import DashboardQuickActions from '@/components/admin/dashboard/DashboardQuickActions';
 import DashboardRecentOrders from '@/components/admin/dashboard/DashboardRecentOrders';
 import type { OrderRow } from '@/components/admin/dashboard/DashboardRecentOrders';
+import RevenueCard, { type RevenueBucket } from '@/components/admin/analytics/RevenueCard';
+import type { RangeKey } from '@/components/admin/analytics/RangeToggle';
+import { MONTH_ABBR } from '@/lib/format';
 
 type PopulatedUser = {
   _id: Types.ObjectId;
@@ -26,7 +28,31 @@ export const metadata: Metadata = {
   title: 'Dashboard · EliteCuts Admin',
 };
 
-export default async function AdminDashboardPage() {
+const DAY_MS = 86400000;
+const WEEKDAY_ABBR = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+
+const ALLOWED_RANGES: RangeKey[] = ['7D', '30D', '90D', '1Y'];
+const RANGE_DAYS: Record<RangeKey, number> = { '7D': 7, '30D': 30, '90D': 90, '1Y': 360 };
+const RANGE_BUCKETS: Record<
+  RangeKey,
+  { count: number; sizeDays: number; unit: 'Day' | 'Week' | 'Biweekly' | 'Monthly' }
+> = {
+  '7D': { count: 7, sizeDays: 1, unit: 'Day' },
+  '30D': { count: 5, sizeDays: 6, unit: 'Week' },
+  '90D': { count: 6, sizeDays: 15, unit: 'Biweekly' },
+  '1Y': { count: 12, sizeDays: 30, unit: 'Monthly' },
+};
+
+const parseRange = (raw: string | undefined): RangeKey => {
+  const upper = raw?.toUpperCase();
+  return ALLOWED_RANGES.includes(upper as RangeKey) ? (upper as RangeKey) : '30D';
+};
+
+type Props = {
+  searchParams: Promise<{ range?: string }>;
+};
+
+export default async function AdminDashboardPage({ searchParams }: Props) {
   const sessionUser = await getSessionUser();
 
   if (!sessionUser?.user?.isAdmin) {
@@ -35,12 +61,20 @@ export default async function AdminDashboardPage() {
 
   await connectDB();
 
+  const { range: rangeParam } = await searchParams;
+  const range = parseRange(rangeParam);
+  const rangeDays = RANGE_DAYS[range];
+  const bucketCfg = RANGE_BUCKETS[range];
+
   const now = new Date();
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000);
-  const sixtyDaysAgo = new Date(now.getTime() - 60 * 86400000);
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * DAY_MS);
+  const sixtyDaysAgo = new Date(now.getTime() - 60 * DAY_MS);
+  const chartWindowStart = new Date(now.getTime() - rangeDays * DAY_MS);
+  const chartPrevWindowStart = new Date(now.getTime() - 2 * rangeDays * DAY_MS);
 
   const [
-    usersCount, ordersCount, revenueResult, rawOrders, topCutsRaw, weeklyRaw, weeklyPrevRaw,
+    usersCount, ordersCount, revenueResult, rawOrders, topCutsRaw,
+    chartOrders, chartPrevOrders,
     currentPeriodAgg, prevPeriodAgg, currentCustomers, prevCustomers,
   ] = await Promise.all([
       User.countDocuments({}),
@@ -68,36 +102,14 @@ export default async function AdminDashboardPage() {
         { $sort: { revenue: -1 } },
         { $limit: 5 },
       ]),
-      // Weekly revenue buckets — current 30 days split into 5 weeks
-      Order.aggregate<{ _id: number; revenue: number }>([
-        { $match: { createdAt: { $gte: thirtyDaysAgo } } },
-        {
-          $group: {
-            _id: {
-              $floor: {
-                $divide: [{ $subtract: ['$createdAt', thirtyDaysAgo] }, 7 * 86400000],
-              },
-            },
-            revenue: { $sum: '$totalCost' },
-          },
-        },
-        { $sort: { _id: 1 } },
-      ]),
-      // Weekly revenue buckets — prior 30 days
-      Order.aggregate<{ _id: number; revenue: number }>([
-        { $match: { createdAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo } } },
-        {
-          $group: {
-            _id: {
-              $floor: {
-                $divide: [{ $subtract: ['$createdAt', sixtyDaysAgo] }, 7 * 86400000],
-              },
-            },
-            revenue: { $sum: '$totalCost' },
-          },
-        },
-        { $sort: { _id: 1 } },
-      ]),
+      // Orders inside the active chart range — bucketed in JS so bucket size
+      // (daily / weekly / biweekly / monthly) varies with the selected range.
+      Order.find({ createdAt: { $gte: chartWindowStart } }, 'createdAt totalCost').lean().exec(),
+      // Same shape, previous comparable period.
+      Order.find(
+        { createdAt: { $gte: chartPrevWindowStart, $lt: chartWindowStart } },
+        'createdAt totalCost',
+      ).lean().exec(),
       // Current 30-day period: revenue + order count
       Order.aggregate<{ total: number; count: number }>([
         { $match: { createdAt: { $gte: thirtyDaysAgo } } },
@@ -132,18 +144,38 @@ export default async function AdminDashboardPage() {
     widthPct: Math.round((c.revenue / maxRevenue) * 100),
   }));
 
-  // Weekly revenue — fill 5 buckets (weeks 0–4) with 0 for missing weeks
-  const toWeekBuckets = (raw: { _id: number; revenue: number }[]) => {
-    const buckets = [0, 0, 0, 0, 0];
-    for (const { _id, revenue: r } of raw) {
-      if (_id >= 0 && _id < 5) buckets[_id] = r;
+  // Bucket chart orders into range-sized windows — daily for 7D, weekly for
+  // 30D, biweekly for 90D, monthly for 1Y. Same shape RevenueCard expects.
+  const chartBuckets: RevenueBucket[] = [];
+  for (let i = bucketCfg.count - 1; i >= 0; i--) {
+    const bEnd = new Date(now.getTime() - i * bucketCfg.sizeDays * DAY_MS);
+    const bStart = new Date(bEnd.getTime() - bucketCfg.sizeDays * DAY_MS);
+    const prevEnd = new Date(bEnd.getTime() - rangeDays * DAY_MS);
+    const prevStart = new Date(bStart.getTime() - rangeDays * DAY_MS);
+
+    let label: string;
+    if (bucketCfg.unit === 'Day') {
+      label = WEEKDAY_ABBR[bEnd.getDay()];
+    } else if (bucketCfg.unit === 'Week') {
+      label = `WK ${bucketCfg.count - i}`;
+    } else if (bucketCfg.unit === 'Monthly') {
+      label = MONTH_ABBR[bStart.getMonth()];
+    } else {
+      label = `${MONTH_ABBR[bStart.getMonth()]} ${bStart.getDate()}`;
     }
-    return buckets;
-  };
-  const weeklyRevenue = {
-    current: toWeekBuckets(weeklyRaw),
-    prev: toWeekBuckets(weeklyPrevRaw),
-  };
+
+    chartBuckets.push({
+      label,
+      value: chartOrders
+        .filter((o) => o.createdAt >= bStart && o.createdAt < bEnd)
+        .reduce((s, o) => s + o.totalCost, 0),
+      prevValue: chartPrevOrders
+        .filter((o) => o.createdAt >= prevStart && o.createdAt < prevEnd)
+        .reduce((s, o) => s + o.totalCost, 0),
+    });
+  }
+  const chartTotal = chartOrders.reduce((s, o) => s + o.totalCost, 0);
+  const chartPrevTotal = chartPrevOrders.reduce((s, o) => s + o.totalCost, 0);
 
   const orders: OrderRow[] = rawOrders.map((order) => {
     const idStr = order._id.toString();
@@ -179,7 +211,14 @@ export default async function AdminDashboardPage() {
         prevMonthCustomers={prevCustomers}
       />
       <div className="grid grid-cols-1 lg:grid-cols-[1.7fr_1fr] gap-4 mb-4">
-        <DashboardRevenueChart weeklyRevenue={weeklyRevenue} />
+        <RevenueCard
+          range={range}
+          buckets={chartBuckets}
+          bucketUnit={bucketCfg.unit}
+          revenueTotal={chartTotal}
+          revenuePrevTotal={chartPrevTotal}
+          basePath="/dashboard"
+        />
         <DashboardTopCuts cuts={topCuts} />
       </div>
       <DashboardQuickActions />

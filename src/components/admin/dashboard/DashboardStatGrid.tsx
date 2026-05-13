@@ -124,7 +124,7 @@ export default function DashboardStatGrid({
       valueSuffix: `.${revCents}`,
       change: revChange?.label ?? '—',
       changeDir: revChange?.dir ?? 'up',
-      changeMeta: revChange ? 'vs last month' : 'no prior data',
+      changeMeta: revChange ? 'vs prior 30 days' : 'no prior data',
       delay: '0.05s',
       icon: (
         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -138,7 +138,7 @@ export default function DashboardStatGrid({
       value: orders.toLocaleString(),
       change: ordChange?.label ?? '—',
       changeDir: ordChange?.dir ?? 'up',
-      changeMeta: ordChange ? 'vs last month' : 'no prior data',
+      changeMeta: ordChange ? 'vs prior 30 days' : 'no prior data',
       delay: '0.12s',
       icon: (
         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -153,7 +153,7 @@ export default function DashboardStatGrid({
       value: customers.toLocaleString(),
       change: custChange?.label ?? '—',
       changeDir: custChange?.dir ?? 'up',
-      changeMeta: custChange ? 'vs last month' : 'no prior data',
+      changeMeta: custChange ? 'vs prior 30 days' : 'no prior data',
       delay: '0.19s',
       icon: (
         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -169,7 +169,7 @@ export default function DashboardStatGrid({
       valueSuffix: `.${avgCents}`,
       change: avgChange?.label ?? '—',
       changeDir: avgChange?.dir ?? 'up',
-      changeMeta: avgChange ? 'vs last month' : 'no prior data',
+      changeMeta: avgChange ? 'vs prior 30 days' : 'no prior data',
       delay: '0.26s',
       icon: (
         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

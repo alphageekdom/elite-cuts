@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { fmtDollars } from './sections/analytics-utils';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import AnalyticsKpiGrid from './sections/AnalyticsKpiGrid';
@@ -8,7 +7,10 @@ import AnalyticsRevenueChart from './sections/AnalyticsRevenueChart';
 import AnalyticsBestSellersSection from './sections/AnalyticsBestSellersSection';
 import AnalyticsHeatmap from './sections/AnalyticsHeatmap';
 
+export type AnalyticsRange = '7D' | '30D' | '90D' | '1Y';
+
 export type AnalyticsData = {
+  range: AnalyticsRange;
   periodLabel: string;
   revenue: number;
   revenueChange: number;
@@ -39,17 +41,15 @@ export type AnalyticsData = {
     changePct: number;
     changeDir: 'up' | 'down';
   }[];
-  weeklyRevenue: number[];
-  weeklyRevenuePrev: number[];
-  weeklyRevenueTotal: number;
-  weeklyRevenuePrevTotal: number;
+  buckets: { label: string; value: number; prevValue: number }[];
+  bucketUnit: 'Day' | 'Week' | 'Biweekly' | 'Monthly';
+  revenueTotal: number;
+  revenuePrevTotal: number;
   heatmap: number[][];
   heatmapRevenue: number[][];
 };
 
 export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
-  const [period, setPeriod] = useState<'7D' | '30D' | '90D' | '1Y' | 'Custom'>('30D');
-
   const { whole: revWhole, frac: revFrac } = fmtDollars(data.revenue);
   const { whole: aovWhole, frac: aovFrac } = fmtDollars(data.aov);
 
@@ -62,32 +62,17 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
         titleAccent="analytics"
         subtitle={data.periodLabel}
         actions={
-          <>
-            <div className="inline-flex bg-paper border border-line rounded-full p-[3px]">
-              {(['7D', '30D', '90D', '1Y', 'Custom'] as const).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setPeriod(p)}
-                  className={`px-3.5 py-1.5 rounded-full text-[12px] font-medium transition-colors ${
-                    period === p ? 'bg-ink text-cream' : 'text-ink-soft hover:text-ink'
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={() => window.print()}
-              className="inline-flex items-center gap-2 px-4.5 py-2.5 rounded-full bg-paper border border-line text-ink-soft text-[13px] font-medium tracking-[0.02em] hover:border-ink hover:text-ink transition-colors"
-            >
-              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
-              Export PDF
-            </button>
-          </>
+          <button
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-2 px-4.5 py-2.5 rounded-full bg-paper border border-line text-ink-soft text-[13px] font-medium tracking-[0.02em] hover:border-ink hover:text-ink transition-colors"
+          >
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Export PDF
+          </button>
         }
       />
 
@@ -109,7 +94,7 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
               <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                 <polyline points="18 15 12 9 6 15" />
               </svg>
-              {data.revenueChange >= 0 ? '+' : ''}{data.revenueChange.toFixed(1)}% vs last month
+              {data.revenueChange >= 0 ? '+' : ''}{data.revenueChange.toFixed(1)}% vs previous period
             </span>
             <div className="mt-4 text-[13px] text-cream/65 font-mono tracking-[0.04em]">
               {data.orderCount} ORDERS · {aovWhole}.{aovFrac} AVG ·{' '}

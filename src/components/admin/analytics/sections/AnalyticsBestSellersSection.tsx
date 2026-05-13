@@ -12,7 +12,7 @@ export default function AnalyticsBestSellersSection({ data }: { data: AnalyticsD
           <div className="font-display font-medium text-[22px] tracking-[-0.015em] leading-snug">
             Best <em className="italic text-oxblood font-normal">sellers</em>
           </div>
-          <div className="text-[12px] text-muted mt-1">By revenue, this month</div>
+          <div className="text-[12px] text-muted mt-1">By revenue, this period</div>
         </div>
 
         {data.bestSellers.length === 0 ? (
@@ -119,8 +119,8 @@ export default function AnalyticsBestSellersSection({ data }: { data: AnalyticsD
             {
               tag: 'up',
               body: data.bestSellers[0]
-                ? `<strong>${data.bestSellers[0].name}</strong> is your top earner this month — consider featuring it.`
-                : '<strong>Beef cuts</strong> are driving the majority of this month\'s revenue.',
+                ? `<strong>${data.bestSellers[0].name}</strong> is your top earner this period — consider featuring it.`
+                : '<strong>Beef cuts</strong> are driving the majority of this period\'s revenue.',
             },
             {
               tag: 'alert',
@@ -134,7 +134,7 @@ export default function AnalyticsBestSellersSection({ data }: { data: AnalyticsD
             },
             {
               tag: 'up',
-              body: `<strong>${data.newCustomers} new customers this month</strong>${data.newCustomersChange > 0 ? `, +${data.newCustomersChange.toFixed(0)}%` : ''} — track repeat orders over the next 30 days.`,
+              body: `<strong>${data.newCustomers} new customers this period</strong>${data.newCustomersChange > 0 ? `, +${data.newCustomersChange.toFixed(0)}%` : ''} — track repeat orders over the next 30 days.`,
             },
           ].map((ins, i) => (
             <div key={i} className="flex items-start gap-3.5 px-4.5 py-3.5 bg-cream border border-line-soft rounded-sm">

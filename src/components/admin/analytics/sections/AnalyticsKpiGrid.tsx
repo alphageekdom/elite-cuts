@@ -22,7 +22,7 @@ export default function AnalyticsKpiGrid({ data }: { data: AnalyticsData }) {
         </div>
         <div className="flex items-center gap-2 text-[12px] text-muted">
           <ChangePill val={data.aovChange} />
-          vs last month
+          vs previous period
         </div>
       </div>
 
@@ -62,7 +62,7 @@ export default function AnalyticsKpiGrid({ data }: { data: AnalyticsData }) {
         </div>
         <div className="flex items-center gap-2 text-[12px] text-muted">
           <ChangePill val={data.newCustomersChange} />
-          this month
+          this period
         </div>
       </div>
 

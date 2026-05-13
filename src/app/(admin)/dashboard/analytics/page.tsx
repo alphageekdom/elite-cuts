@@ -5,7 +5,7 @@ import OrderModel from '@/models/Order';
 import User from '@/models/User';
 
 import type { Metadata } from 'next';
-import AnalyticsClient, { type AnalyticsData } from '@/components/admin/analytics/AnalyticsClient';
+import AnalyticsClient, { type AnalyticsData, type AnalyticsRange } from '@/components/admin/analytics/AnalyticsClient';
 import { MONTH_ABBR } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
@@ -25,7 +25,36 @@ const CHART_CATEGORY_COLORS: Record<string, string> = {
   Other: 'var(--color-camel-soft)',
 };
 
-export default async function AdminAnalyticsPage() {
+const DAY_MS = 24 * 60 * 60 * 1000;
+const WEEKDAY_ABBR = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+
+const ALLOWED_RANGES = ['7D', '30D', '90D', '1Y'] as const satisfies readonly AnalyticsRange[];
+const RANGE_DAYS: Record<AnalyticsRange, number> = { '7D': 7, '30D': 30, '90D': 90, '1Y': 360 };
+
+// Each range gets its own bucket shape so the revenue chart stays readable:
+// daily for a week, weekly for a month, biweekly for a quarter, monthly for a year.
+const RANGE_BUCKETS: Record<
+  AnalyticsRange,
+  { count: number; sizeDays: number; unit: 'Day' | 'Week' | 'Biweekly' | 'Monthly' }
+> = {
+  '7D': { count: 7, sizeDays: 1, unit: 'Day' },
+  '30D': { count: 5, sizeDays: 6, unit: 'Week' },
+  '90D': { count: 6, sizeDays: 15, unit: 'Biweekly' },
+  '1Y': { count: 12, sizeDays: 30, unit: 'Monthly' },
+};
+
+const parseRange = (raw: string | undefined): AnalyticsRange => {
+  const upper = raw?.toUpperCase();
+  return (ALLOWED_RANGES as readonly string[]).includes(upper ?? '')
+    ? (upper as AnalyticsRange)
+    : '30D';
+};
+
+type Props = {
+  searchParams: Promise<{ range?: string }>;
+};
+
+export default async function AdminAnalyticsPage({ searchParams }: Props) {
   const sessionUser = await getSessionUser();
 
   if (!sessionUser?.user?.isAdmin) {
@@ -34,15 +63,20 @@ export default async function AdminAnalyticsPage() {
 
   await connectDB();
 
+  const { range: rangeParam } = await searchParams;
+  const range = parseRange(rangeParam);
+  const days = RANGE_DAYS[range];
+  const bucketCfg = RANGE_BUCKETS[range];
+
   const now = new Date();
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+  const windowStart = new Date(now.getTime() - days * DAY_MS);
+  const prevWindowStart = new Date(now.getTime() - 2 * days * DAY_MS);
 
   const [currentOrders, previousOrders, newCustomers, prevNewCustomers] = await Promise.all([
-    OrderModel.find({ createdAt: { $gte: thirtyDaysAgo } }).lean().exec(),
-    OrderModel.find({ createdAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo } }).lean().exec(),
-    User.countDocuments({ createdAt: { $gte: thirtyDaysAgo }, isAdmin: { $ne: true } }),
-    User.countDocuments({ createdAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo }, isAdmin: { $ne: true } }),
+    OrderModel.find({ createdAt: { $gte: windowStart } }).lean().exec(),
+    OrderModel.find({ createdAt: { $gte: prevWindowStart, $lt: windowStart } }).lean().exec(),
+    User.countDocuments({ createdAt: { $gte: windowStart }, isAdmin: { $ne: true } }),
+    User.countDocuments({ createdAt: { $gte: prevWindowStart, $lt: windowStart }, isAdmin: { $ne: true } }),
   ]);
 
   // Revenue
@@ -153,22 +187,34 @@ export default async function AdminAnalyticsPage() {
       };
     });
 
-  // Weekly revenue chart (5 weeks, newest last)
-  const weeklyRevenue: number[] = [];
-  const weeklyRevenuePrev: number[] = [];
-  for (let w = 4; w >= 0; w--) {
-    const wEnd = new Date(now.getTime() - w * 7 * 24 * 60 * 60 * 1000);
-    const wStart = new Date(wEnd.getTime() - 7 * 24 * 60 * 60 * 1000);
-    weeklyRevenue.push(
-      currentOrders
-        .filter((o) => o.createdAt >= wStart && o.createdAt < wEnd)
+  // Buckets sized to the active range: 7D → daily, 30D → weekly, 90D → biweekly.
+  const buckets: AnalyticsData['buckets'] = [];
+  for (let i = bucketCfg.count - 1; i >= 0; i--) {
+    const bEnd = new Date(now.getTime() - i * bucketCfg.sizeDays * DAY_MS);
+    const bStart = new Date(bEnd.getTime() - bucketCfg.sizeDays * DAY_MS);
+    const prevEnd = new Date(bEnd.getTime() - days * DAY_MS);
+    const prevStart = new Date(bStart.getTime() - days * DAY_MS);
+
+    let label: string;
+    if (bucketCfg.unit === 'Day') {
+      label = WEEKDAY_ABBR[bEnd.getDay()];
+    } else if (bucketCfg.unit === 'Week') {
+      label = `WK ${bucketCfg.count - i}`;
+    } else if (bucketCfg.unit === 'Monthly') {
+      label = MONTH_ABBR[bStart.getMonth()];
+    } else {
+      label = `${MONTH_ABBR[bStart.getMonth()]} ${bStart.getDate()}`;
+    }
+
+    buckets.push({
+      label,
+      value: currentOrders
+        .filter((o) => o.createdAt >= bStart && o.createdAt < bEnd)
         .reduce((s, o) => s + o.totalCost, 0),
-    );
-    weeklyRevenuePrev.push(
-      previousOrders
-        .filter((o) => o.createdAt >= wStart && o.createdAt < wEnd)
+      prevValue: previousOrders
+        .filter((o) => o.createdAt >= prevStart && o.createdAt < prevEnd)
         .reduce((s, o) => s + o.totalCost, 0),
-    );
+    });
   }
 
   // Heatmap: 7 rows (Mon–Sun) × 12 cols (9A–8P), normalized 0–5 for both volume and revenue
@@ -195,9 +241,10 @@ export default async function AdminAnalyticsPage() {
   );
 
   // Period label
-  const periodLabel = `${MONTH_ABBR[thirtyDaysAgo.getMonth()]} ${thirtyDaysAgo.getDate()} – ${MONTH_ABBR[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()} · Compared to previous 30 days`;
+  const periodLabel = `${MONTH_ABBR[windowStart.getMonth()]} ${windowStart.getDate()} – ${MONTH_ABBR[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()} · Compared to previous ${days} days`;
 
   const data: AnalyticsData = {
+    range,
     periodLabel,
     revenue,
     revenueChange,
@@ -212,10 +259,10 @@ export default async function AdminAnalyticsPage() {
     cancelRateChange,
     categories,
     bestSellers,
-    weeklyRevenue,
-    weeklyRevenuePrev,
-    weeklyRevenueTotal: revenue,
-    weeklyRevenuePrevTotal: prevRevenue,
+    buckets,
+    bucketUnit: bucketCfg.unit,
+    revenueTotal: revenue,
+    revenuePrevTotal: prevRevenue,
     heatmap,
     heatmapRevenue,
   };
