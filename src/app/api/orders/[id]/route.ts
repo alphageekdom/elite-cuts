@@ -10,6 +10,7 @@ import { getSessionUser } from '@/utils/getSessionUser';
 import { withAdmin } from '@/lib/api-handler';
 import { isIn } from '@/lib/validation';
 import { refundSummary, paymentStatusFor } from '@/lib/order-refunds';
+import { getShopSettings } from '@/lib/shopSettings';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -260,12 +261,17 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
       const pointsEarned = Math.floor(existing.totalCost);
       await User.findByIdAndUpdate(existing.user, { $inc: { rewardPoints: pointsEarned } });
 
-      // Fire low_stock notifications — non-blocking
+      // Fire low_stock notifications — non-blocking. Gated on
+      // settings.notifLowStock; getShopSettings fails open so a settings
+      // outage doesn't silence the alert.
       const productIds = existing.orderItems.map((i) => i.product);
-      Promise.all([
-        Product.find({ _id: { $in: productIds }, parLevel: { $gt: 0 } }, 'name stockCount parLevel').lean(),
-        User.find({ isAdmin: true }, '_id').lean(),
-      ]).then(([products, admins]) => {
+      (async () => {
+        const settings = await getShopSettings();
+        if (!settings.notifLowStock) return;
+        const [products, admins] = await Promise.all([
+          Product.find({ _id: { $in: productIds }, parLevel: { $gt: 0 } }, 'name stockCount parLevel').lean(),
+          User.find({ isAdmin: true }, '_id').lean(),
+        ]);
         const lowStock = products.filter((p) => p.stockCount <= (p.parLevel ?? 0));
         if (!lowStock.length || !admins.length) return;
         const docs = lowStock.flatMap((p) =>
@@ -277,8 +283,8 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
             readAt: null,
           })),
         );
-        return Notification.insertMany(docs);
-      }).catch((err) => console.error('[orders/:id PATCH] low_stock notification error', err));
+        await Notification.insertMany(docs);
+      })().catch((err) => console.error('[orders/:id PATCH] low_stock notification error', err));
     }
 
     return NextResponse.json(order);

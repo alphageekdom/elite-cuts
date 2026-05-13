@@ -2,12 +2,9 @@ import { Toggle, sectionTitleCls, sectionSubCls, btnPrimary } from '../SettingsU
 import type { ShopSettings } from '@/models/ShopSettings';
 
 const NOTIFICATIONS: { label: string; desc: string; key: keyof ShopSettings }[] = [
-  { label: 'New order received',       desc: 'Alert when a customer places an order',            key: 'notifNewOrder' },
-  { label: 'Low stock',                desc: 'When any cut drops below reorder threshold',        key: 'notifLowStock' },
-  { label: 'Daily summary',            desc: 'Orders, revenue, and stock at close of day',        key: 'notifDailySummary' },
-  { label: 'Weekly analytics report',  desc: 'Revenue trends, top sellers, and customer insights', key: 'notifWeeklyAnalytics' },
-  { label: 'Aging room alerts',        desc: 'When a cut reaches target age',                    key: 'notifAgingRoom' },
-  { label: 'Dormant customer alerts',  desc: "When a customer hasn't ordered in 90+ days",       key: 'notifDormantCustomers' },
+  { label: 'New order received', desc: 'Bell ping when a customer places an order',                          key: 'notifNewOrder' },
+  { label: 'Low stock',          desc: 'Bell ping when a completed order drops a cut at or below its par level. Cuts without a par level set are skipped — set one in Inventory.', key: 'notifLowStock' },
+  { label: 'Grill event created', desc: 'Bell ping when a parking-lot grill event is scheduled',             key: 'notifNewEvent' },
 ];
 
 type Props = {
@@ -20,9 +17,9 @@ type Props = {
 export default function NotificationsTab({ values, onChange, onSave, saving }: Props) {
   return (
     <div>
-      <h2 className={sectionTitleCls}>Email <em className="italic text-oxblood font-normal">notifications</em></h2>
+      <h2 className={sectionTitleCls}>Admin <em className="italic text-oxblood font-normal">alerts</em></h2>
       <p className={sectionSubCls}>
-        Control which emails are sent to you and your team. Customer-facing emails (order confirmation, pickup ready) are always sent.
+        Control which in-app bell pings your team sees. These gate emission at write time only — turning a toggle off will not hide alerts that have already fired.
       </p>
       <div className="flex flex-col">
         {NOTIFICATIONS.map((n) => (

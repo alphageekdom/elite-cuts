@@ -11,6 +11,7 @@ import {
   parseLaDayString,
   validateEventInput,
 } from '@/lib/event-config';
+import { getShopSettings } from '@/lib/shopSettings';
 
 export const GET = withAdmin(async (request: NextRequest) => {
   try {
@@ -83,21 +84,23 @@ export const POST = withAdmin(async (request: NextRequest) => {
       status: 'scheduled',
     });
 
+    // Notify all admins — fire and forget. Gated on settings.notifNewEvent;
+    // getShopSettings fails open so a settings outage doesn't silence the alert.
     const isoDate = day.toISOString().slice(0, 10);
-    User.find({ isAdmin: true }, '_id')
-      .lean()
-      .then((admins) => {
-        if (!admins.length) return;
-        const docs = admins.map((a) => ({
-          type: 'new_event' as const,
-          title: 'Grill event scheduled',
-          body: `${isoDate} · ${body.startHour}:00–${body.endHour}:00`,
-          userId: a._id,
-          readAt: null,
-        }));
-        return Notification.insertMany(docs);
-      })
-      .catch((err) => console.error('[events POST] notification error', err));
+    (async () => {
+      const settings = await getShopSettings();
+      if (!settings.notifNewEvent) return;
+      const admins = await User.find({ isAdmin: true }, '_id').lean();
+      if (!admins.length) return;
+      const docs = admins.map((a) => ({
+        type: 'new_event' as const,
+        title: 'Grill event scheduled',
+        body: `${isoDate} · ${body.startHour}:00–${body.endHour}:00`,
+        userId: a._id,
+        readAt: null,
+      }));
+      await Notification.insertMany(docs);
+    })().catch((err) => console.error('[events POST] notification error', err));
 
     return NextResponse.json(serializeEvent({ ...event.toObject(), _id: event._id }), { status: 201 });
   } catch (error) {
