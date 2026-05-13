@@ -100,6 +100,34 @@ export default function GeneralTab({ values, onChange, onSave, onDiscard, saving
         </p>
       </section>
 
+      <section>
+        <h2 className={sectionTitleCls}>Pickup <em className="italic text-oxblood font-normal">slots</em></h2>
+        <p className={sectionSubCls}>Sets the time slots shown at checkout. Capacity per slot caps orders per hour.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          <div>
+            <label className={labelCls}>Slots per hour</label>
+            <input
+              type="number"
+              value={values.slotsPerHour}
+              onChange={(e) => onChange({ slotsPerHour: Number(e.target.value) })}
+              className={inputCls}
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Lead time</label>
+            <SelectField value={values.leadTime} onChange={(e) => onChange({ leadTime: e.target.value })}>
+              <option>30 min</option><option>1 hour</option><option>2 hours</option>
+            </SelectField>
+          </div>
+          <div>
+            <label className={labelCls}>Max booking window</label>
+            <SelectField value={values.maxBookingWindow} onChange={(e) => onChange({ maxBookingWindow: e.target.value })}>
+              <option>Same day</option><option>3 days</option><option>7 days</option>
+            </SelectField>
+          </div>
+        </div>
+      </section>
+
       <div className="flex gap-2 pt-2">
         <button type="button" className={btnPrimary} onClick={onSave} disabled={saving}>
           <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

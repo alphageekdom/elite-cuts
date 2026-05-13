@@ -15,13 +15,10 @@ export type ShopSettings = {
   zip: string;
   timezone: string;
   opensAt: string;
-  // Fulfillment
+  // Pickup
   slotsPerHour: number;
   leadTime: string;
   maxBookingWindow: string;
-  zoneLocalEnabled: boolean;
-  zoneMetroEnabled: boolean;
-  zoneExtendedEnabled: boolean;
   // Notifications
   notifNewOrder: boolean;
   notifLowStock: boolean;
@@ -58,9 +55,6 @@ const ShopSettingsSchema = new Schema<ShopSettings>(
     slotsPerHour:         { type: Number, default: 10 },
     leadTime:             { type: String, default: '30 min' },
     maxBookingWindow:     { type: String, default: 'Same day' },
-    zoneLocalEnabled:     { type: Boolean, default: true },
-    zoneMetroEnabled:     { type: Boolean, default: true },
-    zoneExtendedEnabled:  { type: Boolean, default: true },
     notifNewOrder:        { type: Boolean, default: true },
     notifLowStock:        { type: Boolean, default: true },
     notifDailySummary:    { type: Boolean, default: true },
