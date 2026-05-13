@@ -1,11 +1,12 @@
 'use client';
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useLayoutEffect, useRef } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { toast } from 'sonner';
 import { refundSummary } from '@/lib/order-refunds';
 import { useStatFilter } from '@/hooks/useStatFilter';
 import { useAdminDrawer } from '@/hooks/useAdminDrawer';
 import OrderTableRowComponent from './OrderTableRow';
+import OrdersPageHeader from './OrdersPageHeader';
 import AdminStatStrip from '@/components/admin/AdminStatStrip';
 import AdminSearchInput from '@/components/admin/AdminSearchInput';
 import AdminPagination from '@/components/admin/AdminPagination';
@@ -18,7 +19,48 @@ export type { OrderTableRow, StatusCounts };
 type Props = {
   orders: OrderTableRow[];
   counts: StatusCounts;
+  monthOrdersCount: number;
 };
+
+type SortBy = 'newest' | 'oldest' | 'total-desc' | 'total-asc' | 'customer-asc';
+
+const SORT_OPTIONS: { value: SortBy; label: string }[] = [
+  { value: 'newest', label: 'Newest first' },
+  { value: 'oldest', label: 'Oldest first' },
+  { value: 'total-desc', label: 'Total: High → Low' },
+  { value: 'total-asc', label: 'Total: Low → High' },
+  { value: 'customer-asc', label: 'Customer: A → Z' },
+];
+
+type ColumnKey = 'customer' | 'status' | 'items' | 'total' | 'pickup' | 'created';
+
+export type OrderColumnVisibility = Record<ColumnKey, boolean>;
+
+const COLUMN_OPTIONS: { key: ColumnKey; label: string }[] = [
+  { key: 'customer', label: 'Customer' },
+  { key: 'status',   label: 'Status' },
+  { key: 'items',    label: 'Items' },
+  { key: 'total',    label: 'Total' },
+  { key: 'pickup',   label: 'Pickup' },
+  { key: 'created',  label: 'Created' },
+];
+
+const DEFAULT_COLUMNS: OrderColumnVisibility = {
+  customer: true,
+  status: true,
+  items: true,
+  total: true,
+  pickup: true,
+  created: true,
+};
+
+const COLUMNS_STORAGE_KEY = 'admin.orders.columns';
+
+// useLayoutEffect runs synchronously after DOM mutation but before paint, which
+// lets us apply the persisted column preference without a visible flash.
+// Fall back to useEffect on the server so React doesn't emit a no-op warning.
+const useIsomorphicLayoutEffect =
+  typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 const STAT_CELLS = [
   { key: 'all',               label: 'All',        metaLabel: 'THIS MONTH',      dotClass: '' },
@@ -46,7 +88,7 @@ function countForKey(key: StatKey, counts: StatusCounts): number {
 
 const PAGE_SIZES = [8, 20, 50];
 
-export default function OrdersClient({ orders, counts }: Props) {
+export default function OrdersClient({ orders, counts, monthOrdersCount }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -59,6 +101,42 @@ export default function OrdersClient({ orders, counts }: Props) {
   const { item: drawerOrder, isOpen: isDrawerOpen, open: _openDrawer, close: closeDrawer, setItem: setDrawerOrder } = useAdminDrawer<OrderTableRow>();
   const [perPage, setPerPage] = useState(PAGE_SIZES[0]);
   const [statusUpdate, setStatusUpdate] = useState<string>('');
+  const [sortBy, setSortBy] = useState<SortBy>('newest');
+  const [exporting, setExporting] = useState(false);
+  const [columnsOpen, setColumnsOpen] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState<OrderColumnVisibility>(DEFAULT_COLUMNS);
+
+  // Hydrate column visibility from localStorage before first paint. Unknown /
+  // stale keys are ignored so a schema change can't lock a column off invisibly.
+  useIsomorphicLayoutEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(COLUMNS_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Partial<OrderColumnVisibility>;
+      const next: OrderColumnVisibility = { ...DEFAULT_COLUMNS };
+      for (const { key } of COLUMN_OPTIONS) {
+        if (typeof parsed[key] === 'boolean') next[key] = parsed[key]!;
+      }
+      setVisibleColumns(next);
+    } catch {
+      // Bad JSON — fall back to defaults silently.
+    }
+  }, []);
+
+  function toggleColumn(key: ColumnKey) {
+    setVisibleColumns((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      // Never let the admin hide every toggleable column — would leave an empty grid.
+      const anyVisible = COLUMN_OPTIONS.some((c) => next[c.key]);
+      if (!anyVisible) return prev;
+      try {
+        window.localStorage.setItem(COLUMNS_STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        // Ignore quota/privacy-mode failures — visibility still applies in memory.
+      }
+      return next;
+    });
+  }
 
   const filtered = useMemo(() => {
     let rows = localOrders;
@@ -74,8 +152,46 @@ export default function OrdersClient({ orders, counts }: Props) {
           o.customerEmail.toLowerCase().includes(q),
       );
     }
-    return rows;
-  }, [localOrders, activeStatus, search]);
+    const sorted = [...rows];
+    if (sortBy === 'newest')         sorted.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+    else if (sortBy === 'oldest')    sorted.sort((a, b) => (a.createdAt > b.createdAt ? 1 : -1));
+    else if (sortBy === 'total-desc') sorted.sort((a, b) => b.total - a.total);
+    else if (sortBy === 'total-asc')  sorted.sort((a, b) => a.total - b.total);
+    else if (sortBy === 'customer-asc') sorted.sort((a, b) => a.customerName.localeCompare(b.customerName));
+    return sorted;
+  }, [localOrders, activeStatus, search, sortBy]);
+
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const params = new URLSearchParams();
+      if (activeStatus !== 'all') params.set('status', String(activeStatus));
+      if (search.trim()) params.set('search', search.trim());
+      const url = `/api/orders/export${params.size ? `?${params.toString()}` : ''}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        toast.error('Export failed');
+        return;
+      }
+      const blob = await res.blob();
+      const disposition = res.headers.get('Content-Disposition') ?? '';
+      const filenameMatch = disposition.match(/filename="([^"]+)"/);
+      const filename = filenameMatch?.[1] ?? 'orders.csv';
+      const objectUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(objectUrl);
+      toast.success('Orders exported');
+    } catch {
+      toast.error('Export failed');
+    } finally {
+      setExporting(false);
+    }
+  }
 
   async function updateOrder(newStatus: string, cancellationReason?: string) {
     if (!drawerOrder) return;
@@ -289,6 +405,14 @@ export default function OrdersClient({ orders, counts }: Props) {
 
   return (
     <>
+      <OrdersPageHeader
+        monthOrdersCount={monthOrdersCount}
+        pendingCount={counts.orderPlaced}
+        exporting={exporting}
+        onExport={handleExport}
+        onNewOrder={() => toast.info('Coming soon')}
+      />
+
       <AdminStatStrip
         cells={STAT_CELLS.map((cell) => {
           const count = countForKey(cell.key, counts);
@@ -328,14 +452,56 @@ export default function OrdersClient({ orders, counts }: Props) {
           </div>
 
           <div className="flex items-center gap-2">
-            <button onClick={() => toast.info('Coming soon')} className="inline-flex items-center gap-1.5 bg-paper border border-line rounded-full px-3.5 py-2 text-[13px] text-ink-soft hover:border-ink hover:text-ink transition-colors">
-              Sort: Newest
-              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
-            </button>
-            <button onClick={() => toast.info('Coming soon')} className="inline-flex items-center gap-1.5 bg-paper border border-line rounded-full px-3.5 py-2 text-[13px] text-ink-soft hover:border-ink hover:text-ink transition-colors">
-              Columns
-              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-            </button>
+            <div className="relative inline-flex items-center bg-paper border border-line rounded-full hover:border-ink transition-colors">
+              <span className="pl-3.5 pr-1 text-[13px] text-ink-soft pointer-events-none whitespace-nowrap">
+                Sort:
+              </span>
+              <select
+                value={sortBy}
+                onChange={(e) => { setSortBy(e.target.value as SortBy); setPage(1); }}
+                className="appearance-none bg-transparent border-none outline-none text-[13px] text-ink-soft pr-7 pl-1 py-2 cursor-pointer"
+              >
+                {SORT_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+              <svg className="w-3 h-3 text-muted absolute right-3 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </div>
+            <div className="relative">
+              <button
+                onClick={() => setColumnsOpen((v) => !v)}
+                className="inline-flex items-center gap-1.5 bg-paper border border-line rounded-full px-3.5 py-2 text-[13px] text-ink-soft hover:border-ink hover:text-ink transition-colors"
+              >
+                Columns
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+              </button>
+              {columnsOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setColumnsOpen(false)} />
+                  <div className="absolute right-0 top-full mt-2 z-20 w-52 bg-paper border border-line rounded-lg shadow-xl py-1.5">
+                    <div className="px-3.5 py-1.5 text-[11px] font-medium tracking-[0.16em] uppercase text-muted">
+                      Show columns
+                    </div>
+                    {COLUMN_OPTIONS.map((col) => (
+                      <label
+                        key={col.key}
+                        className="flex items-center gap-2.5 px-3.5 py-1.5 text-[13px] text-ink-soft hover:bg-cream cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={visibleColumns[col.key]}
+                          onChange={() => toggleColumn(col.key)}
+                          className="w-3.5 h-3.5 rounded-sm border border-line bg-cream cursor-pointer accent-oxblood"
+                        />
+                        {col.label}
+                      </label>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -390,19 +556,19 @@ export default function OrdersClient({ orders, counts }: Props) {
                     />
                   </th>
                   <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">Order</th>
-                  <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Customer</th>
-                  <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Items</th>
-                  <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Total</th>
-                  <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Status</th>
-                  <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Pickup</th>
-                  <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">Date ↓</th>
+                  {visibleColumns.customer && <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Customer</th>}
+                  {visibleColumns.items && <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Items</th>}
+                  {visibleColumns.total && <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Total</th>}
+                  {visibleColumns.status && <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Status</th>}
+                  {visibleColumns.pickup && <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Pickup</th>}
+                  {visibleColumns.created && <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">Date ↓</th>}
                   <th className="pr-6 py-3.5" />
                 </tr>
               </thead>
               <tbody>
                 {pageRows.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="text-center py-16 text-muted text-sm">
+                    <td colSpan={3 + COLUMN_OPTIONS.filter((c) => visibleColumns[c.key]).length} className="text-center py-16 text-muted text-sm">
                       No orders found.
                     </td>
                   </tr>
@@ -414,6 +580,7 @@ export default function OrdersClient({ orders, counts }: Props) {
                       avatarColor={AVATAR_COLORS[i % AVATAR_COLORS.length]}
                       isSelected={selectedIds.has(order.id)}
                       openMenuId={openMenuId}
+                      visibleColumns={visibleColumns}
                       onView={openDrawer}
                       onToggleSelect={toggleSelect}
                       onMenuToggle={setOpenMenuId}

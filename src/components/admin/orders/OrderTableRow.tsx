@@ -2,6 +2,7 @@
 import { getInitials, formatDateTime } from '@/lib/format';
 import { printReceipt } from '@/lib/print-receipt';
 import type { OrderTableRow } from '@/types/admin';
+import type { OrderColumnVisibility } from './OrdersClient';
 
 const STATUS_PILL: Record<string, { bg: string; text: string; label: string; camel?: boolean }> = {
   'Order Placed':     { bg: 'bg-line-soft',  text: 'text-muted',    label: 'Order Placed' },
@@ -17,6 +18,7 @@ type Props = {
   avatarColor: string;
   isSelected: boolean;
   openMenuId: string | null;
+  visibleColumns: OrderColumnVisibility;
   onView: (order: OrderTableRow) => void;
   onToggleSelect: (id: string) => void;
   onMenuToggle: (id: string | null) => void;
@@ -28,6 +30,7 @@ export default function OrderTableRowComponent({
   avatarColor,
   isSelected,
   openMenuId,
+  visibleColumns,
   onView,
   onToggleSelect,
   onMenuToggle,
@@ -60,65 +63,77 @@ export default function OrderTableRowComponent({
         <span className="font-mono text-[12px] text-ink font-medium">{order.orderRef}</span>
       </td>
 
-      <td className="px-4 py-4">
-        <div className="flex items-center gap-3 min-w-45">
-          <div className={`w-8 h-8 rounded-full grid place-items-center font-display font-semibold text-[11px] shrink-0 ${avatarColor}`}>
-            {initials}
+      {visibleColumns.customer && (
+        <td className="px-4 py-4">
+          <div className="flex items-center gap-3 min-w-45">
+            <div className={`w-8 h-8 rounded-full grid place-items-center font-display font-semibold text-[11px] shrink-0 ${avatarColor}`}>
+              {initials}
+            </div>
+            <div>
+              <div className="font-medium text-[14px] leading-snug">{order.customerName}</div>
+              <div className="text-[11px] text-muted">{order.customerEmail}</div>
+            </div>
           </div>
-          <div>
-            <div className="font-medium text-[14px] leading-snug">{order.customerName}</div>
-            <div className="text-[11px] text-muted">{order.customerEmail}</div>
-          </div>
-        </div>
-      </td>
+        </td>
+      )}
 
-      <td className="px-4 py-4">
-        <span className="text-[13px] text-ink-soft">
-          {order.items.length} cut{order.items.length !== 1 ? 's' : ''}
-          {refundedCount > 0 && (
-            <span className="text-oxblood ml-1.5">· {refundedCount} refunded</span>
-          )}
-        </span>
-      </td>
-
-      <td className="px-4 py-4">
-        <span className="font-display text-[16px] font-medium tracking-[-0.01em]">
-          ${order.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-        </span>
-      </td>
-
-      <td className="px-4 py-4">
-        <div className="inline-flex items-center gap-1.5 flex-wrap">
-          <span
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-[0.04em] whitespace-nowrap ${pill.bg} ${pill.text}`}
-            style={pill.camel ? { background: 'rgba(184,137,90,0.18)' } : undefined}
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-current" />
-            {pill.label}
+      {visibleColumns.items && (
+        <td className="px-4 py-4">
+          <span className="text-[13px] text-ink-soft">
+            {order.items.length} cut{order.items.length !== 1 ? 's' : ''}
+            {refundedCount > 0 && (
+              <span className="text-oxblood ml-1.5">· {refundedCount} refunded</span>
+            )}
           </span>
-          {(isPartiallyRefunded || isFullyRefunded) && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-oxblood/10 text-oxblood text-[10px] font-medium tracking-[0.04em] uppercase whitespace-nowrap">
-              {isFullyRefunded ? 'Refunded' : 'Partial refund'}
+        </td>
+      )}
+
+      {visibleColumns.total && (
+        <td className="px-4 py-4">
+          <span className="font-display text-[16px] font-medium tracking-[-0.01em]">
+            ${order.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          </span>
+        </td>
+      )}
+
+      {visibleColumns.status && (
+        <td className="px-4 py-4">
+          <div className="inline-flex items-center gap-1.5 flex-wrap">
+            <span
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-[0.04em] whitespace-nowrap ${pill.bg} ${pill.text}`}
+              style={pill.camel ? { background: 'rgba(184,137,90,0.18)' } : undefined}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-current" />
+              {pill.label}
             </span>
-          )}
-        </div>
-      </td>
+            {(isPartiallyRefunded || isFullyRefunded) && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-oxblood/10 text-oxblood text-[10px] font-medium tracking-[0.04em] uppercase whitespace-nowrap">
+                {isFullyRefunded ? 'Refunded' : 'Partial refund'}
+              </span>
+            )}
+          </div>
+        </td>
+      )}
 
-      <td className="px-4 py-4">
-        <span className="inline-flex items-center gap-1.5 font-mono text-[12px] text-ink-soft tracking-[0.04em]">
-          <svg className="w-3 h-3 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
-          </svg>
-          PICKUP
-        </span>
-      </td>
+      {visibleColumns.pickup && (
+        <td className="px-4 py-4">
+          <span className="inline-flex items-center gap-1.5 font-mono text-[12px] text-ink-soft tracking-[0.04em]">
+            <svg className="w-3 h-3 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+            </svg>
+            PICKUP
+          </span>
+        </td>
+      )}
 
-      <td className="px-4 py-4">
-        <div className="text-[13px] text-ink-soft leading-snug">
-          <div className="font-medium text-ink">{day}</div>
-          <div className="text-[11px] text-muted font-mono mt-0.5">{time}</div>
-        </div>
-      </td>
+      {visibleColumns.created && (
+        <td className="px-4 py-4">
+          <div className="text-[13px] text-ink-soft leading-snug">
+            <div className="font-medium text-ink">{day}</div>
+            <div className="text-[11px] text-muted font-mono mt-0.5">{time}</div>
+          </div>
+        </td>
+      )}
 
       <td className="pr-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
         <div className={`relative inline-flex gap-1 transition-opacity ${openMenuId === order.id ? '' : 'opacity-40 group-hover:opacity-100'}`}>
