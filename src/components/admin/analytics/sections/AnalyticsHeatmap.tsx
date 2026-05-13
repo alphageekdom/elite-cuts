@@ -10,7 +10,7 @@ export default function AnalyticsHeatmap({ heatmap, heatmapRevenue }: { heatmap:
     <div className="bg-paper border border-line-soft rounded-sm p-7 mb-4">
       <div className="flex items-end justify-between mb-6 gap-5">
         <div>
-          <div className="font-display italic text-[12px] text-camel mb-1">✦ 05</div>
+          <div className="font-display italic text-[12px] text-camel mb-1">✦ 04</div>
           <div className="font-display font-medium text-[22px] tracking-[-0.015em] leading-snug">
             When orders <em className="italic text-oxblood font-normal">happen</em>
           </div>

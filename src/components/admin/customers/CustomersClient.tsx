@@ -8,7 +8,6 @@ import AdminPagination from '@/components/admin/AdminPagination';
 import AdminStatStrip from '@/components/admin/AdminStatStrip';
 import type { CustomerTableRow, CustomerCounts } from '@/types/admin';
 import CustomerDetailDrawer from './CustomerDetailDrawer';
-import { getTier } from './customerUtils';
 import CustomerTableRowComponent from './CustomerTableRow';
 
 export type { CustomerTableRow, CustomerCounts };
@@ -18,21 +17,17 @@ type Props = {
   counts: CustomerCounts;
 };
 
-type StatFilter = 'all' | 'new' | 'active' | 'connoisseurPlus' | 'atRisk';
-type TierFilter = 'all' | 'master' | 'connoisseur' | 'regular';
+// 'atRisk' is intentionally absent. The portfolio seed has no dormant
+// accounts, so a pill that filters to zero rows would just look broken.
+// Tier filtering was likewise dropped — the Tier column still surfaces
+// the value when there's enough data to make filtering useful.
+type StatFilter = 'all' | 'new' | 'active' | 'connoisseurPlus';
 
 const STAT_CELLS = [
   { key: 'all' as StatFilter, label: 'All', metaLabel: 'REGISTERED', dotClass: '' },
   { key: 'new' as StatFilter, label: 'New', metaLabel: 'JOINED IN 30 DAYS', dotClass: 'bg-ink' },
   { key: 'active' as StatFilter, label: 'Active', metaLabel: 'ORDERED IN 90 DAYS', dotClass: 'bg-green' },
   { key: 'connoisseurPlus' as StatFilter, label: 'Connoisseur+', metaLabel: '10+ ORDERS', dotClass: 'bg-camel' },
-  { key: 'atRisk' as StatFilter, label: 'At risk', metaLabel: 'DORMANT 90+ DAYS', dotClass: 'bg-oxblood' },
-];
-
-const TIER_PILLS: Array<{ key: TierFilter; label: string }> = [
-  { key: 'all', label: 'All tiers' },
-  { key: 'master', label: 'Master Cut' },
-  { key: 'connoisseur', label: 'Connoisseur' },
 ];
 
 const PAGE_SIZES = [8, 20, 50];
@@ -46,10 +41,6 @@ function matchesStatFilter(row: CustomerTableRow, filter: StatFilter): boolean {
   if (filter === 'new') return accountAge < THIRTY_DAYS;
   if (filter === 'active') return !!row.lastOrderAt && now - new Date(row.lastOrderAt).getTime() <= NINETY_DAYS;
   if (filter === 'connoisseurPlus') return row.orderCount >= 10;
-  if (filter === 'atRisk') {
-    if (row.lastOrderAt) return now - new Date(row.lastOrderAt).getTime() > NINETY_DAYS;
-    return accountAge > NINETY_DAYS;
-  }
   return true;
 }
 
@@ -57,15 +48,13 @@ function countForStat(key: StatFilter, counts: CustomerCounts): number {
   if (key === 'all') return counts.all;
   if (key === 'new') return counts.new;
   if (key === 'active') return counts.active;
-  if (key === 'connoisseurPlus') return counts.connoisseurPlus;
-  return counts.atRisk;
+  return counts.connoisseurPlus;
 }
 
 export default function CustomersClient({ customers, counts }: Props) {
   const [localCustomers, setLocalCustomers] = useState(customers);
   const [page, setPage] = useState(1);
   const { activeKey: activeStatFilter, selectKey: _selectStatFilter } = useStatFilter<string>('all', () => setPage(1));
-  const [activeTierFilter, setActiveTierFilter] = useState<TierFilter>('all');
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const { item: drawerCustomer, isOpen: isDrawerOpen, open: openDrawer, close: closeDrawer, setItem: setDrawerCustomer } = useAdminDrawer<CustomerTableRow>();
@@ -112,9 +101,6 @@ export default function CustomersClient({ customers, counts }: Props) {
   const filtered = useMemo(() => {
     let rows = localCustomers;
     rows = rows.filter((r) => matchesStatFilter(r, activeStatFilter as StatFilter));
-    if (activeTierFilter !== 'all') {
-      rows = rows.filter((r) => getTier(r.orderCount) === activeTierFilter);
-    }
     if (search.trim()) {
       const q = search.toLowerCase();
       rows = rows.filter(
@@ -122,7 +108,7 @@ export default function CustomersClient({ customers, counts }: Props) {
       );
     }
     return rows;
-  }, [localCustomers, activeStatFilter, activeTierFilter, search]);
+  }, [localCustomers, activeStatFilter, search]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
   const pageRows = filtered.slice((page - 1) * perPage, page * perPage);
@@ -143,12 +129,6 @@ export default function CustomersClient({ customers, counts }: Props) {
 
   function handleStatFilter(key: string) {
     _selectStatFilter(key);
-    setSelectedIds(new Set());
-  }
-
-  function handleTierFilter(tier: TierFilter) {
-    setActiveTierFilter(tier);
-    setPage(1);
     setSelectedIds(new Set());
   }
 
@@ -203,17 +183,13 @@ export default function CustomersClient({ customers, counts }: Props) {
   return (
     <>
       <AdminStatStrip
-        cells={STAT_CELLS.map((cell) => {
-          const count = countForStat(cell.key, counts);
-          return {
-            key: cell.key,
-            label: cell.label,
-            value: count,
-            meta: cell.metaLabel,
-            dotClass: cell.dotClass || undefined,
-            badge: cell.key === 'atRisk' && count > 0 ? '!' : undefined,
-          };
-        })}
+        cells={STAT_CELLS.map((cell) => ({
+          key: cell.key,
+          label: cell.label,
+          value: countForStat(cell.key, counts),
+          meta: cell.metaLabel,
+          dotClass: cell.dotClass || undefined,
+        }))}
         activeKey={activeStatFilter}
         onSelect={handleStatFilter}
       />
@@ -228,30 +204,12 @@ export default function CustomersClient({ customers, counts }: Props) {
         />
 
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-2 flex-wrap">
-            {TIER_PILLS.map(({ key, label }) => (
-              <button
-                key={key}
-                onClick={() => handleTierFilter(key)}
-                className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[13px] font-medium transition-colors ${
-                  activeTierFilter === key
-                    ? 'bg-ink text-cream border border-ink'
-                    : 'bg-paper border border-line text-ink-soft hover:border-ink hover:text-ink'
-                }`}
-              >
-                {label}
-                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
-              </button>
-            ))}
-            <button onClick={() => toast.info('Coming soon')} className="inline-flex items-center gap-1.5 bg-paper border border-line rounded-full px-3.5 py-2 text-[13px] text-ink-soft hover:border-ink hover:text-ink transition-colors">
-              More filters
-              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-              </svg>
-            </button>
-          </div>
+          <button onClick={() => toast.info('Coming soon')} className="inline-flex items-center gap-1.5 bg-paper border border-line rounded-full px-3.5 py-2 text-[13px] text-ink-soft hover:border-ink hover:text-ink transition-colors">
+            More filters
+            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+            </svg>
+          </button>
 
           <button onClick={() => toast.info('Coming soon')} className="inline-flex items-center gap-1.5 bg-paper border border-line rounded-full px-3.5 py-2 text-[13px] text-ink-soft hover:border-ink hover:text-ink transition-colors">
             Sort: Top spenders

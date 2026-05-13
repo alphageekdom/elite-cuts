@@ -3,17 +3,16 @@ import AdminPageHeader from '@/components/admin/AdminPageHeader';
 type Props = {
   total: number;
   newThisWeek: number;
-  atRisk: number;
 };
 
-export default function CustomersPageHeader({ total, newThisWeek, atRisk }: Props) {
+export default function CustomersPageHeader({ total, newThisWeek }: Props) {
   return (
     <AdminPageHeader
       eyebrow="Manage"
       breadcrumb="Customers"
       title="All"
       titleAccent="customers"
-      subtitle={`${total} customers · ${newThisWeek} new this week · ${atRisk} going dormant`}
+      subtitle={`${total} customers · ${newThisWeek} new this week`}
       actions={
         <>
           <button className="inline-flex items-center gap-2 px-4.5 py-2.5 rounded-full bg-paper border border-line text-ink-soft text-[13px] font-medium tracking-[0.02em] hover:border-ink hover:text-ink transition-colors">

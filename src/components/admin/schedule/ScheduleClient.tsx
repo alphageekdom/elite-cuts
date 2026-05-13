@@ -6,7 +6,6 @@ import ScheduleTodayCard from './ScheduleTodayCard';
 import ScheduleOnTodayCard from './ScheduleOnTodayCard';
 import SchedulePickupSlots, { type PickupSlotRow } from './SchedulePickupSlots';
 import ScheduleShopHours from './ScheduleShopHours';
-import ScheduleComingUp from './ScheduleComingUp';
 import { MONTH_ABBR } from '@/lib/format';
 import { getMondayOf } from '@/lib/schedule-utils';
 import type { ShopHoursDay } from '@/models/ShopHours';
@@ -35,15 +34,6 @@ const SHIFT_STYLES: Record<ShiftColor, string> = {
   delivery: 'bg-cream-deep border border-dashed border-line text-ink-soft',
 };
 
-export type UpcomingDelivery = {
-  id: string;
-  supplier: string;
-  supplierSuffix: string;
-  detail: string;
-  status: string;
-  dateLabel: string;
-};
-
 type Props = {
   initialShifts: ShiftRow[];
   shopHours: ShopHoursDay[];
@@ -51,12 +41,11 @@ type Props = {
   slotsBooked: number;
   projectedRevenue: number;
   deliveryCount: number;
-  upcomingDeliveries: UpcomingDelivery[];
 };
 
 export default function ScheduleClient({
   initialShifts, shopHours, pickupSlots,
-  slotsBooked, projectedRevenue, deliveryCount, upcomingDeliveries,
+  slotsBooked, projectedRevenue, deliveryCount,
 }: Props) {
   const [weekStart, setWeekStart] = useState<Date>(() => getMondayOf(new Date()));
   const [shifts, setShifts] = useState<ShiftRow[]>(initialShifts);
@@ -258,7 +247,6 @@ export default function ScheduleClient({
           <ScheduleOnTodayCard todayStaff={todayStaff} />
           <SchedulePickupSlots slots={pickupSlots} />
           <ScheduleShopHours hours={shopHours} />
-          <ScheduleComingUp deliveries={upcomingDeliveries} />
         </div>
       </div>
     </div>

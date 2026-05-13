@@ -45,7 +45,6 @@ export type CustomerCounts = {
   new: number;
   active: number;
   connoisseurPlus: number;
-  atRisk: number;
 };
 
 export type OrderTableRow = {

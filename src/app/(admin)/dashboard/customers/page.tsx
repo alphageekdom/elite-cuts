@@ -71,15 +71,13 @@ export default async function AdminCustomersPage() {
   const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
   const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
 
-  let newThisWeek = 0, newThisMonth = 0, activeCount = 0, connoisseurPlusCount = 0, atRiskCount = 0;
+  let newThisWeek = 0, newThisMonth = 0, activeCount = 0, connoisseurPlusCount = 0;
   for (const c of customers) {
     const accountAge = now - new Date(c.createdAt).getTime();
     if (accountAge < ONE_WEEK_MS) newThisWeek++;
     if (accountAge < THIRTY_DAYS_MS) newThisMonth++;
     if (c.lastOrderAt && now - new Date(c.lastOrderAt).getTime() <= NINETY_DAYS_MS) activeCount++;
     if (c.orderCount >= 10) connoisseurPlusCount++;
-    if (c.lastOrderAt && now - new Date(c.lastOrderAt).getTime() > NINETY_DAYS_MS) atRiskCount++;
-    else if (!c.lastOrderAt && accountAge > NINETY_DAYS_MS) atRiskCount++;
   }
 
   const counts: CustomerCounts = {
@@ -87,7 +85,6 @@ export default async function AdminCustomersPage() {
     new: newThisMonth,
     active: activeCount,
     connoisseurPlus: connoisseurPlusCount,
-    atRisk: atRiskCount,
   };
 
   return (
@@ -95,7 +92,6 @@ export default async function AdminCustomersPage() {
       <CustomersPageHeader
         total={customers.length}
         newThisWeek={newThisWeek}
-        atRisk={atRiskCount}
       />
       <CustomersClient customers={customers} counts={counts} />
     </>
