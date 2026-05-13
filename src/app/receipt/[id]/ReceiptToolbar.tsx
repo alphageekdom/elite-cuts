@@ -5,9 +5,15 @@ type Props = {
   email: string;
   orderRef: string;
   orderId: string;
+  shop: {
+    shopName: string;
+    phone: string;
+    email: string;
+    addressLine: string;
+  };
 };
 
-export default function ReceiptToolbar({ backHref, email, orderRef, orderId }: Props) {
+export default function ReceiptToolbar({ backHref, email, orderRef, orderId, shop }: Props) {
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const orderUrl = `${origin}/checkout/confirmation?orderId=${orderId}`;
 
@@ -15,14 +21,14 @@ export default function ReceiptToolbar({ backHref, email, orderRef, orderId }: P
     `Hi,\n\nYour order is confirmed and we're getting your cuts ready.\n\n` +
     `Order summary: ${orderUrl}\n` +
     `Reference: ${orderRef}\n\n` +
-    `Pickup is at 3045 30th St, North Park, San Diego. We'll cut everything fresh before you arrive.\n\n` +
-    `Questions before you come in? Call us at (619) 555-0142 or reply here.\n\n` +
+    `Pickup is at ${shop.addressLine}. We'll cut everything fresh before you arrive.\n\n` +
+    `Questions before you come in? Call us at ${shop.phone} or reply here.\n\n` +
     `See you at the counter.\n` +
-    `— EliteCuts\n` +
-    `3045 30th St · North Park, San Diego, CA 92104\n` +
-    `(619) 555-0142 · hello@elitecuts.com`,
+    `— ${shop.shopName}\n` +
+    `${shop.addressLine}\n` +
+    `${shop.phone} · ${shop.email}`,
   );
-  const mailtoHref = `mailto:${email}?subject=${encodeURIComponent(`Your EliteCuts order is confirmed — ${orderRef}`)}&body=${body}`;
+  const mailtoHref = `mailto:${email}?subject=${encodeURIComponent(`Your ${shop.shopName} order is confirmed — ${orderRef}`)}&body=${body}`;
 
   return (
     <div className="print:hidden w-full max-w-150 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">

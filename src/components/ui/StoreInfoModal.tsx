@@ -6,15 +6,12 @@ import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 
 import { useScrollLock } from '@/hooks/useScrollLock';
+import { useShopSettings } from '@/context/ShopSettingsContext';
 import {
-  SHOP_ADDRESS,
-  SHOP_ADDRESS_FULL_WITH_ZIP,
-  SHOP_CITY_STATE_ZIP,
-  SHOP_PHONE,
-  SHOP_PHONE_HREF,
-} from '@/lib/shopConfig';
-
-const DIRECTIONS_URL = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(SHOP_ADDRESS_FULL_WITH_ZIP)}`;
+  formatPhoneHref,
+  formatShopAddress,
+  formatShopCityStateZip,
+} from '@/lib/shopSettingsFormat';
 
 // dayIndex: 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
 type HoursRow = {
@@ -125,6 +122,13 @@ export default function StoreInfoModal({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const wasOpenRef = useRef(false);
+
+  const settings = useShopSettings();
+  const shopAddress = settings.street;
+  const cityStateZip = formatShopCityStateZip(settings);
+  const fullAddress = formatShopAddress(settings);
+  const phoneHref = formatPhoneHref(settings.phone);
+  const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(fullAddress)}`;
 
   const { data: session } = useSession();
   const firstName = session?.user?.name?.trim().split(/\s+/)[0];
@@ -237,12 +241,12 @@ export default function StoreInfoModal({
                     <circle cx='12' cy='10' r='3' />
                   </svg>
                   <span>
-                    <strong className='font-medium text-ink'>{SHOP_ADDRESS}</strong>
+                    <strong className='font-medium text-ink'>{shopAddress}</strong>
                     <br />
-                    {SHOP_CITY_STATE_ZIP}
+                    {cityStateZip}
                     <br />
                     <a
-                      href={DIRECTIONS_URL}
+                      href={directionsUrl}
                       target='_blank'
                       rel='noopener noreferrer'
                       className='mt-1 inline-flex items-center gap-1 text-[12px] font-medium text-oxblood transition-colors duration-200 hover:text-ink'
@@ -262,7 +266,7 @@ export default function StoreInfoModal({
                     </a>
                   </span>
                 </div>
-                <CopyButton text={SHOP_ADDRESS_FULL_WITH_ZIP} label='Copy address' />
+                <CopyButton text={fullAddress} label='Copy address' />
               </div>
 
               {/* Phone */}
@@ -278,13 +282,13 @@ export default function StoreInfoModal({
                     <path d='M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z' />
                   </svg>
                   <a
-                    href={SHOP_PHONE_HREF}
+                    href={phoneHref}
                     className='font-medium text-ink transition-colors duration-200 hover:text-oxblood'
                   >
-                    {SHOP_PHONE}
+                    {settings.phone}
                   </a>
                 </div>
-                <CopyButton text={SHOP_PHONE} label='Copy phone number' />
+                <CopyButton text={settings.phone} label='Copy phone number' />
               </div>
 
               {/* Hours */}

@@ -5,6 +5,12 @@ import connectDB from '@/config/database';
 import Order from '@/models/Order';
 import { formatMoney } from '@/lib/format';
 import { refundSummary } from '@/lib/order-refunds';
+import {
+  formatPhoneHref,
+  formatShopCityStateZip,
+  formatWebsiteDisplay,
+  getShopSettings,
+} from '@/lib/shopSettings';
 import ReceiptToolbar from './ReceiptToolbar';
 import ReceiptHeader from './ReceiptHeader';
 import ReceiptItemsTable from './ReceiptItemsTable';
@@ -15,8 +21,9 @@ type Props = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
+  const { shopName } = await getShopSettings();
   const ref = `#EC-${id.slice(-4).toUpperCase()}`;
-  return { title: `Receipt ${ref} · EliteCuts` };
+  return { title: `Receipt ${ref} · ${shopName}` };
 }
 
 // ── helpers ─────────────────────────────────────────────────────────────────
@@ -44,6 +51,9 @@ export default async function ReceiptPage({ params }: Props) {
 
   await connectDB();
   const { id } = await params;
+  const settings = await getShopSettings();
+  const shopCityStateZip = formatShopCityStateZip(settings);
+  const shopAddressLine = `${settings.street} · ${shopCityStateZip}`;
 
   const rawOrder = await Order.findById(id)
     .populate<{ user: { _id: string; name: string; email: string; rewardPoints: number } }>(
@@ -102,6 +112,12 @@ export default async function ReceiptPage({ params }: Props) {
           email={displayEmail}
           orderRef={orderRef}
           orderId={id}
+          shop={{
+            shopName: settings.shopName,
+            phone: settings.phone,
+            email: settings.email,
+            addressLine: shopAddressLine,
+          }}
         />
 
         {/* Receipt card */}
@@ -117,6 +133,8 @@ export default async function ReceiptPage({ params }: Props) {
             pillCls={pillCls}
             createdAt={new Date(order.createdAt)}
             pickedUp={order.pickedUp}
+            shopName={settings.shopName}
+            addressLine={shopAddressLine}
           />
 
           {/* ── Customer + Fulfillment ── */}
@@ -150,7 +168,7 @@ export default async function ReceiptPage({ params }: Props) {
                 </div>
               ) : (
                 <div className="text-[13px] text-ink-soft leading-relaxed">
-                  3045 30th St, North Park<br />San Diego, CA 92104
+                  {settings.street}<br />{shopCityStateZip}
                 </div>
               )}
               {pickupWindow && (
@@ -329,12 +347,12 @@ export default async function ReceiptPage({ params }: Props) {
               Thank you for choosing us.
             </div>
             <div className="text-[12px] text-muted leading-relaxed mb-3">
-              EliteCuts · 3045 30th St, North Park, San Diego, CA 92104<br />
-              <a href="tel:6195550142" className="hover:text-ink transition-colors">(619) 555-0142</a>
+              {settings.shopName} · {settings.street}, {shopCityStateZip}<br />
+              <a href={formatPhoneHref(settings.phone)} className="hover:text-ink transition-colors">{settings.phone}</a>
               {' · '}
-              <a href="mailto:hello@elitecuts.com" className="hover:text-ink transition-colors">hello@elitecuts.com</a>
+              <a href={`mailto:${settings.email}`} className="hover:text-ink transition-colors">{settings.email}</a>
               {' · '}
-              <a href="https://elitecuts.com" className="hover:text-ink transition-colors">elitecuts.com</a>
+              <a href={settings.website} className="hover:text-ink transition-colors">{formatWebsiteDisplay(settings.website)}</a>
             </div>
             <div className="font-mono text-[10px] tracking-widest text-muted/60 uppercase">
               Portfolio project · Not a real shop · No orders are processed

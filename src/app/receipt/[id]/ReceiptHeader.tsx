@@ -1,5 +1,7 @@
 import { GiMeatCleaver } from 'react-icons/gi';
 
+import { splitWordmark } from '@/lib/wordmark';
+
 const MONTH = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 
 function fmtDate(d: Date) {
@@ -12,9 +14,12 @@ type Props = {
   pillCls: string;
   createdAt: Date;
   pickedUp: boolean;
+  shopName: string;
+  addressLine: string;
 };
 
-export default function ReceiptHeader({ orderRef, orderStatus, pillCls, createdAt, pickedUp }: Props) {
+export default function ReceiptHeader({ orderRef, orderStatus, pillCls, createdAt, pickedUp, shopName, addressLine }: Props) {
+  const wordmark = splitWordmark(shopName);
   return (
     <div className="px-10 sm:px-12 py-10 text-center border-b border-line-soft">
       {/* Brand */}
@@ -23,11 +28,14 @@ export default function ReceiptHeader({ orderRef, orderStatus, pillCls, createdA
           <GiMeatCleaver className="text-xl" aria-hidden="true" />
         </span>
         <span className="font-display text-[26px] font-semibold tracking-tight leading-none">
-          Elite<em className="italic text-oxblood font-normal">Cuts</em>
+          {wordmark.before}
+          {wordmark.italic && (
+            <em className="italic text-oxblood font-normal">{wordmark.italic}</em>
+          )}
         </span>
       </div>
       <div className="font-mono text-[10px] tracking-[0.22em] uppercase text-muted mb-7">
-        3045 30th St · North Park, San Diego, CA 92104
+        {addressLine}
       </div>
 
       {/* Order ref */}

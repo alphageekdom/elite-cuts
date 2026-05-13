@@ -1,33 +1,45 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-export const metadata: Metadata = {
-  title: 'Contact · EliteCuts',
-  description: 'Get in touch with EliteCuts — we\'re here to help with orders, custom cuts, and anything else.',
-};
+import {
+  formatPhoneHref,
+  formatShopAddress,
+  formatShopCityStateZip,
+  getShopSettings,
+} from '@/lib/shopSettings';
 
-const CONTACT_ITEMS = [
-  {
-    label: 'Phone',
-    value: '(619) 555-0182',
-    href: 'tel:+16195550182',
-    detail: 'Mon – Sat, 8 AM – 6 PM',
-  },
-  {
-    label: 'Email',
-    value: 'hello@elitecuts.com',
-    href: 'mailto:hello@elitecuts.com',
-    detail: 'We reply within one business day',
-  },
-  {
-    label: 'Address',
-    value: '1842 India St, San Diego, CA 92101',
-    href: 'https://maps.google.com/?q=1842+India+St+San+Diego+CA+92101',
-    detail: 'Street parking available on India St',
-  },
-] as const;
+export async function generateMetadata(): Promise<Metadata> {
+  const { shopName } = await getShopSettings();
+  return {
+    title: `Contact · ${shopName}`,
+    description: `Get in touch with ${shopName} — we're here to help with orders, custom cuts, and anything else.`,
+  };
+}
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  const settings = await getShopSettings();
+  const fullAddress = formatShopAddress(settings);
+  const contactItems = [
+    {
+      label: 'Phone',
+      value: settings.phone,
+      href: formatPhoneHref(settings.phone),
+      detail: 'Mon – Sat, 8 AM – 6 PM',
+    },
+    {
+      label: 'Email',
+      value: settings.email,
+      href: `mailto:${settings.email}`,
+      detail: 'We reply within one business day',
+    },
+    {
+      label: 'Address',
+      value: `${settings.street}, ${formatShopCityStateZip(settings)}`,
+      href: `https://maps.google.com/?q=${encodeURIComponent(fullAddress)}`,
+      detail: 'Street parking available nearby',
+    },
+  ];
+
   return (
     <div className='min-h-screen bg-cream'>
       {/* Hero */}
@@ -47,7 +59,7 @@ export default function ContactPage() {
       {/* Contact cards */}
       <div className='mx-auto max-w-4xl px-6 py-16 sm:px-8'>
         <div className='grid gap-4 sm:grid-cols-3'>
-          {CONTACT_ITEMS.map((item) => (
+          {contactItems.map((item) => (
             <a
               key={item.label}
               href={item.href}
