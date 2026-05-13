@@ -1,6 +1,6 @@
 'use client';
-import { useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { toast } from 'sonner';
 import { refundSummary } from '@/lib/order-refunds';
 import { useStatFilter } from '@/hooks/useStatFilter';
@@ -48,6 +48,9 @@ const PAGE_SIZES = [8, 20, 50];
 
 export default function OrdersClient({ orders, counts }: Props) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const openOrderId = searchParams.get('openOrder');
   const [localOrders, setLocalOrders] = useState(orders);
   const [page, setPage] = useState(1);
   const { activeKey: activeStatus, selectKey: _selectStatus } = useStatFilter<string>('all', () => setPage(1));
@@ -221,6 +224,22 @@ export default function OrdersClient({ orders, counts }: Props) {
     _openDrawer(order);
     setStatusUpdate(order.status);
   }
+
+  // Deep-link support: when arriving with ?openOrder=<id>, open that order's
+  // drawer once and strip the param so a refresh doesn't reopen it. The ref
+  // guard makes this idempotent under React strict-mode double-invocation
+  // and any incidental re-fires from order-list mutations.
+  const handledDeepLinkRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!openOrderId || handledDeepLinkRef.current === openOrderId) return;
+    handledDeepLinkRef.current = openOrderId;
+    const target = localOrders.find((o) => o.id === openOrderId);
+    if (target) {
+      _openDrawer(target);
+      setStatusUpdate(target.status);
+    }
+    router.replace(pathname);
+  }, [openOrderId, localOrders, _openDrawer, pathname, router]);
 
   function handleStatusFilter(key: string) {
     _selectStatus(key);

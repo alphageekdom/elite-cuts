@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useScrollLock } from './useScrollLock';
 
 /** Manages drawer open/close state and locks body scroll while open. */
@@ -9,15 +9,16 @@ export function useAdminDrawer<T>(opts?: { scrollLock?: boolean }) {
 
   useScrollLock((opts?.scrollLock ?? true) && isOpen);
 
-  function open(newItem?: T | null) {
+  // Stable identities so callers can safely list these in effect deps.
+  const open = useCallback((newItem?: T | null) => {
     if (newItem !== undefined) setItem(newItem);
     setIsOpen(true);
-  }
+  }, []);
 
-  function close() {
+  const close = useCallback(() => {
     setIsOpen(false);
     setItem(null);
-  }
+  }, []);
 
   return {
     item,

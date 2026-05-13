@@ -113,7 +113,7 @@ export default function DashboardRecentOrders({ orders }: Props) {
                     </td>
                     <td className="py-[18px] px-2.5 border-b border-line-soft text-right">
                       <button
-                        onClick={() => router.push('/dashboard/orders')}
+                        onClick={() => router.push(`/dashboard/orders?openOrder=${order.id}`)}
                         aria-label="View order"
                         className="w-7.5 h-7.5 rounded-full bg-transparent border border-line text-ink-soft grid place-items-center hover:border-ink hover:bg-cream transition-colors"
                       >
