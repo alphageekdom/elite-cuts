@@ -1,7 +1,10 @@
 'use client';
 import { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import ProductTableRowComponent from './ProductTableRow';
+import ProductsPageHeader from './ProductsPageHeader';
+import ProductImportDrawer from './ProductImportDrawer';
 import { useStatFilter } from '@/hooks/useStatFilter';
 import { useAdminDrawer } from '@/hooks/useAdminDrawer';
 import AdminSearchInput from '@/components/admin/AdminSearchInput';
@@ -19,6 +22,7 @@ type Props = {
   products: ProductTableRow[];
   counts: ProductCounts;
   categoryCounts: Record<string, number>;
+  headerCounts: { total: number; inStock: number; outOfStock: number };
 };
 
 type SortBy = 'newest' | 'oldest' | 'price-asc' | 'price-desc' | 'name-asc' | 'top-rated';
@@ -36,7 +40,8 @@ const SORT_OPTIONS: { value: SortBy; label: string }[] = [
 
 const PAGE_SIZES = [8, 20, 50];
 
-export default function ProductsClient({ products, counts, categoryCounts }: Props) {
+export default function ProductsClient({ products, counts, categoryCounts, headerCounts }: Props) {
+  const router = useRouter();
   const [localProducts, setLocalProducts] = useState(products);
   const [page, setPage] = useState(1);
   const { activeKey: activeFilter, selectKey: _selectFilter } = useStatFilter<string>('all', () => setPage(1));
@@ -47,6 +52,42 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
   const [sortBy, setSortBy] = useState<SortBy>('newest');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [perPage, setPerPage] = useState(8);
+  const [exporting, setExporting] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const params = new URLSearchParams();
+      if (activeFilter !== 'all') params.set('status', String(activeFilter));
+      if (activeCategory) params.set('category', activeCategory);
+      if (search.trim()) params.set('search', search.trim());
+      if (sortBy) params.set('sort', sortBy);
+      const url = `/api/products/export${params.size ? `?${params.toString()}` : ''}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        toast.error('Export failed');
+        return;
+      }
+      const blob = await res.blob();
+      const disposition = res.headers.get('Content-Disposition') ?? '';
+      const filenameMatch = disposition.match(/filename="([^"]+)"/);
+      const filename = filenameMatch?.[1] ?? 'products.csv';
+      const objectUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(objectUrl);
+      toast.success('Products exported');
+    } catch {
+      toast.error('Export failed');
+    } finally {
+      setExporting(false);
+    }
+  }
 
   async function handleSave(fd: FormData, id?: string) {
     try {
@@ -266,6 +307,15 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
 
   return (
     <>
+      <ProductsPageHeader
+        total={headerCounts.total}
+        inStock={headerCounts.inStock}
+        outOfStock={headerCounts.outOfStock}
+        exporting={exporting}
+        onExport={handleExport}
+        onImport={() => setImportOpen(true)}
+      />
+
       <AdminStatStrip
         cells={[
           { key: 'all',        label: 'All cuts',     meta: 'IN CATALOG',  dotClass: 'bg-muted',   value: counts.all },
@@ -528,6 +578,26 @@ export default function ProductsClient({ products, counts, categoryCounts }: Pro
           onClose={closeDrawer}
           onSave={handleSave}
         />
+      </aside>
+
+      {/* CSV import drawer */}
+      {importOpen && (
+        <div
+          className="fixed inset-0 bg-ink/40 backdrop-blur-sm z-50"
+          onClick={() => setImportOpen(false)}
+        />
+      )}
+      <aside
+        className={`fixed top-0 right-0 w-full max-w-150 h-screen bg-cream z-51 flex flex-col shadow-2xl transition-transform duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
+          importOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        {importOpen && (
+          <ProductImportDrawer
+            onClose={() => setImportOpen(false)}
+            onCommitted={() => router.refresh()}
+          />
+        )}
       </aside>
     </>
   );

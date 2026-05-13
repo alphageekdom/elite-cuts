@@ -6,16 +6,26 @@ import {
   type Model,
 } from 'mongoose';
 import { PRODUCT_CATEGORIES, type ProductCategory } from '@/lib/admin-constants';
+import { slugify } from '@/lib/slugify';
 
 export { PRODUCT_CATEGORIES, type ProductCategory };
+
+export const PRODUCT_UNITS = ['lb', 'kg', 'each'] as const;
+export type ProductUnit = (typeof PRODUCT_UNITS)[number];
 
 // Server-side shape: what `.lean()` returns (sans `_id` / `__v`, which the
 // Mongoose generic adds back). Field types match the schema below.
 export type Product = {
   name: string;
+  // Stable identity that survives a name change — auto-generated from `name`
+  // on first save and never re-derived after. CSV import uses this as the
+  // upsert key.
+  slug: string;
   category: ProductCategory;
   description: string;
   price: number;
+  // Sold-by unit. Defaults to lb because that's how the shop weighs cuts.
+  unit: ProductUnit;
   rating: number;
   images: string[];
   stockCount: number;
@@ -54,6 +64,25 @@ const ProductSchema = new Schema<Product>(
     name: {
       type: String,
       required: [true, 'Name of the meat cut is required'],
+      trim: true,
+    },
+    slug: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      // Unique with a partial filter so legacy docs that pre-date this field
+      // (empty / missing slug) aren't pulled into the uniqueness check. New
+      // and updated docs all have a slug — the pre-validate hook below
+      // guarantees one whenever name is set — so the live invariant holds.
+      index: {
+        unique: true,
+        partialFilterExpression: { slug: { $type: 'string', $gt: '' } },
+      },
+    },
+    unit: {
+      type: String,
+      enum: [...PRODUCT_UNITS],
+      default: 'lb',
       trim: true,
     },
     category: {
@@ -136,6 +165,16 @@ const ProductSchema = new Schema<Product>(
     timestamps: true,
   },
 );
+
+// Auto-derive slug from name on first save. Subsequent saves preserve the
+// existing slug — renames update `name` only so external references (URLs,
+// CSV imports keyed on slug) stay stable. Runs at validate time so the
+// resulting slug is checked by the schema's lowercase + trim normalisers.
+ProductSchema.pre('validate', function () {
+  if (!this.slug && this.name) {
+    this.slug = slugify(this.name);
+  }
+});
 
 // Reuse the cached model in dev — Next.js hot-reload re-evaluates this file
 // on every change, and `model()` throws if the same name registers twice.
