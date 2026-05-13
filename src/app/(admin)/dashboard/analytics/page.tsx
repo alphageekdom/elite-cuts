@@ -97,15 +97,22 @@ export default async function AdminAnalyticsPage({ searchParams }: Props) {
     previousOrders.length > 0 ? (prevCancelled / previousOrders.length) * 100 : 0;
   const cancelRateChange = prevCancelRate - cancelRate; // positive = rate improved (went down)
 
-  // Repeat purchase rate
-  const customerOrderMap = new Map<string, number>();
-  for (const o of currentOrders) {
-    const uid = o.user.toString();
-    customerOrderMap.set(uid, (customerOrderMap.get(uid) ?? 0) + 1);
-  }
-  const totalUnique = customerOrderMap.size;
-  const repeating = [...customerOrderMap.values()].filter((c) => c >= 2).length;
-  const repeatRate = totalUnique > 0 ? (repeating / totalUnique) * 100 : 0;
+  // Repeat purchase rate — current and prior window. Delta is reported in
+  // percentage points (not relative %) since repeat rate is itself a percentage.
+  const repeatRateFor = (orders: typeof currentOrders): number => {
+    const customerOrderMap = new Map<string, number>();
+    for (const o of orders) {
+      const uid = o.user.toString();
+      customerOrderMap.set(uid, (customerOrderMap.get(uid) ?? 0) + 1);
+    }
+    const totalUnique = customerOrderMap.size;
+    if (totalUnique === 0) return 0;
+    const repeating = [...customerOrderMap.values()].filter((c) => c >= 2).length;
+    return (repeating / totalUnique) * 100;
+  };
+  const repeatRate = repeatRateFor(currentOrders);
+  const prevRepeatRate = repeatRateFor(previousOrders);
+  const repeatRateChange = repeatRate - prevRepeatRate;
 
   // Pickup %
   const pickupCount = currentOrders.filter((o) => o.pickedUp).length;
@@ -240,12 +247,21 @@ export default async function AdminAnalyticsPage({ searchParams }: Props) {
     row.map((v) => Math.min(5, Math.round((v / heatmapRevMax) * 5))),
   );
 
-  // Period label
+  // Period label (page subtitle, full date range)
   const periodLabel = `${MONTH_ABBR[windowStart.getMonth()]} ${windowStart.getDate()} – ${MONTH_ABBR[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()} · Compared to previous ${days} days`;
+
+  // Hero label sits next to the big net-revenue number and has to read tight.
+  const heroPeriodLabel: Record<AnalyticsRange, string> = {
+    '7D': 'Last 7 days',
+    '30D': 'Last 30 days',
+    '90D': 'Last 90 days',
+    '1Y':  'Last year',
+  };
 
   const data: AnalyticsData = {
     range,
     periodLabel,
+    heroPeriodLabel: heroPeriodLabel[range],
     revenue,
     revenueChange,
     orderCount: currentOrders.length,
@@ -253,6 +269,7 @@ export default async function AdminAnalyticsPage({ searchParams }: Props) {
     aovChange,
     pickupPct,
     repeatRate,
+    repeatRateChange,
     newCustomers,
     newCustomersChange,
     cancelRate,
