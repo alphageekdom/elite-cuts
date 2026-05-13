@@ -7,6 +7,8 @@ import './globals.css';
 
 import AuthProvider from '@/components/AuthProvider';
 import { CartProvider } from '@/context/CartContext';
+import { ShopSettingsProvider } from '@/context/ShopSettingsContext';
+import { getShopSettings } from '@/lib/shopSettings';
 
 import { Toaster } from 'sonner';
 
@@ -30,16 +32,19 @@ const jetbrains = JetBrains_Mono({
   display: 'swap',
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: 'EliteCuts — Premium Butcher, San Diego',
-    template: '%s · EliteCuts',
-  },
-  description:
-    'Order premium hand-cut beef, pork, and poultry online. Ready for same-day pickup in North Park, San Diego.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getShopSettings();
+  return {
+    title: {
+      default: `${settings.shopName} — Premium Butcher, ${settings.city}`,
+      template: `%s · ${settings.shopName}`,
+    },
+    description: settings.description,
+  };
+}
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const settings = await getShopSettings();
   return (
     <html
       lang="en"
@@ -48,7 +53,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="bg-cream font-sans text-ink antialiased">
         <AuthProvider>
           <CartProvider>
-            {children}
+            <ShopSettingsProvider value={settings}>
+              {children}
+            </ShopSettingsProvider>
           </CartProvider>
         </AuthProvider>
         <Toaster richColors position='bottom-right' />

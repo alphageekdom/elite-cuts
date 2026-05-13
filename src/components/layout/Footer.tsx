@@ -1,4 +1,10 @@
 import Reveal from '@/components/uielements/Reveal';
+import {
+  formatPhoneHref,
+  formatShopCityStateZip,
+  getShopSettings,
+} from '@/lib/shopSettings';
+import { splitWordmark } from '@/lib/wordmark';
 
 const FacebookIcon = () => (
   <svg
@@ -83,8 +89,11 @@ const COLUMN_HEADING =
 const COLUMN_LINK =
   'text-[15px] text-cream opacity-85 transition-[opacity,padding] duration-300 hover:opacity-100 hover:pl-1.5 motion-reduce:transition-none motion-reduce:hover:pl-0';
 
-const Footer = () => {
+const Footer = async () => {
+  const settings = await getShopSettings();
   const year = new Date().getFullYear();
+  const cityStateZip = formatShopCityStateZip(settings);
+  const wordmark = splitWordmark(settings.shopName);
 
   return (
     <footer className='bg-ink pt-25 pb-10 text-cream'>
@@ -93,20 +102,28 @@ const Footer = () => {
           <div className='grid grid-cols-1 gap-15 border-b border-cream/10 pb-20 md:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr]'>
             <div>
               <div className='mb-6 font-display text-5xl leading-none tracking-[-0.02em] font-normal'>
-                Elite<em className='font-normal italic text-camel'>Cuts</em>
+                {wordmark.before}
+                {wordmark.italic && (
+                  <em className='font-normal italic text-camel'>{wordmark.italic}</em>
+                )}
               </div>
               <p className='max-w-[32ch] text-sm leading-[1.6] opacity-80'>
-                Hand-cut meats, butchered fresh in San Diego. Order online for
-                same-day pickup.
+                {settings.description}
               </p>
             </div>
 
             <div>
               <h4 className={COLUMN_HEADING}>Visit</h4>
               <p className='mb-4 text-sm leading-[1.7] opacity-85'>
-                3045 30th Street
+                {settings.street}
+                {settings.suite && (
+                  <>
+                    <br />
+                    {settings.suite}
+                  </>
+                )}
                 <br />
-                San Diego, CA 92104
+                {cityStateZip}
               </p>
               <p className='text-sm leading-[1.7] opacity-75'>
                 Tue–Sat 9am–7pm
@@ -121,13 +138,13 @@ const Footer = () => {
               <h4 className={COLUMN_HEADING}>Contact</h4>
               <ul className='flex flex-col gap-3'>
                 <li>
-                  <a href='tel:+16195550142' className={COLUMN_LINK}>
-                    (619) 555-0142
+                  <a href={formatPhoneHref(settings.phone)} className={COLUMN_LINK}>
+                    {settings.phone}
                   </a>
                 </li>
                 <li>
-                  <a href='mailto:hello@elitecuts.com' className={COLUMN_LINK}>
-                    hello@elitecuts.com
+                  <a href={`mailto:${settings.email}`} className={COLUMN_LINK}>
+                    {settings.email}
                   </a>
                 </li>
               </ul>
@@ -152,7 +169,7 @@ const Footer = () => {
           <div className='flex flex-wrap items-center justify-between gap-4 pt-8 text-[14px]'>
             <div className='flex flex-col gap-1.5 text-cream/70'>
               <div>
-                &copy; {year} EliteCuts.{' '}
+                &copy; {year} {settings.shopName}.{' '}
                 <span className='text-cream/65'>
                   Portfolio project — not a real shop. No orders are processed.
                 </span>
