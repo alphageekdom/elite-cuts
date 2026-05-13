@@ -2,10 +2,10 @@ import { NextResponse, type NextRequest } from 'next/server';
 import mongoose from 'mongoose';
 
 import connectDB from '@/config/database';
-import Product, { PRODUCT_CATEGORIES } from '@/models/Product';
+import Product from '@/models/Product';
 import Review from '@/models/Review';
 import { getSessionUser } from '@/utils/getSessionUser';
-import { parseProductFormData } from '@/utils/parseProductFormData';
+import { productRecordFromFormData, validateProductInput } from '@/lib/product-validate';
 import { withAdmin } from '@/lib/api-handler';
 
 // Next 15+ params are async — must be awaited inside the handler.
@@ -107,34 +107,41 @@ export const PUT = withAdmin(async (request: NextRequest, ctx: unknown) => {
       return NextResponse.json({ message: 'Product not found' }, { status: 404 });
     }
 
-    // rating/images/isFeatured preserved from existing doc — not editable via
-    // the admin form (rating is review-derived; images via separate upload).
-    const parsed = parseProductFormData(formData);
-
-    if (!parsed.name.trim()) {
-      return NextResponse.json({ message: 'Name is required' }, { status: 400 });
-    }
-    if (typeof parsed.price !== 'number' || isNaN(parsed.price) || parsed.price < 0) {
-      return NextResponse.json({ message: 'price must be a non-negative number' }, { status: 400 });
-    }
-    if (!(PRODUCT_CATEGORIES as readonly string[]).includes(parsed.category)) {
-      return NextResponse.json(
-        { message: `category must be one of: ${PRODUCT_CATEGORIES.join(', ')}` },
-        { status: 400 },
-      );
-    }
-    if (!Number.isInteger(parsed.stockCount) || parsed.stockCount < 0) {
-      return NextResponse.json({ message: 'stockCount must be a non-negative integer' }, { status: 400 });
+    // rating + images preserved from the existing doc — not editable via the
+    // admin form (rating is review-derived; images upload via a separate
+    // surface). Slug stays stable across edits so external references hold.
+    const record = productRecordFromFormData(formData);
+    // The form doesn't surface a slug input, so an empty slug here means
+    // "keep the existing slug" rather than "derive a new one from name".
+    if (!record.slug.trim()) record.slug = existingProduct.slug ?? '';
+    // The form also doesn't submit `isFeatured` or `isActive` (those live
+    // on separate toggles). When they're absent, fall back to the persisted
+    // value so editing any other field doesn't quietly clear them.
+    if (!formData.has('isFeatured')) record.isFeatured = existingProduct.isFeatured ? 'true' : 'false';
+    if (!formData.has('isActive'))   record.isActive   = existingProduct.isActive   ? 'true' : 'false';
+    const v = validateProductInput(record);
+    if (!v.ok) {
+      return NextResponse.json({ message: v.error }, { status: 400 });
     }
 
-    const productData = {
-      ...parsed,
-      rating: existingProduct.rating,
-      images: existingProduct.images,
-      isFeatured: existingProduct.isFeatured,
-    };
-
-    const updatedProduct = await Product.findByIdAndUpdate(id, productData, { returnDocument: 'after', runValidators: true });
+    const updatedProduct = await Product.findByIdAndUpdate(
+      id,
+      {
+        slug: v.data.slug,
+        name: v.data.name,
+        description: v.data.description,
+        category: v.data.category,
+        price: v.data.price,
+        unit: v.data.unit,
+        stockCount: v.data.stock,
+        isFeatured: v.data.isFeatured,
+        isActive: v.data.isActive,
+        supplier: v.data.supplier,
+        rating: existingProduct.rating,
+        images: existingProduct.images,
+      },
+      { returnDocument: 'after', runValidators: true },
+    );
     return NextResponse.json(updatedProduct);
   } catch (error) {
     console.error(error);

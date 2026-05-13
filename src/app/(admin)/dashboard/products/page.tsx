@@ -5,7 +5,6 @@ import connectDB from '@/config/database';
 import ProductModel from '@/models/Product';
 
 import { serializeProductRow } from '@/lib/serializers';
-import ProductsPageHeader from '@/components/admin/products/ProductsPageHeader';
 import ProductsClient, { type ProductTableRow, type ProductCounts } from '@/components/admin/products/ProductsClient';
 
 export const dynamic = 'force-dynamic';
@@ -52,9 +51,11 @@ export default async function AdminProductsPage() {
   const products: ProductTableRow[] = rawProducts.map(serializeProductRow);
 
   return (
-    <>
-      <ProductsPageHeader total={total} inStock={inStock} outOfStock={outOfStock} />
-      <ProductsClient products={products} counts={counts} categoryCounts={categoryCounts} />
-    </>
+    <ProductsClient
+      products={products}
+      counts={counts}
+      categoryCounts={categoryCounts}
+      headerCounts={{ total, inStock, outOfStock }}
+    />
   );
 }

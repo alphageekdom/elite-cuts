@@ -1,14 +1,16 @@
 'use client';
-import { toast } from 'sonner';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 
 type Props = {
   total: number;
   inStock: number;
   outOfStock: number;
+  exporting: boolean;
+  onExport: () => void;
+  onImport: () => void;
 };
 
-export default function ProductsPageHeader({ total, inStock, outOfStock }: Props) {
+export default function ProductsPageHeader({ total, inStock, outOfStock, exporting, onExport, onImport }: Props) {
   return (
     <AdminPageHeader
       eyebrow="Catalog"
@@ -18,15 +20,22 @@ export default function ProductsPageHeader({ total, inStock, outOfStock }: Props
       subtitle={`${total} cuts in catalog · ${inStock} in stock · ${outOfStock} out of stock`}
       actions={
         <>
-          <button onClick={() => toast.info('Coming soon')} className="inline-flex items-center gap-2 px-4.5 py-2.5 rounded-full bg-paper border border-line text-ink-soft text-[13px] font-medium tracking-[0.02em] hover:border-ink hover:text-ink transition-colors">
+          <button
+            onClick={onExport}
+            disabled={exporting}
+            className="inline-flex items-center gap-2 px-4.5 py-2.5 rounded-full bg-paper border border-line text-ink-soft text-[13px] font-medium tracking-[0.02em] hover:border-ink hover:text-ink transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
               <polyline points="7 10 12 15 17 10" />
               <line x1="12" y1="15" x2="12" y2="3" />
             </svg>
-            Export
+            {exporting ? 'Exporting…' : 'Export'}
           </button>
-          <button onClick={() => toast.info('Coming soon')} className="inline-flex items-center gap-2 px-4.5 py-2.5 rounded-full bg-paper border border-line text-ink-soft text-[13px] font-medium tracking-[0.02em] hover:border-ink hover:text-ink transition-colors">
+          <button
+            onClick={onImport}
+            className="inline-flex items-center gap-2 px-4.5 py-2.5 rounded-full bg-paper border border-line text-ink-soft text-[13px] font-medium tracking-[0.02em] hover:border-ink hover:text-ink transition-colors"
+          >
             <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
               <polyline points="17 8 12 3 7 8" />
