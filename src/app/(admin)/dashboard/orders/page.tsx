@@ -6,7 +6,6 @@ import OrderModel from '@/models/Order';
 import type { Types } from 'mongoose';
 
 import { serializeOrderRow } from '@/lib/serializers';
-import OrdersPageHeader from '@/components/admin/orders/OrdersPageHeader';
 import OrdersClient, { type OrderTableRow, type StatusCounts } from '@/components/admin/orders/OrdersClient';
 
 type PopulatedUser = {
@@ -30,10 +29,14 @@ export default async function AdminOrdersPage() {
 
   await connectDB();
 
-  const [statusAgg, rawOrders] = await Promise.all([
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const [statusAgg, monthOrdersCount, rawOrders] = await Promise.all([
     OrderModel.aggregate<{ _id: string; count: number }>([
       { $group: { _id: '$orderStatus', count: { $sum: 1 } } },
     ]),
+    OrderModel.countDocuments({ createdAt: { $gte: startOfMonth } }),
     OrderModel.find({})
       .sort({ createdAt: -1 })
       .limit(200)
@@ -64,12 +67,10 @@ export default async function AdminOrdersPage() {
   );
 
   return (
-    <>
-      <OrdersPageHeader
-        totalThisMonth={counts.all}
-        pendingCount={counts.orderPlaced}
-      />
-      <OrdersClient orders={orders} counts={counts} />
-    </>
+    <OrdersClient
+      orders={orders}
+      counts={counts}
+      monthOrdersCount={monthOrdersCount}
+    />
   );
 }
