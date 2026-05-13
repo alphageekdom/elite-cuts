@@ -7,9 +7,14 @@ import { useStatFilter } from '@/hooks/useStatFilter';
 import { useAdminDrawer } from '@/hooks/useAdminDrawer';
 import OrderTableRowComponent from './OrderTableRow';
 import OrdersPageHeader from './OrdersPageHeader';
+import OrdersFilterPanel, {
+  type PaymentFilter,
+  type FulfillmentFilter,
+} from './OrdersFilterPanel';
 import AdminStatStrip from '@/components/admin/AdminStatStrip';
 import AdminSearchInput from '@/components/admin/AdminSearchInput';
 import AdminPagination from '@/components/admin/AdminPagination';
+import RangeToggle, { type RangeKey } from '@/components/admin/analytics/RangeToggle';
 import { AVATAR_COLORS } from '@/lib/admin-constants';
 import type { OrderTableRow, StatusCounts } from '@/types/admin';
 import OrderDetailDrawer from './OrderDetailDrawer';
@@ -20,6 +25,14 @@ type Props = {
   orders: OrderTableRow[];
   counts: StatusCounts;
   monthOrdersCount: number;
+  range: RangeKey;
+};
+
+const RANGE_META_LABEL: Record<RangeKey, string> = {
+  '7D': 'LAST 7 DAYS',
+  '30D': 'LAST 30 DAYS',
+  '90D': 'LAST 90 DAYS',
+  '1Y':  'LAST YEAR',
 };
 
 type SortBy = 'newest' | 'oldest' | 'total-desc' | 'total-asc' | 'customer-asc';
@@ -63,7 +76,7 @@ const useIsomorphicLayoutEffect =
   typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 const STAT_CELLS = [
-  { key: 'all',               label: 'All',        metaLabel: 'THIS MONTH',      dotClass: '' },
+  { key: 'all',               label: 'All',        metaLabel: '',                dotClass: '' },
   { key: 'Order Placed',      label: 'New',         metaLabel: 'ORDER PLACED',    dotClass: '' },
   { key: 'Preparing',         label: 'Preparing',   metaLabel: 'IN PROGRESS',     dotClass: 'bg-camel' },
   { key: 'Ready for Pickup',  label: 'Ready',       metaLabel: 'AWAITING PICKUP', dotClass: 'bg-camel' },
@@ -88,12 +101,21 @@ function countForKey(key: StatKey, counts: StatusCounts): number {
 
 const PAGE_SIZES = [8, 20, 50];
 
-export default function OrdersClient({ orders, counts, monthOrdersCount }: Props) {
+export default function OrdersClient({ orders, counts, monthOrdersCount, range }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const openOrderId = searchParams.get('openOrder');
   const [localOrders, setLocalOrders] = useState(orders);
+  // Range navigation re-renders the page server-side with a new `orders` prop.
+  // Adjusting state during render (React's recommended pattern over a mirroring
+  // useEffect) avoids the extra paint and the "state derived from props" smell.
+  const [prevOrdersProp, setPrevOrdersProp] = useState(orders);
+  if (orders !== prevOrdersProp) {
+    setPrevOrdersProp(orders);
+    setLocalOrders(orders);
+  }
+
   const [page, setPage] = useState(1);
   const { activeKey: activeStatus, selectKey: _selectStatus } = useStatFilter<string>('all', () => setPage(1));
   const [search, setSearch] = useState('');
@@ -105,6 +127,12 @@ export default function OrdersClient({ orders, counts, monthOrdersCount }: Props
   const [exporting, setExporting] = useState(false);
   const [columnsOpen, setColumnsOpen] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<OrderColumnVisibility>(DEFAULT_COLUMNS);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>('any');
+  const [fulfillmentFilter, setFulfillmentFilter] = useState<FulfillmentFilter>('any');
+
+  const activeFilterCount =
+    (paymentFilter === 'any' ? 0 : 1) + (fulfillmentFilter === 'any' ? 0 : 1);
 
   // Hydrate column visibility from localStorage before first paint. Unknown /
   // stale keys are ignored so a schema change can't lock a column off invisibly.
@@ -152,6 +180,12 @@ export default function OrdersClient({ orders, counts, monthOrdersCount }: Props
           o.customerEmail.toLowerCase().includes(q),
       );
     }
+    if (paymentFilter !== 'any') {
+      rows = rows.filter((o) => o.paymentStatus === paymentFilter);
+    }
+    if (fulfillmentFilter !== 'any') {
+      rows = rows.filter((o) => (o.fulfillmentType ?? 'pickup') === fulfillmentFilter);
+    }
     const sorted = [...rows];
     if (sortBy === 'newest')         sorted.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
     else if (sortBy === 'oldest')    sorted.sort((a, b) => (a.createdAt > b.createdAt ? 1 : -1));
@@ -159,15 +193,18 @@ export default function OrdersClient({ orders, counts, monthOrdersCount }: Props
     else if (sortBy === 'total-asc')  sorted.sort((a, b) => a.total - b.total);
     else if (sortBy === 'customer-asc') sorted.sort((a, b) => a.customerName.localeCompare(b.customerName));
     return sorted;
-  }, [localOrders, activeStatus, search, sortBy]);
+  }, [localOrders, activeStatus, search, sortBy, paymentFilter, fulfillmentFilter]);
 
   async function handleExport() {
     setExporting(true);
     try {
       const params = new URLSearchParams();
+      params.set('range', range);
       if (activeStatus !== 'all') params.set('status', String(activeStatus));
       if (search.trim()) params.set('search', search.trim());
-      const url = `/api/orders/export${params.size ? `?${params.toString()}` : ''}`;
+      if (paymentFilter !== 'any') params.set('payment', paymentFilter);
+      if (fulfillmentFilter !== 'any') params.set('fulfillment', fulfillmentFilter);
+      const url = `/api/orders/export?${params.toString()}`;
       const res = await fetch(url);
       if (!res.ok) {
         toast.error('Export failed');
@@ -420,7 +457,7 @@ export default function OrdersClient({ orders, counts, monthOrdersCount }: Props
             key: String(cell.key),
             label: cell.label,
             value: count,
-            meta: cell.metaLabel,
+            meta: cell.key === 'all' ? RANGE_META_LABEL[range] : cell.metaLabel,
             dotClass: cell.dotClass || undefined,
             badge: cell.key === 'Order Placed' && count > 0 ? 'new' : undefined,
           };
@@ -441,14 +478,35 @@ export default function OrdersClient({ orders, counts, monthOrdersCount }: Props
 
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 bg-ink text-cream border border-ink rounded-full px-3.5 py-2 text-[13px] font-medium cursor-default">
-              Last 30 days
-              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
-            </span>
-            <button onClick={() => toast.info('Coming soon')} className="inline-flex items-center gap-1.5 bg-paper border border-line rounded-full px-3.5 py-2 text-[13px] text-ink-soft hover:border-ink hover:text-ink transition-colors">
-              More filters
-              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-            </button>
+            <RangeToggle active={range} basePath="/dashboard/orders" variant="standalone" />
+            <div className="relative">
+              <button
+                onClick={() => setFiltersOpen((v) => !v)}
+                className="inline-flex items-center gap-1.5 bg-paper border border-line rounded-full px-3.5 py-2 text-[13px] text-ink-soft hover:border-ink hover:text-ink transition-colors"
+              >
+                More filters
+                {activeFilterCount > 0 && (
+                  <span className="bg-ink text-cream text-[10px] font-medium tracking-[0.04em] px-1.5 py-0.5 rounded-full leading-none">
+                    {activeFilterCount}
+                  </span>
+                )}
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+              </button>
+              {filtersOpen && (
+                <OrdersFilterPanel
+                  payment={paymentFilter}
+                  fulfillment={fulfillmentFilter}
+                  onPaymentChange={(v) => { setPaymentFilter(v); setPage(1); }}
+                  onFulfillmentChange={(v) => { setFulfillmentFilter(v); setPage(1); }}
+                  onClear={() => {
+                    setPaymentFilter('any');
+                    setFulfillmentFilter('any');
+                    setPage(1);
+                  }}
+                  onClose={() => setFiltersOpen(false)}
+                />
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-2">

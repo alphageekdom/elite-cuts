@@ -113,6 +113,21 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
       } else {
         updateFields.cancellationReason = null;
       }
+
+      // Stamp the transition timestamp the first time we enter the target
+      // state. Re-transitioning (e.g. Cancelled → Preparing → Cancelled again)
+      // preserves the original stamp. `pickedUpAt` rides on the Completed
+      // transition since that's when a pickup order is actually picked up.
+      const now = new Date();
+      if (orderStatus === 'Ready for Pickup' && !existing.readyAt) {
+        updateFields.readyAt = now;
+      }
+      if (orderStatus === 'Completed' && !existing.pickedUpAt) {
+        updateFields.pickedUpAt = now;
+      }
+      if (orderStatus === 'Cancelled' && !existing.cancelledAt) {
+        updateFields.cancelledAt = now;
+      }
     }
 
     // Determine which item indices should be newly refunded.
@@ -200,6 +215,9 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
       ) {
         updateFields.orderStatus = 'Cancelled';
         updateFields.cancellationReason = null;
+        if (!existing.cancelledAt) {
+          updateFields.cancelledAt = refundedAt;
+        }
       }
     }
 
