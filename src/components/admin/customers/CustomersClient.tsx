@@ -192,6 +192,7 @@ export default function CustomersClient({ customers, counts }: Props) {
         }))}
         activeKey={activeStatFilter}
         onSelect={handleStatFilter}
+        cols="grid-cols-2 sm:grid-cols-4"
       />
 
       {/* Toolbar */}
