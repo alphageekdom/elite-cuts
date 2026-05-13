@@ -1,58 +1,12 @@
-import { fmtDollarShort, fmtRank } from './analytics-utils';
-import { productImageSrc } from '@/lib/format';
 import type { AnalyticsData } from '../AnalyticsClient';
 
-export default function AnalyticsBestSellersSection({ data }: { data: AnalyticsData }) {
+export default function AnalyticsFunnelSection({ data }: { data: AnalyticsData }) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-      {/* § 03 Best sellers */}
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+      {/* § 03 Customer funnel */}
       <div className="bg-paper border border-line-soft rounded-sm p-7">
         <div className="mb-6">
           <div className="font-display italic text-[12px] text-camel mb-1">✦ 03</div>
-          <div className="font-display font-medium text-[22px] tracking-[-0.015em] leading-snug">
-            Best <em className="italic text-oxblood font-normal">sellers</em>
-          </div>
-          <div className="text-[12px] text-muted mt-1">By revenue, this period</div>
-        </div>
-
-        {data.bestSellers.length === 0 ? (
-          <p className="text-muted text-sm">No product data for this period.</p>
-        ) : (
-          <div>
-            {data.bestSellers.map((p) => (
-              <div
-                key={p.rank}
-                className="grid grid-cols-[24px_48px_1fr_auto] gap-3.5 items-center py-3.5 border-b border-line-soft last:border-b-0 first:pt-0"
-              >
-                <span className="font-display italic text-lg text-camel text-center">{fmtRank(p.rank)}</span>
-                <div className="w-12 h-12 rounded-[4px] bg-cream-deep overflow-hidden relative shrink-0">
-                  {productImageSrc(p.image) ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={productImageSrc(p.image)!} alt={p.name} className="w-full h-full object-cover" />
-                  ) : null}
-                </div>
-                <div className="min-w-0">
-                  <div className="font-display font-medium text-[14px] tracking-[-0.005em] leading-snug mb-1 truncate">{p.name}</div>
-                  <div className="text-[11px] text-muted font-mono tracking-[0.04em]">
-                    {p.sold} SOLD · {p.category.toUpperCase()}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="font-display font-medium text-[15px] tracking-[-0.01em] mb-0.5">{fmtDollarShort(p.revenue)}</div>
-                  <div className={`text-[10px] font-mono tracking-[0.02em] ${p.changeDir === 'up' ? 'text-green' : 'text-oxblood'}`}>
-                    {p.changeDir === 'up' ? '↑' : '↓'} {p.changePct.toFixed(0)}%
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* § 04 Customer funnel */}
-      <div className="bg-paper border border-line-soft rounded-sm p-7">
-        <div className="mb-6">
-          <div className="font-display italic text-[12px] text-camel mb-1">✦ 04</div>
           <div className="font-display font-medium text-[22px] tracking-[-0.015em] leading-snug">
             Customer <em className="italic text-oxblood font-normal">funnel</em>
           </div>

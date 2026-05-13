@@ -4,7 +4,7 @@ import { fmtDollars } from './sections/analytics-utils';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import AnalyticsKpiGrid from './sections/AnalyticsKpiGrid';
 import AnalyticsRevenueChart from './sections/AnalyticsRevenueChart';
-import AnalyticsBestSellersSection from './sections/AnalyticsBestSellersSection';
+import AnalyticsFunnelSection from './sections/AnalyticsFunnelSection';
 import AnalyticsHeatmap from './sections/AnalyticsHeatmap';
 
 export type AnalyticsRange = '7D' | '30D' | '90D' | '1Y';
@@ -126,7 +126,7 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
 
       <AnalyticsKpiGrid data={data} />
       <AnalyticsRevenueChart data={data} />
-      <AnalyticsBestSellersSection data={data} />
+      <AnalyticsFunnelSection data={data} />
       <AnalyticsHeatmap heatmap={data.heatmap} heatmapRevenue={data.heatmapRevenue} />
     </>
   );

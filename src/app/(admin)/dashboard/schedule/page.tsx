@@ -7,12 +7,11 @@ import ShopHoursModel, { DEFAULT_DAYS } from '@/models/ShopHours';
 import ShopSettingsModel from '@/models/ShopSettings';
 import Order from '@/models/Order';
 import DeliveryModel from '@/models/Delivery';
-import ScheduleClient, { type ShiftRow, type UpcomingDelivery } from '@/components/admin/schedule/ScheduleClient';
+import ScheduleClient, { type ShiftRow } from '@/components/admin/schedule/ScheduleClient';
 import GrillEventSection from '@/components/grill-event/GrillEventSection';
 import type { PickupSlotRow } from '@/components/admin/schedule/SchedulePickupSlots';
 import { SLOT_LABELS } from '@/components/admin/schedule/SchedulePickupSlots';
 import { getMondayOf } from '@/lib/schedule-utils';
-import { MONTH_ABBR } from '@/lib/format';
 import { getPastEvents, getUpcomingEvents } from '@/lib/events';
 
 export const dynamic = 'force-dynamic';
@@ -37,7 +36,7 @@ export default async function AdminSchedulePage() {
   todayStart.setHours(0, 0, 0, 0);
   const todayEnd = new Date(todayStart.getTime() + 86400000);
 
-  const [rawShifts, shopHoursDoc, settingsDoc, pickupOrders, deliveryCount, upcomingDeliveriesRaw, upcomingEvents, pastEvents] = await Promise.all([
+  const [rawShifts, shopHoursDoc, settingsDoc, pickupOrders, deliveryCount, upcomingEvents, pastEvents] = await Promise.all([
     ShiftModel.find({ weekStart: { $gte: weekStart, $lt: weekEnd } }).lean(),
     ShopHoursModel.findOneAndUpdate({}, {}, { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }).lean(),
     ShopSettingsModel.findOneAndUpdate({}, {}, { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }).lean(),
@@ -45,10 +44,6 @@ export default async function AdminSchedulePage() {
       pickupSlot: { $gte: todayStart.toISOString(), $lt: todayEnd.toISOString() },
     }).select('pickupSlot totalCost').lean(),
     DeliveryModel.countDocuments({ deliveryDate: { $gte: todayStart, $lt: todayEnd } }),
-    DeliveryModel.find({ deliveryDate: { $gte: todayStart } })
-      .sort({ deliveryDate: 1 })
-      .limit(4)
-      .lean(),
     getUpcomingEvents(20),
     getPastEvents(20),
   ]);
@@ -67,23 +62,6 @@ export default async function AdminSchedulePage() {
 
   const slotsBooked = pickupOrders.length;
   const projectedRevenue = pickupOrders.reduce((sum, o) => sum + ((o.totalCost as number) ?? 0), 0);
-
-  const DAY_ABBR = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const upcomingDeliveries: UpcomingDelivery[] = upcomingDeliveriesRaw.map((d) => {
-    const date = new Date(d.deliveryDate);
-    const isToday = date >= todayStart && date < todayEnd;
-    const dateLabel = isToday
-      ? 'TODAY'
-      : `${DAY_ABBR[date.getDay()].toUpperCase()} ${MONTH_ABBR[date.getMonth()].toUpperCase()} ${date.getDate()}`;
-    return {
-      id: d._id.toString(),
-      supplier: d.supplier,
-      supplierSuffix: d.supplierSuffix,
-      detail: d.detail,
-      status: d.status,
-      dateLabel,
-    };
-  });
 
   // Count pickups per hour slot (slots 0–7 = 9AM–5PM)
   const slotCounts = new Array<number>(8).fill(0);
@@ -109,7 +87,6 @@ export default async function AdminSchedulePage() {
         slotsBooked={slotsBooked}
         projectedRevenue={projectedRevenue}
         deliveryCount={deliveryCount}
-        upcomingDeliveries={upcomingDeliveries}
       />
       <GrillEventSection upcoming={upcomingEvents} past={pastEvents} />
     </>

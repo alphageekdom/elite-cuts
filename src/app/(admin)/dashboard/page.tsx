@@ -9,7 +9,6 @@ import type { Types } from 'mongoose';
 import DashboardPageHeader from '@/components/admin/dashboard/DashboardPageHeader';
 import DashboardStatGrid from '@/components/admin/dashboard/DashboardStatGrid';
 import DashboardTopCuts from '@/components/admin/dashboard/DashboardTopCuts';
-import DashboardQuickActions from '@/components/admin/dashboard/DashboardQuickActions';
 import DashboardRecentOrders from '@/components/admin/dashboard/DashboardRecentOrders';
 import type { OrderRow } from '@/components/admin/dashboard/DashboardRecentOrders';
 import RevenueCard, { type RevenueBucket } from '@/components/admin/analytics/RevenueCard';
@@ -221,7 +220,6 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
         />
         <DashboardTopCuts cuts={topCuts} />
       </div>
-      <DashboardQuickActions />
       <DashboardRecentOrders orders={orders} />
     </>
   );
