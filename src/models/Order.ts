@@ -80,6 +80,9 @@ export type Order = {
   deliveryAddress?: DeliveryAddressData;
   orderNotes?: string;
   cancellationReason?: CancellationReason;
+  readyAt?: Date;
+  pickedUpAt?: Date;
+  cancelledAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -245,6 +248,9 @@ const OrderSchema = new Schema<Order>(
     },
     orderNotes: { type: String, trim: true },
     cancellationReason: { type: String, enum: [...CANCELLATION_REASONS] },
+    readyAt: { type: Date },
+    pickedUpAt: { type: Date },
+    cancelledAt: { type: Date },
   },
   {
     timestamps: true,
