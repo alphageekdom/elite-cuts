@@ -3,14 +3,12 @@ import mongoose from 'mongoose';
 
 import connectDB from '@/config/database';
 import Order, { ORDER_STATUSES, CANCELLATION_REASONS } from '@/models/Order';
-import User from '@/models/User';
 import Product from '@/models/Product';
-import Notification from '@/models/Notification';
 import { getSessionUser } from '@/utils/getSessionUser';
 import { withAdmin } from '@/lib/api-handler';
 import { isIn } from '@/lib/validation';
 import { refundSummary, paymentStatusFor } from '@/lib/order-refunds';
-import { getShopSettings } from '@/lib/shopSettings';
+import { awardOrderCompletion } from '@/lib/order-completion';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -274,35 +272,13 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
       { returnDocument: 'after', runValidators: true },
     );
 
-    // Award 1 point per dollar when transitioning into Completed for the first time
+    // First-time transition into Completed — award points + fire low-stock alerts.
     if (orderStatus === 'Completed' && existing.orderStatus !== 'Completed') {
-      const pointsEarned = Math.floor(existing.totalCost);
-      await User.findByIdAndUpdate(existing.user, { $inc: { rewardPoints: pointsEarned } });
-
-      // Fire low_stock notifications — non-blocking. Gated on
-      // settings.notifLowStock; getShopSettings fails open so a settings
-      // outage doesn't silence the alert.
-      const productIds = existing.orderItems.map((i) => i.product);
-      (async () => {
-        const settings = await getShopSettings();
-        if (!settings.notifLowStock) return;
-        const [products, admins] = await Promise.all([
-          Product.find({ _id: { $in: productIds }, parLevel: { $gt: 0 } }, 'name stockCount parLevel').lean(),
-          User.find({ isAdmin: true }, '_id').lean(),
-        ]);
-        const lowStock = products.filter((p) => p.stockCount <= (p.parLevel ?? 0));
-        if (!lowStock.length || !admins.length) return;
-        const docs = lowStock.flatMap((p) =>
-          admins.map((a) => ({
-            type: 'low_stock' as const,
-            title: 'Low stock alert',
-            body: `${p.name} is down to ${p.stockCount} remaining (par: ${p.parLevel ?? 0})`,
-            userId: a._id,
-            readAt: null,
-          })),
-        );
-        await Notification.insertMany(docs);
-      })().catch((err) => console.error('[orders/:id PATCH] low_stock notification error', err));
+      await awardOrderCompletion({
+        customerUserId: existing.user,
+        totalCost: existing.totalCost,
+        productIds: existing.orderItems.map((i) => i.product),
+      });
     }
 
     return NextResponse.json(order);

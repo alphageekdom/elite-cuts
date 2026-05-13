@@ -5,8 +5,17 @@ import connectDB from '@/config/database';
 import OrderModel from '@/models/Order';
 import type { Types } from 'mongoose';
 
+import UserModel from '@/models/User';
+import ProductModel from '@/models/Product';
+
+import { getShopSettings } from '@/lib/shopSettings';
 import { serializeOrderRow } from '@/lib/serializers';
-import OrdersClient, { type OrderTableRow, type StatusCounts } from '@/components/admin/orders/OrdersClient';
+import OrdersClient, {
+  type OrderTableRow,
+  type StatusCounts,
+  type AdminOrderCustomer,
+  type AdminOrderProduct,
+} from '@/components/admin/orders/OrdersClient';
 import type { RangeKey } from '@/components/admin/analytics/RangeToggle';
 
 type PopulatedUser = {
@@ -52,7 +61,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const [statusAgg, monthOrdersCount, rawOrders] = await Promise.all([
+  const [statusAgg, monthOrdersCount, rawOrders, rawCustomers, rawProducts, shopSettings] = await Promise.all([
     OrderModel.aggregate<{ _id: string; count: number }>([
       { $match: { createdAt: { $gte: windowStart } } },
       { $group: { _id: '$orderStatus', count: { $sum: 1 } } },
@@ -64,7 +73,36 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
       .populate<{ user: PopulatedUser }>('user', 'name email')
       .lean()
       .exec(),
+    UserModel.find({ isAdmin: { $ne: true } }, 'name email')
+      .sort({ name: 1 })
+      .limit(500)
+      .lean()
+      .exec(),
+    ProductModel.find(
+      { isActive: { $ne: false }, stockCount: { $gt: 0 } },
+      'name price stockCount images category',
+    )
+      .sort({ category: 1, name: 1 })
+      .limit(500)
+      .lean()
+      .exec(),
+    getShopSettings(),
   ]);
+
+  const customers: AdminOrderCustomer[] = rawCustomers.map((u) => ({
+    id: u._id.toString(),
+    name: u.name,
+    email: u.email,
+  }));
+
+  const products: AdminOrderProduct[] = rawProducts.map((p) => ({
+    id: p._id.toString(),
+    name: p.name,
+    price: p.price,
+    stockCount: p.stockCount,
+    image: p.images?.[0] ?? '',
+    category: p.category,
+  }));
 
   const countMap: Record<string, number> = {};
   let totalAll = 0;
@@ -93,6 +131,9 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
       counts={counts}
       monthOrdersCount={monthOrdersCount}
       range={range}
+      customers={customers}
+      products={products}
+      defaultPickupLocation={`${shopSettings.shopName} — In Store`}
     />
   );
 }

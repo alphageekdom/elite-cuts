@@ -11,6 +11,10 @@ import OrdersFilterPanel, {
   type PaymentFilter,
   type FulfillmentFilter,
 } from './OrdersFilterPanel';
+import OrderCreateDrawer, {
+  type AdminOrderCustomer,
+  type AdminOrderProduct,
+} from './OrderCreateDrawer';
 import AdminStatStrip from '@/components/admin/AdminStatStrip';
 import AdminSearchInput from '@/components/admin/AdminSearchInput';
 import AdminPagination from '@/components/admin/AdminPagination';
@@ -19,13 +23,16 @@ import { AVATAR_COLORS } from '@/lib/admin-constants';
 import type { OrderTableRow, StatusCounts } from '@/types/admin';
 import OrderDetailDrawer from './OrderDetailDrawer';
 
-export type { OrderTableRow, StatusCounts };
+export type { OrderTableRow, StatusCounts, AdminOrderCustomer, AdminOrderProduct };
 
 type Props = {
   orders: OrderTableRow[];
   counts: StatusCounts;
   monthOrdersCount: number;
   range: RangeKey;
+  customers: AdminOrderCustomer[];
+  products: AdminOrderProduct[];
+  defaultPickupLocation: string;
 };
 
 const RANGE_META_LABEL: Record<RangeKey, string> = {
@@ -101,7 +108,7 @@ function countForKey(key: StatKey, counts: StatusCounts): number {
 
 const PAGE_SIZES = [8, 20, 50];
 
-export default function OrdersClient({ orders, counts, monthOrdersCount, range }: Props) {
+export default function OrdersClient({ orders, counts, monthOrdersCount, range, customers, products, defaultPickupLocation }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -130,6 +137,7 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range }
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>('any');
   const [fulfillmentFilter, setFulfillmentFilter] = useState<FulfillmentFilter>('any');
+  const [createOpen, setCreateOpen] = useState(false);
 
   const activeFilterCount =
     (paymentFilter === 'any' ? 0 : 1) + (fulfillmentFilter === 'any' ? 0 : 1);
@@ -447,7 +455,7 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range }
         pendingCount={counts.orderPlaced}
         exporting={exporting}
         onExport={handleExport}
-        onNewOrder={() => toast.info('Coming soon')}
+        onNewOrder={() => setCreateOpen(true)}
       />
 
       <AdminStatStrip
@@ -692,6 +700,32 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range }
             onUpdate={updateOrder}
             onRefundItem={refundItem}
             onUnrefundItem={unrefundItem}
+          />
+        )}
+      </aside>
+
+      {/* New order create drawer */}
+      {createOpen && (
+        <div
+          className="fixed inset-0 bg-ink/40 backdrop-blur-sm z-50"
+          onClick={() => setCreateOpen(false)}
+        />
+      )}
+      <aside
+        className={`fixed top-0 right-0 w-full max-w-135 h-screen bg-cream z-51 flex flex-col shadow-2xl transition-transform duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
+          createOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        {createOpen && (
+          <OrderCreateDrawer
+            customers={customers}
+            products={products}
+            defaultPickupLocation={defaultPickupLocation}
+            onClose={() => setCreateOpen(false)}
+            onCreated={() => {
+              setCreateOpen(false);
+              router.refresh();
+            }}
           />
         )}
       </aside>
