@@ -11,6 +11,8 @@ import InventoryAgingRoom, { type AgingCutRow } from './InventoryAgingRoom';
 import InventoryUpcomingDeliveries, { type DeliveryRow, type ReceivedDeliveryRow } from './InventoryUpcomingDeliveries';
 import InventoryReorderDrawer from './InventoryReorderDrawer';
 import InventoryTableRowComponent from './InventoryTableRow';
+import InventoryPageHeader from './InventoryPageHeader';
+import StocktakeDrawer from './StocktakeDrawer';
 
 export type InventoryRow = {
   id: string;
@@ -40,6 +42,8 @@ type Props = {
   agingCuts: AgingCutRow[];
   deliveries: DeliveryRow[];
   receivedDeliveries: ReceivedDeliveryRow[];
+  totalProducts: number;
+  lastStocktakeLabel: string;
 };
 
 type SortBy = 'stock-asc' | 'name-asc' | 'price-desc' | 'newest';
@@ -56,7 +60,16 @@ const SORT_OPTIONS: { value: SortBy; label: string }[] = [
 
 const PAGE_SIZE = 8;
 
-export default function InventoryClient({ rows, counts, categoryCounts, agingCuts, deliveries, receivedDeliveries }: Props) {
+export default function InventoryClient({
+  rows,
+  counts,
+  categoryCounts,
+  agingCuts,
+  deliveries,
+  receivedDeliveries,
+  totalProducts,
+  lastStocktakeLabel,
+}: Props) {
   const [localRows, setLocalRows] = useState(rows);
   useEffect(() => { setLocalRows(rows); }, [rows]);
 
@@ -90,6 +103,46 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
   const [stockSaving, setStockSaving] = useState(false);
 
   const [reorderRow, setReorderRow] = useState<InventoryRow | null>(null);
+  const [stocktakeOpen, setStocktakeOpen] = useState(false);
+  const [logDeliveryOpen, setLogDeliveryOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const params = new URLSearchParams();
+      // Map the current filter UI to the export endpoint's status param.
+      if (activeFilter === 'inStock') params.set('status', 'in-stock');
+      else if (activeFilter === 'lowStock') params.set('status', 'low-stock');
+      else if (activeFilter === 'critical') params.set('status', 'critical');
+      if (activeCategory) params.set('category', activeCategory);
+      if (search.trim()) params.set('search', search.trim());
+      const url = `/api/products/inventory/export${params.size ? `?${params.toString()}` : ''}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        toast.error('Export failed');
+        return;
+      }
+      // Pull the filename from Content-Disposition; fall back to a sensible default.
+      const blob = await res.blob();
+      const disposition = res.headers.get('Content-Disposition') ?? '';
+      const filenameMatch = disposition.match(/filename="([^"]+)"/);
+      const filename = filenameMatch?.[1] ?? 'inventory.csv';
+      const objectUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(objectUrl);
+      toast.success('Inventory exported');
+    } catch {
+      toast.error('Export failed');
+    } finally {
+      setExporting(false);
+    }
+  }
 
   async function handleStockSave(id: string) {
     const newCount = parseInt(stockEditValue, 10);
@@ -187,6 +240,15 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
 
   return (
     <div>
+      <InventoryPageHeader
+        totalProducts={totalProducts}
+        lastStocktakeLabel={lastStocktakeLabel}
+        exporting={exporting}
+        onExport={handleExport}
+        onRecountAll={() => setStocktakeOpen(true)}
+        onLogDelivery={() => setLogDeliveryOpen(true)}
+      />
+
       {/* Alert banner */}
       {liveCounts.critical > 0 && !alertDismissed && (
         <div className="flex items-center gap-3.5 px-6 py-4 bg-red-soft border border-[rgba(107,31,31,0.2)] rounded mb-6 text-[14px] text-ink-soft">
@@ -379,6 +441,19 @@ export default function InventoryClient({ rows, counts, categoryCounts, agingCut
 
       {reorderRow && (
         <InventoryReorderDrawer row={reorderRow} onClose={() => setReorderRow(null)} />
+      )}
+
+      {stocktakeOpen && (
+        <StocktakeDrawer rows={localRows} onClose={() => setStocktakeOpen(false)} />
+      )}
+
+      {logDeliveryOpen && (
+        <InventoryReorderDrawer
+          row={null}
+          mode="log-delivery"
+          rows={localRows}
+          onClose={() => setLogDeliveryOpen(false)}
+        />
       )}
     </div>
   );

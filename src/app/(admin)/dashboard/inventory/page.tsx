@@ -5,8 +5,8 @@ import connectDB from '@/config/database';
 import ProductModel from '@/models/Product';
 import AgingCutModel from '@/models/AgingCut';
 import DeliveryModel from '@/models/Delivery';
+import StocktakeModel from '@/models/Stocktake';
 
-import InventoryPageHeader from '@/components/admin/inventory/InventoryPageHeader';
 import InventoryClient, {
   type InventoryRow,
   type InventoryCounts,
@@ -30,12 +30,25 @@ export default async function AdminInventoryPage() {
 
   await connectDB();
 
-  const [rawProducts, rawAgingCuts, rawDeliveries, rawReceivedDeliveries] = await Promise.all([
+  const [rawProducts, rawAgingCuts, rawDeliveries, rawReceivedDeliveries, lastStocktake] = await Promise.all([
     ProductModel.find({ isActive: { $ne: false } }).sort({ stockCount: 1 }).limit(200).lean().exec(),
     AgingCutModel.find({}).sort({ startedAt: 1 }).lean().exec(),
     DeliveryModel.find({ deliveryDate: { $gte: new Date() } }).sort({ deliveryDate: 1 }).limit(50).lean().exec(),
     DeliveryModel.find({ status: 'received' }).sort({ updatedAt: -1 }).limit(20).lean().exec(),
+    StocktakeModel.findOne({}, 'createdAt').sort({ createdAt: -1 }).lean().exec(),
   ]);
+
+  const lastStocktakeLabel = (() => {
+    if (!lastStocktake?.createdAt) return 'Never stocktaken';
+    const diffMs = Date.now() - new Date(lastStocktake.createdAt).getTime();
+    const diffDays = Math.floor(diffMs / 86400000);
+    if (diffDays <= 0) return 'Last stocktake: today';
+    if (diffDays === 1) return 'Last stocktake: yesterday';
+    if (diffDays < 30) return `Last stocktake: ${diffDays} days ago`;
+    const diffMonths = Math.floor(diffDays / 30);
+    if (diffMonths === 1) return 'Last stocktake: 1 month ago';
+    return `Last stocktake: ${diffMonths} months ago`;
+  })();
 
   const total = rawProducts.length;
 
@@ -138,16 +151,15 @@ export default async function AdminInventoryPage() {
   }));
 
   return (
-    <>
-      <InventoryPageHeader totalProducts={total} />
-      <InventoryClient
-        rows={rows}
-        counts={counts}
-        categoryCounts={categoryCounts}
-        agingCuts={agingCuts}
-        deliveries={deliveries}
-        receivedDeliveries={receivedDeliveries}
-      />
-    </>
+    <InventoryClient
+      rows={rows}
+      counts={counts}
+      categoryCounts={categoryCounts}
+      agingCuts={agingCuts}
+      deliveries={deliveries}
+      receivedDeliveries={receivedDeliveries}
+      totalProducts={total}
+      lastStocktakeLabel={lastStocktakeLabel}
+    />
   );
 }
