@@ -16,6 +16,7 @@ import { isIn, EMAIL_RE } from '@/lib/validation';
 import { validatePromoCode } from '@/actions/checkout';
 import { MEMBER_DISCOUNT_RATE, DELIVERY_FEE, TAX_RATE } from '@/lib/pricing';
 import { MAX_PER_LINE } from '@/lib/shopConfig';
+import { getShopSettings } from '@/lib/shopSettings';
 
 // GET /api/orders
 // Admin: all orders (paginated). Customer: own orders only.
@@ -250,8 +251,13 @@ export const POST = async (request: NextRequest) => {
 
     await Cart.findOneAndUpdate({ user: sessionUser.userId }, { items: [] });
 
-    // Notify all admins — fire and forget (does not block the response)
-    User.find({ isAdmin: true }, '_id').lean().then((admins) => {
+    // Notify all admins — fire and forget (does not block the response).
+    // Gated on settings.notifNewOrder; getShopSettings fails open so a
+    // settings outage doesn't silence the alert.
+    (async () => {
+      const settings = await getShopSettings();
+      if (!settings.notifNewOrder) return;
+      const admins = await User.find({ isAdmin: true }, '_id').lean();
       if (!admins.length) return;
       const orderRef = `#EC-${String(order._id).slice(-4).toUpperCase()}`;
       const docs = admins.map((a) => ({
@@ -261,8 +267,8 @@ export const POST = async (request: NextRequest) => {
         userId: a._id,
         readAt: null,
       }));
-      return Notification.insertMany(docs);
-    }).catch((err) => console.error('[orders POST] notification error', err));
+      await Notification.insertMany(docs);
+    })().catch((err) => console.error('[orders POST] notification error', err));
 
     return NextResponse.json(order, { status: 201 });
   } catch (error) {

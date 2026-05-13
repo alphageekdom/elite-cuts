@@ -22,10 +22,7 @@ export type ShopSettings = {
   // Notifications
   notifNewOrder: boolean;
   notifLowStock: boolean;
-  notifDailySummary: boolean;
-  notifWeeklyAnalytics: boolean;
-  notifAgingRoom: boolean;
-  notifDormantCustomers: boolean;
+  notifNewEvent: boolean;
   // Rewards
   pointsPerDollar: number;
   weekendMultiplier: string;
@@ -57,10 +54,7 @@ const ShopSettingsSchema = new Schema<ShopSettings>(
     maxBookingWindow:     { type: String, default: 'Same day' },
     notifNewOrder:        { type: Boolean, default: true },
     notifLowStock:        { type: Boolean, default: true },
-    notifDailySummary:    { type: Boolean, default: true },
-    notifWeeklyAnalytics: { type: Boolean, default: false },
-    notifAgingRoom:       { type: Boolean, default: true },
-    notifDormantCustomers:{ type: Boolean, default: false },
+    notifNewEvent:        { type: Boolean, default: true },
     pointsPerDollar:      { type: Number, default: 1 },
     weekendMultiplier:    { type: String, default: '1× (none)' },
     pointsExpiry:         { type: String, default: '6 months' },
