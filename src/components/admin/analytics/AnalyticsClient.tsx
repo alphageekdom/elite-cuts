@@ -6,12 +6,14 @@ import AnalyticsKpiGrid from './sections/AnalyticsKpiGrid';
 import AnalyticsRevenueChart from './sections/AnalyticsRevenueChart';
 import AnalyticsFunnelSection from './sections/AnalyticsFunnelSection';
 import AnalyticsHeatmap from './sections/AnalyticsHeatmap';
+import { buildSparklinePath } from '@/lib/sparkline';
 
 export type AnalyticsRange = '7D' | '30D' | '90D' | '1Y';
 
 export type AnalyticsData = {
   range: AnalyticsRange;
   periodLabel: string;
+  heroPeriodLabel: string;
   revenue: number;
   revenueChange: number;
   orderCount: number;
@@ -19,6 +21,7 @@ export type AnalyticsData = {
   aovChange: number;
   pickupPct: number;
   repeatRate: number;
+  repeatRateChange: number;
   newCustomers: number;
   newCustomersChange: number;
   cancelRate: number;
@@ -53,6 +56,21 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
   const { whole: revWhole, frac: revFrac } = fmtDollars(data.revenue);
   const { whole: aovWhole, frac: aovFrac } = fmtDollars(data.aov);
 
+  // Sparkline from the active period's bucket values. Falls back to a flat
+  // baseline when every bucket is zero so the SVG still renders cleanly.
+  const sparkValues = data.buckets.map((b) => b.value);
+  const sparkPaths = buildSparklinePath(sparkValues, { width: 600, height: 180, padding: 24 });
+  const hasSpark = sparkValues.some((v) => v > 0);
+
+  // Pick a handful of x-axis tick labels from the buckets so 1Y (12 buckets)
+  // doesn't crowd. Always shows first + last; fills in evenly between.
+  const tickCount = Math.min(5, data.buckets.length);
+  const tickLabels = tickCount === 0
+    ? []
+    : Array.from({ length: tickCount }, (_, i) =>
+        data.buckets[Math.round((i * (data.buckets.length - 1)) / Math.max(1, tickCount - 1))].label,
+      );
+
   return (
     <>
       <AdminPageHeader
@@ -78,17 +96,17 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
 
       {/* ── HEADLINE BLOCK ────────────────────────────────────────────────── */}
       <div className="bg-ink text-cream rounded-sm p-9 mb-6 relative overflow-hidden">
-        <div className="absolute top-[-180px] right-[-180px] w-[480px] h-[480px] rounded-full bg-[radial-gradient(circle,rgba(184,137,90,0.18)_0%,transparent_60%)] pointer-events-none" />
+        <div className="absolute -top-45 -right-45 w-120 h-120 rounded-full bg-[radial-gradient(circle,rgba(184,137,90,0.18)_0%,transparent_60%)] pointer-events-none" />
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] gap-10 items-end relative z-10">
           <div>
             <div className="text-[11px] tracking-[0.22em] uppercase text-camel-soft mb-3.5 flex items-center gap-2.5">
               <span className="w-6 h-px bg-current opacity-60" />
-              Net revenue · {new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}
+              Net revenue · {data.heroPeriodLabel}
             </div>
             <div className="font-display font-light text-[clamp(56px,7vw,96px)] leading-none tracking-[-0.04em] mb-3.5 flex items-baseline gap-3.5">
               {revWhole}
-              <em className="not-italic italic text-camel text-[0.42em] ml-[-6px] font-normal">.{revFrac}</em>
+              <em className="italic text-camel text-[0.42em] -ml-1.5 font-normal">.{revFrac}</em>
             </div>
             <span className="inline-flex items-center gap-1.5 bg-[rgba(74,107,58,0.22)] text-[#B8DBA8] px-3 py-1 rounded-full text-[13px] font-medium tracking-[0.02em] font-mono">
               <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
@@ -102,7 +120,7 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
             </div>
           </div>
 
-          <div className="h-[180px]">
+          <div className="h-45">
             <svg viewBox="0 0 600 180" preserveAspectRatio="none" className="w-full h-full">
               <defs>
                 <linearGradient id="sparkArea" x1="0" y1="0" x2="0" y2="1">
@@ -113,12 +131,27 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
               <line x1="0" y1="45" x2="600" y2="45" stroke="rgba(244,238,228,0.08)" strokeDasharray="2 4" />
               <line x1="0" y1="90" x2="600" y2="90" stroke="rgba(244,238,228,0.08)" strokeDasharray="2 4" />
               <line x1="0" y1="135" x2="600" y2="135" stroke="rgba(244,238,228,0.08)" strokeDasharray="2 4" />
-              <path d="M0,130 L60,125 L120,135 L180,128 L240,140 L300,118 L360,108 L420,85 L480,68 L540,42 L600,28 L600,180 L0,180 Z" fill="url(#sparkArea)" />
-              <path d="M0,130 L60,125 L120,135 L180,128 L240,140 L300,118 L360,108 L420,85 L480,68 L540,42 L600,28" fill="none" stroke="#F4EEE4" strokeWidth="2" />
-              <circle cx="600" cy="28" r="5" fill="#F4EEE4" stroke="#6B1F1F" strokeWidth="2" />
+              {hasSpark && (
+                <>
+                  <path d={sparkPaths.area} fill="url(#sparkArea)" />
+                  <path d={sparkPaths.line} fill="none" stroke="#F4EEE4" strokeWidth="2" />
+                  {sparkPaths.endpoint && (
+                    <circle
+                      cx={sparkPaths.endpoint.x}
+                      cy={sparkPaths.endpoint.y}
+                      r="5"
+                      fill="#F4EEE4"
+                      stroke="#6B1F1F"
+                      strokeWidth="2"
+                    />
+                  )}
+                </>
+              )}
             </svg>
             <div className="flex justify-between mt-2 text-[10px] font-mono text-cream/45 tracking-[0.04em]">
-              <span>WK 1</span><span>WK 2</span><span>WK 3</span><span>WK 4</span><span>WK 5</span>
+              {hasSpark
+                ? tickLabels.map((label, i) => <span key={i}>{label}</span>)
+                : <span className="mx-auto">No revenue this period</span>}
             </div>
           </div>
         </div>

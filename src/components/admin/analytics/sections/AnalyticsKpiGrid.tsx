@@ -41,7 +41,7 @@ export default function AnalyticsKpiGrid({ data }: { data: AnalyticsData }) {
           {data.repeatRate.toFixed(0)}<em className="not-italic italic text-oxblood text-base ml-0.5 font-normal">%</em>
         </div>
         <div className="flex items-center gap-2 text-[12px] text-muted">
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[rgba(28,24,20,0.06)] text-muted font-medium text-[11px] font-mono">–</span>
+          <ChangePill val={data.repeatRateChange} suffix="pp" />
           customers ordering 2+
         </div>
       </div>
