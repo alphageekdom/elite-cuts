@@ -139,24 +139,41 @@ export async function reverseOrderAward(opts: {
   });
 }
 
-// Reverse a checkout-time redemption when an order is cancelled or fully
-// refunded. The redeemed points return to the customer's balance and a
-// matching reverse entry lands in the ledger. Lifetime points aren't
-// touched — redemption never earned lifetime in the first place.
+// Reverse a checkout-time redemption when an order is cancelled or
+// partially refunded. The redeemed points return to the customer's
+// balance and a matching reverse entry lands in the ledger. Lifetime
+// points aren't touched — redemption never earned lifetime in the first
+// place.
 //
-// The order's pointsRedeemed / pointsRedemptionValueCents snapshot stays
-// put so the order remains a complete historical record. UI uses the order
-// status to mark the redemption as "returned" instead of hiding the line.
+// pointsToReturn:
+//   - omitted → returns the un-returned remainder (pointsRedeemed minus
+//     pointsRedemptionReturned). Used by the full-cancel path so the
+//     customer ends up whole regardless of any prior partial returns.
+//   - provided → returns exactly that many, still capped at the remainder
+//     so multiple partial refunds can never return more than was redeemed.
+//
+// The order's pointsRedeemed snapshot stays put for historical accuracy;
+// pointsRedemptionReturned tracks how much of it has been returned so far.
 export async function reverseOrderRedemption(opts: {
   orderId: Types.ObjectId | string;
   reason: 'cancel_reverse' | 'refund_reverse';
+  pointsToReturn?: number;
 }): Promise<void> {
   const order = await Order.findById(opts.orderId)
-    .select('user pointsRedeemed')
+    .select('user pointsRedeemed pointsRedemptionReturned')
     .lean();
   if (!order || !order.pointsRedeemed || order.pointsRedeemed <= 0) return;
 
-  const points = order.pointsRedeemed;
+  const alreadyReturned = Math.max(0, order.pointsRedemptionReturned ?? 0);
+  const remainder = Math.max(0, order.pointsRedeemed - alreadyReturned);
+  if (remainder <= 0) return;
+
+  const requested =
+    typeof opts.pointsToReturn === 'number'
+      ? Math.max(0, Math.floor(opts.pointsToReturn))
+      : remainder;
+  const points = Math.min(requested, remainder);
+  if (points <= 0) return;
 
   await User.findByIdAndUpdate(order.user, {
     $inc: { rewardPoints: points },
@@ -169,5 +186,9 @@ export async function reverseOrderRedemption(opts: {
         createdAt: new Date(),
       },
     },
+  });
+
+  await Order.findByIdAndUpdate(opts.orderId, {
+    $inc: { pointsRedemptionReturned: points },
   });
 }
