@@ -27,10 +27,12 @@ export type SerializedPointsEntry = {
 };
 
 type Props = {
-  points?: number;
+  points?: number;             // spendable balance
   lifetimePoints: number;
   expiredPoints: number;
   tier: TierInfo;
+  qualifyingPoints?: number;   // pts earned this period (drives the progress bar)
+  periodEndsAt?: string | null; // ISO. null when shop has no anniversary window
   recentHistory: SerializedPointsEntry[];
   redemptionPoints: number;
   redemptionDollars: number;
@@ -65,6 +67,8 @@ export default function ProfileRewards({
   lifetimePoints,
   expiredPoints,
   tier,
+  qualifyingPoints,
+  periodEndsAt,
   recentHistory,
   redemptionPoints,
   redemptionDollars,
@@ -78,6 +82,12 @@ export default function ProfileRewards({
   const dollarValue = Math.floor((points / Math.max(1, redemptionPoints)) * redemptionDollars);
   const nextTierLabel = tier.nextTier === 'masterCut' ? 'Master Cut' : 'Connoisseur';
   const tierLevel = tier.tier === 'masterCut' ? '03' : tier.tier === 'connoisseur' ? '02' : '01';
+  // Progress bar reflects qualifying points this period. Falls back to
+  // balance if the window is disabled (qualifyingPoints undefined).
+  const progressPoints = typeof qualifyingPoints === 'number' ? qualifyingPoints : points;
+  const periodEndLabel = periodEndsAt
+    ? new Date(periodEndsAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : null;
 
   const visible = recentHistory.filter((row) => {
     if (filter === 'all') return true;
@@ -150,16 +160,16 @@ export default function ProfileRewards({
                       <em className='italic text-camel-soft'>{nextTierLabel}</em>
                     </span>
                     <span className='font-mono text-[11px] tracking-[0.04em] text-cream/55'>
-                      {fmt(points)} / {fmt(target)}
+                      {fmt(progressPoints)} / {fmt(target)}
                     </span>
                   </div>
                   <div
                     className='h-1.5 overflow-hidden rounded-full bg-cream/10'
                     role='progressbar'
-                    aria-valuenow={points}
+                    aria-valuenow={progressPoints}
                     aria-valuemin={0}
                     aria-valuemax={target}
-                    aria-label={`${fmt(points)} of ${fmt(target)} points to ${nextTierLabel}`}
+                    aria-label={`${fmt(progressPoints)} of ${fmt(target)} qualifying points to ${nextTierLabel}`}
                   >
                     <div className='h-full rounded-full bg-linear-to-r from-oxblood to-camel' style={{ width: `${progressPct}%` }} />
                   </div>
@@ -172,6 +182,11 @@ export default function ProfileRewards({
               ) : (
                 <p className='text-[13px] leading-relaxed text-cream/70'>
                   You&apos;ve reached the top tier. All perks are unlocked — enjoy 15% off dry-aged orders, first dibs on Wagyu, and a quarterly butcher&apos;s box.
+                </p>
+              )}
+              {periodEndLabel && (
+                <p className='mt-3 font-mono text-[10px] tracking-[0.08em] uppercase text-cream/45'>
+                  Qualifying period ends {periodEndLabel}
                 </p>
               )}
             </div>

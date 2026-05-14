@@ -34,6 +34,7 @@ export type ShopSettings = {
   maxRedemptionDollars: number;     // flat $ ceiling per order (default 50). Effective cap = min(percent, flat)
   connoisseurThreshold: number;
   masterCutThreshold: number;
+  tierWindowMonths: number;         // qualifying-period length in months (default 12, 0 = lifetime / no window)
 };
 
 const ShopSettingsSchema = new Schema<ShopSettings>(
@@ -67,6 +68,7 @@ const ShopSettingsSchema = new Schema<ShopSettings>(
     maxRedemptionDollars: { type: Number, default: 50, min: 0 },
     connoisseurThreshold: { type: Number, default: 250, min: 0 },
     masterCutThreshold:   { type: Number, default: 1000, min: 0 },
+    tierWindowMonths:     { type: Number, default: 12, min: 0 },
   },
   { timestamps: true },
 );

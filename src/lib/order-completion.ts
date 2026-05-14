@@ -6,7 +6,7 @@ import Order from '@/models/Order';
 import Product from '@/models/Product';
 import Notification from '@/models/Notification';
 import { getShopSettings } from '@/lib/shopSettings';
-import { computeAward } from '@/lib/rewards';
+import { computeAward, getQualifyingPoints, getTier, tierRank } from '@/lib/rewards';
 
 // Side-effects to run whenever an order first transitions into Completed:
 // award reward points to the customer, then fire low_stock alerts to admins
@@ -48,6 +48,33 @@ export async function awardOrderCompletion(opts: {
         },
       },
     });
+
+    // Mid-period tier-up: if the just-added points push the customer's
+    // current-period qualifying total past the next tier threshold, lock
+    // the new tier on the user doc. Anniversary clock does NOT reset —
+    // they still need to re-qualify next year to keep the new tier.
+    if (settings.tierWindowMonths > 0) {
+      const refreshed = await User.findById(opts.customerUserId)
+        .select('createdAt tierAnniversaryAt currentTier pointsHistory')
+        .lean();
+      if (refreshed) {
+        const periodStart = refreshed.tierAnniversaryAt
+          ? new Date(refreshed.tierAnniversaryAt)
+          : (refreshed.createdAt ?? awardedOn);
+        const qualifying = getQualifyingPoints(
+          refreshed.pointsHistory ?? [],
+          periodStart,
+          awardedOn,
+        );
+        const earnedTier = getTier(qualifying, settings).tier;
+        const cachedTier = refreshed.currentTier ?? 'regular';
+        if (tierRank(earnedTier) > tierRank(cachedTier)) {
+          await User.findByIdAndUpdate(opts.customerUserId, {
+            $set: { currentTier: earnedTier },
+          });
+        }
+      }
+    }
   }
 
   // Low-stock notifications are fire-and-forget — gated on

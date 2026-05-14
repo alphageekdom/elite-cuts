@@ -35,7 +35,10 @@ function buildFaqs(settings: ShopSettings) {
     },
     {
       q: 'How do I move up tiers?',
-      a: `Tiers are based on your lifetime point total — not annual spend. Once you hit ${fmt(settings.connoisseurThreshold)} points you're a Connoisseur, and once you hit ${fmt(settings.masterCutThreshold)} you're at Master Cut. There's no rolling reset, no requalification: once you're up, you stay up.`,
+      a:
+        settings.tierWindowMonths > 0
+          ? `Tiers are based on points you earn in a rolling ${settings.tierWindowMonths}-month qualifying period. Once you hit ${fmt(settings.connoisseurThreshold)} points in your period you're a Connoisseur, and at ${fmt(settings.masterCutThreshold)} you're Master Cut — bumped up immediately. At the end of your period we check what you earned and lock in your tier for the next ${settings.tierWindowMonths} months. Redeeming points never costs you tier status; only earning matters.`
+          : `Tiers are based on your lifetime point total — not annual spend. Once you hit ${fmt(settings.connoisseurThreshold)} points you're a Connoisseur, and once you hit ${fmt(settings.masterCutThreshold)} you're at Master Cut. There's no rolling reset, no requalification: once you're up, you stay up.`,
     },
     {
       q: 'Can I redeem points for cash?',

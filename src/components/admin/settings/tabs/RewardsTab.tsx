@@ -138,7 +138,7 @@ export default function RewardsTab({ values, onChange, onSave, saving }: Props) 
 
       <section>
         <h2 className={sectionTitleCls}>Tier <em className="italic text-oxblood font-normal">thresholds</em></h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-3">
           <div>
             <label className={labelCls}>Connoisseur (pts)</label>
             <input
@@ -159,8 +159,23 @@ export default function RewardsTab({ values, onChange, onSave, saving }: Props) 
               className={inputCls}
             />
           </div>
+          <div>
+            <label className={labelCls}>Qualifying window (months)</label>
+            <input
+              type="number"
+              min={0}
+              max={120}
+              value={values.tierWindowMonths}
+              onChange={(e) => onChange({ tierWindowMonths: Number(e.target.value) })}
+              className={inputCls}
+            />
+          </div>
         </div>
-        <p className="text-xs text-muted">Tier status is based on lifetime points earned. Customers keep their tier once earned and never drop down.</p>
+        <p className="text-xs text-muted">
+          {values.tierWindowMonths > 0
+            ? `Tier is based on points earned in the customer's rolling ${values.tierWindowMonths}-month qualifying period. Tier-ups happen immediately; tier-downs only at the annual check. Redeeming points doesn't affect tier.`
+            : 'Tier is based on lifetime points earned. Customers keep their tier once earned and never drop down.'}
+        </p>
       </section>
 
       <div className="flex gap-2 pt-2">
