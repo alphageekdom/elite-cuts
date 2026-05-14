@@ -11,16 +11,35 @@ type Props = {
     email: string;
     addressLine: string;
   };
+  rewards?: {
+    pointsRedeemed: number;
+    pointsRedemptionDollars: number;
+    pointsAwarded: number;
+  };
 };
 
-export default function ReceiptToolbar({ backHref, email, orderRef, orderId, shop }: Props) {
+export default function ReceiptToolbar({ backHref, email, orderRef, orderId, shop, rewards }: Props) {
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const orderUrl = `${origin}/checkout/confirmation?orderId=${orderId}`;
+
+  const rewardsLines: string[] = [];
+  if (rewards && rewards.pointsRedeemed > 0) {
+    rewardsLines.push(
+      `You redeemed ${rewards.pointsRedeemed.toLocaleString('en-US')} points and saved $${rewards.pointsRedemptionDollars.toFixed(2)} on this order.`,
+    );
+  }
+  if (rewards && rewards.pointsAwarded > 0) {
+    rewardsLines.push(
+      `You'll earn ${rewards.pointsAwarded.toLocaleString('en-US')} points once we hand the order over.`,
+    );
+  }
+  const rewardsBlock = rewardsLines.length > 0 ? `${rewardsLines.join('\n')}\n\n` : '';
 
   const body = encodeURIComponent(
     `Hi,\n\nYour order is confirmed and we're getting your cuts ready.\n\n` +
     `Order summary: ${orderUrl}\n` +
     `Reference: ${orderRef}\n\n` +
+    rewardsBlock +
     `Pickup is at ${shop.addressLine}. We'll cut everything fresh before you arrive.\n\n` +
     `Questions before you come in? Call us at ${shop.phone} or reply here.\n\n` +
     `See you at the counter.\n` +

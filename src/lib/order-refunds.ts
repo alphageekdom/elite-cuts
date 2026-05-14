@@ -16,6 +16,15 @@ export type RefundContext = {
   subtotal: number;
   /** Original order tax. */
   tax: number;
+  /**
+   * Optional. The total the customer actually paid in dollars (after
+   * member discount, promo, and points redemption, plus tax). When
+   * provided, the resulting refundedAmount is capped at this value so a
+   * heavily-discounted order can't appear to refund more than the shop
+   * collected. Without it, the cap doesn't fire and behavior is unchanged
+   * for callers that don't care.
+   */
+  totalCost?: number;
 };
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -37,7 +46,11 @@ export function refundSummary(
     context.subtotal > 0
       ? round2((refundedSubtotal / context.subtotal) * context.tax)
       : 0;
-  const refundedAmount = round2(refundedSubtotal + refundedTax);
+  const rawRefundedAmount = round2(refundedSubtotal + refundedTax);
+  const refundedAmount =
+    typeof context.totalCost === 'number'
+      ? Math.min(rawRefundedAmount, round2(context.totalCost))
+      : rawRefundedAmount;
   return {
     refundedSubtotal,
     refundedTax,

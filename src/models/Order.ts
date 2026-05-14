@@ -86,6 +86,9 @@ export type Order = {
   pointsAwarded: number;
   pointsRedeemed: number;
   pointsRedemptionValueCents: number;
+  memberDiscount: number;
+  promoDiscount: number;
+  promoCode?: string;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -257,11 +260,24 @@ const OrderSchema = new Schema<Order>(
     pointsAwarded: { type: Number, default: 0, min: 0 },
     pointsRedeemed: { type: Number, default: 0, min: 0 },
     pointsRedemptionValueCents: { type: Number, default: 0, min: 0 },
+    memberDiscount: { type: Number, default: 0, min: 0 },
+    promoDiscount: { type: Number, default: 0, min: 0 },
+    promoCode: { type: String, trim: true },
   },
   {
     timestamps: true,
   },
 );
+
+// In dev, Next.js hot-reload keeps `mongoose.models.Order` cached on the
+// global Mongoose singleton even after this file is re-evaluated. That
+// makes schema additions (e.g. new fields) invisible at runtime — the old
+// model wins and Mongoose silently drops the unknown fields on insert.
+// Delete the cached model in dev so the schema is always re-registered
+// with the latest paths. Production keeps the cache (no schema churn).
+if (process.env.NODE_ENV !== 'production' && models.Order) {
+  delete (models as Record<string, unknown>).Order;
+}
 
 const OrderModel =
   (models.Order as Model<Order> | undefined) ||

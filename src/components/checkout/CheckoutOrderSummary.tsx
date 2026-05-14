@@ -9,6 +9,7 @@ import { useCheckoutContext } from '@/context/CheckoutContext';
 import { validatePromoCode } from '@/actions/checkout';
 import { computeTotals, DELIVERY_FEE, fmtPrice } from '@/lib/pricing';
 import CheckoutTrustStrip from '@/components/checkout/CheckoutTrustStrip';
+import CheckoutRewardsRedeem from '@/components/checkout/CheckoutRewardsRedeem';
 import { productImageSrc } from '@/lib/format';
 
 const PROMO_SUGGESTIONS = ['ELITECUTS10', 'FIRSTORDER', 'NORTHPARK'];
@@ -19,7 +20,7 @@ const CheckoutOrderSummary = () => {
   const { cartItems, setItemQuantity } = useCartContext();
   const { data: session } = useSession();
   const { state, dispatch } = useCheckoutContext();
-  const { fulfillment, promoDiscount } = state;
+  const { fulfillment, promoDiscount, pointsDiscount } = state;
   const isLoggedIn = Boolean(session?.user);
   const [promo, setPromo] = useState('');
   const [promoStatus, setPromoStatus] = useState<PromoStatus>('idle');
@@ -33,9 +34,10 @@ const CheckoutOrderSummary = () => {
     () => computeTotals(cartItems, {
       isLoggedIn,
       promoDiscount,
+      pointsDiscount,
       deliveryFee: isDelivery ? DELIVERY_FEE : 0,
     }),
-    [cartItems, isLoggedIn, isDelivery, promoDiscount],
+    [cartItems, isLoggedIn, isDelivery, promoDiscount, pointsDiscount],
   );
 
   const onApplyPromo = async (e: { preventDefault(): void }) => {
@@ -62,8 +64,14 @@ const CheckoutOrderSummary = () => {
     setPromo('');
   };
 
+  // Cap that matches the server's: subtotal minus the other discounts (the
+  // points-redemption itself isn't subtracted from this — it's the budget the
+  // redemption gets to spend against).
+  const discountable = Math.max(0, totals.subtotal - totals.memberDiscount - promoDiscount);
+
   return (
     <div>
+      <CheckoutRewardsRedeem maxDiscountable={discountable} />
       <div className='mb-3.5 rounded-sm border border-line-soft bg-paper px-8 py-7'>
         <p className='mb-1.5 text-[11px] font-medium uppercase tracking-[0.22em] text-muted'>
           → Order summary
@@ -270,6 +278,14 @@ const CheckoutOrderSummary = () => {
               <dt className='text-ink-soft'>Promo — {appliedLabel}</dt>
               <dd className='font-mono text-[13px] text-green'>
                 −${fmtPrice(promoDiscount)}
+              </dd>
+            </div>
+          )}
+          {pointsDiscount > 0 && (
+            <div className='flex items-baseline justify-between text-[14px]'>
+              <dt className='text-ink-soft'>Points redeemed</dt>
+              <dd className='font-mono text-[13px] text-green'>
+                −${fmtPrice(pointsDiscount)}
               </dd>
             </div>
           )}

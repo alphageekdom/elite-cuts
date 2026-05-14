@@ -180,6 +180,24 @@ export default async function ConfirmationPage({ searchParams }: Props) {
                   <span>{formatMoney(DELIVERY_FEE)}</span>
                 </div>
               )}
+              {(order.memberDiscount ?? 0) > 0 && (
+                <div className='flex justify-between text-[13px] text-green'>
+                  <span>Member discount</span>
+                  <span>−{formatMoney(order.memberDiscount ?? 0)}</span>
+                </div>
+              )}
+              {(order.promoDiscount ?? 0) > 0 && (
+                <div className='flex justify-between text-[13px] text-green'>
+                  <span>Promo{order.promoCode ? ` — ${order.promoCode}` : ''}</span>
+                  <span>−{formatMoney(order.promoDiscount ?? 0)}</span>
+                </div>
+              )}
+              {(order.pointsRedemptionValueCents ?? 0) > 0 && (
+                <div className='flex justify-between text-[13px] text-green'>
+                  <span>Points redeemed ({(order.pointsRedeemed ?? 0).toLocaleString('en-US')} pts)</span>
+                  <span>−{formatMoney((order.pointsRedemptionValueCents ?? 0) / 100)}</span>
+                </div>
+              )}
               <div className='flex justify-between text-[13px] text-ink-soft'>
                 <span>Tax</span>
                 <span>{formatMoney(order.tax)}</span>

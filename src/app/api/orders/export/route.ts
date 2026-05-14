@@ -117,7 +117,7 @@ export const GET = withAdmin(async (req) => {
         value: (o) => {
           const summary = refundSummary(
             o.orderItems.map((it) => ({ qty: it.qty, price: it.price, refunded: it.refunded ?? false })),
-            { subtotal: o.subtotal, tax: o.tax },
+            { subtotal: o.subtotal, tax: o.tax, totalCost: o.totalCost },
           );
           return summary.refundedAmount.toFixed(2);
         },

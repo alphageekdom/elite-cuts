@@ -46,6 +46,12 @@ type RawOrder = {
   pickedUp: boolean;
   fulfillmentType?: 'pickup' | 'delivery';
   cancellationReason?: string;
+  pointsAwarded?: number;
+  pointsRedeemed?: number;
+  pointsRedemptionValueCents?: number;
+  memberDiscount?: number;
+  promoDiscount?: number;
+  promoCode?: string;
   createdAt: Date;
 };
 
@@ -83,6 +89,7 @@ export function serializeOrderRow(order: RawOrder): OrderTableRow {
   const summary = refundSummary(items, {
     subtotal: order.subtotal,
     tax: order.tax,
+    totalCost: order.totalCost,
   });
   return {
     id: idStr,
@@ -103,6 +110,12 @@ export function serializeOrderRow(order: RawOrder): OrderTableRow {
     pickedUp: order.pickedUp,
     fulfillmentType: order.fulfillmentType,
     cancellationReason: order.cancellationReason,
+    pointsAwarded: order.pointsAwarded ?? 0,
+    pointsRedeemed: order.pointsRedeemed ?? 0,
+    pointsRedemptionValueCents: order.pointsRedemptionValueCents ?? 0,
+    memberDiscount: order.memberDiscount ?? 0,
+    promoDiscount: order.promoDiscount ?? 0,
+    promoCode: order.promoCode,
     createdAt: order.createdAt.toISOString(),
   };
 }

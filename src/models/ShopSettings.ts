@@ -67,6 +67,12 @@ const ShopSettingsSchema = new Schema<ShopSettings>(
   { timestamps: true },
 );
 
+// Dev re-registration guard — see Order.ts. ShopSettings got numeric field
+// migrations in Phase A; stale cached models would silently drop them.
+if (process.env.NODE_ENV !== 'production' && models.ShopSettings) {
+  delete (models as Record<string, unknown>).ShopSettings;
+}
+
 const ShopSettingsModel =
   (models.ShopSettings as Model<ShopSettings> | undefined) ??
   model<ShopSettings>('ShopSettings', ShopSettingsSchema);

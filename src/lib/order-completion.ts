@@ -80,8 +80,10 @@ export async function awardOrderCompletion(opts: {
 // Reverse the points award when an order transitions out of Completed via
 // cancellation or full refund. Balance and lifetime drop by the snapshot
 // stored on the order, both floored at 0 so reversal never produces a
-// negative ledger. The order's pointsAwarded zeroes so a re-completion
-// (rare but legal) starts from a clean slate.
+// negative ledger. The order's pointsAwarded snapshot stays put so the
+// order remains a complete historical record — re-completion (rare but
+// legal) overwrites it via awardOrderCompletion, so persistence here
+// doesn't double-credit on the next transition.
 export async function reverseOrderAward(opts: {
   orderId: Types.ObjectId | string;
   reason: 'cancel_reverse' | 'refund_reverse';
@@ -108,6 +110,37 @@ export async function reverseOrderAward(opts: {
       },
     },
   });
+}
 
-  await Order.findByIdAndUpdate(opts.orderId, { $set: { pointsAwarded: 0 } });
+// Reverse a checkout-time redemption when an order is cancelled or fully
+// refunded. The redeemed points return to the customer's balance and a
+// matching reverse entry lands in the ledger. Lifetime points aren't
+// touched — redemption never earned lifetime in the first place.
+//
+// The order's pointsRedeemed / pointsRedemptionValueCents snapshot stays
+// put so the order remains a complete historical record. UI uses the order
+// status to mark the redemption as "returned" instead of hiding the line.
+export async function reverseOrderRedemption(opts: {
+  orderId: Types.ObjectId | string;
+  reason: 'cancel_reverse' | 'refund_reverse';
+}): Promise<void> {
+  const order = await Order.findById(opts.orderId)
+    .select('user pointsRedeemed')
+    .lean();
+  if (!order || !order.pointsRedeemed || order.pointsRedeemed <= 0) return;
+
+  const points = order.pointsRedeemed;
+
+  await User.findByIdAndUpdate(order.user, {
+    $inc: { rewardPoints: points },
+    $push: {
+      pointsHistory: {
+        delta: points,
+        reason: opts.reason,
+        orderId: opts.orderId,
+        expiresAt: null,
+        createdAt: new Date(),
+      },
+    },
+  });
 }

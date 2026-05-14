@@ -8,7 +8,7 @@ import { getSessionUser } from '@/utils/getSessionUser';
 import { withAdmin } from '@/lib/api-handler';
 import { isIn } from '@/lib/validation';
 import { refundSummary, paymentStatusFor } from '@/lib/order-refunds';
-import { awardOrderCompletion, reverseOrderAward } from '@/lib/order-completion';
+import { awardOrderCompletion, reverseOrderAward, reverseOrderRedemption } from '@/lib/order-completion';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -193,6 +193,7 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
       const summary = refundSummary(nextOrderItems, {
         subtotal: existing.subtotal,
         tax: existing.tax,
+        totalCost: existing.totalCost,
       });
       const nextPaymentStatus = paymentStatusFor(existing.paymentResult.status, summary);
 
@@ -249,6 +250,7 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
       const summary = refundSummary(nextOrderItems, {
         subtotal: existing.subtotal,
         tax: existing.tax,
+        totalCost: existing.totalCost,
       });
       const nextPaymentStatus =
         summary.refundedCount === 0 ? 'Completed' : paymentStatusFor(existing.paymentResult.status, summary);
@@ -282,20 +284,29 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
       });
     }
 
-    // Reverse the points award when an order leaves Completed via cancellation
-    // (either explicit or auto-cancel from a refund drain). Partial refunds
-    // that leave the order Completed don't trigger reversal.
+    // Reverse points side-effects when an order leaves a paying state via
+    // cancellation (either explicit or auto-cancel from a refund drain).
+    // - reverseOrderAward fires only if the order was Completed (points had
+    //   been awarded). Partial refunds that leave the order Completed don't
+    //   trigger it.
+    // - reverseOrderRedemption fires whenever the order had a redemption
+    //   stamped at checkout, regardless of whether it ever reached Completed
+    //   — the customer's points came out of their balance at checkout time,
+    //   so they must come back when the order is cancelled.
     const finalStatus = (updateFields.orderStatus as string | undefined) ?? existing.orderStatus;
-    if (
-      finalStatus === 'Cancelled' &&
-      existing.orderStatus === 'Completed' &&
-      (existing.pointsAwarded ?? 0) > 0
-    ) {
+    const cancelledNow =
+      finalStatus === 'Cancelled' && existing.orderStatus !== 'Cancelled';
+    if (cancelledNow) {
       const reverseReason =
         indicesToRefund.size > 0 && !transitioningToCancelled
           ? 'refund_reverse'
           : 'cancel_reverse';
-      await reverseOrderAward({ orderId: id, reason: reverseReason });
+      if (existing.orderStatus === 'Completed' && (existing.pointsAwarded ?? 0) > 0) {
+        await reverseOrderAward({ orderId: id, reason: reverseReason });
+      }
+      if ((existing.pointsRedeemed ?? 0) > 0) {
+        await reverseOrderRedemption({ orderId: id, reason: reverseReason });
+      }
     }
 
     return NextResponse.json(order);

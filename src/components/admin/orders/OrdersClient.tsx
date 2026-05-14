@@ -261,7 +261,9 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
           const items = isCancelTransition
             ? o.items.map((it) => (it.refunded ? it : { ...it, refunded: true }))
             : o.items;
-          const summary = refundSummary(items, { subtotal: o.subtotal, tax: o.tax });
+          const summary = refundSummary(items, { subtotal: o.subtotal, tax: o.tax, totalCost: o.total });
+          // Note: this is the cancel-transition branch — using o.total
+          // (totalCost) caps the displayed refund at what the customer paid.
           return {
             ...o,
             status: newStatus,
@@ -277,7 +279,7 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
         const items = isCancelTransition
           ? prev.items.map((it) => (it.refunded ? it : { ...it, refunded: true }))
           : prev.items;
-        const summary = refundSummary(items, { subtotal: prev.subtotal, tax: prev.tax });
+        const summary = refundSummary(items, { subtotal: prev.subtotal, tax: prev.tax, totalCost: prev.total });
         return {
           ...prev,
           status: newStatus,
@@ -309,7 +311,7 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
       }
       const apply = (o: OrderTableRow): OrderTableRow => {
         const items = o.items.map((it, idx) => (idx === itemIndex ? { ...it, refunded: true } : it));
-        const summary = refundSummary(items, { subtotal: o.subtotal, tax: o.tax });
+        const summary = refundSummary(items, { subtotal: o.subtotal, tax: o.tax, totalCost: o.total });
         const allRefunded = summary.refundedCount >= items.length;
         const cascadeCancel = allRefunded && o.status !== 'Cancelled';
         return {
@@ -345,7 +347,7 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
       }
       const apply = (o: OrderTableRow): OrderTableRow => {
         const items = o.items.map((it, idx) => (idx === itemIndex ? { ...it, refunded: false } : it));
-        const summary = refundSummary(items, { subtotal: o.subtotal, tax: o.tax });
+        const summary = refundSummary(items, { subtotal: o.subtotal, tax: o.tax, totalCost: o.total });
         const noneRefunded = summary.refundedCount === 0;
         const allRefunded = !noneRefunded && summary.refundedCount >= items.length;
         return {

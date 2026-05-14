@@ -18,6 +18,7 @@ import { MEMBER_DISCOUNT_RATE, DELIVERY_FEE, TAX_RATE } from '@/lib/pricing';
 import { MAX_PER_LINE } from '@/lib/shopConfig';
 import { getShopSettings } from '@/lib/shopSettings';
 import { awardOrderCompletion } from '@/lib/order-completion';
+import { applyRedemption } from '@/lib/rewards';
 
 // Status values an admin is allowed to set when creating an order on behalf of
 // a customer. Order Placed is the default flow; Completed records an
@@ -157,6 +158,7 @@ export const POST = async (request: NextRequest) => {
       deliveryAddress?: DeliveryAddressData;
       orderNotes?: string;
       promoCode?: string;
+      pointsToRedeem?: number;
     };
 
     // ── Admin-create branch ───────────────────────────────────────────────
@@ -431,8 +433,52 @@ export const POST = async (request: NextRequest) => {
       if (promoResult.valid) promoDiscount = promoResult.amount;
     }
 
+    // Redemption — server-authoritative. Reads the user's live balance and
+    // runs applyRedemption against current settings; the client's preview is
+    // never trusted.
+    let pointsRedeemed = 0;
+    let pointsRedemptionValueCents = 0;
+    let pointsDiscount = 0;
+    if (typeof body.pointsToRedeem === 'number' && body.pointsToRedeem > 0) {
+      const [settings, userDoc] = await Promise.all([
+        getShopSettings(),
+        User.findById(sessionUser.userId).select('rewardPoints').lean(),
+      ]);
+      const result = applyRedemption({
+        pointsToRedeem: Math.floor(body.pointsToRedeem),
+        currentBalance: userDoc?.rewardPoints ?? 0,
+        settings,
+      });
+      if (!result.valid) {
+        return NextResponse.json({ message: result.error }, { status: 400 });
+      }
+      // Reject (don't silently truncate) if the redemption is worth more than
+      // the order's discountable subtotal — silent truncation would deduct
+      // points the customer never got value for. The client UI computes the
+      // same cap so legitimate requests never hit this branch.
+      const discountable = Math.max(0, subtotal - memberDiscount - promoDiscount);
+      const valueDollars = result.valueCents / 100;
+      if (valueDollars > discountable + 0.005) {
+        return NextResponse.json(
+          {
+            message: `Redemption ($${valueDollars.toFixed(2)}) exceeds the order's discountable subtotal ($${discountable.toFixed(2)})`,
+          },
+          { status: 400 },
+        );
+      }
+      if (valueDollars <= 0) {
+        return NextResponse.json(
+          { message: 'Redemption would not reduce the order total' },
+          { status: 400 },
+        );
+      }
+      pointsRedeemed = result.pointsUsed;
+      pointsRedemptionValueCents = result.valueCents;
+      pointsDiscount = valueDollars;
+    }
+
     const deliveryFee = body.fulfillmentType === 'delivery' ? DELIVERY_FEE : 0;
-    const afterDiscounts = Math.max(0, subtotal - memberDiscount - promoDiscount);
+    const afterDiscounts = Math.max(0, subtotal - memberDiscount - promoDiscount - pointsDiscount);
     const tax = Math.round((afterDiscounts + deliveryFee) * TAX_RATE * 100) / 100;
     const totalCost = Math.round((afterDiscounts + deliveryFee + tax) * 100) / 100;
 
@@ -478,10 +524,30 @@ export const POST = async (request: NextRequest) => {
         ...(body.pickupSlot && { pickupSlot: body.pickupSlot }),
         ...(body.deliveryAddress && { deliveryAddress: body.deliveryAddress }),
         ...(body.orderNotes && { orderNotes: body.orderNotes }),
+        ...(pointsRedeemed > 0 && { pointsRedeemed, pointsRedemptionValueCents }),
+        ...(memberDiscount > 0 && { memberDiscount }),
+        ...(promoDiscount > 0 && { promoDiscount, promoCode: body.promoCode?.trim().toUpperCase() }),
       });
     } catch (err) {
       await restoreStock(decremented);
       throw err;
+    }
+
+    // Deduct redeemed points + write ledger entry. Runs after Order.create
+    // succeeds so a failed order doesn't pull points off the user.
+    if (pointsRedeemed > 0) {
+      await User.findByIdAndUpdate(sessionUser.userId, {
+        $inc: { rewardPoints: -pointsRedeemed },
+        $push: {
+          pointsHistory: {
+            delta: -pointsRedeemed,
+            reason: 'redemption',
+            orderId: order._id,
+            expiresAt: null,
+            createdAt: new Date(),
+          },
+        },
+      });
     }
 
     await Cart.findOneAndUpdate({ user: sessionUser.userId }, { items: [] });
