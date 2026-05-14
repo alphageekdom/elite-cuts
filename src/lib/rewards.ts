@@ -1,4 +1,5 @@
 import type { ShopSettings } from '@/models/ShopSettings';
+import type { PointsHistoryEntry } from '@/models/User';
 
 export type Tier = 'regular' | 'connoisseur' | 'masterCut';
 
@@ -158,4 +159,72 @@ export function formatPointsExpiry(
   if (months === 0) return 'Points never expire';
   if (months === 1) return 'Points expire after 1 month';
   return `Points expire after ${months} months`;
+}
+
+export type EffectiveBalance = {
+  balance: number;            // live balance with expired awards dropped, floored at 0
+  storedBalance: number;      // the User.rewardPoints field, untouched
+  lifetimePoints: number;     // User.lifetimePoints, untouched
+  expiredPoints: number;      // sum of positive awards that have aged past expiresAt
+  recentHistory: PointsHistoryEntry[];  // newest first, capped
+};
+
+// Pure read-side view of a user's points. Walks the history once: positive
+// award entries past their expiresAt are subtracted from the stored balance
+// (floored at 0); the stored counter itself is left alone so that any in-
+// flight redemption math keeps working on the truth value. Lifetime and
+// stored values are returned verbatim from the user doc.
+//
+// Award entries from orders that were later cancelled or refunded are
+// excluded from the expired pool — their reversal entry already pulled the
+// points back out of the balance, so counting them as expired too would
+// double-decay the customer.
+export function getEffectiveBalance(
+  user: {
+    rewardPoints?: number;
+    lifetimePoints?: number;
+    pointsHistory?: PointsHistoryEntry[];
+  },
+  now: Date = new Date(),
+  recentLimit = 10,
+): EffectiveBalance {
+  const stored = Math.max(0, user.rewardPoints ?? 0);
+  const lifetime = Math.max(0, user.lifetimePoints ?? 0);
+  const history = user.pointsHistory ?? [];
+  const nowMs = now.getTime();
+
+  const reversedOrderIds = new Set<string>();
+  for (const entry of history) {
+    if (
+      (entry.reason === 'cancel_reverse' || entry.reason === 'refund_reverse') &&
+      entry.orderId
+    ) {
+      reversedOrderIds.add(String(entry.orderId));
+    }
+  }
+
+  let expired = 0;
+  for (const entry of history) {
+    if (
+      entry.delta > 0 &&
+      entry.reason === 'order_fulfilled' &&
+      entry.expiresAt &&
+      new Date(entry.expiresAt).getTime() < nowMs &&
+      !(entry.orderId && reversedOrderIds.has(String(entry.orderId)))
+    ) {
+      expired += entry.delta;
+    }
+  }
+
+  const recent = [...history]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, recentLimit);
+
+  return {
+    balance: Math.max(0, stored - expired),
+    storedBalance: stored,
+    lifetimePoints: lifetime,
+    expiredPoints: expired,
+    recentHistory: recent,
+  };
 }

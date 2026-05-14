@@ -1,5 +1,10 @@
 import Reveal from '@/components/uielements/Reveal';
 import SectionHead from '@/components/ui/SectionHead';
+import type { ShopSettings } from '@/models/ShopSettings';
+
+type Props = { settings: ShopSettings };
+
+const fmt = (n: number) => n.toLocaleString('en-US');
 
 const CheckIcon = ({ camel = false }: { camel?: boolean }) => (
   <svg
@@ -14,7 +19,40 @@ const CheckIcon = ({ camel = false }: { camel?: boolean }) => (
   </svg>
 );
 
-export default function RewardsTiers() {
+export default function RewardsTiers({ settings }: Props) {
+  const ppd = settings.pointsPerDollar === 1 ? '1 point' : `${settings.pointsPerDollar} points`;
+  const conn = settings.connoisseurThreshold;
+  const master = settings.masterCutThreshold;
+  const weekend = settings.weekendMultiplier;
+
+  const regularPerks = [
+    `Earn ${ppd} per $1 spent`,
+    'Save cuts for quick reorder',
+    'Order history & quick reorder',
+    'Free pickup on orders over $50',
+  ];
+  // The shop-wide weekend multiplier applies to every tier when it's > 1;
+  // we don't claim a tier-specific bonus because no code path actually
+  // enforces one. Listing the real, working multiplier keeps the public
+  // marketing aligned with the configured reality.
+  const weekendPerk = weekend > 1 ? `Earn ${weekend}× on weekend orders` : null;
+
+  const connoisseurPerks = [
+    ...(weekendPerk ? [weekendPerk] : []),
+    'Free pickup, always (no minimum)',
+    'Early access to weekly specials',
+    'Free birthday cut (up to $50)',
+    'All Regular tier perks',
+  ];
+  const masterCutPerks = [
+    ...(weekendPerk ? [weekendPerk] : []),
+    '15% off all dry-aged cuts',
+    'First dibs on Wagyu allocations',
+    "Quarterly butcher's box (free)",
+    'Direct line to our head butcher',
+    'All Connoisseur tier perks',
+  ];
+
   return (
     <section className='py-25'>
       <div className='mx-auto max-w-7xl px-6 md:px-8'>
@@ -41,15 +79,10 @@ export default function RewardsTiers() {
                 Regular
               </h3>
               <p className='mb-7 font-mono text-xs tracking-[0.06em] text-muted'>
-                0–249 PTS · STARTING TIER
+                0–{fmt(conn - 1)} PTS · STARTING TIER
               </p>
               <ul className='flex flex-col gap-3.5 border-t border-line-soft pt-6'>
-                {[
-                  'Earn 1 point per $1 spent',
-                  'Save cuts for quick reorder',
-                  'Order history & quick reorder',
-                  'Free pickup on orders over $50',
-                ].map((perk) => (
+                {regularPerks.map((perk) => (
                   <li key={perk} className='flex items-start gap-2.5 text-sm leading-snug text-ink-soft'>
                     <CheckIcon />
                     {perk}
@@ -73,16 +106,10 @@ export default function RewardsTiers() {
                 Connois<em className='italic text-camel-soft'>seur</em>
               </h3>
               <p className='mb-7 font-mono text-xs tracking-[0.06em] text-cream/55'>
-                250–999 PTS · MID TIER
+                {fmt(conn)}–{fmt(master - 1)} PTS · MID TIER
               </p>
               <ul className='flex flex-col gap-3.5 border-t border-cream/12 pt-6'>
-                {[
-                  'Earn 2× on weekends',
-                  'Free pickup, always (no minimum)',
-                  'Early access to weekly specials',
-                  'Free birthday cut (up to $50)',
-                  'All Regular tier perks',
-                ].map((perk) => (
+                {connoisseurPerks.map((perk) => (
                   <li key={perk} className='flex items-start gap-2.5 text-sm leading-snug text-cream/90'>
                     <CheckIcon camel />
                     {perk}
@@ -112,17 +139,10 @@ export default function RewardsTiers() {
                 Master <em className='italic text-oxblood'>Cut</em>
               </h3>
               <p className='mb-7 font-mono text-xs tracking-[0.06em] text-muted'>
-                1,000+ PTS · TOP TIER
+                {fmt(master)}+ PTS · TOP TIER
               </p>
               <ul className='flex flex-col gap-3.5 border-t border-line-soft pt-6'>
-                {[
-                  'Earn 3× on weekends',
-                  '15% off all dry-aged cuts',
-                  'First dibs on Wagyu allocations',
-                  "Quarterly butcher's box (free)",
-                  'Direct line to our head butcher',
-                  'All Connoisseur tier perks',
-                ].map((perk) => (
+                {masterCutPerks.map((perk) => (
                   <li key={perk} className='flex items-start gap-2.5 text-sm leading-snug text-ink-soft'>
                     <CheckIcon />
                     {perk}

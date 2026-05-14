@@ -11,7 +11,7 @@ type Props = {
   email: string;
   createdAt: string;
   userId: string;
-  rewardPoints: number;
+  tierLabel: string;
   isAdmin: boolean;
 };
 
@@ -37,9 +37,9 @@ function splitName(name: string): [string, string] {
   return [name.slice(0, idx), name.slice(idx + 1)];
 }
 
-export default function ProfileHero({ name, email, createdAt, userId, rewardPoints, isAdmin }: Props) {
+export default function ProfileHero({ name, email, createdAt, userId, tierLabel, isAdmin }: Props) {
   const [firstName, lastName] = splitName(name);
-  const isMember = rewardPoints >= 250;
+  const isMember = tierLabel !== 'Regular';
   const colorClass = isAdmin
     ? ADMIN_AVATAR_COLOR
     : avatarColorForId(userId, isMember ? MEMBER_AVATAR_COLORS : AVATAR_COLORS);
@@ -72,7 +72,7 @@ export default function ProfileHero({ name, email, createdAt, userId, rewardPoin
               <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-camel" aria-hidden="true">
                 <path d="M12 2l2.39 7.36H22l-6.18 4.49L18.21 21 12 16.51 5.79 21l2.39-7.15L2 9.36h7.61z" />
               </svg>
-              Connoisseur
+              {tierLabel}
             </span>
           </div>
         </div>

@@ -2,15 +2,27 @@ import Link from 'next/link';
 
 import ArrowIcon from '@/components/uielements/ArrowIcon';
 import Reveal from '@/components/uielements/Reveal';
+import type { ShopSettings } from '@/models/ShopSettings';
 
-const STATS = [
-  { num: '1', suffix: 'pt', label: 'For every $1 spent in the shop' },
-  { num: '3', suffix: '×', label: 'Weekend multiplier — up to 3× at top tier' },
-  { num: '$0', suffix: '', label: 'No fees, no subscription, ever' },
-  { num: '12', suffix: 'mo', label: 'Points stay valid from your last order' },
-] as const;
+type Props = { settings: ShopSettings };
 
-export default function RewardsHero() {
+export default function RewardsHero({ settings }: Props) {
+  const pointsLabel = settings.pointsPerDollar === 1
+    ? 'For every $1 spent in the shop'
+    : `For every $1 spent (${settings.pointsPerDollar} pts each)`;
+  const expiryStat = settings.pointsExpiryMonths === 0
+    ? { num: '∞', suffix: '', label: 'Your points never expire' }
+    : { num: String(settings.pointsExpiryMonths), suffix: 'mo', label: 'Points stay valid from your last order' };
+  const weekendStat = settings.weekendMultiplier > 1
+    ? { num: String(settings.weekendMultiplier), suffix: '×', label: `Weekend multiplier — up to ${settings.weekendMultiplier}× on Sat & Sun` }
+    : { num: '1', suffix: '×', label: 'Every day earns the same — no weekend boost right now' };
+  const STATS = [
+    { num: String(settings.pointsPerDollar), suffix: settings.pointsPerDollar === 1 ? 'pt' : 'pts', label: pointsLabel },
+    weekendStat,
+    { num: '$0', suffix: '', label: 'No fees, no subscription, ever' },
+    expiryStat,
+  ] as const;
+
   return (
     <section className='mx-auto max-w-7xl px-6 py-20 md:px-8'>
       <div className='grid grid-cols-1 items-center gap-12 lg:grid-cols-[1.2fr_1fr] lg:gap-20'>
@@ -93,8 +105,11 @@ export default function RewardsHero() {
                   Connoisseur · Tier 02
                 </div>
                 <div className='mb-4 font-display text-[clamp(36px,4vw,52px)] font-normal leading-none tracking-tight'>
-                  Earn{' '}
-                  <em className='italic text-camel-soft'>2×</em> on weekends
+                  {settings.weekendMultiplier > 1 ? (
+                    <>Earn <em className='italic text-camel-soft'>{settings.weekendMultiplier}×</em> on weekends</>
+                  ) : (
+                    <>Perks <em className='italic text-camel-soft'>every</em> day</>
+                  )}
                 </div>
                 <ul className='flex flex-col gap-1.5'>
                   {['Free pickup, always', 'Early access to weekly specials', 'Birthday cut on us'].map((perk) => (

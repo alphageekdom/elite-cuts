@@ -1,9 +1,11 @@
+import type { TierInfo } from '@/lib/rewards';
+
 const fmt = (n: number) => n.toLocaleString('en-US');
 
-function getTierLabel(pts: number) {
-  if (pts >= 1000) return 'Master Cut reached';
-  if (pts >= 250) return `${fmt(1000 - pts)} to Master tier`;
-  return `${fmt(250 - pts)} to Connoisseur`;
+function tierSubLabel(tier: TierInfo): string {
+  if (tier.nextTier === null) return `${tier.label} reached`;
+  const nextLabel = tier.nextTier === 'masterCut' ? 'Master Cut' : 'Connoisseur';
+  return `${fmt(tier.pointsToNext)} to ${nextLabel}`;
 }
 
 type Props = {
@@ -12,9 +14,10 @@ type Props = {
   savedCuts: number;
   joinedMonths: number;
   rewardPoints: number;
+  tier: TierInfo;
 };
 
-export default function ProfileStats({ orderCount, totalSpent, savedCuts, joinedMonths, rewardPoints }: Props) {
+export default function ProfileStats({ orderCount, totalSpent, savedCuts, joinedMonths, rewardPoints, tier }: Props) {
   const dollars = Math.floor(totalSpent);
   const cents = String(totalSpent.toFixed(2)).split('.')[1];
 
@@ -30,7 +33,7 @@ export default function ProfileStats({ orderCount, totalSpent, savedCuts, joined
       <StatCell label="Saved cuts" sub="cuts you've saved" mobileTopBorder>
         {savedCuts}
       </StatCell>
-      <StatCell label="Reward points" sub={getTierLabel(rewardPoints)} mobileTopBorder>
+      <StatCell label="Reward points" sub={tierSubLabel(tier)} mobileTopBorder>
         {fmt(rewardPoints)}
       </StatCell>
     </div>

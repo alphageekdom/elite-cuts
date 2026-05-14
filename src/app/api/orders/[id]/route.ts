@@ -8,7 +8,7 @@ import { getSessionUser } from '@/utils/getSessionUser';
 import { withAdmin } from '@/lib/api-handler';
 import { isIn } from '@/lib/validation';
 import { refundSummary, paymentStatusFor } from '@/lib/order-refunds';
-import { awardOrderCompletion } from '@/lib/order-completion';
+import { awardOrderCompletion, reverseOrderAward } from '@/lib/order-completion';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -275,10 +275,27 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
     // First-time transition into Completed — award points + fire low-stock alerts.
     if (orderStatus === 'Completed' && existing.orderStatus !== 'Completed') {
       await awardOrderCompletion({
+        orderId: id,
         customerUserId: existing.user,
-        totalCost: existing.totalCost,
+        subtotal: existing.subtotal,
         productIds: existing.orderItems.map((i) => i.product),
       });
+    }
+
+    // Reverse the points award when an order leaves Completed via cancellation
+    // (either explicit or auto-cancel from a refund drain). Partial refunds
+    // that leave the order Completed don't trigger reversal.
+    const finalStatus = (updateFields.orderStatus as string | undefined) ?? existing.orderStatus;
+    if (
+      finalStatus === 'Cancelled' &&
+      existing.orderStatus === 'Completed' &&
+      (existing.pointsAwarded ?? 0) > 0
+    ) {
+      const reverseReason =
+        indicesToRefund.size > 0 && !transitioningToCancelled
+          ? 'refund_reverse'
+          : 'cancel_reverse';
+      await reverseOrderAward({ orderId: id, reason: reverseReason });
     }
 
     return NextResponse.json(order);

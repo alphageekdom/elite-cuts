@@ -313,9 +313,11 @@ export const POST = async (request: NextRequest) => {
 
       if (isCompletedNow) {
         await awardOrderCompletion({
+          orderId: order._id,
           customerUserId: body.userId,
-          totalCost,
+          subtotal,
           productIds: orderItems.map((it) => it.product),
+          awardedOn: now,
         });
       }
 
