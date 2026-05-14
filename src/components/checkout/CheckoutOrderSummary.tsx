@@ -71,7 +71,7 @@ const CheckoutOrderSummary = () => {
 
   return (
     <div>
-      <CheckoutRewardsRedeem maxDiscountable={discountable} />
+      <CheckoutRewardsRedeem subtotal={totals.subtotal} maxDiscountable={discountable} />
       <div className='mb-3.5 rounded-sm border border-line-soft bg-paper px-8 py-7'>
         <p className='mb-1.5 text-[11px] font-medium uppercase tracking-[0.22em] text-muted'>
           → Order summary

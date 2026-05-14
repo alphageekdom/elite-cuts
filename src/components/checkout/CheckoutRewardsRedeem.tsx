@@ -4,19 +4,28 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
 
 import { useCheckoutContext } from '@/context/CheckoutContext';
-import { applyRedemption } from '@/lib/rewards';
+import { applyRedemption, computeRedemptionCap } from '@/lib/rewards';
 
 type RewardsInfo = {
   balance: number;
   redemptionPoints: number;
   redemptionDollars: number;
   minToRedeem: number;
+  maxRedemptionPercent: number;
+  maxRedemptionDollars: number;
 };
 
 const fmt = (n: number) => n.toLocaleString('en-US');
 const fmtDollars = (cents: number) => (cents / 100).toFixed(2);
 
-export default function CheckoutRewardsRedeem({ maxDiscountable }: { maxDiscountable: number }) {
+type Props = {
+  /** Pre-tax retail subtotal. Used to compute the per-order cap. */
+  subtotal: number;
+  /** Subtotal minus member + promo discounts. The redemption can't bring this below zero. */
+  maxDiscountable: number;
+};
+
+export default function CheckoutRewardsRedeem({ subtotal, maxDiscountable }: Props) {
   const { data: session } = useSession();
   const { state, dispatch } = useCheckoutContext();
   const isLoggedIn = Boolean(session?.user);
@@ -70,8 +79,9 @@ export default function CheckoutRewardsRedeem({ maxDiscountable }: { maxDiscount
       pointsToRedeem: Math.floor(requested),
       currentBalance: info.balance,
       settings: info,
+      orderSubtotalDollars: subtotal,
     });
-  }, [draft, info]);
+  }, [draft, info, subtotal]);
 
   if (!isLoggedIn || loadFailed) return null;
   if (!info) {
@@ -89,12 +99,14 @@ export default function CheckoutRewardsRedeem({ maxDiscountable }: { maxDiscount
       : info.redemptionDollars.toFixed(2)
   } off`;
 
-  // Cap redemption to the order's discountable subtotal in dollars — round
-  // DOWN to block multiples. Matches the server-side cap so a legitimate
-  // request never hits the server-side "exceeds discountable" rejection.
+  // Per-order cap (min of percent × subtotal, flat $) — mirrors the server.
+  const orderCap = computeRedemptionCap(subtotal, info);
+  // Cap redemption dollars to the smaller of: per-order cap, what's still
+  // owed after other discounts.
+  const dollarCap = Math.max(0, Math.min(orderCap.capDollars, maxDiscountable));
   const maxRedeemableByValue =
     info.redemptionDollars > 0
-      ? Math.floor(maxDiscountable / info.redemptionDollars) * block
+      ? Math.floor(dollarCap / info.redemptionDollars) * block
       : 0;
   const balanceFloor = info.balance - (info.balance % block);
   const maxRedeemable = Math.max(0, Math.min(balanceFloor, maxRedeemableByValue));
@@ -112,8 +124,12 @@ export default function CheckoutRewardsRedeem({ maxDiscountable }: { maxDiscount
       setError(previewResult.error);
       return;
     }
-    if (previewResult.valueCents / 100 > maxDiscountable + 0.005) {
-      setError("Can't redeem more than the order's discountable subtotal");
+    if (previewResult.valueCents / 100 > dollarCap + 0.005) {
+      setError(
+        previewResult.valueCents / 100 > maxDiscountable + 0.005
+          ? "Can't redeem more than the order's discountable subtotal"
+          : `Per-order cap is $${orderCap.capDollars.toFixed(2)}`,
+      );
       return;
     }
     dispatch({
@@ -148,7 +164,7 @@ export default function CheckoutRewardsRedeem({ maxDiscountable }: { maxDiscount
           {ratio}
         </span>
       </div>
-      <div className='mb-5 flex items-baseline justify-between gap-2'>
+      <div className='mb-2 flex items-baseline justify-between gap-2'>
         <span className='font-display text-[22px] font-medium tracking-tight'>
           {fmt(info.balance)} <em className='text-[14px] font-normal text-muted'>pts available</em>
         </span>
@@ -162,6 +178,11 @@ export default function CheckoutRewardsRedeem({ maxDiscountable }: { maxDiscount
           </button>
         )}
       </div>
+      {!active && dollarCap > 0 && (
+        <p className='mb-5 font-mono text-[11px] tracking-[0.04em] text-muted'>
+          Max on this order: ${dollarCap.toFixed(2)}
+        </p>
+      )}
 
       {active ? (
         <p className='flex items-center gap-1.5 text-[12px] text-green'>

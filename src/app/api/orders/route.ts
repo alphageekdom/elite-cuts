@@ -448,6 +448,7 @@ export const POST = async (request: NextRequest) => {
         pointsToRedeem: Math.floor(body.pointsToRedeem),
         currentBalance: userDoc?.rewardPoints ?? 0,
         settings,
+        orderSubtotalDollars: subtotal,
       });
       if (!result.valid) {
         return NextResponse.json({ message: result.error }, { status: 400 });

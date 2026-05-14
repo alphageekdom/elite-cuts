@@ -1,5 +1,6 @@
 import { SelectField, inputCls, labelCls, sectionTitleCls, sectionSubCls, btnPrimary } from '../SettingsUI';
 import type { ShopSettings } from '@/models/ShopSettings';
+import { computeRedemptionCap } from '@/lib/rewards';
 
 type Props = {
   values: ShopSettings;
@@ -96,6 +97,42 @@ export default function RewardsTab({ values, onChange, onSave, saving }: Props) 
         </div>
         <p className="mt-2 text-xs text-muted">
           {values.redemptionPoints} pts = ${Number.isInteger(values.redemptionDollars) ? values.redemptionDollars : values.redemptionDollars.toFixed(2)} off at checkout
+        </p>
+      </section>
+
+      <section>
+        <h2 className={sectionTitleCls}>Per-order <em className="italic text-oxblood font-normal">cap</em></h2>
+        <p className={sectionSubCls}>Limits how much of an order can be paid with points. Effective cap = min(% of subtotal, flat $). Customers can never redeem more than this on a single order, regardless of balance.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-3">
+          <div>
+            <label className={labelCls}>Max % of subtotal</label>
+            <input
+              type="number"
+              min={1}
+              max={100}
+              value={values.maxRedemptionPercent}
+              onChange={(e) => onChange({ maxRedemptionPercent: Number(e.target.value) })}
+              className={inputCls}
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Max dollars</label>
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              value={values.maxRedemptionDollars}
+              onChange={(e) => onChange({ maxRedemptionDollars: Number(e.target.value) })}
+              className={inputCls}
+            />
+          </div>
+        </div>
+        <p className="text-xs text-muted">
+          {(() => {
+            const cap80 = computeRedemptionCap(80, values);
+            const cap250 = computeRedemptionCap(250, values);
+            return `Example: on an $80 order, max redemption = $${cap80.capDollars.toFixed(2)}. On a $250 order, max = $${cap250.capDollars.toFixed(2)}.`;
+          })()}
         </p>
       </section>
 

@@ -33,6 +33,8 @@ export const GET = async () => {
       redemptionPoints: settings.redemptionPoints,
       redemptionDollars: settings.redemptionDollars,
       minToRedeem: settings.minToRedeem,
+      maxRedemptionPercent: settings.maxRedemptionPercent,
+      maxRedemptionDollars: settings.maxRedemptionDollars,
     });
   } catch (error) {
     console.error('[me/rewards GET]', error);

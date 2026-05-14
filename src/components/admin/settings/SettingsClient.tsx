@@ -20,6 +20,7 @@ const DEFAULTS: ShopSettings = {
   notifNewOrder: true, notifLowStock: true, notifNewEvent: true,
   pointsPerDollar: 1, weekendMultiplier: 1, pointsExpiryMonths: 6,
   redemptionPoints: 100, redemptionDollars: 5, minToRedeem: 0,
+  maxRedemptionPercent: 50, maxRedemptionDollars: 50,
   connoisseurThreshold: 250, masterCutThreshold: 1000,
 };
 

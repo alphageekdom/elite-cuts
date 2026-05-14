@@ -13,6 +13,7 @@ const SETTINGS_FIELDS: (keyof ShopSettingsType)[] = [
   'notifNewOrder', 'notifLowStock', 'notifNewEvent',
   'pointsPerDollar', 'weekendMultiplier', 'pointsExpiryMonths',
   'redemptionPoints', 'redemptionDollars', 'minToRedeem',
+  'maxRedemptionPercent', 'maxRedemptionDollars',
   'connoisseurThreshold', 'masterCutThreshold',
 ];
 
@@ -53,6 +54,7 @@ export const PUT = withAdmin(async (request: NextRequest) => {
       notifNewOrder, notifLowStock, notifNewEvent,
       pointsPerDollar, weekendMultiplier, pointsExpiryMonths,
       redemptionPoints, redemptionDollars, minToRedeem,
+      maxRedemptionPercent, maxRedemptionDollars,
       connoisseurThreshold, masterCutThreshold,
     } = await request.json() as Partial<ShopSettingsType>;
 
@@ -63,6 +65,7 @@ export const PUT = withAdmin(async (request: NextRequest) => {
       notifNewOrder, notifLowStock, notifNewEvent,
       pointsPerDollar, weekendMultiplier, pointsExpiryMonths,
       redemptionPoints, redemptionDollars, minToRedeem,
+      maxRedemptionPercent, maxRedemptionDollars,
       connoisseurThreshold, masterCutThreshold,
     };
     const patch = Object.fromEntries(
