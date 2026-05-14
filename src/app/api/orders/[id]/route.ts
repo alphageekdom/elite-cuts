@@ -296,6 +296,33 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
     const finalStatus = (updateFields.orderStatus as string | undefined) ?? existing.orderStatus;
     const cancelledNow =
       finalStatus === 'Cancelled' && existing.orderStatus !== 'Cancelled';
+
+    // Partial refund (NOT cascading to cancel) on an order with redemption:
+    // proportionally return the redeemed points based on the just-refunded
+    // subtotal vs the original subtotal. The full-cancel branch below
+    // handles any remaining un-returned points if/when the order later
+    // cancels entirely.
+    if (
+      indicesToRefund.size > 0 &&
+      !cancelledNow &&
+      (existing.pointsRedeemed ?? 0) > 0 &&
+      existing.subtotal > 0
+    ) {
+      const newlyRefundedSubtotal = Array.from(indicesToRefund).reduce(
+        (sum, idx) => sum + existing.orderItems[idx].price * existing.orderItems[idx].qty,
+        0,
+      );
+      const proportion = newlyRefundedSubtotal / existing.subtotal;
+      const pointsToReturn = Math.floor((existing.pointsRedeemed ?? 0) * proportion);
+      if (pointsToReturn > 0) {
+        await reverseOrderRedemption({
+          orderId: id,
+          reason: 'refund_reverse',
+          pointsToReturn,
+        });
+      }
+    }
+
     if (cancelledNow) {
       const reverseReason =
         indicesToRefund.size > 0 && !transitioningToCancelled

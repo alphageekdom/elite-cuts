@@ -49,6 +49,7 @@ type RawOrder = {
   pointsAwarded?: number;
   pointsRedeemed?: number;
   pointsRedemptionValueCents?: number;
+  pointsRedemptionReturned?: number;
   memberDiscount?: number;
   promoDiscount?: number;
   promoCode?: string;
@@ -113,6 +114,7 @@ export function serializeOrderRow(order: RawOrder): OrderTableRow {
     pointsAwarded: order.pointsAwarded ?? 0,
     pointsRedeemed: order.pointsRedeemed ?? 0,
     pointsRedemptionValueCents: order.pointsRedemptionValueCents ?? 0,
+    pointsRedemptionReturned: order.pointsRedemptionReturned ?? 0,
     memberDiscount: order.memberDiscount ?? 0,
     promoDiscount: order.promoDiscount ?? 0,
     promoCode: order.promoCode,

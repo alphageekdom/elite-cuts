@@ -86,6 +86,7 @@ export type Order = {
   pointsAwarded: number;
   pointsRedeemed: number;
   pointsRedemptionValueCents: number;
+  pointsRedemptionReturned: number;  // cumulative pts returned from partial refunds; capped at pointsRedeemed
   memberDiscount: number;
   promoDiscount: number;
   promoCode?: string;
@@ -260,6 +261,7 @@ const OrderSchema = new Schema<Order>(
     pointsAwarded: { type: Number, default: 0, min: 0 },
     pointsRedeemed: { type: Number, default: 0, min: 0 },
     pointsRedemptionValueCents: { type: Number, default: 0, min: 0 },
+    pointsRedemptionReturned: { type: Number, default: 0, min: 0 },
     memberDiscount: { type: Number, default: 0, min: 0 },
     promoDiscount: { type: Number, default: 0, min: 0 },
     promoCode: { type: String, trim: true },

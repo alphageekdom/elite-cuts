@@ -336,6 +336,12 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
                 </span>
               </div>
             )}
+            {order.pointsRedemptionReturned > 0 && order.status !== 'Cancelled' && (
+              <div className="flex justify-between items-baseline text-[12px] text-camel">
+                <span>↻ Returned from refunds</span>
+                <span className="font-mono text-[11px]">+{order.pointsRedemptionReturned.toLocaleString('en-US')} pts to balance</span>
+              </div>
+            )}
             {refundedAmount > 0 && (
               <>
                 <div className="flex justify-between items-baseline text-[13px] text-oxblood mt-1">
