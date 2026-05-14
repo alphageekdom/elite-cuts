@@ -3,12 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { FOCUS_RING } from '@/lib/styles';
-
-function getTier(pts: number) {
-  if (pts >= 1000) return { name: 'Master Cut', level: '03', next: null, nextAt: 1000 };
-  if (pts >= 250)  return { name: 'Connoisseur', level: '02', next: 'Master Cut', nextAt: 1000 };
-  return           { name: 'Regular', level: '01', next: 'Connoisseur', nextAt: 250 };
-}
+import type { TierInfo } from '@/lib/rewards';
+import type { PointsHistoryReason } from '@/models/User';
 
 const UNLOCKED_PERKS: { bold: string; body: string }[] = [
   { bold: 'Free pickup, always.', body: 'No minimum order required.' },
@@ -19,31 +15,75 @@ const UNLOCKED_PERKS: { bold: string; body: string }[] = [
 
 const LOCKED_PERKS = ['15% off dry-aged cuts', "Quarterly butcher's box"];
 
-type ActivityType = 'earned' | 'redeemed' | 'bonus';
 type Filter = 'all' | 'earned' | 'redeemed';
-
-const ACTIVITY: { type: ActivityType; title: string; meta: string; points: number; date: string }[] = [
-  { type: 'earned',   title: 'Order #EC-7842 · Dry-Aged Ribeye', meta: '2lb · $85.98 · WEEKEND BONUS 2×',    points: 172,  date: 'Apr 24' },
-  { type: 'redeemed', title: 'Redeemed at checkout',              meta: '100 PTS = $5 OFF · ORDER #EC-7715',  points: -100, date: 'Apr 12' },
-  { type: 'bonus',    title: 'Tier upgrade bonus · Connoisseur',  meta: 'TIER UPGRADED TO CONNOISSEUR',        points: 50,   date: 'Apr 08' },
-  { type: 'earned',   title: 'Order #EC-7689 · Whole Brisket',    meta: '12lb · $215.40 · STANDARD 1×',      points: 215,  date: 'Mar 28' },
-];
 
 const FILTERS: Filter[] = ['all', 'earned', 'redeemed'];
 
+export type SerializedPointsEntry = {
+  delta: number;
+  reason: PointsHistoryReason;
+  orderId?: string;
+  createdAt: string;
+};
+
+type Props = {
+  points?: number;
+  lifetimePoints: number;
+  expiredPoints: number;
+  tier: TierInfo;
+  recentHistory: SerializedPointsEntry[];
+  redemptionPoints: number;
+  redemptionDollars: number;
+  pointsExpiryMonths: number;
+};
+
 const fmt = (n: number) => n.toLocaleString('en-US');
 
-export default function ProfileRewards({ points = 0 }: { points?: number }) {
+function reasonLabel(reason: PointsHistoryReason): { title: string; kind: 'earned' | 'redeemed' | 'bonus' } {
+  switch (reason) {
+    case 'order_fulfilled':
+      return { title: 'Order fulfilled', kind: 'earned' };
+    case 'redemption':
+      return { title: 'Redeemed at checkout', kind: 'redeemed' };
+    case 'cancel_reverse':
+      return { title: 'Order cancelled — points reversed', kind: 'redeemed' };
+    case 'refund_reverse':
+      return { title: 'Order refunded — points reversed', kind: 'redeemed' };
+    case 'admin_adjustment':
+      return { title: 'Admin adjustment', kind: 'bonus' };
+    case 'expired':
+      return { title: 'Points expired', kind: 'redeemed' };
+  }
+}
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+export default function ProfileRewards({
+  points = 0,
+  lifetimePoints,
+  expiredPoints,
+  tier,
+  recentHistory,
+  redemptionPoints,
+  redemptionDollars,
+  pointsExpiryMonths,
+}: Props) {
   const [filter, setFilter] = useState<Filter>('all');
 
-  const tier = getTier(points);
-  const progress = tier.next === null ? 100 : Math.min(100, Math.round((points / tier.nextAt) * 100));
-  const dollarValue = Math.floor((points / 100) * 5);
+  const atMax = tier.nextTier === null;
+  const target = tier.nextThreshold ?? tier.threshold;
+  const progressPct = atMax ? 100 : Math.round(tier.progress * 100);
+  const dollarValue = Math.floor((points / Math.max(1, redemptionPoints)) * redemptionDollars);
+  const nextTierLabel = tier.nextTier === 'masterCut' ? 'Master Cut' : 'Connoisseur';
+  const tierLevel = tier.tier === 'masterCut' ? '03' : tier.tier === 'connoisseur' ? '02' : '01';
 
-  const visible = ACTIVITY.filter((row) => {
+  const visible = recentHistory.filter((row) => {
     if (filter === 'all') return true;
-    if (filter === 'earned') return row.type === 'earned' || row.type === 'bonus';
-    return row.type === 'redeemed';
+    const k = reasonLabel(row.reason).kind;
+    if (filter === 'earned') return k === 'earned' || k === 'bonus';
+    return k === 'redeemed';
   });
 
   return (
@@ -76,7 +116,7 @@ export default function ProfileRewards({ points = 0 }: { points?: number }) {
                 <svg viewBox='0 0 24 24' fill='currentColor' className='h-2.75 w-2.75' aria-hidden>
                   <path d='M12 2l2.39 7.36H22l-6.18 4.49L18.21 21 12 16.51 5.79 21l2.39-7.15L2 9.36h7.61z' />
                 </svg>
-                {tier.name} · Tier {tier.level}
+                {tier.label} · Tier {tierLevel}
               </div>
             </div>
 
@@ -93,18 +133,24 @@ export default function ProfileRewards({ points = 0 }: { points?: number }) {
                 <strong className='font-medium text-cream'>${dollarValue} off</strong>{' '}
                 your next order.
               </p>
+              <p className='mt-2 text-[12px] text-cream/45'>
+                Lifetime earned: <strong className='text-cream/70 font-medium'>{fmt(lifetimePoints)}</strong>
+                {expiredPoints > 0 && (
+                  <> · Expired: <strong className='text-cream/70 font-medium'>{fmt(expiredPoints)}</strong></>
+                )}
+              </p>
             </div>
 
             <div className='border-t border-cream/12 pt-6'>
-              {tier.next ? (
+              {!atMax ? (
                 <>
                   <div className='flex items-baseline justify-between mb-3'>
                     <span className='font-display text-base font-normal'>
-                      {fmt(tier.nextAt - points)} points to{' '}
-                      <em className='italic text-camel-soft'>{tier.next}</em>
+                      {fmt(tier.pointsToNext)} points to{' '}
+                      <em className='italic text-camel-soft'>{nextTierLabel}</em>
                     </span>
                     <span className='font-mono text-[11px] tracking-[0.04em] text-cream/55'>
-                      {fmt(points)} / {fmt(tier.nextAt)}
+                      {fmt(points)} / {fmt(target)}
                     </span>
                   </div>
                   <div
@@ -112,14 +158,14 @@ export default function ProfileRewards({ points = 0 }: { points?: number }) {
                     role='progressbar'
                     aria-valuenow={points}
                     aria-valuemin={0}
-                    aria-valuemax={tier.nextAt}
-                    aria-label={`${fmt(points)} of ${fmt(tier.nextAt)} points to ${tier.next}`}
+                    aria-valuemax={target}
+                    aria-label={`${fmt(points)} of ${fmt(target)} points to ${nextTierLabel}`}
                   >
-                    <div className='h-full rounded-full bg-linear-to-r from-oxblood to-camel' style={{ width: `${progress}%` }} />
+                    <div className='h-full rounded-full bg-linear-to-r from-oxblood to-camel' style={{ width: `${progressPct}%` }} />
                   </div>
                   <p className='mt-3.5 text-[13px] leading-relaxed text-cream/70'>
                     Reach{' '}
-                    <strong className='font-medium text-cream'>{tier.next}</strong>{' '}
+                    <strong className='font-medium text-cream'>{nextTierLabel}</strong>{' '}
                     to unlock 15% off dry-aged orders, first dibs on Wagyu, and a quarterly butcher&apos;s box.
                   </p>
                 </>
@@ -138,7 +184,11 @@ export default function ProfileRewards({ points = 0 }: { points?: number }) {
             <h3 className='font-display text-xl font-medium tracking-tight leading-tight mb-1'>
               Your <em className='font-normal italic text-oxblood'>perks</em>
             </h3>
-            <p className='text-[13px] text-muted'>Unlocked. More on the way.</p>
+            <p className='text-[13px] text-muted'>
+              {pointsExpiryMonths > 0
+                ? `Unlocked. Points expire after ${pointsExpiryMonths} months.`
+                : 'Unlocked. Your points never expire.'}
+            </p>
           </div>
 
           <ul className='flex flex-col'>
@@ -195,44 +245,48 @@ export default function ProfileRewards({ points = 0 }: { points?: number }) {
         </div>
 
         <div className='px-5 py-1 sm:px-8 sm:py-2'>
-          {points === 0 ? (
+          {recentHistory.length === 0 ? (
             <p className='py-10 text-center text-sm text-muted'>Nothing yet — your first completed order starts your history.</p>
           ) : visible.length === 0 ? (
             <p className='py-10 text-center text-sm text-muted'>No {filter} activity to show.</p>
           ) : (
-            visible.map((row, i) => (
-              <div
-                key={`${row.title}-${i}`}
-                className={`grid grid-cols-[36px_1fr_auto] items-center gap-4 py-3.5 sm:grid-cols-[36px_1fr_auto_80px] ${i < visible.length - 1 ? 'border-b border-line-soft' : ''}`}
-              >
-                <div className={`grid h-9 w-9 place-items-center rounded-full ${row.type === 'earned' ? 'bg-green/10 text-green' : row.type === 'redeemed' ? 'bg-oxblood/10 text-oxblood' : 'bg-camel/15 text-camel'}`}>
-                  {row.type === 'earned' && (
-                    <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2} className='h-3.5 w-3.5' aria-hidden>
-                      <circle cx='12' cy='12' r='9' /><line x1='12' y1='7' x2='12' y2='13' /><line x1='9' y1='10' x2='15' y2='10' />
-                    </svg>
-                  )}
-                  {row.type === 'redeemed' && (
-                    <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2} className='h-3.5 w-3.5' aria-hidden>
-                      <polyline points='20 12 12 12 12 4' /><circle cx='12' cy='12' r='9' />
-                    </svg>
-                  )}
-                  {row.type === 'bonus' && (
-                    <svg viewBox='0 0 24 24' fill='currentColor' className='h-3.5 w-3.5' aria-hidden>
-                      <path d='M12 2l2.39 7.36H22l-6.18 4.49L18.21 21 12 16.51 5.79 21l2.39-7.15L2 9.36h7.61z' />
-                    </svg>
-                  )}
+            visible.map((row, i) => {
+              const { title, kind } = reasonLabel(row.reason);
+              const meta = row.orderId ? `Order ${row.orderId.slice(-6).toUpperCase()}` : 'Adjustment';
+              return (
+                <div
+                  key={`${row.createdAt}-${i}`}
+                  className={`grid grid-cols-[36px_1fr_auto] items-center gap-4 py-3.5 sm:grid-cols-[36px_1fr_auto_80px] ${i < visible.length - 1 ? 'border-b border-line-soft' : ''}`}
+                >
+                  <div className={`grid h-9 w-9 place-items-center rounded-full ${kind === 'earned' ? 'bg-green/10 text-green' : kind === 'redeemed' ? 'bg-oxblood/10 text-oxblood' : 'bg-camel/15 text-camel'}`}>
+                    {kind === 'earned' && (
+                      <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2} className='h-3.5 w-3.5' aria-hidden>
+                        <circle cx='12' cy='12' r='9' /><line x1='12' y1='7' x2='12' y2='13' /><line x1='9' y1='10' x2='15' y2='10' />
+                      </svg>
+                    )}
+                    {kind === 'redeemed' && (
+                      <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2} className='h-3.5 w-3.5' aria-hidden>
+                        <polyline points='20 12 12 12 12 4' /><circle cx='12' cy='12' r='9' />
+                      </svg>
+                    )}
+                    {kind === 'bonus' && (
+                      <svg viewBox='0 0 24 24' fill='currentColor' className='h-3.5 w-3.5' aria-hidden>
+                        <path d='M12 2l2.39 7.36H22l-6.18 4.49L18.21 21 12 16.51 5.79 21l2.39-7.15L2 9.36h7.61z' />
+                      </svg>
+                    )}
+                  </div>
+                  <div className='min-w-0'>
+                    <p className='truncate font-display text-[15px] font-medium tracking-tight leading-tight'>{title}</p>
+                    <p className='mt-0.5 font-mono text-[11px] tracking-[0.04em] text-muted'>{meta}</p>
+                  </div>
+                  <div className={`font-display text-lg font-medium tracking-tight ${row.delta > 0 ? 'text-green' : 'text-oxblood'}`}>
+                    {row.delta > 0 ? '+' : ''}{row.delta}
+                    <em className='ml-0.5 font-mono not-italic text-[11px] font-normal text-muted'>pts</em>
+                  </div>
+                  <div className='hidden text-right font-mono text-[11px] tracking-[0.04em] text-muted sm:block'>{formatDate(row.createdAt)}</div>
                 </div>
-                <div className='min-w-0'>
-                  <p className='truncate font-display text-[15px] font-medium tracking-tight leading-tight'>{row.title}</p>
-                  <p className='mt-0.5 font-mono text-[11px] tracking-[0.04em] text-muted'>{row.meta}</p>
-                </div>
-                <div className={`font-display text-lg font-medium tracking-tight ${row.points > 0 ? 'text-green' : 'text-oxblood'}`}>
-                  {row.points > 0 ? '+' : ''}{row.points}
-                  <em className='ml-0.5 font-mono not-italic text-[11px] font-normal text-muted'>pts</em>
-                </div>
-                <div className='hidden text-right font-mono text-[11px] tracking-[0.04em] text-muted sm:block'>{row.date}</div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>

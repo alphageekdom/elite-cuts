@@ -1,41 +1,57 @@
 import Reveal from '@/components/uielements/Reveal';
 import SectionHead from '@/components/ui/SectionHead';
+import type { ShopSettings } from '@/models/ShopSettings';
+import { formatRedemptionRate } from '@/lib/rewards';
 
-const HOW_STEPS = [
-  {
-    n: '01',
-    heading: (
-      <>
-        Order like you{' '}
-        <em className='italic text-oxblood'>normally</em> would.
-      </>
-    ),
-    body: 'Pick up your usual cuts in-store or online. Every dollar earns one point automatically — no codes, no fuss.',
-    meta: '$1 = 1 PT',
-  },
-  {
-    n: '02',
-    heading: (
-      <>
-        Climb the <em className='italic text-oxblood'>tiers.</em>
-      </>
-    ),
-    body: 'Connoisseur at 250 points, Master Cut at 1,000. Each tier unlocks better perks — discounts, early access, and a birthday cut on us.',
-    meta: '3 TIERS · 1,000 PT TOP',
-  },
-  {
-    n: '03',
-    heading: (
-      <>
-        Redeem at <em className='italic text-oxblood'>checkout.</em>
-      </>
-    ),
-    body: 'Apply points to your next order, save them for a special cut, or just enjoy the perks that come with your tier. Your call.',
-    meta: '100 PT = $5 OFF',
-  },
-] as const;
+type Props = { settings: ShopSettings };
 
-export default function RewardsHowItWorks() {
+const fmt = (n: number) => n.toLocaleString('en-US');
+
+function dollarLabel(amount: number): string {
+  return Number.isInteger(amount) ? `$${amount}` : `$${amount.toFixed(2)}`;
+}
+
+export default function RewardsHowItWorks({ settings }: Props) {
+  const pointsLabel = settings.pointsPerDollar === 1
+    ? '1 PT'
+    : `${settings.pointsPerDollar} PTS`;
+  const redemptionLabel = `${fmt(settings.redemptionPoints)} PT = ${dollarLabel(settings.redemptionDollars)} OFF`;
+  const redemptionPretty = formatRedemptionRate(settings);
+
+  const steps = [
+    {
+      n: '01',
+      heading: (
+        <>
+          Order like you{' '}
+          <em className='italic text-oxblood'>normally</em> would.
+        </>
+      ),
+      body: `Pick up your usual cuts in-store or online. Every dollar earns ${settings.pointsPerDollar === 1 ? 'one point' : `${settings.pointsPerDollar} points`} automatically — no codes, no fuss.`,
+      meta: `$1 = ${pointsLabel}`,
+    },
+    {
+      n: '02',
+      heading: (
+        <>
+          Climb the <em className='italic text-oxblood'>tiers.</em>
+        </>
+      ),
+      body: `Connoisseur at ${fmt(settings.connoisseurThreshold)} points, Master Cut at ${fmt(settings.masterCutThreshold)}. Each tier unlocks better perks — discounts, early access, and a birthday cut on us.`,
+      meta: `3 TIERS · ${fmt(settings.masterCutThreshold)} PT TOP`,
+    },
+    {
+      n: '03',
+      heading: (
+        <>
+          Redeem at <em className='italic text-oxblood'>checkout.</em>
+        </>
+      ),
+      body: `Apply points to your next order at ${redemptionPretty}, save them for a special cut, or just enjoy the perks that come with your tier. Your call.`,
+      meta: redemptionLabel,
+    },
+  ];
+
   return (
     <section id='how' className='bg-cream-deep py-20'>
       <div className='mx-auto max-w-7xl px-6 md:px-8'>
@@ -51,7 +67,7 @@ export default function RewardsHowItWorks() {
         </Reveal>
 
         <div className='grid grid-cols-1 gap-12 md:grid-cols-3'>
-          {HOW_STEPS.map((step, i) => (
+          {steps.map((step, i) => (
             <Reveal key={step.n} delayMs={i * 80}>
               <div className='relative pt-16 md:pt-12'>
                 <div

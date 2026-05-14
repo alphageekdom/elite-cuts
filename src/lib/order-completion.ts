@@ -2,9 +2,11 @@ import 'server-only';
 import type { Types } from 'mongoose';
 
 import User from '@/models/User';
+import Order from '@/models/Order';
 import Product from '@/models/Product';
 import Notification from '@/models/Notification';
 import { getShopSettings } from '@/lib/shopSettings';
+import { computeAward } from '@/lib/rewards';
 
 // Side-effects to run whenever an order first transitions into Completed:
 // award reward points to the customer, then fire low_stock alerts to admins
@@ -14,18 +16,44 @@ import { getShopSettings } from '@/lib/shopSettings';
 // Completed. Both surfaces must funnel through here so points and alerts stay
 // consistent regardless of which path created the completion event.
 export async function awardOrderCompletion(opts: {
+  orderId: Types.ObjectId | string;
   customerUserId: Types.ObjectId | string;
-  totalCost: number;
+  subtotal: number;
   productIds: Types.ObjectId[];
+  awardedOn?: Date;
 }): Promise<void> {
-  const pointsEarned = Math.floor(opts.totalCost);
-  await User.findByIdAndUpdate(opts.customerUserId, { $inc: { rewardPoints: pointsEarned } });
+  const settings = await getShopSettings();
+  const awardedOn = opts.awardedOn ?? new Date();
+  const pointsEarned = computeAward(opts.subtotal, settings, awardedOn);
+
+  if (pointsEarned > 0) {
+    // Stamp the points on the order so the audit trail survives even if the
+    // user doc is later mutated. Order is the historical record of truth.
+    await Order.findByIdAndUpdate(opts.orderId, { $set: { pointsAwarded: pointsEarned } });
+
+    const expiresAt =
+      settings.pointsExpiryMonths > 0
+        ? new Date(awardedOn.getTime() + settings.pointsExpiryMonths * 30 * 24 * 60 * 60 * 1000)
+        : null;
+
+    await User.findByIdAndUpdate(opts.customerUserId, {
+      $inc: { rewardPoints: pointsEarned, lifetimePoints: pointsEarned },
+      $push: {
+        pointsHistory: {
+          delta: pointsEarned,
+          reason: 'order_fulfilled',
+          orderId: opts.orderId,
+          expiresAt,
+          createdAt: awardedOn,
+        },
+      },
+    });
+  }
 
   // Low-stock notifications are fire-and-forget — gated on
   // settings.notifLowStock; getShopSettings fails open so a settings outage
   // doesn't silence the alert.
   (async () => {
-    const settings = await getShopSettings();
     if (!settings.notifLowStock) return;
     const [products, admins] = await Promise.all([
       Product.find(
@@ -47,4 +75,39 @@ export async function awardOrderCompletion(opts: {
     );
     await Notification.insertMany(docs);
   })().catch((err) => console.error('[awardOrderCompletion] low_stock notification error', err));
+}
+
+// Reverse the points award when an order transitions out of Completed via
+// cancellation or full refund. Balance and lifetime drop by the snapshot
+// stored on the order, both floored at 0 so reversal never produces a
+// negative ledger. The order's pointsAwarded zeroes so a re-completion
+// (rare but legal) starts from a clean slate.
+export async function reverseOrderAward(opts: {
+  orderId: Types.ObjectId | string;
+  reason: 'cancel_reverse' | 'refund_reverse';
+}): Promise<void> {
+  const order = await Order.findById(opts.orderId).select('user pointsAwarded').lean();
+  if (!order || !order.pointsAwarded || order.pointsAwarded <= 0) return;
+
+  const points = order.pointsAwarded;
+  const user = await User.findById(order.user).select('rewardPoints lifetimePoints').lean();
+  if (!user) return;
+
+  const nextBalance = Math.max(0, (user.rewardPoints ?? 0) - points);
+  const nextLifetime = Math.max(0, (user.lifetimePoints ?? 0) - points);
+
+  await User.findByIdAndUpdate(order.user, {
+    $set: { rewardPoints: nextBalance, lifetimePoints: nextLifetime },
+    $push: {
+      pointsHistory: {
+        delta: -points,
+        reason: opts.reason,
+        orderId: opts.orderId,
+        expiresAt: null,
+        createdAt: new Date(),
+      },
+    },
+  });
+
+  await Order.findByIdAndUpdate(opts.orderId, { $set: { pointsAwarded: 0 } });
 }

@@ -4,10 +4,12 @@ import Link from 'next/link';
 export const dynamic = 'force-dynamic';
 import connectDB from '@/config/database';
 import { getSessionUser } from '@/utils/getSessionUser';
-import User from '@/models/User';
+import User, { type PointsHistoryEntry } from '@/models/User';
 import Product from '@/models/Product';
 import Order from '@/models/Order';
 import { convertToSerializableObject } from '@/utils/convertToObject';
+import { getShopSettings } from '@/lib/shopSettings';
+import { getTier, getEffectiveBalance, type TierInfo } from '@/lib/rewards';
 import type { SerializedProduct } from '@/models/Product';
 import type { OrderStatus, PaymentMethod } from '@/models/Order';
 import type { Types } from 'mongoose';
@@ -82,12 +84,24 @@ export default async function ProfilePage({ searchParams }: Props) {
       isDefault: boolean;
     }[];
     rewardPoints: number;
+    lifetimePoints: number;
+    pointsHistory: PointsHistoryEntry[];
     isAdmin: boolean;
     createdAt: Date;
     updatedAt: Date;
   }>();
 
   if (!rawUser) return redirect('/login');
+
+  const settings = await getShopSettings();
+  const effective = getEffectiveBalance(rawUser);
+  const tier: TierInfo = getTier(effective.lifetimePoints, settings);
+  const serializedRecentHistory = effective.recentHistory.map((e) => ({
+    delta: e.delta,
+    reason: e.reason,
+    orderId: e.orderId ? String(e.orderId) : undefined,
+    createdAt: new Date(e.createdAt).toISOString(),
+  }));
 
   const serializedAddresses: SerializedAddress[] = (rawUser.addresses ?? []).map((a) => ({
     _id: a._id.toString(),
@@ -171,14 +185,22 @@ export default async function ProfilePage({ searchParams }: Props) {
     <main className="bg-cream min-h-screen pt-20">
       <div className="max-w-300 mx-auto px-5 md:px-8">
 
-        <ProfileHero name={displayName} email={displayEmail} createdAt={createdAt} userId={userId} rewardPoints={rawUser.rewardPoints ?? 0} isAdmin={rawUser.isAdmin ?? false} />
+        <ProfileHero
+          name={displayName}
+          email={displayEmail}
+          createdAt={createdAt}
+          userId={userId}
+          tierLabel={tier.label}
+          isAdmin={rawUser.isAdmin ?? false}
+        />
 
         <ProfileStats
           orderCount={serializedOrders.length}
           totalSpent={totalSpent}
           savedCuts={serializedSavedCuts.length}
           joinedMonths={joinedMonths}
-          rewardPoints={rawUser.rewardPoints ?? 0}
+          rewardPoints={effective.balance}
+          tier={tier}
         />
 
         <ProfileTabs
@@ -269,13 +291,22 @@ export default async function ProfilePage({ searchParams }: Props) {
                 messages={serializedMessages}
                 userId={userId}
                 name={displayName}
-                rewardPoints={rawUser.rewardPoints ?? 0}
+                rewardPoints={effective.balance}
                 isAdmin={rawUser.isAdmin ?? false}
               />
             )}
 
             {activeTab === 'rewards' && (
-              <ProfileRewards points={rawUser.rewardPoints ?? 0} />
+              <ProfileRewards
+                points={effective.balance}
+                lifetimePoints={effective.lifetimePoints}
+                expiredPoints={effective.expiredPoints}
+                tier={tier}
+                recentHistory={serializedRecentHistory}
+                redemptionPoints={settings.redemptionPoints}
+                redemptionDollars={settings.redemptionDollars}
+                pointsExpiryMonths={settings.pointsExpiryMonths}
+              />
             )}
 
             {activeTab === 'settings' && (
@@ -301,7 +332,7 @@ export default async function ProfilePage({ searchParams }: Props) {
 
           {/* Right: sidebar */}
           <aside className="space-y-4">
-            <ProfileLoyaltyCard points={rawUser.rewardPoints ?? 0} />
+            <ProfileLoyaltyCard points={effective.balance} tier={tier} />
             <ProfileAccountInfo email={displayEmail} joinedAt={createdAt} />
             <ProfileRecentlyViewed products={recentProducts} />
           </aside>

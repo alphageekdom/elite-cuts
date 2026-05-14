@@ -1,16 +1,18 @@
 import Link from 'next/link';
 
+import type { TierInfo } from '@/lib/rewards';
+
 const fmt = (n: number) => n.toLocaleString('en-US');
 
-function getTier(pts: number) {
-  if (pts >= 1000) return { name: 'Master Cut', nextAt: 1000, atMax: true };
-  if (pts >= 250) return { name: 'Connoisseur', nextAt: 1000, atMax: false };
-  return { name: 'Regular', nextAt: 250, atMax: false };
-}
+type Props = {
+  points?: number;
+  tier: TierInfo;
+};
 
-export default function ProfileLoyaltyCard({ points = 0 }: { points?: number }) {
-  const tier = getTier(points);
-  const progress = tier.atMax ? 100 : Math.min(100, Math.round((points / tier.nextAt) * 100));
+export default function ProfileLoyaltyCard({ points = 0, tier }: Props) {
+  const atMax = tier.nextTier === null;
+  const target = tier.nextThreshold ?? tier.threshold;
+  const progressPct = atMax ? 100 : Math.round(tier.progress * 100);
 
   return (
     <div className="relative overflow-hidden bg-ink rounded p-7">
@@ -18,10 +20,10 @@ export default function ProfileLoyaltyCard({ points = 0 }: { points?: number }) 
 
       <h3 className="relative font-display font-normal text-[26px] leading-snug tracking-tight text-cream mb-6">
         <span className="block text-[11px] tracking-[0.22em] uppercase text-camel mb-2 not-italic font-normal">— Member tier</span>
-        {tier.atMax ? (
-          <>You&apos;ve reached <em className="italic text-camel-soft">Master Cut</em></>
+        {atMax ? (
+          <>You&apos;ve reached <em className="italic text-camel-soft">{tier.label}</em></>
         ) : (
-          <>{fmt(tier.nextAt - points)} points to{' '}<em className="italic text-camel-soft">{tier.name === 'Regular' ? 'Connoisseur' : 'Master Cut'}</em></>
+          <>{fmt(tier.pointsToNext)} points to{' '}<em className="italic text-camel-soft">{tier.nextTier === 'masterCut' ? 'Master Cut' : 'Connoisseur'}</em></>
         )}
       </h3>
 
@@ -31,24 +33,24 @@ export default function ProfileLoyaltyCard({ points = 0 }: { points?: number }) 
           role="progressbar"
           aria-valuenow={points}
           aria-valuemin={0}
-          aria-valuemax={tier.nextAt}
-          aria-label={`${fmt(points)} of ${fmt(tier.nextAt)} points to next tier`}
+          aria-valuemax={target}
+          aria-label={`${fmt(points)} of ${fmt(target)} points to next tier`}
         >
           <div
             className="h-full rounded-full bg-linear-to-r from-camel to-camel-soft"
-            style={{ width: `${progress}%` }}
+            style={{ width: `${progressPct}%` }}
           />
         </div>
         <div className="flex justify-between text-xs mt-2.5 text-cream/60">
           <span>
             <strong className="text-cream font-medium">{fmt(points)}</strong> points
           </span>
-          <span>{fmt(tier.nextAt)} points</span>
+          <span>{fmt(target)} points</span>
         </div>
       </div>
 
       <p className="relative text-[13px] text-cream/60 leading-relaxed mt-4">
-        {tier.atMax
+        {atMax
           ? 'You have unlocked all perks — 15% off dry-aged orders, first dibs on Wagyu, and a quarterly butcher\'s box.'
           : 'Reach Master Cut to unlock 15% off dry-aged orders, first dibs on Wagyu, and a quarterly butcher\'s box.'}
       </p>

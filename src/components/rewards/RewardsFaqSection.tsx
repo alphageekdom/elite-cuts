@@ -3,8 +3,11 @@ import Link from 'next/link';
 import Reveal from '@/components/uielements/Reveal';
 import SectionHead from '@/components/ui/SectionHead';
 import RewardsFaq from './RewardsFaq';
+import type { ShopSettings } from '@/models/ShopSettings';
 
-export default function RewardsFaqSection() {
+type Props = { settings: ShopSettings };
+
+export default function RewardsFaqSection({ settings }: Props) {
   return (
     <section className='bg-paper py-25'>
       <div className='mx-auto max-w-7xl px-6 md:px-8'>
@@ -32,7 +35,7 @@ export default function RewardsFaqSection() {
           </Reveal>
 
           <Reveal delayMs={80}>
-            <RewardsFaq />
+            <RewardsFaq settings={settings} />
           </Reveal>
         </div>
       </div>
