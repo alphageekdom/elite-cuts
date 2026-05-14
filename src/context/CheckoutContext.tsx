@@ -25,6 +25,8 @@ export type CheckoutState = {
   fulfillment: Fulfillment;
   promoCode: string;
   promoDiscount: number;
+  pointsToRedeem: number;
+  pointsDiscount: number;        // dollar value of the redeemed points
   contactName: string;
   contactEmail: string;
   contactPhone: string;
@@ -37,6 +39,7 @@ export type CheckoutAction =
   | { type: 'SET_FULFILLMENT'; payload: Fulfillment }
   | { type: 'SET_PAYMENT_READY'; payload: boolean }
   | { type: 'SET_PROMO'; payload: { code: string; amount: number } }
+  | { type: 'SET_REDEMPTION'; payload: { points: number; dollars: number } }
   | { type: 'SET_CONTACT'; payload: { name: string; email: string; phone: string } }
   | { type: 'SET_PICKUP_SLOT'; payload: string }
   | { type: 'SET_DELIVERY_ADDRESS'; payload: DeliveryAddress }
@@ -47,6 +50,8 @@ const initialState: CheckoutState = {
   fulfillment: 'pickup',
   promoCode: '',
   promoDiscount: 0,
+  pointsToRedeem: 0,
+  pointsDiscount: 0,
   contactName: '',
   contactEmail: '',
   contactPhone: '',
@@ -67,6 +72,8 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
       return { ...state, isPaymentReady: action.payload };
     case 'SET_PROMO':
       return { ...state, promoCode: action.payload.code, promoDiscount: action.payload.amount };
+    case 'SET_REDEMPTION':
+      return { ...state, pointsToRedeem: action.payload.points, pointsDiscount: action.payload.dollars };
     case 'SET_CONTACT':
       return {
         ...state,

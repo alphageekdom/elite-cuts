@@ -282,20 +282,60 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
         <div className="pb-6 mb-6 border-b border-line-soft">
           <div className="text-[10px] font-medium tracking-[0.22em] uppercase text-muted mb-4">Totals</div>
           <div className="flex flex-col gap-2">
-            {[
-              { l: 'Subtotal', v: formatMoney(order.subtotal) },
-              { l: 'Pickup', v: 'Free' },
-              { l: 'Tax', v: formatMoney(order.tax) },
-            ].map(({ l, v }) => (
-              <div key={l} className="flex justify-between items-baseline text-[13px] text-ink-soft">
-                <span>{l}</span>
-                <span className="font-mono text-[12px]">{v}</span>
+            <div className="flex justify-between items-baseline text-[13px] text-ink-soft">
+              <span>Subtotal</span>
+              <span className="font-mono text-[12px]">{formatMoney(order.subtotal)}</span>
+            </div>
+            <div className="flex justify-between items-baseline text-[13px] text-ink-soft">
+              <span>Pickup</span>
+              <span className="font-mono text-[12px]">Free</span>
+            </div>
+            {order.memberDiscount > 0 && (
+              <div className="flex justify-between items-baseline text-[13px] text-green">
+                <span>Member discount</span>
+                <span className="font-mono text-[12px]">−{formatMoney(order.memberDiscount)}</span>
               </div>
-            ))}
+            )}
+            {order.promoDiscount > 0 && (
+              <div className="flex justify-between items-baseline text-[13px] text-green">
+                <span>Promo{order.promoCode ? ` — ${order.promoCode}` : ''}</span>
+                <span className="font-mono text-[12px]">−{formatMoney(order.promoDiscount)}</span>
+              </div>
+            )}
+            {order.pointsRedemptionValueCents > 0 && (
+              <div className={`flex justify-between items-baseline text-[13px] ${order.status === 'Cancelled' ? 'text-muted' : 'text-green'}`}>
+                <span>
+                  Points redeemed ({order.pointsRedeemed.toLocaleString('en-US')} pts)
+                  {order.status === 'Cancelled' && (
+                    <em className="not-italic ml-2 text-[10px] tracking-[0.06em] uppercase text-camel">returned</em>
+                  )}
+                </span>
+                <span className={`font-mono text-[12px] ${order.status === 'Cancelled' ? 'line-through' : ''}`}>
+                  −{formatMoney(order.pointsRedemptionValueCents / 100)}
+                </span>
+              </div>
+            )}
+            <div className="flex justify-between items-baseline text-[13px] text-ink-soft">
+              <span>Tax</span>
+              <span className="font-mono text-[12px]">{formatMoney(order.tax)}</span>
+            </div>
             <div className="flex justify-between items-baseline mt-2 pt-3 border-t border-line">
               <span className="font-display text-[17px] font-medium text-ink">Total</span>
               <span className="font-display text-[22px] font-medium tracking-[-0.01em] text-ink">{formatMoney(order.total)}</span>
             </div>
+            {order.pointsAwarded > 0 && (
+              <div className="flex justify-between items-baseline text-[12px] text-muted mt-1">
+                <span>
+                  Points awarded on fulfilment
+                  {order.status === 'Cancelled' && (
+                    <em className="not-italic ml-2 text-[10px] tracking-[0.06em] uppercase text-camel">reversed</em>
+                  )}
+                </span>
+                <span className={`font-mono text-[11px] ${order.status === 'Cancelled' ? 'line-through' : ''}`}>
+                  +{order.pointsAwarded.toLocaleString('en-US')} pts
+                </span>
+              </div>
+            )}
             {refundedAmount > 0 && (
               <>
                 <div className="flex justify-between items-baseline text-[13px] text-oxblood mt-1">

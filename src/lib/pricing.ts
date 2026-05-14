@@ -16,6 +16,7 @@ interface CartLineInput {
 export interface Totals {
   subtotal: number;
   memberDiscount: number;
+  pointsDiscount: number;
   delivery: number;
   tax: number;
   total: number;
@@ -26,17 +27,19 @@ export function computeTotals(
   opts: {
     isLoggedIn?: boolean;
     promoDiscount?: number;
+    pointsDiscount?: number;
     deliveryFee?: number;
   } = {},
 ): Totals {
-  const { isLoggedIn = false, promoDiscount = 0, deliveryFee = 0 } = opts;
+  const { isLoggedIn = false, promoDiscount = 0, pointsDiscount = 0, deliveryFee = 0 } = opts;
   const subtotal = items.reduce((acc, line) => acc + line.price * line.quantity, 0);
   const memberDiscount = isLoggedIn ? subtotal * MEMBER_DISCOUNT_RATE : 0;
-  const afterDiscounts = Math.max(0, subtotal - memberDiscount - promoDiscount);
+  const afterDiscounts = Math.max(0, subtotal - memberDiscount - promoDiscount - pointsDiscount);
   const tax = (afterDiscounts + deliveryFee) * TAX_RATE;
   return {
     subtotal,
     memberDiscount,
+    pointsDiscount,
     delivery: deliveryFee,
     tax,
     total: afterDiscounts + deliveryFee + tax,

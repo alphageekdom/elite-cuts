@@ -74,6 +74,12 @@ export type OrderTableRow = {
   pickedUp: boolean;
   fulfillmentType?: 'pickup' | 'delivery';
   cancellationReason?: string;
+  pointsAwarded: number;
+  pointsRedeemed: number;
+  pointsRedemptionValueCents: number;
+  memberDiscount: number;
+  promoDiscount: number;
+  promoCode?: string;
   createdAt: string;
 };
 

@@ -47,6 +47,8 @@ const PlaceOrderButton = () => {
     isPaymentReady,
     promoCode,
     promoDiscount,
+    pointsDiscount,
+    pointsToRedeem,
     fulfillment,
     contactName,
     contactEmail,
@@ -64,9 +66,10 @@ const PlaceOrderButton = () => {
       computeTotals(cartItems, {
         isLoggedIn,
         promoDiscount,
+        pointsDiscount,
         deliveryFee: fulfillment === 'delivery' ? DELIVERY_FEE : 0,
       }).total,
-    [cartItems, isLoggedIn, promoDiscount, fulfillment],
+    [cartItems, isLoggedIn, promoDiscount, pointsDiscount, fulfillment],
   );
 
   const canSubmit = isPaymentReady && isContactComplete(state) && !isLoading;
@@ -103,6 +106,7 @@ const PlaceOrderButton = () => {
           ...(fulfillment === 'delivery' ? { deliveryAddress } : {}),
           ...(orderNotes.trim() ? { orderNotes: orderNotes.trim() } : {}),
           ...(promoCode ? { promoCode } : {}),
+          ...(pointsToRedeem > 0 ? { pointsToRedeem } : {}),
         }),
       });
 

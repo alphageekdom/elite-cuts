@@ -69,11 +69,22 @@ export default async function ReceiptPage({ params }: Props) {
   const user = order.user as { _id: string; name: string; email: string; rewardPoints: number };
   const rewardPoints = user?.rewardPoints ?? 0;
   const tier = getTierLabel(rewardPoints);
-  const pointsEarned = Math.floor(order.totalCost);
+  // Prefer the order's stamped pointsAwarded; fall back to the legacy
+  // floor(totalCost) for orders created before Phase B introduced the field.
+  const pointsEarned = order.pointsAwarded ?? Math.floor(order.totalCost);
+  const pointsRedemptionDollars =
+    (order.pointsRedemptionValueCents ?? 0) > 0
+      ? (order.pointsRedemptionValueCents ?? 0) / 100
+      : 0;
+  // On cancelled orders the redemption snapshot stays on the doc for
+  // historical accuracy; the points themselves were already returned to
+  // the customer via reverseOrderRedemption. UI marks the line accordingly.
+  const isCancelled = order.orderStatus === 'Cancelled';
 
   const refund = refundSummary(order.orderItems, {
     subtotal: order.subtotal,
     tax: order.tax,
+    totalCost: order.totalCost,
   });
   const isPartiallyRefunded =
     refund.refundedCount > 0 && refund.refundedCount < order.orderItems.length;
@@ -117,6 +128,16 @@ export default async function ReceiptPage({ params }: Props) {
             phone: settings.phone,
             email: settings.email,
             addressLine: shopAddressLine,
+          }}
+          rewards={{
+            pointsRedeemed: order.pointsRedeemed ?? 0,
+            pointsRedemptionDollars,
+            // Only forward an "earn" amount if the order actually has the
+            // Phase-B-or-later stamped field. The legacy floor(totalCost)
+            // fallback is fine for the on-page badge but would mislead the
+            // email body about a future award that won't fire for orders
+            // created before the new fulfilment-time path landed.
+            pointsAwarded: order.pointsAwarded ?? 0,
           }}
         />
 
@@ -236,6 +257,31 @@ export default async function ReceiptPage({ params }: Props) {
                 <span className="text-ink-soft">Pickup</span>
                 <span className="font-mono text-[13px]">Free</span>
               </div>
+              {(order.memberDiscount ?? 0) > 0 && (
+                <div className="flex justify-between items-baseline text-[14px]">
+                  <span className="text-ink-soft">Member discount</span>
+                  <span className="font-mono text-[13px] text-green">−{formatMoney(order.memberDiscount ?? 0)}</span>
+                </div>
+              )}
+              {(order.promoDiscount ?? 0) > 0 && (
+                <div className="flex justify-between items-baseline text-[14px]">
+                  <span className="text-ink-soft">Promo{order.promoCode ? ` — ${order.promoCode}` : ''}</span>
+                  <span className="font-mono text-[13px] text-green">−{formatMoney(order.promoDiscount ?? 0)}</span>
+                </div>
+              )}
+              {pointsRedemptionDollars > 0 && (
+                <div className="flex justify-between items-baseline text-[14px]">
+                  <span className="text-ink-soft">
+                    Points redeemed ({(order.pointsRedeemed ?? 0).toLocaleString('en-US')} pts)
+                    {isCancelled && (
+                      <em className="not-italic ml-2 text-[11px] tracking-[0.04em] uppercase text-camel">returned</em>
+                    )}
+                  </span>
+                  <span className={`font-mono text-[13px] ${isCancelled ? 'text-muted line-through' : 'text-green'}`}>
+                    −{formatMoney(pointsRedemptionDollars)}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between items-baseline text-[14px]">
                 <span className="text-ink-soft">Tax</span>
                 <span className="font-mono text-[13px]">{formatMoney(order.tax)}</span>

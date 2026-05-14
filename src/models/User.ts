@@ -152,6 +152,15 @@ const UserSchema = new Schema<User>(
   }
 );
 
+// See the matching note in models/Order.ts — Next.js dev hot-reload caches
+// the registered model on the Mongoose singleton, so schema additions
+// (e.g. lifetimePoints, pointsHistory) get silently dropped on writes
+// until the dev server is fully cycled. Force re-registration in dev so
+// schema additions always take effect.
+if (process.env.NODE_ENV !== 'production' && models.User) {
+  delete (models as Record<string, unknown>).User;
+}
+
 const UserModel =
   (models.User as Model<User> | undefined) || model<User>('User', UserSchema);
 
