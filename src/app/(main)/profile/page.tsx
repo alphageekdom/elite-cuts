@@ -4,12 +4,17 @@ import Link from 'next/link';
 export const dynamic = 'force-dynamic';
 import connectDB from '@/config/database';
 import { getSessionUser } from '@/utils/getSessionUser';
-import User, { type PointsHistoryEntry } from '@/models/User';
+import User, { type PointsHistoryEntry, type TierValue } from '@/models/User';
 import Product from '@/models/Product';
 import Order from '@/models/Order';
 import { convertToSerializableObject } from '@/utils/convertToObject';
 import { getShopSettings } from '@/lib/shopSettings';
-import { getTier, getEffectiveBalance, type TierInfo } from '@/lib/rewards';
+import {
+  getEffectiveBalance,
+  getTierView,
+  type TierView,
+  type TierInfo,
+} from '@/lib/rewards';
 import type { SerializedProduct } from '@/models/Product';
 import type { OrderStatus, PaymentMethod } from '@/models/Order';
 import type { Types } from 'mongoose';
@@ -86,6 +91,8 @@ export default async function ProfilePage({ searchParams }: Props) {
     rewardPoints: number;
     lifetimePoints: number;
     pointsHistory: PointsHistoryEntry[];
+    tierAnniversaryAt?: Date;
+    currentTier?: TierValue;
     isAdmin: boolean;
     createdAt: Date;
     updatedAt: Date;
@@ -95,7 +102,47 @@ export default async function ProfilePage({ searchParams }: Props) {
 
   const settings = await getShopSettings();
   const effective = getEffectiveBalance(rawUser);
-  const tier: TierInfo = getTier(effective.lifetimePoints, settings);
+
+  // Phase D2 tier-aware view. Pure function — persist if it tells us a
+  // reassessment happened (the anniversary just passed) so the customer's
+  // currentTier + anniversary stay in sync.
+  const tierView: TierView = getTierView(rawUser, settings);
+  if (tierView.reassessed) {
+    await User.findByIdAndUpdate(userId, {
+      $set: {
+        currentTier: tierView.tier,
+        tierAnniversaryAt: tierView.nextAnniversaryAt,
+      },
+    });
+  } else if (!rawUser.tierAnniversaryAt) {
+    // Legacy backfill — stamp the resolved anniversary the first time we
+    // compute it so subsequent reads have a stable period start.
+    await User.findByIdAndUpdate(userId, {
+      $set: { tierAnniversaryAt: tierView.periodStart },
+    });
+  }
+
+  // Keep the TierInfo shape for components that still take it (loyalty card,
+  // hero, stats). Maps from the view.
+  const tier: TierInfo = {
+    tier: tierView.tier,
+    label: tierView.label,
+    threshold:
+      tierView.tier === 'masterCut'
+        ? settings.masterCutThreshold
+        : tierView.tier === 'connoisseur'
+          ? settings.connoisseurThreshold
+          : 0,
+    nextTier:
+      tierView.tier === 'masterCut'
+        ? null
+        : tierView.tier === 'connoisseur'
+          ? 'masterCut'
+          : 'connoisseur',
+    nextThreshold: tierView.nextThreshold,
+    pointsToNext: tierView.pointsToNext,
+    progress: tierView.progress,
+  };
   const serializedRecentHistory = effective.recentHistory.map((e) => ({
     delta: e.delta,
     reason: e.reason,
@@ -302,6 +349,8 @@ export default async function ProfilePage({ searchParams }: Props) {
                 lifetimePoints={effective.lifetimePoints}
                 expiredPoints={effective.expiredPoints}
                 tier={tier}
+                qualifyingPoints={tierView.qualifying}
+                periodEndsAt={tierView.periodEndsAt?.toISOString() ?? null}
                 recentHistory={serializedRecentHistory}
                 redemptionPoints={settings.redemptionPoints}
                 redemptionDollars={settings.redemptionDollars}
@@ -332,7 +381,11 @@ export default async function ProfilePage({ searchParams }: Props) {
 
           {/* Right: sidebar */}
           <aside className="space-y-4">
-            <ProfileLoyaltyCard points={effective.balance} tier={tier} />
+            <ProfileLoyaltyCard
+              points={tierView.qualifying}
+              tier={tier}
+              periodEndsAt={tierView.periodEndsAt?.toISOString() ?? null}
+            />
             <ProfileAccountInfo email={displayEmail} joinedAt={createdAt} />
             <ProfileRecentlyViewed products={recentProducts} />
           </aside>

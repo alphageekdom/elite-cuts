@@ -14,7 +14,7 @@ const SETTINGS_FIELDS: (keyof ShopSettingsType)[] = [
   'pointsPerDollar', 'weekendMultiplier', 'pointsExpiryMonths',
   'redemptionPoints', 'redemptionDollars', 'minToRedeem',
   'maxRedemptionPercent', 'maxRedemptionDollars',
-  'connoisseurThreshold', 'masterCutThreshold',
+  'connoisseurThreshold', 'masterCutThreshold', 'tierWindowMonths',
 ];
 
 function pickSettings(doc: Record<string, unknown> | null): Partial<ShopSettingsType> {
@@ -55,7 +55,7 @@ export const PUT = withAdmin(async (request: NextRequest) => {
       pointsPerDollar, weekendMultiplier, pointsExpiryMonths,
       redemptionPoints, redemptionDollars, minToRedeem,
       maxRedemptionPercent, maxRedemptionDollars,
-      connoisseurThreshold, masterCutThreshold,
+      connoisseurThreshold, masterCutThreshold, tierWindowMonths,
     } = await request.json() as Partial<ShopSettingsType>;
 
     const rawPatch = {
@@ -66,7 +66,7 @@ export const PUT = withAdmin(async (request: NextRequest) => {
       pointsPerDollar, weekendMultiplier, pointsExpiryMonths,
       redemptionPoints, redemptionDollars, minToRedeem,
       maxRedemptionPercent, maxRedemptionDollars,
-      connoisseurThreshold, masterCutThreshold,
+      connoisseurThreshold, masterCutThreshold, tierWindowMonths,
     };
     const patch = Object.fromEntries(
       Object.entries(rawPatch).filter(([, v]) => v !== undefined),

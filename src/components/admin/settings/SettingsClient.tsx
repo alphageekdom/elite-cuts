@@ -21,7 +21,7 @@ const DEFAULTS: ShopSettings = {
   pointsPerDollar: 1, weekendMultiplier: 1, pointsExpiryMonths: 6,
   redemptionPoints: 100, redemptionDollars: 5, minToRedeem: 0,
   maxRedemptionPercent: 50, maxRedemptionDollars: 50,
-  connoisseurThreshold: 250, masterCutThreshold: 1000,
+  connoisseurThreshold: 250, masterCutThreshold: 1000, tierWindowMonths: 12,
 };
 
 const MAIN_TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [

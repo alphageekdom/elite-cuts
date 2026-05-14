@@ -37,6 +37,9 @@ export type PointsHistoryEntry = {
   createdAt: Date;
 };
 
+export const TIER_VALUES = ['regular', 'connoisseur', 'masterCut'] as const;
+export type TierValue = (typeof TIER_VALUES)[number];
+
 export type User = {
   name: string;
   email: string;
@@ -48,6 +51,11 @@ export type User = {
   rewardPoints: number;
   lifetimePoints: number;
   pointsHistory: PointsHistoryEntry[];
+  // Phase D2 tier-retention fields. Undefined on legacy users; the
+  // rewards-view helper lazy-backfills them on first tier-aware read
+  // (tierAnniversaryAt ?? user.createdAt; currentTier ← reassessment result).
+  tierAnniversaryAt?: Date;
+  currentTier?: TierValue;
   adminNote?: string;
   failedLoginAttempts: number;
   lockoutUntil?: Date | null;
@@ -130,6 +138,11 @@ const UserSchema = new Schema<User>(
         ),
       ],
       default: [],
+    },
+    tierAnniversaryAt: { type: Date },
+    currentTier: {
+      type: String,
+      enum: [...TIER_VALUES],
     },
     adminNote: {
       type: String,

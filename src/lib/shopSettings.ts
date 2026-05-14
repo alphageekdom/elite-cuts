@@ -39,6 +39,7 @@ const FALLBACK_SETTINGS: ShopSettings = {
   maxRedemptionDollars: 50,
   connoisseurThreshold: 250,
   masterCutThreshold: 1000,
+  tierWindowMonths: 12,
 };
 
 const SETTINGS_KEYS = Object.keys(FALLBACK_SETTINGS) as (keyof ShopSettings)[];

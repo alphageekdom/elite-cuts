@@ -3,6 +3,21 @@ import type { PointsHistoryEntry } from '@/models/User';
 
 export type Tier = 'regular' | 'connoisseur' | 'masterCut';
 
+// Ordering for tier-up comparisons. Higher index = higher tier.
+const TIER_ORDER: Tier[] = ['regular', 'connoisseur', 'masterCut'];
+
+export function tierRank(tier: Tier): number {
+  return TIER_ORDER.indexOf(tier);
+}
+
+// Pure helper to add N months to a Date. Avoids pulling in a date library
+// for one operation; matches the JS Date semantics (Feb 30 → Mar 2 etc.).
+export function addMonths(date: Date, months: number): Date {
+  const d = new Date(date.getTime());
+  d.setMonth(d.getMonth() + months);
+  return d;
+}
+
 export type TierInfo = {
   tier: Tier;
   label: string;
@@ -277,5 +292,159 @@ export function getEffectiveBalance(
     lifetimePoints: lifetime,
     expiredPoints: expired,
     recentHistory: recent,
+  };
+}
+
+// Sums earning activity (positive order_fulfilled + negative cancel/refund
+// reverses) dated within [windowStart, now]. Redemption entries are
+// deliberately ignored — redeeming points doesn't reduce a customer's tier
+// qualification, just their spendable balance.
+export function getQualifyingPoints(
+  history: PointsHistoryEntry[],
+  windowStart: Date,
+  now: Date = new Date(),
+): number {
+  const startMs = windowStart.getTime();
+  const endMs = now.getTime();
+  let qualifying = 0;
+  for (const entry of history) {
+    const t = new Date(entry.createdAt).getTime();
+    if (t < startMs || t > endMs) continue;
+    if (entry.reason === 'order_fulfilled') {
+      qualifying += entry.delta;
+    } else if (entry.reason === 'cancel_reverse' || entry.reason === 'refund_reverse') {
+      qualifying += entry.delta;
+    }
+  }
+  return Math.max(0, qualifying);
+}
+
+// Combined view for tier-aware reads. Pure function — the caller is
+// responsible for persisting the resulting tier + anniversary if
+// `reassessed` is true.
+//
+// Logic:
+//  - windowMonths = 0 → no anniversary window; fall back to lifetime-based
+//    tier (matches pre-D2 behavior). `reassessed` always false.
+//  - Otherwise: if `now >= anniversaryAt + windowMonths`, perform the
+//    annual check: compute qualifying for the period that just ended,
+//    that's the new locked tier, and the new period starts at `now`.
+//  - Mid-period: compute qualifying from anniversaryAt → now, but the
+//    displayed tier is the higher of (currentTier on the doc, what
+//    qualifying earns right now). This handles both legacy users (no
+//    cached currentTier) and live tier-ups that haven't been persisted
+//    yet by the award path.
+export type TierView = {
+  tier: Tier;
+  label: string;
+  qualifying: number;          // pts earned this period (0 if windowMonths === 0)
+  nextThreshold: number | null;
+  pointsToNext: number;
+  progress: number;            // 0..1 within current band
+  periodStart: Date;           // resolved (uses createdAt fallback)
+  periodEndsAt: Date | null;   // null when windowMonths === 0
+  reassessed: boolean;         // true if the helper decided this read crossed the anniversary
+  nextAnniversaryAt: Date;     // value to persist if reassessed
+};
+
+export function getTierView(
+  user: {
+    createdAt?: Date;
+    lifetimePoints?: number;
+    pointsHistory?: PointsHistoryEntry[];
+    tierAnniversaryAt?: Date | null;
+    currentTier?: Tier | null;
+  },
+  settings: Pick<
+    ShopSettings,
+    'connoisseurThreshold' | 'masterCutThreshold' | 'tierWindowMonths'
+  >,
+  now: Date = new Date(),
+): TierView {
+  const windowMonths = Math.max(0, Math.floor(settings.tierWindowMonths ?? 0));
+
+  // Window disabled → lifetime-based tier, no anniversary handling.
+  if (windowMonths === 0) {
+    const t = getTier(user.lifetimePoints ?? 0, settings);
+    return {
+      tier: t.tier,
+      label: t.label,
+      qualifying: user.lifetimePoints ?? 0,
+      nextThreshold: t.nextThreshold,
+      pointsToNext: t.pointsToNext,
+      progress: t.progress,
+      periodStart: user.createdAt ?? new Date(0),
+      periodEndsAt: null,
+      reassessed: false,
+      nextAnniversaryAt: user.tierAnniversaryAt ?? user.createdAt ?? now,
+    };
+  }
+
+  // Window active. Resolve the period start (anniversary or createdAt fallback).
+  const periodStart = user.tierAnniversaryAt
+    ? new Date(user.tierAnniversaryAt)
+    : (user.createdAt ?? now);
+  const periodEnd = addMonths(periodStart, windowMonths);
+  const history = user.pointsHistory ?? [];
+
+  // Past the anniversary → annual reassessment. Compute qualifying for the
+  // just-ended period and lock that as the new tier. Start a fresh period
+  // from `now`. Callers persist on reassessed === true.
+  if (now.getTime() >= periodEnd.getTime()) {
+    const finalQualifying = getQualifyingPoints(history, periodStart, periodEnd);
+    const t = getTier(finalQualifying, settings);
+    const nextEnd = addMonths(now, windowMonths);
+    return {
+      tier: t.tier,
+      label: t.label,
+      qualifying: 0,        // fresh period — qualifying resets
+      nextThreshold: t.nextThreshold,
+      pointsToNext: t.pointsToNext,
+      progress: 0,
+      periodStart: now,
+      periodEndsAt: nextEnd,
+      reassessed: true,
+      nextAnniversaryAt: now,
+    };
+  }
+
+  // Mid-period. Show the higher of cached currentTier and currently-earned
+  // tier. The award path is supposed to bump currentTier on threshold
+  // crosses, but this fallback handles legacy users + drift.
+  const qualifying = getQualifyingPoints(history, periodStart, now);
+  const earnedNow = getTier(qualifying, settings);
+  const cached = user.currentTier ?? 'regular';
+  const effectiveTier: Tier =
+    tierRank(earnedNow.tier) > tierRank(cached) ? earnedNow.tier : cached;
+
+  // Progress + pointsToNext are computed directly against qualifying so a
+  // customer who's locked at a higher tier than their current period's
+  // activity still sees an honest "how much more do I need" bar (e.g.
+  // locked Connoisseur with only 100 pts this period → bar fills 10% of
+  // the way to Master Cut, not 0%).
+  const connThreshold = Math.max(0, Math.floor(settings.connoisseurThreshold));
+  const masterThreshold = Math.max(connThreshold, Math.floor(settings.masterCutThreshold));
+  let nextThreshold: number | null;
+  let progress: number;
+  if (effectiveTier === 'masterCut') {
+    nextThreshold = null;
+    progress = 1;
+  } else {
+    nextThreshold = effectiveTier === 'regular' ? connThreshold : masterThreshold;
+    progress = Math.min(1, Math.max(0, qualifying / Math.max(1, nextThreshold)));
+  }
+  const pointsToNext = nextThreshold === null ? 0 : Math.max(0, nextThreshold - qualifying);
+
+  return {
+    tier: effectiveTier,
+    label: TIER_LABELS[effectiveTier],
+    qualifying,
+    nextThreshold,
+    pointsToNext,
+    progress,
+    periodStart,
+    periodEndsAt: periodEnd,
+    reassessed: false,
+    nextAnniversaryAt: periodStart,
   };
 }

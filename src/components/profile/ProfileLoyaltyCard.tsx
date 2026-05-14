@@ -5,11 +5,16 @@ import type { TierInfo } from '@/lib/rewards';
 const fmt = (n: number) => n.toLocaleString('en-US');
 
 type Props = {
-  points?: number;
+  points?: number;          // qualifying points this period (drives the progress bar)
   tier: TierInfo;
+  periodEndsAt?: string | null;  // ISO string. null when the shop has tierWindowMonths=0 (no anniversary).
 };
 
-export default function ProfileLoyaltyCard({ points = 0, tier }: Props) {
+function shortMonthDay(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+export default function ProfileLoyaltyCard({ points = 0, tier, periodEndsAt }: Props) {
   const atMax = tier.nextTier === null;
   const target = tier.nextThreshold ?? tier.threshold;
   const progressPct = atMax ? 100 : Math.round(tier.progress * 100);
@@ -34,7 +39,7 @@ export default function ProfileLoyaltyCard({ points = 0, tier }: Props) {
           aria-valuenow={points}
           aria-valuemin={0}
           aria-valuemax={target}
-          aria-label={`${fmt(points)} of ${fmt(target)} points to next tier`}
+          aria-label={`${fmt(points)} of ${fmt(target)} qualifying points`}
         >
           <div
             className="h-full rounded-full bg-linear-to-r from-camel to-camel-soft"
@@ -43,11 +48,17 @@ export default function ProfileLoyaltyCard({ points = 0, tier }: Props) {
         </div>
         <div className="flex justify-between text-xs mt-2.5 text-cream/60">
           <span>
-            <strong className="text-cream font-medium">{fmt(points)}</strong> points
+            <strong className="text-cream font-medium">{fmt(points)}</strong> pts this period
           </span>
-          <span>{fmt(target)} points</span>
+          <span>{fmt(target)} pts</span>
         </div>
       </div>
+
+      {periodEndsAt && (
+        <p className="relative mt-3 font-mono text-[10px] tracking-[0.08em] uppercase text-cream/45">
+          Qualifies until {shortMonthDay(periodEndsAt)}
+        </p>
+      )}
 
       <p className="relative text-[13px] text-cream/60 leading-relaxed mt-4">
         {atMax
