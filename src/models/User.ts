@@ -18,6 +18,25 @@ export type Address = {
   isDefault: boolean;
 };
 
+export const POINTS_HISTORY_REASONS = [
+  'order_fulfilled',
+  'redemption',
+  'cancel_reverse',
+  'refund_reverse',
+  'admin_adjustment',
+  'expired',
+] as const;
+
+export type PointsHistoryReason = (typeof POINTS_HISTORY_REASONS)[number];
+
+export type PointsHistoryEntry = {
+  delta: number;
+  reason: PointsHistoryReason;
+  orderId?: Types.ObjectId;
+  expiresAt?: Date | null;
+  createdAt: Date;
+};
+
 export type User = {
   name: string;
   email: string;
@@ -27,6 +46,8 @@ export type User = {
   addresses: Types.DocumentArray<Address>;
   isAdmin: boolean;
   rewardPoints: number;
+  lifetimePoints: number;
+  pointsHistory: PointsHistoryEntry[];
   adminNote?: string;
   failedLoginAttempts: number;
   lockoutUntil?: Date | null;
@@ -85,6 +106,30 @@ const UserSchema = new Schema<User>(
       type: Number,
       default: 0,
       min: 0,
+    },
+    lifetimePoints: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    pointsHistory: {
+      type: [
+        new Schema<PointsHistoryEntry>(
+          {
+            delta: { type: Number, required: true },
+            reason: {
+              type: String,
+              required: true,
+              enum: [...POINTS_HISTORY_REASONS],
+            },
+            orderId: { type: Schema.Types.ObjectId, ref: 'Order' },
+            expiresAt: { type: Date, default: null },
+            createdAt: { type: Date, default: Date.now },
+          },
+          { _id: false },
+        ),
+      ],
+      default: [],
     },
     adminNote: {
       type: String,

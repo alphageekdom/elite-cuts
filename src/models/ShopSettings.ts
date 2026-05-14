@@ -25,13 +25,13 @@ export type ShopSettings = {
   notifNewEvent: boolean;
   // Rewards
   pointsPerDollar: number;
-  weekendMultiplier: string;
-  pointsExpiry: string;
-  redemptionRate: string;
+  weekendMultiplier: number;        // 1, 2, or 3 — applied when an order is fulfilled on Sat/Sun
+  pointsExpiryMonths: number;       // 0 = never; otherwise number of months until award entries expire
+  redemptionPoints: number;         // pts side of the conversion (e.g. 100)
+  redemptionDollars: number;        // dollars side of the conversion (e.g. 5) — pairs with redemptionPoints
   minToRedeem: number;
   connoisseurThreshold: number;
   masterCutThreshold: number;
-  tierReset: string;
 };
 
 const ShopSettingsSchema = new Schema<ShopSettings>(
@@ -55,14 +55,14 @@ const ShopSettingsSchema = new Schema<ShopSettings>(
     notifNewOrder:        { type: Boolean, default: true },
     notifLowStock:        { type: Boolean, default: true },
     notifNewEvent:        { type: Boolean, default: true },
-    pointsPerDollar:      { type: Number, default: 1 },
-    weekendMultiplier:    { type: String, default: '1× (none)' },
-    pointsExpiry:         { type: String, default: '6 months' },
-    redemptionRate:       { type: String, default: '100 pts = $5 off' },
-    minToRedeem:          { type: Number, default: 0 },
-    connoisseurThreshold: { type: Number, default: 250 },
-    masterCutThreshold:   { type: Number, default: 1000 },
-    tierReset:            { type: String, default: 'Never (lifetime)' },
+    pointsPerDollar:      { type: Number, default: 1, min: 0 },
+    weekendMultiplier:    { type: Number, default: 1, min: 1, max: 10 },
+    pointsExpiryMonths:   { type: Number, default: 6, min: 0 },
+    redemptionPoints:     { type: Number, default: 100, min: 1 },
+    redemptionDollars:    { type: Number, default: 5, min: 0 },
+    minToRedeem:          { type: Number, default: 0, min: 0 },
+    connoisseurThreshold: { type: Number, default: 250, min: 0 },
+    masterCutThreshold:   { type: Number, default: 1000, min: 0 },
   },
   { timestamps: true },
 );
