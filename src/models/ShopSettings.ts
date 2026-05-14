@@ -30,6 +30,8 @@ export type ShopSettings = {
   redemptionPoints: number;         // pts side of the conversion (e.g. 100)
   redemptionDollars: number;        // dollars side of the conversion (e.g. 5) — pairs with redemptionPoints
   minToRedeem: number;
+  maxRedemptionPercent: number;     // 1..100, max % of subtotal payable with points (default 50)
+  maxRedemptionDollars: number;     // flat $ ceiling per order (default 50). Effective cap = min(percent, flat)
   connoisseurThreshold: number;
   masterCutThreshold: number;
 };
@@ -61,6 +63,8 @@ const ShopSettingsSchema = new Schema<ShopSettings>(
     redemptionPoints:     { type: Number, default: 100, min: 1 },
     redemptionDollars:    { type: Number, default: 5, min: 0 },
     minToRedeem:          { type: Number, default: 0, min: 0 },
+    maxRedemptionPercent: { type: Number, default: 50, min: 1, max: 100 },
+    maxRedemptionDollars: { type: Number, default: 50, min: 0 },
     connoisseurThreshold: { type: Number, default: 250, min: 0 },
     masterCutThreshold:   { type: Number, default: 1000, min: 0 },
   },

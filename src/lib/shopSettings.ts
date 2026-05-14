@@ -35,6 +35,8 @@ const FALLBACK_SETTINGS: ShopSettings = {
   redemptionPoints: 100,
   redemptionDollars: 5,
   minToRedeem: 0,
+  maxRedemptionPercent: 50,
+  maxRedemptionDollars: 50,
   connoisseurThreshold: 250,
   masterCutThreshold: 1000,
 };

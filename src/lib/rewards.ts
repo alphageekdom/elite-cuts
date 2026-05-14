@@ -16,8 +16,43 @@ export type TierInfo = {
 export type RedemptionInput = {
   pointsToRedeem: number;
   currentBalance: number;
-  settings: Pick<ShopSettings, 'redemptionPoints' | 'redemptionDollars' | 'minToRedeem'>;
+  settings: Pick<
+    ShopSettings,
+    'redemptionPoints' | 'redemptionDollars' | 'minToRedeem' | 'maxRedemptionPercent' | 'maxRedemptionDollars'
+  >;
+  /**
+   * The order's subtotal in dollars. When provided, the per-order cap
+   * (min of percent × subtotal, flat $) is enforced. Omit to skip the cap
+   * (helpful for legacy callers / tests that don't care about per-order
+   * limits — but real flows should always pass it).
+   */
+  orderSubtotalDollars?: number;
 };
+
+export type RedemptionCap = {
+  capDollars: number;       // the effective cap as a dollar amount
+  capCents: number;         // same, in cents (matches applyRedemption result units)
+};
+
+// Pure helper: compute the per-order cap from settings + subtotal.
+// Exposed so the checkout UI can render the same cap the server enforces.
+// flat=0 is treated as "no flat ceiling, percent alone applies" so admins
+// can disable the flat cap by zeroing it.
+export function computeRedemptionCap(
+  subtotalDollars: number,
+  settings: Pick<ShopSettings, 'maxRedemptionPercent' | 'maxRedemptionDollars'>,
+): RedemptionCap {
+  const safeSubtotal = Math.max(0, subtotalDollars);
+  const pct = Math.max(1, Math.min(100, settings.maxRedemptionPercent ?? 100));
+  const flat = Math.max(0, settings.maxRedemptionDollars ?? 0);
+  const percentDollars = (safeSubtotal * pct) / 100;
+  const capDollars =
+    flat <= 0 ? percentDollars : Math.min(percentDollars, flat);
+  return {
+    capDollars,
+    capCents: Math.floor(capDollars * 100),
+  };
+}
 
 export type RedemptionResult =
   | { valid: true; pointsUsed: number; valueCents: number; newBalance: number }
@@ -106,12 +141,14 @@ export function computeRedemption(
 }
 
 // Server-side gate for "the customer wants to redeem N points." Validates
-// minimum, balance, and integer-ness before any DB writes. Never trust the
-// client with the value; always run this on the server.
+// minimum, balance, integer-ness, and the per-order cap before any DB
+// writes. Never trust the client with the value; always run this on the
+// server.
 export function applyRedemption({
   pointsToRedeem,
   currentBalance,
   settings,
+  orderSubtotalDollars,
 }: RedemptionInput): RedemptionResult {
   if (!Number.isInteger(pointsToRedeem) || pointsToRedeem <= 0) {
     return { valid: false, error: 'Points to redeem must be a positive whole number' };
@@ -132,6 +169,20 @@ export function applyRedemption({
   const valueCents = computeRedemption(usable, settings);
   if (valueCents <= 0) {
     return { valid: false, error: 'Redemption would not reduce the order total' };
+  }
+  // Per-order cap — min(percent × subtotal, flat $). Only enforced when
+  // the caller passes orderSubtotalDollars; legacy callers without it skip
+  // this branch.
+  if (typeof orderSubtotalDollars === 'number' && orderSubtotalDollars > 0) {
+    const cap = computeRedemptionCap(orderSubtotalDollars, settings);
+    if (valueCents > cap.capCents) {
+      const valueDollars = (valueCents / 100).toFixed(2);
+      const capDollars = (cap.capCents / 100).toFixed(2);
+      return {
+        valid: false,
+        error: `Redemption ($${valueDollars}) exceeds the per-order cap ($${capDollars})`,
+      };
+    }
   }
   return {
     valid: true,
