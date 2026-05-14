@@ -18,9 +18,9 @@ const DEFAULTS: ShopSettings = {
   timezone: 'America/Los_Angeles (PT)', opensAt: '9:00 AM',
   slotsPerHour: 10, leadTime: '30 min', maxBookingWindow: 'Same day',
   notifNewOrder: true, notifLowStock: true, notifNewEvent: true,
-  pointsPerDollar: 1, weekendMultiplier: '1× (none)', pointsExpiry: '6 months',
-  redemptionRate: '100 pts = $5 off', minToRedeem: 0,
-  connoisseurThreshold: 250, masterCutThreshold: 1000, tierReset: 'Never (lifetime)',
+  pointsPerDollar: 1, weekendMultiplier: 1, pointsExpiryMonths: 6,
+  redemptionPoints: 100, redemptionDollars: 5, minToRedeem: 0,
+  connoisseurThreshold: 250, masterCutThreshold: 1000,
 };
 
 const MAIN_TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [

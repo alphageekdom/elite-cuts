@@ -8,6 +8,18 @@ type Props = {
   saving: boolean;
 };
 
+const WEEKEND_MULTIPLIERS: { value: number; label: string }[] = [
+  { value: 1, label: '1× (none)' },
+  { value: 2, label: '2×' },
+  { value: 3, label: '3×' },
+];
+
+const EXPIRY_OPTIONS: { value: number; label: string }[] = [
+  { value: 6, label: '6 months' },
+  { value: 12, label: '12 months' },
+  { value: 0, label: 'Never' },
+];
+
 export default function RewardsTab({ values, onChange, onSave, saving }: Props) {
   return (
     <div className="space-y-10">
@@ -17,49 +29,98 @@ export default function RewardsTab({ values, onChange, onSave, saving }: Props) 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-5">
           <div>
             <label className={labelCls}>Points per $1</label>
-            <input type="number" value={values.pointsPerDollar} onChange={(e) => onChange({ pointsPerDollar: Number(e.target.value) })} className={inputCls} />
+            <input
+              type="number"
+              min={0}
+              value={values.pointsPerDollar}
+              onChange={(e) => onChange({ pointsPerDollar: Number(e.target.value) })}
+              className={inputCls}
+            />
           </div>
           <div>
             <label className={labelCls}>Weekend multiplier</label>
-            <SelectField value={values.weekendMultiplier} onChange={(e) => onChange({ weekendMultiplier: e.target.value })}>
-              <option>1× (none)</option><option>2×</option><option>3×</option>
+            <SelectField
+              value={values.weekendMultiplier}
+              onChange={(e) => onChange({ weekendMultiplier: Number(e.target.value) })}
+            >
+              {WEEKEND_MULTIPLIERS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
             </SelectField>
           </div>
           <div>
             <label className={labelCls}>Points expiry</label>
-            <SelectField value={values.pointsExpiry} onChange={(e) => onChange({ pointsExpiry: e.target.value })}>
-              <option>6 months</option><option>12 months</option><option>Never</option>
+            <SelectField
+              value={values.pointsExpiryMonths}
+              onChange={(e) => onChange({ pointsExpiryMonths: Number(e.target.value) })}
+            >
+              {EXPIRY_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
             </SelectField>
           </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           <div>
-            <label className={labelCls}>Redemption rate</label>
-            <input type="text" value={values.redemptionRate} onChange={(e) => onChange({ redemptionRate: e.target.value })} className={inputCls} />
+            <label className={labelCls}>Redemption — points</label>
+            <input
+              type="number"
+              min={1}
+              value={values.redemptionPoints}
+              onChange={(e) => onChange({ redemptionPoints: Number(e.target.value) })}
+              className={inputCls}
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Redemption — dollars</label>
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              value={values.redemptionDollars}
+              onChange={(e) => onChange({ redemptionDollars: Number(e.target.value) })}
+              className={inputCls}
+            />
           </div>
           <div>
             <label className={labelCls}>Min to redeem</label>
-            <input type="number" value={values.minToRedeem} onChange={(e) => onChange({ minToRedeem: Number(e.target.value) })} placeholder="No minimum" className={inputCls} />
+            <input
+              type="number"
+              min={0}
+              value={values.minToRedeem}
+              onChange={(e) => onChange({ minToRedeem: Number(e.target.value) })}
+              placeholder="No minimum"
+              className={inputCls}
+            />
           </div>
         </div>
+        <p className="mt-2 text-xs text-muted">
+          {values.redemptionPoints} pts = ${Number.isInteger(values.redemptionDollars) ? values.redemptionDollars : values.redemptionDollars.toFixed(2)} off at checkout
+        </p>
       </section>
 
       <section>
         <h2 className={sectionTitleCls}>Tier <em className="italic text-oxblood font-normal">thresholds</em></h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-3">
           <div>
             <label className={labelCls}>Connoisseur (pts)</label>
-            <input type="number" value={values.connoisseurThreshold} onChange={(e) => onChange({ connoisseurThreshold: Number(e.target.value) })} className={inputCls} />
+            <input
+              type="number"
+              min={0}
+              value={values.connoisseurThreshold}
+              onChange={(e) => onChange({ connoisseurThreshold: Number(e.target.value) })}
+              className={inputCls}
+            />
           </div>
           <div>
             <label className={labelCls}>Master Cut (pts)</label>
-            <input type="number" value={values.masterCutThreshold} onChange={(e) => onChange({ masterCutThreshold: Number(e.target.value) })} className={inputCls} />
-          </div>
-          <div>
-            <label className={labelCls}>Tier reset</label>
-            <SelectField value={values.tierReset} onChange={(e) => onChange({ tierReset: e.target.value })}>
-              <option>Never (lifetime)</option><option>Annual</option>
-            </SelectField>
+            <input
+              type="number"
+              min={0}
+              value={values.masterCutThreshold}
+              onChange={(e) => onChange({ masterCutThreshold: Number(e.target.value) })}
+              className={inputCls}
+            />
           </div>
         </div>
         <p className="text-xs text-muted">Tier status is based on lifetime points earned. Customers keep their tier once earned and never drop down.</p>

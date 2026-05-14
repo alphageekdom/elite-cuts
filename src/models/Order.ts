@@ -83,6 +83,9 @@ export type Order = {
   readyAt?: Date;
   pickedUpAt?: Date;
   cancelledAt?: Date;
+  pointsAwarded: number;
+  pointsRedeemed: number;
+  pointsRedemptionValueCents: number;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -251,6 +254,9 @@ const OrderSchema = new Schema<Order>(
     readyAt: { type: Date },
     pickedUpAt: { type: Date },
     cancelledAt: { type: Date },
+    pointsAwarded: { type: Number, default: 0, min: 0 },
+    pointsRedeemed: { type: Number, default: 0, min: 0 },
+    pointsRedemptionValueCents: { type: Number, default: 0, min: 0 },
   },
   {
     timestamps: true,

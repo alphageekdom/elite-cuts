@@ -30,13 +30,13 @@ const FALLBACK_SETTINGS: ShopSettings = {
   notifLowStock: true,
   notifNewEvent: true,
   pointsPerDollar: 1,
-  weekendMultiplier: '1× (none)',
-  pointsExpiry: '6 months',
-  redemptionRate: '100 pts = $5 off',
+  weekendMultiplier: 1,
+  pointsExpiryMonths: 6,
+  redemptionPoints: 100,
+  redemptionDollars: 5,
   minToRedeem: 0,
   connoisseurThreshold: 250,
   masterCutThreshold: 1000,
-  tierReset: 'Never (lifetime)',
 };
 
 const SETTINGS_KEYS = Object.keys(FALLBACK_SETTINGS) as (keyof ShopSettings)[];
