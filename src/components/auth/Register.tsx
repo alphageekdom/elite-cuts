@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { signIn } from 'next-auth/react';
@@ -47,9 +47,18 @@ const INPUT_CLASS =
 
 export default function Register() {
   const router = useRouter();
+  // Honor an `?email=` query param so the guest-receipt "Create an account"
+  // CTA can deep-link the shopper here with their guest email pre-filled —
+  // the claim-on-signup match then runs against the same address they used
+  // for the guest order. Reject anything that isn't a valid email so a
+  // garbage URL (e.g. /register?email=garbage) doesn't seed the form with
+  // garbage and trip the validity icon on first paint.
+  const searchParams = useSearchParams();
+  const rawEmail = (searchParams.get('email') ?? '').trim();
+  const initialEmail = EMAIL_RE.test(rawEmail) ? rawEmail : '';
   const [formData, setFormData] = useState<FormState>({
     name: '',
-    email: '',
+    email: initialEmail,
     password: '',
     confirmPassword: '',
     agreeToTerms: false,

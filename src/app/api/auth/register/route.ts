@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import connectDB from '@/config/database';
 import User from '@/models/User';
 import { EMAIL_RE } from '@/lib/validation';
+import { claimGuestOrdersForUser } from '@/lib/claimGuestOrders';
 
 const MIN_PASSWORD_LENGTH = 8;
 const MAX_PASSWORD_LENGTH = 128;
@@ -69,7 +70,26 @@ export const POST = async (request: NextRequest) => {
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    await new User({ name, email: normalizedEmail, password: hashedPassword }).save();
+    const newUser = await new User({
+      name,
+      email: normalizedEmail,
+      password: hashedPassword,
+    }).save();
+
+    // Attach any prior guest orders placed with this email to the new
+    // account. Fire-and-forget: a claim failure logs but never breaks
+    // registration — the orders stay claimable later if needed. Log the
+    // count so it's visible in production whether the feature is firing.
+    try {
+      const claim = await claimGuestOrdersForUser(newUser._id, normalizedEmail);
+      if (claim.modifiedCount > 0) {
+        console.log(
+          `[register] claimed ${claim.modifiedCount} prior guest order(s) for ${normalizedEmail}`,
+        );
+      }
+    } catch (claimError) {
+      console.error('[register] claim guest orders failed', claimError);
+    }
 
     return NextResponse.json(
       { message: 'User registered successfully' },
