@@ -3,6 +3,7 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useReducer,
   type Dispatch,
   type ReactNode,
@@ -50,7 +51,14 @@ export type CheckoutAction =
   | { type: 'SET_CONTACT'; payload: { name: string; email: string; phone: string } }
   | { type: 'SET_PICKUP_SLOT'; payload: string }
   | { type: 'SET_DELIVERY_ADDRESS'; payload: DeliveryAddress }
-  | { type: 'SET_ORDER_NOTES'; payload: string };
+  | { type: 'SET_ORDER_NOTES'; payload: string }
+  | {
+      type: 'PREFILL_FROM_PROPS';
+      payload: {
+        initialContact?: CheckoutInitialContact;
+        savedAddresses?: SavedAddress[];
+      };
+    };
 
 const EMPTY_INITIAL_STATE: CheckoutState = {
   isPaymentReady: false,
@@ -125,6 +133,41 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
       return { ...state, deliveryAddress: action.payload };
     case 'SET_ORDER_NOTES':
       return { ...state, orderNotes: action.payload };
+    case 'PREFILL_FROM_PROPS': {
+      // Used when the server-rendered prefill props change mid-session (e.g.
+      // a guest signs in inline and the page re-renders with the user's
+      // saved contact + addresses). Only fields that are still untouched get
+      // seeded — anything the shopper has already typed is preserved.
+      const { initialContact, savedAddresses: incomingAddresses } = action.payload;
+      const list = incomingAddresses ?? [];
+      const seed = list.find((a) => a.isDefault) ?? list[0];
+
+      const contactName = state.contactName || (initialContact?.name ?? '');
+      const contactEmail = state.contactEmail || (initialContact?.email ?? '');
+      const contactPhone = state.contactPhone || (initialContact?.phone ?? '');
+
+      const currentAddressIsEmpty =
+        !state.deliveryAddress.address1 &&
+        !state.deliveryAddress.address2 &&
+        !state.deliveryAddress.city &&
+        !state.deliveryAddress.state &&
+        !state.deliveryAddress.zip;
+      const deliveryAddress =
+        currentAddressIsEmpty && seed
+          ? toDeliveryAddress(seed)
+          : state.deliveryAddress;
+
+      return {
+        ...state,
+        contactName,
+        contactEmail,
+        contactPhone,
+        deliveryAddress,
+        // Always refresh the saved-addresses list itself — the picker has to
+        // show what the freshly-signed-in user actually has on file.
+        savedAddresses: list,
+      };
+    }
     default:
       return state;
   }
@@ -152,6 +195,28 @@ export const CheckoutProvider = ({
     checkoutReducer,
     buildInitialState(initialContact, savedAddresses),
   );
+
+  // When the server-rendered prefill props change after first mount (e.g. a
+  // guest signs in inline and the page calls router.refresh()) we sync the
+  // new values into state. The reducer's PREFILL_FROM_PROPS handler only
+  // overwrites empty fields, so anything the shopper has already typed is
+  // preserved across the transition.
+  const initialContactKey = `${initialContact?.name ?? ''}|${initialContact?.email ?? ''}|${initialContact?.phone ?? ''}`;
+  const savedAddressesKey = (savedAddresses ?? [])
+    .map((a) => a.id)
+    .join(',');
+  useEffect(() => {
+    if (!initialContact && (!savedAddresses || savedAddresses.length === 0)) return;
+    dispatch({
+      type: 'PREFILL_FROM_PROPS',
+      payload: { initialContact, savedAddresses },
+    });
+    // initialContactKey + savedAddressesKey collapse the prefill props into
+    // stable scalars so the effect only fires when the user identity actually
+    // changes — not on every parent re-render that hands back new object
+    // identities for the same data.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialContactKey, savedAddressesKey]);
 
   return (
     <CheckoutContext.Provider value={{ state, dispatch }}>
