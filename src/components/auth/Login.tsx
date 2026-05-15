@@ -20,7 +20,6 @@ interface TouchedState {
 import { EMAIL_RE } from '@/lib/validation';
 
 import { FieldValidationIcon as FieldIcon } from '@/components/auth/FieldValidationIcon';
-import { GoogleIcon, GitHubIcon } from '@/components/auth/OAuthIcons';
 import {
   useSignInLockout,
   formatLockoutCountdown,
@@ -259,35 +258,6 @@ export default function Login() {
                 )}
               </button>
 
-              {/* Divider */}
-              <div
-                className="auth-reveal flex items-center gap-4 my-9 text-muted text-[11px] tracking-[0.22em] uppercase"
-                style={{ animationDelay: '0.65s' }}
-              >
-                <span className="flex-1 h-px bg-line-soft" />
-                or continue with
-                <span className="flex-1 h-px bg-line-soft" />
-              </div>
-
-              {/* Social buttons */}
-              <div className="auth-reveal grid grid-cols-2 gap-3" style={{ animationDelay: '0.7s' }}>
-                <button
-                  type="button"
-                  onClick={() => signIn('google', { callbackUrl: '/' })}
-                  className="inline-flex items-center justify-center gap-2.5 px-5 py-3.5 bg-transparent text-ink border border-line rounded-full text-sm font-medium hover:border-ink hover:bg-paper transition-all duration-300"
-                >
-                  <GoogleIcon />
-                  Google
-                </button>
-                <button
-                  type="button"
-                  onClick={() => signIn('github', { callbackUrl: '/' })}
-                  className="inline-flex items-center justify-center gap-2.5 px-5 py-3.5 bg-transparent text-ink border border-line rounded-full text-sm font-medium hover:border-ink hover:bg-paper transition-all duration-300"
-                >
-                  <GitHubIcon />
-                  GitHub
-                </button>
-              </div>
             </form>
 
             <p

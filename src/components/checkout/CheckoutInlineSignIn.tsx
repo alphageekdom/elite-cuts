@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 
 import { FIELD_CLASS, LABEL_CLASS } from '@/components/checkout/checkoutStyles';
-import { GoogleIcon, GitHubIcon } from '@/components/auth/OAuthIcons';
 import {
   useSignInLockout,
   formatLockoutCountdown,
@@ -15,12 +14,12 @@ type Props = {
   onCancel: () => void;
 };
 
-// Inline credentials + OAuth sign-in for guests on the checkout page. After
-// a successful credentials sign-in, calling router.refresh() re-runs the
-// server component so the prefill props flow into CheckoutProvider and the
-// contact card populates without losing the shopper's place on the page.
-// Cart merge fires automatically — CartContext watches the auth-status
-// transition and merges the localStorage cart into the user's server cart.
+// Inline credentials sign-in for guests on the checkout page. After a
+// successful sign-in, calling router.refresh() re-runs the server component
+// so the prefill props flow into CheckoutProvider and the contact card
+// populates without losing the shopper's place on the page. Cart merge
+// fires automatically — CartContext watches the auth-status transition and
+// merges the localStorage cart into the user's server cart.
 const CheckoutInlineSignIn = ({ onCancel }: Props) => {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -66,14 +65,6 @@ const CheckoutInlineSignIn = ({ onCancel }: Props) => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleOAuth = (provider: 'google' | 'github') => {
-    if (isLocked) return;
-    // OAuth flows leave the SPA, so callbackUrl brings the shopper back to
-    // /checkout. The session is established server-side before the redirect
-    // and the page mounts with the prefill props already populated.
-    signIn(provider, { callbackUrl: '/checkout' });
   };
 
   return (
@@ -132,33 +123,6 @@ const CheckoutInlineSignIn = ({ onCancel }: Props) => {
             ? 'Signing in…'
             : 'Sign in'}
       </button>
-
-      <div className='my-6 flex items-center gap-3 text-[10px] font-medium uppercase tracking-[0.22em] text-muted'>
-        <span className='h-px flex-1 bg-line-soft' />
-        or continue with
-        <span className='h-px flex-1 bg-line-soft' />
-      </div>
-
-      <div className='grid grid-cols-2 gap-3'>
-        <button
-          type='button'
-          onClick={() => handleOAuth('google')}
-          disabled={submitDisabled}
-          className='inline-flex items-center justify-center gap-2 rounded-full border border-line bg-transparent px-4 py-3 text-[13px] font-medium text-ink transition-[border-color,background-color] duration-300 hover:border-ink hover:bg-paper disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none'
-        >
-          <GoogleIcon size={14} />
-          Google
-        </button>
-        <button
-          type='button'
-          onClick={() => handleOAuth('github')}
-          disabled={submitDisabled}
-          className='inline-flex items-center justify-center gap-2 rounded-full border border-line bg-transparent px-4 py-3 text-[13px] font-medium text-ink transition-[border-color,background-color] duration-300 hover:border-ink hover:bg-paper disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none'
-        >
-          <GitHubIcon size={14} />
-          GitHub
-        </button>
-      </div>
 
       <div className='mt-6 text-center text-[12px] text-muted'>
         <button

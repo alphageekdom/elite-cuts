@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   useReducer,
+  useRef,
   type Dispatch,
   type ReactNode,
 } from 'react';
@@ -205,7 +206,17 @@ export const CheckoutProvider = ({
   const savedAddressesKey = (savedAddresses ?? [])
     .map((a) => a.id)
     .join(',');
+  // Skip the dispatch on the very first render — buildInitialState already
+  // seeded the reducer with the same values, so the redundant first dispatch
+  // would be wasted work. The effect still fires on subsequent prop changes,
+  // which is exactly when it matters (e.g. after router.refresh() following
+  // an inline sign-in).
+  const isFirstPrefillRef = useRef(true);
   useEffect(() => {
+    if (isFirstPrefillRef.current) {
+      isFirstPrefillRef.current = false;
+      return;
+    }
     if (!initialContact && (!savedAddresses || savedAddresses.length === 0)) return;
     dispatch({
       type: 'PREFILL_FROM_PROPS',
