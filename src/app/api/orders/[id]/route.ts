@@ -32,7 +32,12 @@ export const GET = async (_request: NextRequest, { params }: RouteContext) => {
       return NextResponse.json({ message: 'Order not found' }, { status: 404 });
     }
 
-    const isOwner = String(order.user._id ?? order.user) === sessionUser.userId;
+    const orderUserId = order.user
+      ? String(
+          (order.user as unknown as { _id?: unknown })._id ?? order.user,
+        )
+      : null;
+    const isOwner = orderUserId !== null && orderUserId === sessionUser.userId;
     if (!isOwner && !sessionUser.user?.isAdmin) {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
@@ -275,13 +280,16 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
     );
 
     // First-time transition into Completed — award points + fire low-stock alerts.
+    // Guest orders skip the awards step entirely (no rewards account to credit).
     if (orderStatus === 'Completed' && existing.orderStatus !== 'Completed') {
-      await awardOrderCompletion({
-        orderId: id,
-        customerUserId: existing.user,
-        subtotal: existing.subtotal,
-        productIds: existing.orderItems.map((i) => i.product),
-      });
+      if (existing.user) {
+        await awardOrderCompletion({
+          orderId: id,
+          customerUserId: existing.user,
+          subtotal: existing.subtotal,
+          productIds: existing.orderItems.map((i) => i.product),
+        });
+      }
     }
 
     // Reverse points side-effects when an order leaves a paying state via

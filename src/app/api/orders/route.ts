@@ -130,15 +130,14 @@ export const GET = async (request: NextRequest) => {
   }
 };
 
-// POST /api/orders — two modes:
-// • Customer flow (default): builds an order from the caller's cart.
+// POST /api/orders — three modes:
+// • Customer flow (signed-in): builds an order from the caller's server Cart.
+// • Guest flow: builds an order from `guestItems[]` in the body since guests
+//   have no server Cart; records the typed contact as `guestContact`.
 // • Admin-create flow: admin passes `source: 'admin'`, `userId`, and `items[]`
 //   to record an order on behalf of a customer (in-store pickup recording).
 export const POST = async (request: NextRequest) => {
   const sessionUser = await getSessionUser();
-  if (!sessionUser?.userId) {
-    return unauthorized();
-  }
 
   try {
     await connectDB();
@@ -159,12 +158,13 @@ export const POST = async (request: NextRequest) => {
       orderNotes?: string;
       promoCode?: string;
       pointsToRedeem?: number;
+      guestItems?: Array<{ productId: string; qty: number }>;
     };
 
     // ── Admin-create branch ───────────────────────────────────────────────
     if (body.source === 'admin') {
-      if (!sessionUser.user?.isAdmin) {
-        return NextResponse.json({ message: 'Admin access required' }, { status: 403 });
+      if (!sessionUser?.userId || !sessionUser.user?.isAdmin) {
+        return unauthorized();
       }
 
       if (!body.userId || !mongoose.isValidObjectId(body.userId)) {
@@ -364,59 +364,152 @@ export const POST = async (request: NextRequest) => {
       return NextResponse.json({ message: 'orderNotes too long' }, { status: 400 });
     }
 
-    const cart = await Cart.findOne({ user: sessionUser.userId }).populate(
-      'items.product',
-    );
+    // `userId` is the single source of truth for "is this a guest order?".
+    // Using it as the narrowing predicate (rather than a derived `isGuest`
+    // boolean) lets TypeScript narrow every downstream `if (userId)` branch
+    // to `string` without non-null assertions.
+    const userId = sessionUser?.userId;
 
-    if (!cart || cart.items.length === 0) {
-      return NextResponse.json({ message: 'Cart is empty' }, { status: 400 });
+    // Guests need contact + items in the request — there is no server Cart and
+    // no User record we can pull the contact off of.
+    if (!userId) {
+      if (!body.contactName?.trim()) {
+        return NextResponse.json({ message: 'Name is required' }, { status: 400 });
+      }
+      if (!body.contactEmail?.trim() || !EMAIL_RE.test(body.contactEmail)) {
+        return NextResponse.json(
+          { message: 'A valid email is required to place a guest order' },
+          { status: 400 },
+        );
+      }
+      if (!Array.isArray(body.guestItems) || body.guestItems.length === 0) {
+        return NextResponse.json({ message: 'Cart is empty' }, { status: 400 });
+      }
+      for (const it of body.guestItems) {
+        if (!mongoose.isValidObjectId(it.productId)) {
+          return NextResponse.json(
+            { message: 'Invalid productId in guestItems' },
+            { status: 400 },
+          );
+        }
+        if (!Number.isInteger(it.qty) || it.qty < 1 || it.qty > MAX_PER_LINE) {
+          return NextResponse.json(
+            { message: `Quantity must be between 1 and ${MAX_PER_LINE}` },
+            { status: 400 },
+          );
+        }
+      }
     }
 
-    type PopulatedProduct = {
-      _id: Types.ObjectId;
+    // Build orderItems from the right source. The shape is the same either
+    // way; only the lookup differs (Cart populate vs Product.find by id list).
+    type OrderLine = {
+      product: Types.ObjectId;
       name: string;
-      images?: { url: string }[];
-      category?: string;
-      stockCount: number;
+      qty: number;
+      image: string;
       price: number;
+      productType: string;
     };
+    let orderItems: OrderLine[];
+    let stockErrors: (string | null)[];
 
-    const orderItems = cart.items.map((line) => {
-      const product = line.product as unknown as PopulatedProduct;
-      return {
-        product: product._id,
-        name: product.name,
-        qty: line.quantity,
-        image: product.images?.[0]?.url ?? '',
-        price: product.price,   // authoritative: always read from Product, never from cart snapshot
-        productType: product.category ?? '',
+    if (!userId) {
+      type ProductLean = {
+        _id: Types.ObjectId;
+        name: string;
+        price: number;
+        images?: { url: string }[];
+        category?: string;
+        stockCount: number;
       };
-    });
+      const products = (await Product.find(
+        { _id: { $in: body.guestItems!.map((it) => it.productId) } },
+        'name price images category stockCount',
+      ).lean()) as unknown as ProductLean[];
+      const productMap = new Map<string, ProductLean>(
+        products.map((p) => [p._id.toString(), p]),
+      );
 
-    // Verify every item has sufficient stock before committing anything
-    const stockErrors = cart.items
-      .map((line) => {
+      const missing = body.guestItems!.find((it) => !productMap.has(it.productId));
+      if (missing) {
+        return NextResponse.json(
+          { message: 'One or more cart items are no longer available' },
+          { status: 409 },
+        );
+      }
+
+      orderItems = body.guestItems!.map((it) => {
+        const product = productMap.get(it.productId)!;
+        return {
+          product: product._id,
+          name: product.name,
+          qty: it.qty,
+          image: product.images?.[0]?.url ?? '',
+          price: product.price,
+          productType: product.category ?? '',
+        };
+      });
+
+      stockErrors = body.guestItems!.map((it) => {
+        const p = productMap.get(it.productId)!;
+        return p.stockCount < it.qty
+          ? `${p.name}: only ${p.stockCount} in stock (${it.qty} requested)`
+          : null;
+      });
+    } else {
+      const cart = await Cart.findOne({ user: userId }).populate(
+        'items.product',
+      );
+
+      if (!cart || cart.items.length === 0) {
+        return NextResponse.json({ message: 'Cart is empty' }, { status: 400 });
+      }
+
+      type PopulatedProduct = {
+        _id: Types.ObjectId;
+        name: string;
+        images?: { url: string }[];
+        category?: string;
+        stockCount: number;
+        price: number;
+      };
+
+      orderItems = cart.items.map((line) => {
+        const product = line.product as unknown as PopulatedProduct;
+        return {
+          product: product._id,
+          name: product.name,
+          qty: line.quantity,
+          image: product.images?.[0]?.url ?? '',
+          price: product.price,   // authoritative: always read from Product, never from cart snapshot
+          productType: product.category ?? '',
+        };
+      });
+
+      stockErrors = cart.items.map((line) => {
         const product = line.product as unknown as PopulatedProduct;
         return product.stockCount < line.quantity
           ? `${product.name}: only ${product.stockCount} in stock (${line.quantity} requested)`
           : null;
-      })
-      .filter(Boolean);
+      });
 
-    if (stockErrors.length > 0) {
-      return NextResponse.json(
-        { message: `Insufficient stock — ${stockErrors.join('; ')}` },
-        { status: 409 },
-      );
+      // Per-line cap — backstop in case a stale client snuck a tampered cart past
+      // the cart endpoint's caps. The cart API enforces the same limit on add/edit.
+      const overCap = cart.items.find((line) => line.quantity > MAX_PER_LINE);
+      if (overCap) {
+        return NextResponse.json(
+          { message: `Limit ${MAX_PER_LINE} per item` },
+          { status: 400 },
+        );
+      }
     }
 
-    // Per-line cap — backstop in case a stale client snuck a tampered cart past
-    // the cart endpoint's caps. The cart API enforces the same limit on add/edit.
-    const overCap = cart.items.find((line) => line.quantity > MAX_PER_LINE);
-    if (overCap) {
+    const filteredStockErrors = stockErrors.filter(Boolean);
+    if (filteredStockErrors.length > 0) {
       return NextResponse.json(
-        { message: `Limit ${MAX_PER_LINE} per item` },
-        { status: 400 },
+        { message: `Insufficient stock — ${filteredStockErrors.join('; ')}` },
+        { status: 409 },
       );
     }
 
@@ -425,7 +518,10 @@ export const POST = async (request: NextRequest) => {
       orderItems.reduce((sum, item) => sum + item.price * item.qty, 0) * 100,
     ) / 100;
 
-    const memberDiscount = Math.round(subtotal * MEMBER_DISCOUNT_RATE * 100) / 100;
+    // Member discount is the 5% loyalty perk — only signed-in users earn it.
+    const memberDiscount = userId
+      ? Math.round(subtotal * MEMBER_DISCOUNT_RATE * 100) / 100
+      : 0;
 
     let promoDiscount = 0;
     if (body.promoCode) {
@@ -435,14 +531,18 @@ export const POST = async (request: NextRequest) => {
 
     // Redemption — server-authoritative. Reads the user's live balance and
     // runs applyRedemption against current settings; the client's preview is
-    // never trusted.
+    // never trusted. Guests have no rewards balance and so cannot redeem.
     let pointsRedeemed = 0;
     let pointsRedemptionValueCents = 0;
     let pointsDiscount = 0;
-    if (typeof body.pointsToRedeem === 'number' && body.pointsToRedeem > 0) {
+    if (
+      userId &&
+      typeof body.pointsToRedeem === 'number' &&
+      body.pointsToRedeem > 0
+    ) {
       const [settings, userDoc] = await Promise.all([
         getShopSettings(),
-        User.findById(sessionUser.userId).select('rewardPoints').lean(),
+        User.findById(userId).select('rewardPoints').lean(),
       ]);
       const result = applyRedemption({
         pointsToRedeem: Math.floor(body.pointsToRedeem),
@@ -501,7 +601,15 @@ export const POST = async (request: NextRequest) => {
     let order;
     try {
       order = await Order.create({
-        user: sessionUser.userId,
+        ...(userId
+          ? { user: userId }
+          : {
+              guestContact: {
+                name: body.contactName!.trim(),
+                email: body.contactEmail!.trim().toLowerCase(),
+                ...(body.contactPhone && { phone: body.contactPhone }),
+              },
+            }),
         orderItems,
         subtotal,
         tax,
@@ -535,9 +643,10 @@ export const POST = async (request: NextRequest) => {
     }
 
     // Deduct redeemed points + write ledger entry. Runs after Order.create
-    // succeeds so a failed order doesn't pull points off the user.
-    if (pointsRedeemed > 0) {
-      await User.findByIdAndUpdate(sessionUser.userId, {
+    // succeeds so a failed order doesn't pull points off the user. Guest
+    // orders never reach this branch — redemption is gated on `userId` above.
+    if (userId && pointsRedeemed > 0) {
+      await User.findByIdAndUpdate(userId, {
         $inc: { rewardPoints: -pointsRedeemed },
         $push: {
           pointsHistory: {
@@ -551,7 +660,12 @@ export const POST = async (request: NextRequest) => {
       });
     }
 
-    await Cart.findOneAndUpdate({ user: sessionUser.userId }, { items: [] });
+    // Wipe the server-side Cart for signed-in users. Guests have no server
+    // Cart — their localStorage cart is cleared client-side by
+    // ConfirmationCartReset after the redirect.
+    if (userId) {
+      await Cart.findOneAndUpdate({ user: userId }, { items: [] });
+    }
 
     notifyAdminsOfNewOrder(String(order._id), totalCost).catch((err) =>
       console.error('[orders POST] notification error', err),

@@ -102,6 +102,7 @@ export default async function AdminAnalyticsPage({ searchParams }: Props) {
   const repeatRateFor = (orders: typeof currentOrders): number => {
     const customerOrderMap = new Map<string, number>();
     for (const o of orders) {
+      if (!o.user) continue; // guest orders have no user identity to repeat-count
       const uid = o.user.toString();
       customerOrderMap.set(uid, (customerOrderMap.get(uid) ?? 0) + 1);
     }

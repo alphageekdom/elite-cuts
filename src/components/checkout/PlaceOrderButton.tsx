@@ -91,6 +91,16 @@ const PlaceOrderButton = () => {
             .filter(Boolean)
             .join(', ');
 
+    // Guests have no server-side Cart record — their items live in localStorage
+    // via CartContext. Pass them along so the order route can build the order
+    // from request body items instead of a Cart lookup.
+    const guestItems = isLoggedIn
+      ? undefined
+      : cartItems.map((line) => ({
+          productId: line.product._id,
+          qty: line.quantity,
+        }));
+
     try {
       const res = await fetch('/api/orders', {
         method: 'POST',
@@ -107,6 +117,7 @@ const PlaceOrderButton = () => {
           ...(orderNotes.trim() ? { orderNotes: orderNotes.trim() } : {}),
           ...(promoCode ? { promoCode } : {}),
           ...(pointsToRedeem > 0 ? { pointsToRedeem } : {}),
+          ...(guestItems ? { guestItems } : {}),
         }),
       });
 
