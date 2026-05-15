@@ -165,22 +165,33 @@ const CartSummary = ({ activeHoliday }: Props) => {
           </div>
         </div>
 
-        <Link
-          href='/checkout'
-          aria-disabled={isEmpty}
-          tabIndex={isEmpty ? -1 : undefined}
-          onClick={(e) => {
-            if (isEmpty) e.preventDefault();
-          }}
-          className={`group/cta mt-6 flex items-center justify-center gap-3 rounded-full bg-ink px-7 py-4 text-[15px] font-medium tracking-[0.02em] text-cream transition-[background-color,transform] duration-300 motion-reduce:transition-none ${
-            isEmpty
-              ? 'pointer-events-none opacity-50'
-              : 'hover:-translate-y-px hover:bg-oxblood motion-reduce:hover:translate-y-0'
-          }`}
-        >
-          Continue to checkout
-          <ArrowIcon />
-        </Link>
+        {isEmpty ? (
+          <>
+            <button
+              type='button'
+              disabled
+              aria-describedby='checkout-empty-hint'
+              className='mt-6 flex w-full cursor-not-allowed items-center justify-center gap-3 rounded-full bg-ink px-7 py-4 text-[15px] font-medium tracking-[0.02em] text-cream opacity-50'
+            >
+              Continue to checkout
+              <ArrowIcon />
+            </button>
+            <p
+              id='checkout-empty-hint'
+              className='mt-2.5 text-center text-[12px] text-muted'
+            >
+              Add a cut to continue.
+            </p>
+          </>
+        ) : (
+          <Link
+            href='/checkout'
+            className='group/cta mt-6 flex items-center justify-center gap-3 rounded-full bg-ink px-7 py-4 text-[15px] font-medium tracking-[0.02em] text-cream transition-[background-color,transform] duration-300 hover:-translate-y-px hover:bg-oxblood motion-reduce:transition-none motion-reduce:hover:translate-y-0'
+          >
+            Continue to checkout
+            <ArrowIcon />
+          </Link>
+        )}
       </div>
 
       <ul className='mt-4 flex flex-wrap items-center justify-between gap-3 rounded-sm border border-line-soft bg-paper px-5 py-4 text-[12px] text-muted'>

@@ -8,7 +8,14 @@ import CheckoutStepRail from '@/components/checkout/CheckoutStepRail';
 import FulfillmentToggle from '@/components/checkout/FulfillmentToggle';
 import PaymentMethodSelector from '@/components/checkout/PaymentMethodSelector';
 import PlaceOrderButton from '@/components/checkout/PlaceOrderButton';
-import { CheckoutProvider } from '@/context/CheckoutContext';
+import connectDB from '@/config/database';
+import Cart from '@/models/Cart';
+import User from '@/models/User';
+import {
+  CheckoutProvider,
+  type CheckoutInitialContact,
+  type SavedAddress,
+} from '@/context/CheckoutContext';
 import { getSessionUser } from '@/utils/getSessionUser';
 
 export const dynamic = 'force-dynamic';
@@ -21,6 +28,39 @@ export const metadata: Metadata = {
 export default async function CheckoutPage() {
   const sessionUser = await getSessionUser();
   if (!sessionUser?.userId) redirect('/login?from=/checkout');
+
+  // Server-side empty-cart guard. The client-side CheckoutGuard is a
+  // belt-and-suspenders defense for in-session cart mutations; this stops
+  // direct URL navigation to /checkout when the cart is empty.
+  await connectDB();
+  const cart = await Cart.findOne({ user: sessionUser.userId })
+    .select('items')
+    .lean();
+  if (!cart || cart.items.length === 0) redirect('/cart');
+
+  const userDoc = await User.findById(sessionUser.userId)
+    .select('name email phone addresses')
+    .lean();
+
+  const initialContact: CheckoutInitialContact = {
+    name: userDoc?.name ?? sessionUser.user.name ?? '',
+    email: userDoc?.email ?? sessionUser.email ?? '',
+    phone: userDoc?.phone ?? '',
+  };
+
+  const savedAddresses: SavedAddress[] = (userDoc?.addresses ?? []).map(
+    (a) => ({
+      id: a._id.toString(),
+      label: a.label,
+      address1: a.address1,
+      address2: a.address2 ?? '',
+      city: a.city,
+      state: a.state,
+      zip: a.zip,
+      isDefault: Boolean(a.isDefault),
+    }),
+  );
+
   return (
     <CheckoutGuard>
       <div className='min-h-screen bg-cream'>
@@ -42,7 +82,10 @@ export default async function CheckoutPage() {
           </div>
 
           {/* Two-column layout */}
-          <CheckoutProvider>
+          <CheckoutProvider
+            initialContact={initialContact}
+            savedAddresses={savedAddresses}
+          >
           <div className='grid grid-cols-1 items-start gap-6 lg:grid-cols-[1.5fr_1fr] lg:gap-12'>
             {/* Left: form cards */}
             <div className='flex flex-col gap-4'>
