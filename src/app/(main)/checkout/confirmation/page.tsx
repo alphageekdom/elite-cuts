@@ -27,16 +27,25 @@ export default async function ConfirmationPage({ searchParams }: Props) {
   if (!orderId) redirect('/cart');
 
   const sessionUser = await getSessionUser();
-  if (!sessionUser?.userId) redirect('/login');
 
   await connectDB();
 
-  const order = await OrderModel.findOne({
-    _id: orderId,
-    user: sessionUser.userId,
-  }).lean();
+  // Guest orders have no `user`, so we can't gate the lookup by session.
+  // The 24-char ObjectId is the access token — passed by router.push right
+  // after order creation. For orders that *do* have a user, enforce ownership
+  // by treating someone else's order as "not found" rather than bouncing the
+  // caller to login (they may already be signed in as a different user).
+  const order = await OrderModel.findById(orderId).lean();
 
   if (!order) redirect('/cart');
+  if (order.user && order.user.toString() !== sessionUser?.userId) {
+    redirect('/cart');
+  }
+
+  const isGuestOrder = !order.user;
+  const displayName = order.contactName ?? order.guestContact?.name ?? '—';
+  const displayEmail = order.contactEmail ?? order.guestContact?.email ?? '—';
+  const displayPhone = order.contactPhone ?? order.guestContact?.phone;
 
   const shortId = String(order._id).slice(-8).toUpperCase();
   const isPickup = order.fulfillmentType !== 'delivery';
@@ -89,10 +98,10 @@ export default async function ConfirmationPage({ searchParams }: Props) {
               <p className='mb-3.5 text-[11px] font-medium uppercase tracking-[0.18em] text-muted'>
                 Contact
               </p>
-              <p className='text-[15px] font-medium text-ink'>{order.contactName ?? '—'}</p>
-              <p className='mt-1 text-[13px] text-ink-soft'>{order.contactEmail ?? '—'}</p>
-              {order.contactPhone && (
-                <p className='mt-0.5 text-[13px] text-ink-soft'>{order.contactPhone}</p>
+              <p className='text-[15px] font-medium text-ink'>{displayName}</p>
+              <p className='mt-1 text-[13px] text-ink-soft'>{displayEmail}</p>
+              {displayPhone && (
+                <p className='mt-0.5 text-[13px] text-ink-soft'>{displayPhone}</p>
               )}
             </div>
 
@@ -224,6 +233,16 @@ export default async function ConfirmationPage({ searchParams }: Props) {
             Demo checkout · no real payment was processed · no cuts were actually reserved
           </div>
 
+          {isGuestOrder && (
+            <div className='rounded-sm border border-line-soft bg-paper px-6 py-5 text-[13px] leading-relaxed text-ink-soft'>
+              <p className='mb-1.5 text-[11px] font-medium uppercase tracking-[0.18em] text-muted'>
+                Heads up
+              </p>
+              Create an account with this email and this order will show up in
+              your history. (No points are awarded retroactively.)
+            </div>
+          )}
+
           {/* CTAs */}
           <div className='flex flex-col gap-3 sm:flex-row'>
             <Link
@@ -232,12 +251,14 @@ export default async function ConfirmationPage({ searchParams }: Props) {
             >
               Continue shopping
             </Link>
-            <Link
-              href='/profile?tab=orders'
-              className='flex-1 rounded-full border border-line-soft px-7 py-4 text-center text-[15px] font-medium text-ink transition-colors duration-300 hover:border-ink'
-            >
-              View my orders
-            </Link>
+            {!isGuestOrder && (
+              <Link
+                href='/profile?tab=orders'
+                className='flex-1 rounded-full border border-line-soft px-7 py-4 text-center text-[15px] font-medium text-ink transition-colors duration-300 hover:border-ink'
+              >
+                View my orders
+              </Link>
+            )}
           </div>
         </div>
       </div>

@@ -27,29 +27,32 @@ export const metadata: Metadata = {
 
 export default async function CheckoutPage() {
   const sessionUser = await getSessionUser();
-  if (!sessionUser?.userId) redirect('/login?from=/checkout');
 
-  // Server-side empty-cart guard. The client-side CheckoutGuard is a
-  // belt-and-suspenders defense for in-session cart mutations; this stops
-  // direct URL navigation to /checkout when the cart is empty.
-  await connectDB();
-  const cart = await Cart.findOne({ user: sessionUser.userId })
-    .select('items')
-    .lean();
-  if (!cart || cart.items.length === 0) redirect('/cart');
+  // Prefill + empty-cart guard only run for signed-in users. Guests have no
+  // server cart (theirs lives in localStorage) so the server can't make the
+  // empty-cart call from here — CheckoutGuard handles that client-side and
+  // bounces to /cart before paint.
+  let initialContact: CheckoutInitialContact | undefined;
+  let savedAddresses: SavedAddress[] | undefined;
 
-  const userDoc = await User.findById(sessionUser.userId)
-    .select('name email phone addresses')
-    .lean();
+  if (sessionUser?.userId) {
+    await connectDB();
+    const cart = await Cart.findOne({ user: sessionUser.userId })
+      .select('items')
+      .lean();
+    if (!cart || cart.items.length === 0) redirect('/cart');
 
-  const initialContact: CheckoutInitialContact = {
-    name: userDoc?.name ?? sessionUser.user.name ?? '',
-    email: userDoc?.email ?? sessionUser.email ?? '',
-    phone: userDoc?.phone ?? '',
-  };
+    const userDoc = await User.findById(sessionUser.userId)
+      .select('name email phone addresses')
+      .lean();
 
-  const savedAddresses: SavedAddress[] = (userDoc?.addresses ?? []).map(
-    (a) => ({
+    initialContact = {
+      name: userDoc?.name ?? sessionUser.user.name ?? '',
+      email: userDoc?.email ?? sessionUser.email ?? '',
+      phone: userDoc?.phone ?? '',
+    };
+
+    savedAddresses = (userDoc?.addresses ?? []).map((a) => ({
       id: a._id.toString(),
       label: a.label,
       address1: a.address1,
@@ -58,8 +61,8 @@ export default async function CheckoutPage() {
       state: a.state,
       zip: a.zip,
       isDefault: Boolean(a.isDefault),
-    }),
-  );
+    }));
+  }
 
   return (
     <CheckoutGuard>

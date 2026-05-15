@@ -59,8 +59,17 @@ export type DeliveryAddressData = {
   zip: string;
 };
 
+// Snapshot of the typed-in contact for guest checkout. Required when `user` is
+// null — exactly one of the two must be set (see schema validator below).
+export type GuestContact = {
+  name: string;
+  email: string;
+  phone?: string;
+};
+
 export type Order = {
-  user: Types.ObjectId;
+  user?: Types.ObjectId;
+  guestContact?: GuestContact;
   orderItems: OrderItem[];
   subtotal: number;
   tax: number;
@@ -178,8 +187,17 @@ const OrderSchema = new Schema<Order>(
   {
     user: {
       type: Schema.Types.ObjectId,
-      required: [true, 'User is required'],
       ref: 'User',
+    },
+    guestContact: {
+      type: new Schema<GuestContact>(
+        {
+          name: { type: String, required: true, trim: true },
+          email: { type: String, required: true, trim: true, lowercase: true },
+          phone: { type: String, trim: true },
+        },
+        { _id: false },
+      ),
     },
     orderItems: {
       type: [OrderItemSchema],
@@ -269,6 +287,32 @@ const OrderSchema = new Schema<Order>(
   {
     timestamps: true,
   },
+);
+
+// Every order needs an owner — either a registered user or a typed-in guest
+// contact. Phase 4's claim-on-signup attaches a registered user to a prior
+// guest order, so after the claim an order may have *both* fields set — that
+// is intentional (the guestContact stays as an audit trail of how the order
+// was placed). The rule we enforce is "at least one", not "exactly one".
+//
+// A path-level validator on `user` would be skipped by Mongoose when the path
+// is undefined; a pre-save hook always fires, so guest orders (no `user`) are
+// still checked.
+OrderSchema.pre('save', function () {
+  const hasUser = Boolean(this.user);
+  const hasGuestContact = Boolean(this.guestContact?.email);
+  if (!hasUser && !hasGuestContact) {
+    throw new Error('Order must have either user or guestContact');
+  }
+});
+
+// Partial index on guestContact.email — only over guest orders. Phase 4's
+// claim-on-signup queries `{ user: null, "guestContact.email": <newUserEmail> }`
+// to attach prior guest orders to a freshly registered account; without this
+// the claim step degrades to a collection scan as guest orders accumulate.
+OrderSchema.index(
+  { 'guestContact.email': 1 },
+  { partialFilterExpression: { user: null } },
 );
 
 // In dev, Next.js hot-reload keeps `mongoose.models.Order` cached on the

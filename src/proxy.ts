@@ -20,8 +20,9 @@ export default withAuth({
 export const config = {
   matcher: [
     '/profile',
-    '/cart',
-    '/checkout/:path*',
+    // /cart and /checkout/:path* are open to guests as of the guest-checkout
+    // feature — the pages render with the localStorage cart and a guest
+    // contact form; CheckoutGuard handles empty-cart bounces client-side.
     '/receipt/:path*',
     '/messages',
     '/dashboard',
