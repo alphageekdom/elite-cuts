@@ -2,6 +2,7 @@
 
 import { type ChangeEvent } from 'react';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 
 import { useCheckoutContext } from '@/context/CheckoutContext';
 import CheckoutFieldCheck from '@/components/checkout/CheckoutFieldCheck';
@@ -11,6 +12,8 @@ import { isNameValid, isEmailValid, isPhoneValid } from '@/lib/checkoutValidatio
 const CheckoutContactCard = () => {
   const { state, dispatch } = useCheckoutContext();
   const { contactName, contactEmail, contactPhone } = state;
+  const { data: session } = useSession();
+  const isLoggedIn = Boolean(session?.user);
 
   const onPhone = (e: ChangeEvent<HTMLInputElement>) => {
     const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
@@ -31,12 +34,14 @@ const CheckoutContactCard = () => {
         <span className='font-display text-[22px] font-medium tracking-tight'>
           Your <em className='font-normal text-oxblood'>details</em>
         </span>
-        <span className='text-[12px] text-muted'>
-          Already a member?{' '}
-          <Link href='/login' className='border-b border-current text-oxblood'>
-            Sign in
-          </Link>
-        </span>
+        {!isLoggedIn && (
+          <span className='text-[12px] text-muted'>
+            Already a member?{' '}
+            <Link href='/login?from=/checkout' className='border-b border-current text-oxblood'>
+              Sign in
+            </Link>
+          </span>
+        )}
       </div>
 
       <div className='mb-6'>

@@ -1,9 +1,14 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 
-import { useCheckoutContext } from '@/context/CheckoutContext';
+import {
+  useCheckoutContext,
+  type DeliveryAddress,
+  type SavedAddress,
+} from '@/context/CheckoutContext';
 import CheckoutFieldCheck from '@/components/checkout/CheckoutFieldCheck';
+import SavedAddressPicker from '@/components/checkout/SavedAddressPicker';
 import { FIELD_CLASS, BLOCK_LABEL_CLASS } from '@/components/checkout/checkoutStyles';
 import {
   STATE_ABBR,
@@ -17,26 +22,50 @@ import { DELIVERY_RADIUS_MILES } from '@/lib/shopConfig';
 
 type DeliveryCheck = 'idle' | 'checking' | 'valid' | 'invalid' | 'error';
 
+// Address fields are the source of truth on context — every input reads from
+// `state.deliveryAddress` and writes via dispatch. This is what lets the
+// pre-filled default address render on first paint without the form
+// stomping it back to empties via a sync effect.
 const DeliveryAddressForm = () => {
-  const { dispatch } = useCheckoutContext();
+  const { state, dispatch } = useCheckoutContext();
+  const { deliveryAddress, savedAddresses } = state;
+  const { address1, address2, city, state: addressState, zip } = deliveryAddress;
 
-  const [address1, setAddress1] = useState('');
-  const [address2, setAddress2] = useState('');
-  const [city, setCity] = useState('');
-  const [addressState, setAddressState] = useState('');
-  const [zip, setZip] = useState('');
   const [deliveryCheck, setDeliveryCheck] = useState<DeliveryCheck>('idle');
   const [suggestions, setSuggestions] = useState<PhotonFeature[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  // Tracks whether the address1 input currently has focus. Gates the
+  // autocomplete fetch so a pre-filled default address (or a saved-address
+  // card click) doesn't pop the suggestions dropdown open on its own — only
+  // a focused user typing should trigger suggestions.
+  const [address1Focused, setAddress1Focused] = useState(false);
   const suggestionRef = useRef<HTMLDivElement>(null);
   const checkingRef = useRef(false);
 
-  // Sync address fields to context whenever they change
-  useEffect(() => {
-    dispatch({ type: 'SET_DELIVERY_ADDRESS', payload: { address1, address2, city, state: addressState, zip } });
-  }, [address1, address2, city, addressState, zip, dispatch]);
+  const updateAddress = (patch: Partial<DeliveryAddress>) => {
+    dispatch({
+      type: 'SET_DELIVERY_ADDRESS',
+      payload: { ...deliveryAddress, ...patch },
+    });
+  };
+
+  const pickSavedAddress = (sa: SavedAddress) => {
+    dispatch({
+      type: 'SET_DELIVERY_ADDRESS',
+      payload: {
+        address1: sa.address1,
+        address2: sa.address2,
+        city: sa.city,
+        state: sa.state,
+        zip: sa.zip,
+      },
+    });
+    setDeliveryCheck('idle');
+    setShowSuggestions(false);
+  };
 
   useEffect(() => {
+    if (!address1Focused) return;
     if (address1.trim().length < 4) { setSuggestions([]); return; }
     const timeout = setTimeout(async () => {
       const results = await fetchSuggestions(address1);
@@ -44,7 +73,7 @@ const DeliveryAddressForm = () => {
       setShowSuggestions(results.length > 0);
     }, 300);
     return () => clearTimeout(timeout);
-  }, [address1]);
+  }, [address1, address1Focused]);
 
   const checkDeliveryRadius = async () => {
     if (!address1.trim() || !city.trim() || zip.length < 5) return;
@@ -72,10 +101,12 @@ const DeliveryAddressForm = () => {
   const selectSuggestion = (feature: PhotonFeature) => {
     const { housenumber, street, name, city: c, state: s, postcode } = feature.properties;
     const [lon, lat] = feature.geometry.coordinates;
-    setAddress1(housenumber && street ? `${housenumber} ${street}` : (street ?? name ?? ''));
-    setCity(c ?? '');
-    setAddressState(s ? (STATE_ABBR[s] ?? s.slice(0, 2).toUpperCase()) : '');
-    setZip(postcode ?? '');
+    updateAddress({
+      address1: housenumber && street ? `${housenumber} ${street}` : (street ?? name ?? ''),
+      city: c ?? '',
+      state: s ? (STATE_ABBR[s] ?? s.slice(0, 2).toUpperCase()) : '',
+      zip: postcode ?? '',
+    });
     setSuggestions([]);
     setShowSuggestions(false);
     setDeliveryCheck(isWithinDeliveryRadius(lat, lon) ? 'valid' : 'invalid');
@@ -86,18 +117,15 @@ const DeliveryAddressForm = () => {
     const parts = text.split(',').map((p) => p.trim());
     if (parts.length < 3) return;
     const street = parts[0];
-    const city = parts[1];
+    const cityPart = parts[1];
     const stateZip = parts.slice(2).join(' ').trim();
     const zipMatch = stateZip.match(/\d{5}/);
-    const zip = zipMatch ? zipMatch[0] : '';
+    const zipPart = zipMatch ? zipMatch[0] : '';
     const stateRaw = stateZip.replace(/\d{5}(-\d{4})?/, '').trim();
-    const state = STATE_ABBR[stateRaw] ?? stateRaw.slice(0, 2).toUpperCase();
-    if (!street || !city) return;
+    const statePart = STATE_ABBR[stateRaw] ?? stateRaw.slice(0, 2).toUpperCase();
+    if (!street || !cityPart) return;
     e.preventDefault();
-    setAddress1(street);
-    setCity(city);
-    setAddressState(state);
-    setZip(zip);
+    updateAddress({ address1: street, city: cityPart, state: statePart, zip: zipPart });
     setShowSuggestions(false);
     setDeliveryCheck('idle');
   };
@@ -109,8 +137,33 @@ const DeliveryAddressForm = () => {
     }
   };
 
+  const onChangeAddress1 = (e: ChangeEvent<HTMLInputElement>) => {
+    updateAddress({ address1: e.target.value });
+    setDeliveryCheck('idle');
+  };
+  const onChangeAddress2 = (e: ChangeEvent<HTMLInputElement>) => {
+    updateAddress({ address2: e.target.value });
+  };
+  const onChangeCity = (e: ChangeEvent<HTMLInputElement>) => {
+    updateAddress({ city: e.target.value });
+    setDeliveryCheck('idle');
+  };
+  const onChangeState = (e: ChangeEvent<HTMLInputElement>) => {
+    updateAddress({ state: e.target.value.toUpperCase() });
+  };
+  const onChangeZip = (e: ChangeEvent<HTMLInputElement>) => {
+    updateAddress({ zip: e.target.value.replace(/\D/g, '').slice(0, 5) });
+    setDeliveryCheck('idle');
+  };
+
   return (
     <div className='mb-8 flex flex-col gap-6' onBlur={handleBlur}>
+      <SavedAddressPicker
+        savedAddresses={savedAddresses}
+        currentAddress={deliveryAddress}
+        onPick={pickSavedAddress}
+      />
+
       <div className='relative' ref={suggestionRef}>
         <div className='mb-2.5 flex items-center justify-between'>
           <label htmlFor='address1' className={BLOCK_LABEL_CLASS}>Street address</label>
@@ -121,10 +174,16 @@ const DeliveryAddressForm = () => {
           type='text'
           name='address1'
           value={address1}
-          onChange={(e) => { setAddress1(e.target.value); setDeliveryCheck('idle'); }}
+          onChange={onChangeAddress1}
           onPaste={handlePaste}
-          onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-          onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+          onFocus={() => {
+            setAddress1Focused(true);
+            if (suggestions.length > 0) setShowSuggestions(true);
+          }}
+          onBlur={() => {
+            setAddress1Focused(false);
+            setTimeout(() => setShowSuggestions(false), 150);
+          }}
           placeholder='Start typing or paste a full address…'
           autoComplete='address-line1'
           className={FIELD_CLASS}
@@ -156,7 +215,7 @@ const DeliveryAddressForm = () => {
           type='text'
           name='address2'
           value={address2}
-          onChange={(e) => setAddress2(e.target.value)}
+          onChange={onChangeAddress2}
           placeholder='Apt 4B'
           autoComplete='address-line2'
           className={FIELD_CLASS}
@@ -174,7 +233,7 @@ const DeliveryAddressForm = () => {
             type='text'
             name='city'
             value={city}
-            onChange={(e) => { setCity(e.target.value); setDeliveryCheck('idle'); }}
+            onChange={onChangeCity}
             placeholder='San Diego'
             autoComplete='address-level2'
             className={FIELD_CLASS}
@@ -190,7 +249,7 @@ const DeliveryAddressForm = () => {
             type='text'
             name='state'
             value={addressState}
-            onChange={(e) => setAddressState(e.target.value.toUpperCase())}
+            onChange={onChangeState}
             placeholder='CA'
             autoComplete='address-level1'
             maxLength={2}
@@ -207,7 +266,7 @@ const DeliveryAddressForm = () => {
             type='text'
             name='zip'
             value={zip}
-            onChange={(e) => { setZip(e.target.value.replace(/\D/g, '').slice(0, 5)); setDeliveryCheck('idle'); }}
+            onChange={onChangeZip}
             placeholder='92104'
             autoComplete='postal-code'
             inputMode='numeric'

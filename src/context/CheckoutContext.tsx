@@ -18,6 +18,12 @@ export type DeliveryAddress = {
   zip: string;
 };
 
+export type SavedAddress = DeliveryAddress & {
+  id: string;
+  label: string;
+  isDefault: boolean;
+};
+
 const EMPTY_ADDRESS: DeliveryAddress = { address1: '', address2: '', city: '', state: '', zip: '' };
 
 export type CheckoutState = {
@@ -32,6 +38,7 @@ export type CheckoutState = {
   contactPhone: string;
   pickupSlot: string;
   deliveryAddress: DeliveryAddress;
+  savedAddresses: SavedAddress[];
   orderNotes: string;
 };
 
@@ -45,7 +52,7 @@ export type CheckoutAction =
   | { type: 'SET_DELIVERY_ADDRESS'; payload: DeliveryAddress }
   | { type: 'SET_ORDER_NOTES'; payload: string };
 
-const initialState: CheckoutState = {
+const EMPTY_INITIAL_STATE: CheckoutState = {
   isPaymentReady: false,
   fulfillment: 'pickup',
   promoCode: '',
@@ -57,7 +64,38 @@ const initialState: CheckoutState = {
   contactPhone: '',
   pickupSlot: '',
   deliveryAddress: EMPTY_ADDRESS,
+  savedAddresses: [],
   orderNotes: '',
+};
+
+export type CheckoutInitialContact = {
+  name?: string;
+  email?: string;
+  phone?: string;
+};
+
+const toDeliveryAddress = (sa: SavedAddress): DeliveryAddress => ({
+  address1: sa.address1,
+  address2: sa.address2,
+  city: sa.city,
+  state: sa.state,
+  zip: sa.zip,
+});
+
+const buildInitialState = (
+  initialContact?: CheckoutInitialContact,
+  savedAddresses?: SavedAddress[],
+): CheckoutState => {
+  const list = savedAddresses ?? [];
+  const seed = list.find((a) => a.isDefault) ?? list[0];
+  return {
+    ...EMPTY_INITIAL_STATE,
+    contactName: initialContact?.name ?? '',
+    contactEmail: initialContact?.email ?? '',
+    contactPhone: initialContact?.phone ?? '',
+    deliveryAddress: seed ? toDeliveryAddress(seed) : EMPTY_ADDRESS,
+    savedAddresses: list,
+  };
 };
 
 function checkoutReducer(state: CheckoutState, action: CheckoutAction): CheckoutState {
@@ -99,8 +137,21 @@ type CheckoutCtx = {
 
 const CheckoutContext = createContext<CheckoutCtx | null>(null);
 
-export const CheckoutProvider = ({ children }: { children: ReactNode }) => {
-  const [state, dispatch] = useReducer(checkoutReducer, initialState);
+type CheckoutProviderProps = {
+  children: ReactNode;
+  initialContact?: CheckoutInitialContact;
+  savedAddresses?: SavedAddress[];
+};
+
+export const CheckoutProvider = ({
+  children,
+  initialContact,
+  savedAddresses,
+}: CheckoutProviderProps) => {
+  const [state, dispatch] = useReducer(
+    checkoutReducer,
+    buildInitialState(initialContact, savedAddresses),
+  );
 
   return (
     <CheckoutContext.Provider value={{ state, dispatch }}>
