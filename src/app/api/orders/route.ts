@@ -14,11 +14,18 @@ import { unauthorized, parsePagination } from '@/lib/api-handler';
 import { formatMoney } from '@/lib/format';
 import { isIn, EMAIL_RE } from '@/lib/validation';
 import { validatePromoCode } from '@/actions/checkout';
-import { MEMBER_DISCOUNT_RATE, DELIVERY_FEE, TAX_RATE } from '@/lib/pricing';
 import { MAX_PER_LINE } from '@/lib/shopConfig';
 import { getShopSettings } from '@/lib/shopSettings';
 import { awardOrderCompletion } from '@/lib/order-completion';
 import { applyRedemption } from '@/lib/rewards';
+import {
+  buildOrderItemsFromCart,
+  buildOrderItemsFromGuestItems,
+  computeSubtotal,
+  computeMemberDiscount,
+  computeOrderTotals,
+  type OrderProductLean,
+} from '@/lib/orderBuilder';
 
 // Status values an admin is allowed to set when creating an order on behalf of
 // a customer. Order Placed is the default flow; Completed records an
@@ -201,24 +208,14 @@ export const POST = async (request: NextRequest) => {
         Product.find(
           { _id: { $in: body.items.map((it) => it.productId) } },
           'name price images category stockCount',
-        ).lean(),
+        ).lean<OrderProductLean[]>(),
       ]);
 
       if (!customer) {
         return NextResponse.json({ message: 'Customer not found' }, { status: 404 });
       }
 
-      type ProductLean = {
-        _id: Types.ObjectId;
-        name: string;
-        price: number;
-        images?: string[];
-        category?: string;
-        stockCount: number;
-      };
-      const productMap = new Map<string, ProductLean>(
-        (products as unknown as ProductLean[]).map((p) => [p._id.toString(), p]),
-      );
+      const productMap = new Map(products.map((p) => [p._id.toString(), p]));
 
       const orderItems = body.items.map((it) => {
         const product = productMap.get(it.productId);
@@ -251,12 +248,12 @@ export const POST = async (request: NextRequest) => {
       }
 
       // No member discount or promo on admin-create — base-price only.
-      const subtotal = Math.round(
-        orderItems.reduce((sum, item) => sum + item.price * item.qty, 0) * 100,
-      ) / 100;
-      const deliveryFee = body.fulfillmentType === 'delivery' ? DELIVERY_FEE : 0;
-      const tax = Math.round((subtotal + deliveryFee) * TAX_RATE * 100) / 100;
-      const totalCost = Math.round((subtotal + deliveryFee + tax) * 100) / 100;
+      const subtotal = computeSubtotal(orderItems);
+      const { tax, totalCost } = computeOrderTotals({
+        subtotal,
+        memberDiscount: 0,
+        fulfillmentType: body.fulfillmentType,
+      });
 
       let decremented: { productId: Types.ObjectId; qty: number }[] = [];
       try {
@@ -401,127 +398,32 @@ export const POST = async (request: NextRequest) => {
       }
     }
 
-    // Build orderItems from the right source. The shape is the same either
-    // way; only the lookup differs (Cart populate vs Product.find by id list).
-    type OrderLine = {
-      product: Types.ObjectId;
-      name: string;
-      qty: number;
-      image: string;
-      price: number;
-      productType: string;
-    };
-    let orderItems: OrderLine[];
-    let stockErrors: (string | null)[];
+    // Build orderItems from the right source. Both paths produce identical
+    // OrderLine shapes — only the lookup differs (Cart populate vs Product.find
+    // by id list) — and the helper handles the status-code mapping for the
+    // "cart empty / over-cap / one or more items unavailable" failures.
+    const buildResult = userId
+      ? await buildOrderItemsFromCart(userId)
+      : await buildOrderItemsFromGuestItems(body.guestItems!);
 
-    if (!userId) {
-      type ProductLean = {
-        _id: Types.ObjectId;
-        name: string;
-        price: number;
-        images?: { url: string }[];
-        category?: string;
-        stockCount: number;
-      };
-      const products = (await Product.find(
-        { _id: { $in: body.guestItems!.map((it) => it.productId) } },
-        'name price images category stockCount',
-      ).lean()) as unknown as ProductLean[];
-      const productMap = new Map<string, ProductLean>(
-        products.map((p) => [p._id.toString(), p]),
+    if (!buildResult.ok) {
+      return NextResponse.json(
+        { message: buildResult.message },
+        { status: buildResult.status },
       );
-
-      const missing = body.guestItems!.find((it) => !productMap.has(it.productId));
-      if (missing) {
-        return NextResponse.json(
-          { message: 'One or more cart items are no longer available' },
-          { status: 409 },
-        );
-      }
-
-      orderItems = body.guestItems!.map((it) => {
-        const product = productMap.get(it.productId)!;
-        return {
-          product: product._id,
-          name: product.name,
-          qty: it.qty,
-          image: product.images?.[0]?.url ?? '',
-          price: product.price,
-          productType: product.category ?? '',
-        };
-      });
-
-      stockErrors = body.guestItems!.map((it) => {
-        const p = productMap.get(it.productId)!;
-        return p.stockCount < it.qty
-          ? `${p.name}: only ${p.stockCount} in stock (${it.qty} requested)`
-          : null;
-      });
-    } else {
-      const cart = await Cart.findOne({ user: userId }).populate(
-        'items.product',
-      );
-
-      if (!cart || cart.items.length === 0) {
-        return NextResponse.json({ message: 'Cart is empty' }, { status: 400 });
-      }
-
-      type PopulatedProduct = {
-        _id: Types.ObjectId;
-        name: string;
-        images?: { url: string }[];
-        category?: string;
-        stockCount: number;
-        price: number;
-      };
-
-      orderItems = cart.items.map((line) => {
-        const product = line.product as unknown as PopulatedProduct;
-        return {
-          product: product._id,
-          name: product.name,
-          qty: line.quantity,
-          image: product.images?.[0]?.url ?? '',
-          price: product.price,   // authoritative: always read from Product, never from cart snapshot
-          productType: product.category ?? '',
-        };
-      });
-
-      stockErrors = cart.items.map((line) => {
-        const product = line.product as unknown as PopulatedProduct;
-        return product.stockCount < line.quantity
-          ? `${product.name}: only ${product.stockCount} in stock (${line.quantity} requested)`
-          : null;
-      });
-
-      // Per-line cap — backstop in case a stale client snuck a tampered cart past
-      // the cart endpoint's caps. The cart API enforces the same limit on add/edit.
-      const overCap = cart.items.find((line) => line.quantity > MAX_PER_LINE);
-      if (overCap) {
-        return NextResponse.json(
-          { message: `Limit ${MAX_PER_LINE} per item` },
-          { status: 400 },
-        );
-      }
     }
 
-    const filteredStockErrors = stockErrors.filter(Boolean);
-    if (filteredStockErrors.length > 0) {
+    const { orderItems, stockErrors } = buildResult;
+
+    if (stockErrors.length > 0) {
       return NextResponse.json(
-        { message: `Insufficient stock — ${filteredStockErrors.join('; ')}` },
+        { message: `Insufficient stock — ${stockErrors.join('; ')}` },
         { status: 409 },
       );
     }
 
-    // Compute totals server-side — mirrors computeTotals() in lib/pricing.ts
-    const subtotal = Math.round(
-      orderItems.reduce((sum, item) => sum + item.price * item.qty, 0) * 100,
-    ) / 100;
-
-    // Member discount is the 5% loyalty perk — only signed-in users earn it.
-    const memberDiscount = userId
-      ? Math.round(subtotal * MEMBER_DISCOUNT_RATE * 100) / 100
-      : 0;
+    const subtotal = computeSubtotal(orderItems);
+    const memberDiscount = computeMemberDiscount(subtotal, Boolean(userId));
 
     let promoDiscount = 0;
     if (body.promoCode) {
@@ -578,10 +480,13 @@ export const POST = async (request: NextRequest) => {
       pointsDiscount = valueDollars;
     }
 
-    const deliveryFee = body.fulfillmentType === 'delivery' ? DELIVERY_FEE : 0;
-    const afterDiscounts = Math.max(0, subtotal - memberDiscount - promoDiscount - pointsDiscount);
-    const tax = Math.round((afterDiscounts + deliveryFee) * TAX_RATE * 100) / 100;
-    const totalCost = Math.round((afterDiscounts + deliveryFee + tax) * 100) / 100;
+    const { tax, totalCost } = computeOrderTotals({
+      subtotal,
+      memberDiscount,
+      promoDiscount,
+      pointsDiscount,
+      fulfillmentType: body.fulfillmentType,
+    });
 
     let decremented: { productId: Types.ObjectId; qty: number }[] = [];
     try {

@@ -243,7 +243,11 @@ export default async function ConfirmationPage({ searchParams }: Props) {
                 in your history. (No points are awarded retroactively.)
               </p>
               <Link
-                href={`/register?email=${encodeURIComponent(order.guestContact?.email ?? '')}`}
+                // Invariant: isGuestOrder is `!order.user`, and the Order
+                // schema's pre-save validator requires guestContact.email
+                // whenever user is absent. So the field is always populated
+                // by the time this branch renders.
+                href={`/register?email=${encodeURIComponent(order.guestContact!.email)}`}
                 className='inline-flex items-center gap-2 border-b border-current pb-px text-oxblood transition-colors duration-300 hover:text-ink motion-reduce:transition-none'
               >
                 Create an account

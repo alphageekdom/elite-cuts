@@ -1,5 +1,6 @@
 import type { Types } from 'mongoose';
 
+import connectDB from '@/config/database';
 import Order from '@/models/Order';
 
 // Attaches every prior guest order with a matching email to a freshly-created
@@ -30,6 +31,12 @@ export async function claimGuestOrdersForUser(
   userId: Types.ObjectId | string,
   email: string,
 ): Promise<{ matchedCount: number; modifiedCount: number }> {
+  // Idempotent — connectDB returns the cached connection when already
+  // connected. Calling it explicitly here lets cron jobs / workers / admin
+  // re-run scripts invoke this helper cold without each remembering to
+  // wire the connection themselves.
+  await connectDB();
+
   // Guest emails are lowercased on save (see Order schema's guestContact
   // path), so match in the same casing regardless of how the register form
   // captured the input.
