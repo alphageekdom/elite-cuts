@@ -238,8 +238,26 @@ export default async function ConfirmationPage({ searchParams }: Props) {
               <p className='mb-1.5 text-[11px] font-medium uppercase tracking-[0.18em] text-muted'>
                 Heads up
               </p>
-              Create an account with this email and this order will show up in
-              your history. (No points are awarded retroactively.)
+              <p className='mb-3'>
+                Create an account with this email and this order will show up
+                in your history. (No points are awarded retroactively.)
+              </p>
+              <Link
+                href={`/register?email=${encodeURIComponent(order.guestContact?.email ?? '')}`}
+                className='inline-flex items-center gap-2 border-b border-current pb-px text-oxblood transition-colors duration-300 hover:text-ink motion-reduce:transition-none'
+              >
+                Create an account
+                <svg
+                  viewBox='0 0 24 24'
+                  fill='none'
+                  stroke='currentColor'
+                  strokeWidth={2}
+                  aria-hidden='true'
+                  className='h-3 w-3'
+                >
+                  <path d='M5 12h14M13 5l7 7-7 7' />
+                </svg>
+              </Link>
             </div>
           )}
 
