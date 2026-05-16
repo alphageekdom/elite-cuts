@@ -37,9 +37,11 @@ export default async function AdminMessagesPage() {
 
   const messages: MessageRow[] = rawMessages.map((m) => {
     const user = m.user as PopulatedUser | null;
+    const snapshot = (m.authorNameSnapshot ?? '').trim();
+    const fallbackName = snapshot || 'Former customer';
     return {
       id: String(m._id),
-      customerName: user?.name ?? 'Unknown',
+      customerName: user?.name ?? fallbackName,
       customerEmail: user?.email ?? '',
       subject: m.subject,
       body: m.body,

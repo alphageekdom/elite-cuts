@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import connectDB from '@/config/database';
 import MessageModel from '@/models/Message';
+import User from '@/models/User';
 import { getSessionUser } from '@/utils/getSessionUser';
 import { unauthorized } from '@/lib/api-handler';
 import mongoose, { type Types } from 'mongoose';
@@ -81,8 +82,11 @@ export const POST = async (request: NextRequest) => {
 
     await connectDB();
 
+    const author = await User.findById(sessionUser.userId).select('name').lean<{ name?: string }>();
+
     const message = await MessageModel.create({
       user: sessionUser.userId,
+      authorNameSnapshot: author?.name?.trim() || '',
       subject: subject.trim(),
       body: msgBody.trim(),
       ...(orderId ? { orderId } : {}),

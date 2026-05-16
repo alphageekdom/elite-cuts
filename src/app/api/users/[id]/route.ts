@@ -7,6 +7,7 @@ import User from '@/models/User';
 import { getSessionUser } from '@/utils/getSessionUser';
 import { withAdmin } from '@/lib/api-handler';
 import { EMAIL_RE } from '@/lib/validation';
+import { hardDeleteUser, restoreUser, softDeleteUser } from '@/lib/accountDeletion';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -166,22 +167,92 @@ export const PUT = async (request: NextRequest, { params }: RouteContext) => {
   }
 };
 
-// DELETE /api/users/:id — admin only
-export const DELETE = withAdmin(async (_request: NextRequest, ctx: unknown) => {
+// DELETE /api/users/:id — admin-initiated deletion.
+//
+// Body shape (all optional, JSON): { reason?: string; immediate?: boolean }
+//   - immediate=false (default): 30-day soft delete, customer can self-restore
+//     by signing in. Reason is recorded in the audit log if supplied.
+//   - immediate=true: synchronous hard delete with full cascade. Reason is
+//     required (abuse cases, spam) and the request 400s without it.
+//
+// Refuses to delete admin accounts or the requesting admin's own row.
+export const DELETE = withAdmin(async (request: NextRequest, ctx: unknown, performedBy) => {
   try {
     const { id } = await (ctx as RouteContext).params;
     if (!mongoose.isValidObjectId(id)) {
       return NextResponse.json({ message: 'Not found' }, { status: 404 });
     }
-    const deleted = await User.findByIdAndDelete(id);
-
-    if (!deleted) {
-      return NextResponse.json({ message: 'User not found' }, { status: 404 });
+    if (id === performedBy) {
+      return NextResponse.json({ message: 'Admins cannot delete themselves' }, { status: 403 });
     }
 
-    return NextResponse.json({ message: 'User deleted successfully' });
+    let immediate = false;
+    let reason: string | undefined;
+    try {
+      const body = (await request.json().catch(() => ({}))) as {
+        reason?: string;
+        immediate?: boolean;
+      };
+      immediate = Boolean(body?.immediate);
+      reason = typeof body?.reason === 'string' ? body.reason.trim() : undefined;
+    } catch {
+      // Empty body is acceptable — defaults apply (soft delete, no reason).
+    }
+
+    const target = await User.findById(id).select('isAdmin');
+    if (!target) {
+      return NextResponse.json({ message: 'User not found' }, { status: 404 });
+    }
+    if (target.isAdmin) {
+      return NextResponse.json({ message: 'Admin accounts cannot be deleted' }, { status: 403 });
+    }
+
+    if (immediate) {
+      if (!reason) {
+        return NextResponse.json(
+          { message: 'Reason is required for immediate hard delete' },
+          { status: 400 },
+        );
+      }
+      await hardDeleteUser(id, { actor: 'admin', performedBy, reason });
+      return NextResponse.json({ message: 'User permanently deleted' });
+    }
+
+    const { deletionScheduledFor } = await softDeleteUser(id, {
+      actor: 'admin',
+      performedBy,
+      reason,
+    });
+    return NextResponse.json({
+      message: 'User scheduled for deletion',
+      deletionScheduledFor: deletionScheduledFor.toISOString(),
+    });
   } catch (error) {
     console.error('[users/:id DELETE]', error);
+    return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
+  }
+});
+
+// POST /api/users/:id/restore is handled in the nested route file; this file
+// exposes one additional admin-only verb on this resource — cancel deletion —
+// through PATCH so the customer detail drawer's "Cancel deletion" action has
+// a single endpoint to hit without a deeper nested route.
+export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown, performedBy) => {
+  try {
+    const { id } = await (ctx as RouteContext).params;
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ message: 'Not found' }, { status: 404 });
+    }
+
+    const body = (await request.json().catch(() => ({}))) as { action?: string };
+    if (body?.action !== 'cancel_deletion') {
+      return NextResponse.json({ message: 'Unsupported action' }, { status: 400 });
+    }
+
+    await restoreUser(id, { actor: 'admin', performedBy });
+    return NextResponse.json({ message: 'Deletion cancelled' });
+  } catch (error) {
+    console.error('[users/:id PATCH]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
 });

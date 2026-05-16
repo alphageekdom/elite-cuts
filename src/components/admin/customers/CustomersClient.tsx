@@ -82,19 +82,85 @@ export default function CustomersClient({ customers, counts }: Props) {
     }
   }
 
-  async function handleCustomerDelete(id: string) {
+  async function handleCustomerDelete(
+    id: string,
+    opts: { reason?: string; immediate?: boolean } = {},
+  ) {
     try {
-      const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/users/${id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reason: opts.reason?.trim() || undefined,
+          immediate: Boolean(opts.immediate),
+        }),
+      });
       if (!res.ok) {
         const { message } = await res.json();
         toast.error(message ?? 'Failed to delete customer');
         return;
       }
-      setLocalCustomers((prev) => prev.filter((c) => c.id !== id));
-      closeDrawer();
-      toast.success('Customer deleted');
+      const data = (await res.json().catch(() => ({}))) as {
+        deletionScheduledFor?: string;
+      };
+
+      if (opts.immediate) {
+        setLocalCustomers((prev) => prev.filter((c) => c.id !== id));
+        closeDrawer();
+        toast.success('Customer permanently deleted');
+      } else {
+        setLocalCustomers((prev) =>
+          prev.map((c) =>
+            c.id === id
+              ? {
+                  ...c,
+                  deletedAt: new Date().toISOString(),
+                  deletionScheduledFor: data.deletionScheduledFor,
+                }
+              : c,
+          ),
+        );
+        setDrawerCustomer((prev) =>
+          prev && prev.id === id
+            ? {
+                ...prev,
+                deletedAt: new Date().toISOString(),
+                deletionScheduledFor: data.deletionScheduledFor,
+              }
+            : prev,
+        );
+        toast.success('Customer scheduled for deletion');
+      }
     } catch {
       toast.error('Failed to delete customer');
+    }
+  }
+
+  async function handleCancelDeletion(id: string) {
+    try {
+      const res = await fetch(`/api/users/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'cancel_deletion' }),
+      });
+      if (!res.ok) {
+        const { message } = await res.json();
+        toast.error(message ?? 'Failed to cancel deletion');
+        return;
+      }
+      setLocalCustomers((prev) =>
+        prev.map((c) =>
+          c.id === id ? { ...c, deletedAt: undefined, deletionScheduledFor: undefined } : c,
+        ),
+      );
+      setDrawerCustomer((prev) =>
+        prev && prev.id === id
+          ? { ...prev, deletedAt: undefined, deletionScheduledFor: undefined }
+          : prev,
+      );
+      toast.success('Deletion cancelled');
+    } catch {
+      toast.error('Failed to cancel deletion');
     }
   }
 
@@ -169,12 +235,28 @@ export default function CustomersClient({ customers, counts }: Props) {
     const ids = [...selectedIds];
     setBulkLoading('delete');
     try {
+      // Bulk action stays as a soft-delete (no body) — bulk hard-delete is out
+      // of scope for this feature. Reflect the actual state in the local row
+      // instead of filtering it out; the row stays visible with its
+      // "Scheduled for deletion" pill so the admin can still cancel.
+      const nowIso = new Date().toISOString();
+      const scheduledIso = new Date(
+        Date.now() + 30 * 24 * 60 * 60 * 1000,
+      ).toISOString();
       await Promise.all(ids.map((id) => fetch(`/api/users/${id}`, { method: 'DELETE' })));
-      setLocalCustomers((prev) => prev.filter((c) => !selectedIds.has(c.id)));
+      setLocalCustomers((prev) =>
+        prev.map((c) =>
+          selectedIds.has(c.id)
+            ? { ...c, deletedAt: nowIso, deletionScheduledFor: scheduledIso }
+            : c,
+        ),
+      );
       setSelectedIds(new Set());
-      toast.success(`${ids.length} customer${ids.length !== 1 ? 's' : ''} deleted`);
+      toast.success(
+        `${ids.length} customer${ids.length !== 1 ? 's' : ''} scheduled for deletion`,
+      );
     } catch {
-      toast.error('Failed to delete some customers');
+      toast.error('Failed to schedule deletion for some customers');
     } finally {
       setBulkLoading('');
     }
@@ -270,7 +352,7 @@ export default function CustomersClient({ customers, counts }: Props) {
                 disabled={!!bulkLoading}
                 className="bg-oxblood/70 text-cream border border-oxblood rounded-full px-3 py-1.5 text-[12px] hover:bg-oxblood transition-colors disabled:opacity-50"
               >
-                {bulkLoading === 'delete' ? 'Deleting…' : 'Delete'}
+                {bulkLoading === 'delete' ? 'Scheduling…' : 'Schedule delete'}
               </button>
             </div>
           </div>
@@ -361,6 +443,7 @@ export default function CustomersClient({ customers, counts }: Props) {
             onClose={closeDrawer}
             onSave={handleCustomerSave}
             onDelete={handleCustomerDelete}
+            onCancelDeletion={handleCancelDeletion}
           />
         )}
       </aside>

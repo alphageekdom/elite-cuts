@@ -29,6 +29,7 @@ import ProfileRecentlyViewed from '@/components/profile/ProfileRecentlyViewed';
 import ProfileAddresses from '@/components/profile/ProfileAddresses';
 import ProfileInfoForm from '@/components/profile/ProfileInfoForm';
 import UpdateProfile from '@/components/profile/UpdateProfile';
+import DeleteAccountSection from '@/components/profile/DeleteAccountSection';
 import ProfileRewards from '@/components/profile/ProfileRewards';
 import ProfileMessages from '@/components/profile/ProfileMessages';
 import type { SerializedMessage } from '@/components/profile/ProfileMessages';
@@ -375,6 +376,9 @@ export default async function ProfilePage({ searchParams }: Props) {
                   </h2>
                   <UpdateProfile />
                 </div>
+
+                {/* Danger zone — kept off-admins; admins can't self-delete. */}
+                {!rawUser.isAdmin && <DeleteAccountSection />}
               </div>
             )}
           </div>

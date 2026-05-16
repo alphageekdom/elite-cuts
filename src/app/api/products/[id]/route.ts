@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import connectDB from '@/config/database';
 import Product from '@/models/Product';
 import Review from '@/models/Review';
+import User from '@/models/User';
 import { getSessionUser } from '@/utils/getSessionUser';
 import { productRecordFromFormData, validateProductInput } from '@/lib/product-validate';
 import { withAdmin } from '@/lib/api-handler';
@@ -204,11 +205,13 @@ export const POST = async (request: NextRequest, { params }: RouteContext) => {
     product.rating = newRating;
     await product.save();
 
+    const reviewer = await User.findById(userId).select('name').lean<{ name?: string }>();
     const review = new Review({
       user: userId,
       product: id,
       rating: parsedRating,
       comment,
+      authorNameSnapshot: reviewer?.name?.trim() || '',
     });
     await review.save();
 

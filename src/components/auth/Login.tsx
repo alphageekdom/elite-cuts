@@ -50,7 +50,11 @@ export default function Login() {
     useSignInLockout();
 
   useEffect(() => {
-    if (session) router.replace('/');
+    // Check `session.user` rather than `session` — a tombstoned session
+    // (admin soft-deleted us) still returns a truthy `session` with an
+    // undefined `user`. Without this guard the customer would be unable to
+    // reach /login to sign back in.
+    if (session?.user) router.replace('/');
   }, [session, router]);
 
   const anyTouched = Object.values(touched).some(Boolean);
@@ -94,7 +98,25 @@ export default function Login() {
         const wasLockout = registerLockoutFromMessage(res.error);
         toast.error(wasLockout ? res.error : 'Invalid email or password');
       } else {
-        toast.success('Signed in successfully');
+        // Sign-in into a soft-deleted account cancels the pending deletion in
+        // authorize(). Check the audit-log helper to see if that just
+        // happened and surface a more specific message — otherwise fall back
+        // to the generic success toast.
+        try {
+          const probe = await fetch('/api/users/me/recently-restored');
+          if (probe.ok) {
+            const data = (await probe.json()) as { recentlyRestored?: boolean };
+            if (data.recentlyRestored) {
+              toast.success("Welcome back — your deletion request was cancelled.");
+            } else {
+              toast.success('Signed in successfully');
+            }
+          } else {
+            toast.success('Signed in successfully');
+          }
+        } catch {
+          toast.success('Signed in successfully');
+        }
         router.push('/');
       }
     } catch {
