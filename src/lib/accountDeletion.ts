@@ -45,7 +45,7 @@ async function writeAudit({
 
 export async function softDeleteUser(
   userId: UserId,
-  opts: ActorOptions & { actor: 'self' | 'admin' } = { actor: 'self' },
+  opts: ActorOptions & { actor: 'self' | 'admin' | 'cron' } = { actor: 'self' },
 ): Promise<{ deletionScheduledFor: Date }> {
   await connectDB();
 
@@ -77,10 +77,17 @@ export async function softDeleteUser(
   user.deletionScheduledFor = scheduledFor;
   await user.save();
 
+  const auditAction =
+    opts.actor === 'cron'
+      ? 'cron_soft_delete'
+      : opts.actor === 'admin'
+        ? 'admin_soft_delete'
+        : 'self_soft_delete';
+
   await writeAudit({
     userId: user._id,
     userEmailSnapshot: user.email,
-    action: opts.actor === 'admin' ? 'admin_soft_delete' : 'self_soft_delete',
+    action: auditAction,
     performedBy: opts.performedBy,
     reason: opts.reason,
   });
@@ -94,12 +101,19 @@ export async function restoreUser(
 ): Promise<void> {
   await connectDB();
 
-  const user = await User.findById(userId).select('email deletedAt deletionScheduledFor');
+  const user = await User.findById(userId).select(
+    'email deletedAt deletionScheduledFor dormancyWarnedAt',
+  );
   if (!user) throw new Error('User not found');
   if (!user.deletedAt) return; // already active — no-op
 
   user.deletedAt = null;
   user.deletionScheduledFor = null;
+  // Dormancy and deletion are sibling lifecycle states — a restore implies
+  // the customer is back, so clear the dormancy warning too. Otherwise the
+  // next scan would immediately re-warn them based on the now-stale
+  // `lastActiveAt`.
+  user.dormancyWarnedAt = null;
   await user.save();
 
   await writeAudit({
@@ -109,6 +123,40 @@ export async function restoreUser(
     performedBy: opts.performedBy,
     reason: opts.reason,
   });
+}
+
+// Clears the dormancy warning on an active (non-soft-deleted) account from
+// the admin "Cancel dormancy cleanup" action. Idempotent — a no-op when the
+// warning isn't set. The next dormancy scan can re-warn the user if their
+// `lastActiveAt` is still older than the threshold.
+//
+// Customer-initiated clears (sign-in, order placement) bypass this helper
+// and write to the User document inline because those paths already touch
+// the document for other reasons (`authorize()` resets login attempts,
+// order routes stamp `lastActiveAt`) — folding a second roundtrip through
+// this helper would be wasteful.
+export async function clearDormancyWarning(
+  userId: UserId,
+  opts: ActorOptions & { actor: 'admin' },
+): Promise<{ wasWarned: boolean }> {
+  await connectDB();
+
+  const user = await User.findById(userId).select('email dormancyWarnedAt');
+  if (!user) throw new Error('User not found');
+  if (!user.dormancyWarnedAt) return { wasWarned: false };
+
+  user.dormancyWarnedAt = null;
+  await user.save();
+
+  await writeAudit({
+    userId: user._id,
+    userEmailSnapshot: user.email,
+    action: 'admin_cancel_dormancy',
+    performedBy: opts.performedBy,
+    reason: opts.reason,
+  });
+
+  return { wasWarned: true };
 }
 
 // Synthesizes a placeholder email when an anonymized order's user had no

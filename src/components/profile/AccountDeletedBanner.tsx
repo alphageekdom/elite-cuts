@@ -3,26 +3,56 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
+type Mode = 'deleted' | 'dormancyCleared';
+
 // One-time confirmation banner shown when the customer is redirected to /
-// after self-deleting. Reads ?deleted=1&until=<iso>, displays, then strips
-// the params so a refresh doesn't show the banner twice.
+// after one of two lifecycle events:
+//   - Self-deleted: `?deleted=1&until=<iso>` — explains the 30-day grace.
+//   - Dormancy-warned customer signed in and cleared it: `?dormancyCleared=1`
+//     — confirms the auto-cleanup is no longer pending.
+// In both cases the param is stripped after display so a refresh doesn't
+// re-show the banner.
 export default function AccountDeletedBanner() {
   const router = useRouter();
   const params = useSearchParams();
-  const flag = params.get('deleted');
+  const deletedFlag = params.get('deleted');
+  const dormancyFlag = params.get('dormancyCleared');
   const until = params.get('until');
-  const [visible, setVisible] = useState(false);
+  const [mode, setMode] = useState<Mode | null>(null);
 
   useEffect(() => {
-    if (flag !== '1') return;
-    setVisible(true);
+    const next: Mode | null =
+      deletedFlag === '1' ? 'deleted' : dormancyFlag === '1' ? 'dormancyCleared' : null;
+    if (!next) return;
+    setMode(next);
     const url = new URL(window.location.href);
     url.searchParams.delete('deleted');
+    url.searchParams.delete('dormancyCleared');
     url.searchParams.delete('until');
     router.replace(`${url.pathname}${url.search}${url.hash}`);
-  }, [flag, router]);
+  }, [deletedFlag, dormancyFlag, router]);
 
-  if (!visible) return null;
+  if (!mode) return null;
+
+  if (mode === 'dormancyCleared') {
+    return (
+      <div className="bg-green/10 border-b border-green/30 text-ink">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-start sm:items-center gap-3 text-[13px]">
+          <span className="font-medium text-green">Welcome back!</span>
+          <span className="text-ink-soft">
+            Your account is no longer scheduled for cleanup. Thanks for stopping by.
+          </span>
+          <button
+            type="button"
+            onClick={() => setMode(null)}
+            className="ml-auto text-muted hover:text-ink transition-colors text-[12px] underline-offset-2 hover:underline"
+          >
+            Dismiss
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   let untilLabel = '';
   if (until) {
@@ -47,7 +77,7 @@ export default function AccountDeletedBanner() {
         </span>
         <button
           type="button"
-          onClick={() => setVisible(false)}
+          onClick={() => setMode(null)}
           className="ml-auto text-muted hover:text-ink transition-colors text-[12px] underline-offset-2 hover:underline"
         >
           Dismiss

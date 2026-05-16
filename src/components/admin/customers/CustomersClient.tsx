@@ -17,17 +17,17 @@ type Props = {
   counts: CustomerCounts;
 };
 
-// 'atRisk' is intentionally absent. The portfolio seed has no dormant
-// accounts, so a pill that filters to zero rows would just look broken.
-// Tier filtering was likewise dropped — the Tier column still surfaces
-// the value when there's enough data to make filtering useful.
-type StatFilter = 'all' | 'new' | 'active' | 'connoisseurPlus';
+// Tier filtering was dropped earlier — the Tier column still surfaces the
+// value when there's enough data to make filtering useful. The Dormant chip
+// is the first scan-driven filter (set by the dormancy cron's warn pass).
+type StatFilter = 'all' | 'new' | 'active' | 'connoisseurPlus' | 'dormant';
 
 const STAT_CELLS = [
   { key: 'all' as StatFilter, label: 'All', metaLabel: 'REGISTERED', dotClass: '' },
   { key: 'new' as StatFilter, label: 'New', metaLabel: 'JOINED IN 30 DAYS', dotClass: 'bg-ink' },
   { key: 'active' as StatFilter, label: 'Active', metaLabel: 'ORDERED IN 90 DAYS', dotClass: 'bg-green' },
   { key: 'connoisseurPlus' as StatFilter, label: 'Connoisseur+', metaLabel: '10+ ORDERS', dotClass: 'bg-camel' },
+  { key: 'dormant' as StatFilter, label: 'Dormant', metaLabel: 'WARNING SENT', dotClass: 'bg-oxblood' },
 ];
 
 const PAGE_SIZES = [8, 20, 50];
@@ -41,6 +41,7 @@ function matchesStatFilter(row: CustomerTableRow, filter: StatFilter): boolean {
   if (filter === 'new') return accountAge < THIRTY_DAYS;
   if (filter === 'active') return !!row.lastOrderAt && now - new Date(row.lastOrderAt).getTime() <= NINETY_DAYS;
   if (filter === 'connoisseurPlus') return row.orderCount >= 10;
+  if (filter === 'dormant') return Boolean(row.dormancyWarnedAt) && !row.deletedAt;
   return true;
 }
 
@@ -48,6 +49,7 @@ function countForStat(key: StatFilter, counts: CustomerCounts): number {
   if (key === 'all') return counts.all;
   if (key === 'new') return counts.new;
   if (key === 'active') return counts.active;
+  if (key === 'dormant') return counts.dormant ?? 0;
   return counts.connoisseurPlus;
 }
 
@@ -161,6 +163,30 @@ export default function CustomersClient({ customers, counts }: Props) {
       toast.success('Deletion cancelled');
     } catch {
       toast.error('Failed to cancel deletion');
+    }
+  }
+
+  async function handleCancelDormancy(id: string) {
+    try {
+      const res = await fetch(`/api/users/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'cancel_dormancy' }),
+      });
+      if (!res.ok) {
+        const { message } = await res.json();
+        toast.error(message ?? 'Failed to cancel dormancy cleanup');
+        return;
+      }
+      setLocalCustomers((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, dormancyWarnedAt: undefined } : c)),
+      );
+      setDrawerCustomer((prev) =>
+        prev && prev.id === id ? { ...prev, dormancyWarnedAt: undefined } : prev,
+      );
+      toast.success('Dormancy cleanup cancelled');
+    } catch {
+      toast.error('Failed to cancel dormancy cleanup');
     }
   }
 
@@ -444,6 +470,7 @@ export default function CustomersClient({ customers, counts }: Props) {
             onSave={handleCustomerSave}
             onDelete={handleCustomerDelete}
             onCancelDeletion={handleCancelDeletion}
+            onCancelDormancy={handleCancelDormancy}
           />
         )}
       </aside>

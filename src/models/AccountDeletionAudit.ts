@@ -14,6 +14,11 @@ export const ACCOUNT_DELETION_ACTIONS = [
   'admin_hard_delete',
   'admin_restore',
   'cron_hard_delete',
+  // Abandoned-account-cleanup additions:
+  'dormancy_warned',          // warn-pass entry — stamped when the warning is sent
+  'cron_soft_delete',         // soft-delete-pass entry — written via softDeleteUser with actor 'cron'
+  'admin_cancel_dormancy',    // admin manually clears a dormancy warning from the customer detail drawer
+  'self_dormancy_cleared',    // sign-in / order placement on a still-warned account cleared the warning
 ] as const;
 
 export type AccountDeletionAction = (typeof ACCOUNT_DELETION_ACTIONS)[number];

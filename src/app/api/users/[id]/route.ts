@@ -7,7 +7,7 @@ import User from '@/models/User';
 import { getSessionUser } from '@/utils/getSessionUser';
 import { withAdmin } from '@/lib/api-handler';
 import { EMAIL_RE } from '@/lib/validation';
-import { hardDeleteUser, restoreUser, softDeleteUser } from '@/lib/accountDeletion';
+import { clearDormancyWarning, hardDeleteUser, restoreUser, softDeleteUser } from '@/lib/accountDeletion';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -245,12 +245,22 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown, perfor
     }
 
     const body = (await request.json().catch(() => ({}))) as { action?: string };
-    if (body?.action !== 'cancel_deletion') {
-      return NextResponse.json({ message: 'Unsupported action' }, { status: 400 });
+
+    if (body?.action === 'cancel_deletion') {
+      await restoreUser(id, { actor: 'admin', performedBy });
+      return NextResponse.json({ message: 'Deletion cancelled' });
     }
 
-    await restoreUser(id, { actor: 'admin', performedBy });
-    return NextResponse.json({ message: 'Deletion cancelled' });
+    if (body?.action === 'cancel_dormancy') {
+      const result = await clearDormancyWarning(id, { actor: 'admin', performedBy });
+      return NextResponse.json({
+        message: result.wasWarned
+          ? 'Dormancy warning cleared'
+          : 'No dormancy warning was set',
+      });
+    }
+
+    return NextResponse.json({ message: 'Unsupported action' }, { status: 400 });
   } catch (error) {
     console.error('[users/:id PATCH]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });

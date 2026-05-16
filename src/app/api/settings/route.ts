@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import mongoose from 'mongoose';
 import ShopSettings, { type ShopSettings as ShopSettingsType } from '@/models/ShopSettings';
 import { withAdmin } from '@/lib/api-handler';
 
@@ -15,6 +16,7 @@ const SETTINGS_FIELDS: (keyof ShopSettingsType)[] = [
   'redemptionPoints', 'redemptionDollars', 'minToRedeem',
   'maxRedemptionPercent', 'maxRedemptionDollars',
   'connoisseurThreshold', 'masterCutThreshold', 'tierWindowMonths',
+  'dormancyWarningMonths',
 ];
 
 function pickSettings(doc: Record<string, unknown> | null): Partial<ShopSettingsType> {
@@ -56,6 +58,7 @@ export const PUT = withAdmin(async (request: NextRequest) => {
       redemptionPoints, redemptionDollars, minToRedeem,
       maxRedemptionPercent, maxRedemptionDollars,
       connoisseurThreshold, masterCutThreshold, tierWindowMonths,
+      dormancyWarningMonths,
     } = await request.json() as Partial<ShopSettingsType>;
 
     const rawPatch = {
@@ -67,6 +70,7 @@ export const PUT = withAdmin(async (request: NextRequest) => {
       redemptionPoints, redemptionDollars, minToRedeem,
       maxRedemptionPercent, maxRedemptionDollars,
       connoisseurThreshold, masterCutThreshold, tierWindowMonths,
+      dormancyWarningMonths,
     };
     const patch = Object.fromEntries(
       Object.entries(rawPatch).filter(([, v]) => v !== undefined),
@@ -80,6 +84,16 @@ export const PUT = withAdmin(async (request: NextRequest) => {
 
     return NextResponse.json(pickSettings(settings as Record<string, unknown> | null));
   } catch (error) {
+    // Schema-level validators (e.g. the enum on `dormancyWarningMonths`)
+    // throw a ValidationError that's the client's fault — surface it as a
+    // 400 with the offending message instead of a generic 500.
+    if (error instanceof mongoose.Error.ValidationError) {
+      const first = Object.values(error.errors)[0];
+      return NextResponse.json(
+        { message: first?.message ?? 'Invalid settings payload' },
+        { status: 400 },
+      );
+    }
     console.error('[settings PUT]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }

@@ -134,6 +134,8 @@ type RawUser = {
   adminNote?: string;
   deletedAt?: Date | null;
   deletionScheduledFor?: Date | null;
+  dormancyWarnedAt?: Date | null;
+  lastActiveAt?: Date | null;
 };
 
 export type OrderStats = {
@@ -168,5 +170,7 @@ export function serializeCustomerRow(
     deletionScheduledFor: u.deletionScheduledFor
       ? u.deletionScheduledFor.toISOString()
       : undefined,
+    dormancyWarnedAt: u.dormancyWarnedAt ? u.dormancyWarnedAt.toISOString() : undefined,
+    lastActiveAt: u.lastActiveAt ? u.lastActiveAt.toISOString() : undefined,
   };
 }

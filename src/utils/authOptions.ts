@@ -57,9 +57,16 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Invalid credentials');
         }
 
+        // `lastActiveAt` powers the dormancy scan — every successful sign-in
+        // counts as activity and clears any pending dormancy warning. The
+        // dormancy_warned audit row stays on the record; the next scan picks
+        // them back up only if they go inactive again.
+        const dormancyWasWarned = Boolean(user.dormancyWarnedAt);
         const resetFields: Record<string, unknown> = {
           failedLoginAttempts: 0,
           lockoutUntil: null,
+          lastActiveAt: new Date(),
+          dormancyWarnedAt: null,
         };
 
         // Sign-in into a soft-deleted account cancels the deletion request.
@@ -88,6 +95,18 @@ export const authOptions: NextAuthOptions = {
           });
         } else {
           await User.updateOne({ _id: user._id }, { $set: resetFields });
+        }
+
+        // Cleared a dormancy warning by signing in — separate audit row so
+        // the Login client can show a dormancy-specific welcome-back banner
+        // and the admin audit trail records why the warning vanished.
+        if (dormancyWasWarned) {
+          await AccountDeletionAudit.create({
+            userId: user._id,
+            userEmailSnapshot: user.email,
+            action: 'self_dormancy_cleared',
+            performedBy: null,
+          });
         }
 
         return {
