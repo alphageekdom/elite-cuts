@@ -59,6 +59,8 @@ export type User = {
   adminNote?: string;
   failedLoginAttempts: number;
   lockoutUntil?: Date | null;
+  deletedAt?: Date | null;
+  deletionScheduledFor?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -158,6 +160,14 @@ const UserSchema = new Schema<User>(
       type: Date,
       default: null,
       select: false,
+    },
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
+    deletionScheduledFor: {
+      type: Date,
+      default: null,
     },
   },
   {

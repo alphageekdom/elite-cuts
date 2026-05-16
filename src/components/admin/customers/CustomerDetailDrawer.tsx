@@ -15,10 +15,11 @@ type Props = {
   customer: CustomerTableRow;
   onClose: () => void;
   onSave: (id: string, data: { name: string; email: string; phone: string }) => Promise<void>;
-  onDelete: (id: string) => Promise<void>;
+  onDelete: (id: string, opts?: { reason?: string; immediate?: boolean }) => Promise<void>;
+  onCancelDeletion?: (id: string) => Promise<void>;
 };
 
-export default function CustomerDetailDrawer({ customer, onClose, onSave, onDelete }: Props) {
+export default function CustomerDetailDrawer({ customer, onClose, onSave, onDelete, onCancelDeletion }: Props) {
   const {
     editing, setEditing,
     values: { name: editName, email: editEmail, phone: editPhone },
@@ -33,6 +34,17 @@ export default function CustomerDetailDrawer({ customer, onClose, onSave, onDele
   );
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [deleteImmediate, setDeleteImmediate] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const isSoftDeleted = Boolean(customer.deletedAt);
+  const scheduledForLabel = (() => {
+    if (!customer.deletionScheduledFor) return '';
+    const d = new Date(customer.deletionScheduledFor);
+    return Number.isNaN(d.getTime())
+      ? ''
+      : d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  })();
   const [noteEditing, setNoteEditing] = useState(false);
   const [noteText, setNoteText] = useState(customer.adminNote ?? '');
   const [savingNote, setSavingNote] = useState(false);
@@ -55,9 +67,29 @@ export default function CustomerDetailDrawer({ customer, onClose, onSave, onDele
   }
 
   async function handleDelete() {
+    if (deleteImmediate && !deleteReason.trim()) {
+      toast.error('Reason is required for immediate hard delete');
+      return;
+    }
     setDeleting(true);
-    await onDelete(customer.id);
-    setDeleting(false);
+    try {
+      await onDelete(customer.id, {
+        reason: deleteReason.trim() || undefined,
+        immediate: deleteImmediate,
+      });
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  async function handleCancelDeletion() {
+    if (!onCancelDeletion) return;
+    setCancelling(true);
+    try {
+      await onCancelDeletion(customer.id);
+    } finally {
+      setCancelling(false);
+    }
   }
 
   return (
@@ -100,6 +132,18 @@ export default function CustomerDetailDrawer({ customer, onClose, onSave, onDele
                 {customer.email.toUpperCase()}{customer.phone ? ` · ${customer.phone}` : ''}
               </div>
               <div className="flex gap-2 flex-wrap">
+                {isSoftDeleted && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-[0.04em] bg-oxblood/25 text-cream border border-oxblood/40">
+                    <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="8" x2="12" y2="12" />
+                      <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                    {scheduledForLabel
+                      ? `Scheduled for deletion on ${scheduledForLabel}`
+                      : 'Scheduled for deletion'}
+                  </span>
+                )}
                 <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium tracking-[0.1em] uppercase ${tierCfg.pillClass}`}>
                   {tierCfg.showStar && (
                     <svg className="w-2.5 h-2.5 fill-current shrink-0" viewBox="0 0 24 24">
@@ -367,25 +411,70 @@ export default function CustomerDetailDrawer({ customer, onClose, onSave, onDele
       {/* Footer */}
       <div className="px-8 py-4.5 bg-paper border-t border-line-soft shrink-0">
         {confirmDelete ? (
-          <div className="flex flex-col gap-2">
-            <p className="text-[13px] text-ink-soft text-center">
-              Delete <strong className="text-oxblood">{customer.name}</strong>? This cannot be undone.
-            </p>
+          <div className="flex flex-col gap-3">
+            <div>
+              <div className="text-[10px] font-medium tracking-[0.18em] uppercase text-muted mb-1.5">
+                Reason {deleteImmediate && <span className="text-oxblood normal-case tracking-normal">· required</span>}
+              </div>
+              <textarea
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+                rows={2}
+                maxLength={1000}
+                placeholder={deleteImmediate ? 'Spam, abuse, fake reviews…' : 'Optional — noted in the audit log'}
+                className={`${inputCls} resize-y text-[13px]`}
+              />
+            </div>
+            <label className="flex items-start gap-2.5 text-[13px] text-ink-soft cursor-pointer">
+              <input
+                type="checkbox"
+                checked={deleteImmediate}
+                onChange={(e) => setDeleteImmediate(e.target.checked)}
+                className="mt-0.5 accent-oxblood"
+              />
+              <span>
+                Immediate hard-delete <span className="text-muted">(skip the 30-day grace; permanent)</span>
+              </span>
+            </label>
             <div className="flex gap-2">
               <button
-                onClick={() => setConfirmDelete(false)}
+                onClick={() => { setConfirmDelete(false); setDeleteReason(''); setDeleteImmediate(false); }}
                 className="flex-1 px-4 py-2.5 rounded-full border border-line text-ink-soft text-[13px] font-medium hover:border-ink hover:text-ink transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDelete}
-                disabled={deleting}
+                disabled={deleting || (deleteImmediate && !deleteReason.trim())}
                 className="flex-1 px-4 py-2.5 rounded-full bg-oxblood text-cream text-[13px] font-medium hover:bg-oxblood/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {deleting ? 'Deleting…' : 'Confirm delete'}
+                {deleting
+                  ? 'Deleting…'
+                  : deleteImmediate
+                    ? 'Hard-delete now'
+                    : 'Schedule deletion'}
               </button>
             </div>
+          </div>
+        ) : isSoftDeleted ? (
+          <div className="flex gap-2">
+            <button
+              onClick={handleCancelDeletion}
+              disabled={cancelling || !onCancelDeletion}
+              className="flex-1 inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-full bg-ink text-cream text-[13px] font-medium hover:bg-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {cancelling ? 'Cancelling…' : 'Cancel deletion'}
+            </button>
+            <button
+              onClick={() => setConfirmDelete(true)}
+              aria-label="Delete now"
+              className="w-10 h-10 rounded-full border border-line text-ink-soft grid place-items-center hover:border-oxblood hover:text-oxblood transition-colors shrink-0"
+              title="Delete immediately"
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+              </svg>
+            </button>
           </div>
         ) : (
           <div className="flex gap-2">

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
@@ -40,6 +41,10 @@ const STRENGTH_LABELS = ['', 'Weak', 'Fair', 'Strong'];
 import { EMAIL_RE } from '@/lib/validation';
 
 import { FieldValidationIcon as FieldIcon } from '@/components/auth/FieldValidationIcon';
+import {
+  useSignInLockout,
+  formatLockoutCountdown,
+} from '@/hooks/useSignInLockout';
 
 const INPUT_CLASS =
   'w-full border-0 border-b border-line bg-transparent text-ink text-base py-2 pb-3.5 pr-6 outline-none placeholder:text-muted/60 focus:border-oxblood transition-colors duration-300';
@@ -70,6 +75,106 @@ export default function Register() {
   });
   const [loading, setLoading] = useState(false);
 
+  // Restore-panel state: when the typed email matches a soft-deleted account,
+  // we swap the form for a sign-in-style prompt that resurrects the account
+  // (the existing authorize() flow clears the deletion fields). The dedicated
+  // password input keeps the value separate from the new-account form, so a
+  // shopper toggling back doesn't carry the restore password into a fresh
+  // registration submit.
+  const [emailStatus, setEmailStatus] = useState<'unknown' | 'ok' | 'soft_deleted'>('unknown');
+  const [softDeletedUntil, setSoftDeletedUntil] = useState<string | null>(null);
+  const [restorePassword, setRestorePassword] = useState('');
+  const [restoring, setRestoring] = useState(false);
+  // Share the sign-in lockout state with /login — failed restore attempts
+  // hit the same authorize() lockout counter, so the countdown needs the
+  // same sessionStorage-backed UX or the customer can keep hammering invalid
+  // passwords for the full hour without any visible feedback.
+  const {
+    isLocked: restoreLocked,
+    lockSecondsLeft: restoreLockSecondsLeft,
+    registerLockoutFromMessage: registerRestoreLockout,
+  } = useSignInLockout();
+
+  // Email-status lookup runs on blur — firing on every keystroke would swap
+  // the form layout out from under the shopper mid-typing the moment their
+  // address momentarily matched a soft-deleted account. Blur means one
+  // request when they tab/click away, and the swap happens at a clean moment.
+  const checkEmailStatus = useCallback(async (raw: string) => {
+    const email = raw.trim();
+    if (!EMAIL_RE.test(email)) {
+      setEmailStatus('unknown');
+      setSoftDeletedUntil(null);
+      return;
+    }
+    try {
+      const res = await fetch('/api/auth/check-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) return;
+      const data = (await res.json()) as {
+        status: 'ok' | 'soft_deleted';
+        deletionScheduledFor?: string | null;
+      };
+      setEmailStatus(data.status);
+      setSoftDeletedUntil(data.deletionScheduledFor ?? null);
+    } catch {
+      // Network blip — let the form's own submit-time validation handle it.
+    }
+  }, []);
+
+  const mode: 'register' | 'restore' = emailStatus === 'soft_deleted' ? 'restore' : 'register';
+
+  const handleRestore = async (e: React.SyntheticEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (restoring || restoreLocked) return;
+    if (!restorePassword) {
+      toast.error('Enter your password to restore the account');
+      return;
+    }
+    setRestoring(true);
+    try {
+      const result = await signIn('credentials', {
+        email: formData.email,
+        password: restorePassword,
+        redirect: false,
+      });
+      if (result?.error) {
+        const wasLockout = registerRestoreLockout(result.error);
+        toast.error(
+          wasLockout
+            ? result.error
+            : 'Invalid password — try again or use a different email.',
+        );
+        return;
+      }
+      toast.success('Welcome back — your account has been restored.');
+      router.replace('/');
+      router.refresh();
+    } finally {
+      setRestoring(false);
+    }
+  };
+
+  const useDifferentEmail = () => {
+    setFormData((prev) => ({ ...prev, email: '' }));
+    setEmailStatus('unknown');
+    setSoftDeletedUntil(null);
+    setRestorePassword('');
+  };
+
+  const formattedScheduledFor = useMemo(() => {
+    if (!softDeletedUntil) return '';
+    const parsed = new Date(softDeletedUntil);
+    if (Number.isNaN(parsed.getTime())) return '';
+    return parsed.toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  }, [softDeletedUntil]);
+
   const anyTouched = Object.values(touched).some(Boolean);
 
   const showIcon = (field: keyof TouchedState) =>
@@ -95,8 +200,11 @@ export default function Register() {
   };
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    const { name } = e.target;
+    const { name, value } = e.target;
     if (name in touched) setTouched((prev) => ({ ...prev, [name]: true }));
+    if (name === 'email') {
+      void checkEmailStatus(value);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -105,6 +213,13 @@ export default function Register() {
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
+    // When the user keeps typing after we've flagged the email as soft-
+    // deleted, reset the status so the restore-panel swaps back to the
+    // regular registration form instead of pinning until the next blur.
+    if (name === 'email' && emailStatus !== 'unknown') {
+      setEmailStatus('unknown');
+      setSoftDeletedUntil(null);
+    }
   };
 
   const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
@@ -243,6 +358,77 @@ export default function Register() {
               can opt out of emails any time.
             </p>
 
+            {mode === 'restore' ? (
+              <form onSubmit={handleRestore} className="space-y-6.5">
+                <div className="bg-oxblood/8 border border-oxblood/25 rounded p-5">
+                  <p className="text-[13px] font-medium text-oxblood mb-1.5">
+                    This email belongs to an account scheduled for deletion.
+                  </p>
+                  <p className="text-[13px] text-ink-soft leading-relaxed">
+                    {formattedScheduledFor
+                      ? `It will be permanently erased on ${formattedScheduledFor}. Sign in below to cancel the deletion and continue using your account.`
+                      : 'Sign in below to cancel the deletion and continue using your account.'}
+                  </p>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="restore-email"
+                    className="block text-[11px] font-medium tracking-[0.22em] uppercase text-muted mb-3"
+                  >
+                    Email
+                  </label>
+                  <input
+                    id="restore-email"
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    autoComplete="email"
+                    className={INPUT_CLASS}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="restore-password"
+                    className="block text-[11px] font-medium tracking-[0.22em] uppercase text-muted mb-3"
+                  >
+                    Password
+                  </label>
+                  <input
+                    id="restore-password"
+                    type="password"
+                    value={restorePassword}
+                    onChange={(e) => setRestorePassword(e.target.value)}
+                    autoComplete="current-password"
+                    placeholder="Your password"
+                    className={INPUT_CLASS}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={restoring || restoreLocked}
+                  className="w-full flex items-center justify-center gap-3 px-7 py-4.5 bg-oxblood text-cream rounded-full text-sm font-medium tracking-[0.04em] hover:bg-ink hover:-translate-y-px transition-all duration-300 disabled:opacity-60 disabled:hover:translate-y-0"
+                >
+                  {restoreLocked && restoreLockSecondsLeft !== null
+                    ? `Locked — try again in ${formatLockoutCountdown(restoreLockSecondsLeft)}`
+                    : restoring
+                      ? 'Restoring…'
+                      : 'Restore my account'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={useDifferentEmail}
+                  className="w-full text-center text-[13px] text-muted hover:text-ink transition-colors underline-offset-2 hover:underline"
+                >
+                  Use a different email
+                </button>
+              </form>
+            ) : (
             <form onSubmit={handleSubmit}>
               {/* Name */}
               <div className="auth-reveal mb-6.5" style={{ animationDelay: '0.35s' }}>
@@ -412,6 +598,7 @@ export default function Register() {
               </button>
 
             </form>
+            )}
           </div>
         </div>
       </section>

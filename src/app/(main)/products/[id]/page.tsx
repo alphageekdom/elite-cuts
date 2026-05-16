@@ -42,6 +42,7 @@ type SerializedReview = {
 type LeanReviewWithUser = {
   _id: Types.ObjectId;
   user: { _id: Types.ObjectId; name: string; rewardPoints: number } | null;
+  authorNameSnapshot?: string;
   rating: number;
   comment: string;
   createdAt: Date;
@@ -172,20 +173,24 @@ export default async function ProductPage({ params }: PageProps) {
     .sort({ createdAt: -1 })
     .lean()) as unknown as LeanReviewWithUser[];
 
-  const reviews: SerializedReview[] = rawReviews.map((r) => ({
-    _id: String(r._id),
-    userId: r.user?._id?.toString() ?? 'anonymous',
-    isOwn: r.user?._id?.toString() === sessionUser?.userId,
-    userName: r.user?.name ?? 'Anonymous',
-    rating: r.rating,
-    comment: r.comment,
-    createdAt: new Date(r.createdAt).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }),
-    userTier: getUserTier(r.user?.rewardPoints ?? 0),
-  }));
+  const reviews: SerializedReview[] = rawReviews.map((r) => {
+    const snapshot = (r.authorNameSnapshot ?? '').trim();
+    const fallbackName = snapshot || 'Former customer';
+    return {
+      _id: String(r._id),
+      userId: r.user?._id?.toString() ?? 'anonymous',
+      isOwn: r.user?._id?.toString() === sessionUser?.userId,
+      userName: r.user?.name ?? fallbackName,
+      rating: r.rating,
+      comment: r.comment,
+      createdAt: new Date(r.createdAt).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      }),
+      userTier: getUserTier(r.user?.rewardPoints ?? 0),
+    };
+  });
 
   // Derive the current user's own review for the edit form (no extra DB query)
   const ownRaw = reviews.find((r) => r.isOwn);

@@ -21,5 +21,16 @@ declare module 'next-auth/jwt' {
     userId?: string;
     isAdmin?: boolean;
     rewardPoints?: number;
+    // Last unix-ms timestamp the token was revalidated against the User doc's
+    // `deletedAt`. The jwt callback re-checks the DB roughly once a minute so
+    // an admin soft-delete kicks a still-signed-in customer within the same
+    // window instead of waiting for the cookie to expire.
+    lastDeletionCheckAt?: number;
+    // Tombstone — set when the re-check finds the user soft-deleted or gone.
+    // The session callback returns null when this is true, so `useSession()`
+    // resolves to "unauthenticated" on the client and protected server reads
+    // 401. NextAuth's JWT strategy can't expire the cookie from a callback,
+    // but a tombstoned token reads as logged-out everywhere that matters.
+    invalidated?: boolean;
   }
 }

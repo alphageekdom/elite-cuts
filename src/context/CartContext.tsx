@@ -208,24 +208,32 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // (1) unauth → auth transition runs the one-time merge; (2) staying
   // authenticated re-fetches; (3) becoming a guest restores the (now likely
   // empty) localStorage cart.
+  //
+  // Gating on `session?.user` rather than `status` alone handles the
+  // tombstoned-token case: after an admin soft-delete the cookie is still
+  // valid (status stays 'authenticated') but the server returns a session
+  // with no user, so any /api/cart fetch would 401 in a loop. Treat that
+  // shape as the guest branch.
+  const hasUser = Boolean(session?.user);
   useEffect(() => {
     if (status === 'loading') return;
 
     const prev = prevStatusRef.current;
     prevStatusRef.current = status;
 
-    if (status === 'authenticated') {
+    if (status === 'authenticated' && hasUser) {
       if (prev === 'unauthenticated') {
         void mergeGuestCartIntoServer();
       } else {
         void fetchServerCart();
       }
     } else {
-      // Guest: sync from localStorage and clear the loading flag.
+      // Guest (or tombstoned session): sync from localStorage and clear the
+      // loading flag.
       setCartItems(readGuestCart());
       setLoading(false);
     }
-  }, [status, fetchServerCart, mergeGuestCartIntoServer]);
+  }, [status, hasUser, fetchServerCart, mergeGuestCartIntoServer]);
 
   const addItemToCart = useCallback(
     async (item: AddItemArg) => {
