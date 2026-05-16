@@ -2,12 +2,16 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 
 import { useCartContext, type CartLine } from '@/context/CartContext';
 import { fmtPrice } from '@/lib/pricing';
 import { MAX_PER_LINE } from '@/lib/shopConfig';
+
+import CheckIcon from '@/components/uielements/CheckIcon';
+import XIcon from '@/components/uielements/XIcon';
 
 const MinusIcon = () => (
   <svg
@@ -41,6 +45,7 @@ type Props = {
 };
 
 const CartItemRow = ({ line }: Props) => {
+  const router = useRouter();
   const { setItemQuantity, removeItemFromCart } = useCartContext();
   const { data: session } = useSession();
   const isLoggedIn = Boolean(session?.user);
@@ -49,6 +54,7 @@ const CartItemRow = ({ line }: Props) => {
   // while editing, so we only commit on blur and enforce ≥1.
   const [qtyInput, setQtyInput] = useState(line.quantity.toString());
   const [savingForLater, setSavingForLater] = useState(false);
+  const [confirmingRemove, setConfirmingRemove] = useState(false);
 
   const productId = line.product._id;
   const lineTotal = fmtPrice(line.price * line.quantity);
@@ -79,15 +85,19 @@ const CartItemRow = ({ line }: Props) => {
     setQtyInput(clamped.toString());
   };
 
-  const handleRemove = () => {
-    const ok = window.confirm('Remove this item from your cart?');
-    if (!ok) return;
-    void removeItemFromCart(productId);
+  const startRemoveConfirm = () => setConfirmingRemove(true);
+  const cancelRemoveConfirm = () => setConfirmingRemove(false);
+  const confirmRemove = () => {
+    setConfirmingRemove(false);
+    void removeItemFromCart(productId, { silent: true });
   };
 
   const handleSaveForLater = async () => {
     if (!isLoggedIn) {
-      toast.info('Sign in to save items for later');
+      // Guest path: just route to sign-in and bring them back to the cart with
+      // their merged items intact. No auto-save — the user clicks Save for
+      // later again from a real cart row if they actually want to save something.
+      router.push(`/login?callbackUrl=${encodeURIComponent('/cart')}`);
       return;
     }
     if (savingForLater) return;
@@ -179,13 +189,39 @@ const CartItemRow = ({ line }: Props) => {
             {savingForLater ? 'Saving…' : 'Save for later'}
           </button>
 
-          <button
-            type='button'
-            onClick={handleRemove}
-            className='border-b border-line pb-px text-[13px] text-ink-soft transition-colors duration-300 hover:border-current hover:text-oxblood motion-reduce:transition-none'
-          >
-            Remove
-          </button>
+          {confirmingRemove ? (
+            <span
+              role='group'
+              aria-label='Confirm remove'
+              className='inline-flex items-center gap-2 text-[13px]'
+            >
+              <span className='text-muted'>Remove?</span>
+              <button
+                type='button'
+                onClick={confirmRemove}
+                aria-label='Confirm remove'
+                className='grid h-6 w-6 place-items-center rounded-full bg-oxblood text-cream transition-colors duration-300 hover:bg-ink motion-reduce:transition-none'
+              >
+                <CheckIcon className='h-3 w-3' />
+              </button>
+              <button
+                type='button'
+                onClick={cancelRemoveConfirm}
+                aria-label='Cancel'
+                className='grid h-6 w-6 place-items-center rounded-full border border-line text-ink-soft transition-colors duration-300 hover:border-ink hover:text-ink motion-reduce:transition-none'
+              >
+                <XIcon className='h-3 w-3' />
+              </button>
+            </span>
+          ) : (
+            <button
+              type='button'
+              onClick={startRemoveConfirm}
+              className='border-b border-line pb-px text-[13px] text-ink-soft transition-colors duration-300 hover:border-current hover:text-oxblood motion-reduce:transition-none'
+            >
+              Remove
+            </button>
+          )}
         </div>
       </div>
 

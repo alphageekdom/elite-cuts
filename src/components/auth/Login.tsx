@@ -1,10 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { useSession, signIn } from 'next-auth/react';
+
+// Reject anything that isn't a same-origin relative path — guards against open
+// redirects when a hostile link drops a full URL into `?callbackUrl=`.
+const isSafeCallbackUrl = (url: string | null): url is string =>
+  Boolean(url) && url!.startsWith('/') && !url!.startsWith('//');
 
 interface FormState {
   email: string;
@@ -30,7 +35,10 @@ const INPUT_CLASS =
 
 export default function Login() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session } = useSession();
+  const rawCallbackUrl = searchParams.get('callbackUrl');
+  const callbackUrl = isSafeCallbackUrl(rawCallbackUrl) ? rawCallbackUrl : null;
   const [formData, setFormData] = useState<FormState>({
     email: '',
     password: '',
@@ -54,8 +62,8 @@ export default function Login() {
     // (admin soft-deleted us) still returns a truthy `session` with an
     // undefined `user`. Without this guard the customer would be unable to
     // reach /login to sign back in.
-    if (session?.user) router.replace('/');
-  }, [session, router]);
+    if (session?.user) router.replace(callbackUrl ?? '/');
+  }, [session, router, callbackUrl]);
 
   const anyTouched = Object.values(touched).some(Boolean);
 
@@ -126,7 +134,15 @@ export default function Login() {
         } catch {
           toast.success('Signed in successfully');
         }
-        router.push(bannerDormancyCleared ? '/?dormancyCleared=1' : '/');
+        // A safe ?callbackUrl= takes precedence — the user came from a gated
+        // action (e.g. cart "Save for later") and we want to land them back
+        // where they were so the deferred action can complete. The
+        // dormancyCleared banner is only for the default landing.
+        if (callbackUrl) {
+          router.push(callbackUrl);
+        } else {
+          router.push(bannerDormancyCleared ? '/?dormancyCleared=1' : '/');
+        }
       }
     } catch {
       toast.error('Something went wrong');
