@@ -4,7 +4,10 @@ import { toast } from 'sonner';
 
 import { useCartContext, type AddItemArg } from '@/context/CartContext';
 
-const useHandleAddToCart = (product: AddItemArg) => {
+const useHandleAddToCart = (
+  product: AddItemArg,
+  opts?: { silent?: boolean },
+) => {
   const { addItemToCart } = useCartContext();
 
   const [isAddingToCart, setIsAddingToCart] = useState(false);
@@ -19,7 +22,7 @@ const useHandleAddToCart = (product: AddItemArg) => {
 
     setIsAddingToCart(true);
     try {
-      await addItemToCart(product);
+      await addItemToCart(product, opts);
     } catch {
       toast.error('Could not add to cart');
     } finally {

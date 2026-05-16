@@ -1,7 +1,12 @@
 'use client';
 
+import { useState } from 'react';
+
 import { useCartContext } from '@/context/CartContext';
 import CartItemRow from './CartItemRow';
+
+import CheckIcon from '@/components/uielements/CheckIcon';
+import XIcon from '@/components/uielements/XIcon';
 
 const EmptyState = () => (
   <div className='flex flex-col items-center justify-center px-8 py-16 text-center'>
@@ -39,11 +44,13 @@ const CartItemsPanel = () => {
   const { cartItems, clearCart } = useCartContext();
   const count = cartItems.length;
 
-  const onClearCart = () => {
-    if (count === 0) return;
-    const ok = window.confirm('Clear all items from your cart?');
-    if (!ok) return;
-    void clearCart();
+  const [confirmingClear, setConfirmingClear] = useState(false);
+
+  const startClearConfirm = () => setConfirmingClear(true);
+  const cancelClearConfirm = () => setConfirmingClear(false);
+  const confirmClear = () => {
+    setConfirmingClear(false);
+    void clearCart({ silent: true });
   };
 
   return (
@@ -51,19 +58,44 @@ const CartItemsPanel = () => {
       <header className='flex items-center justify-between gap-3 border-b border-line-soft px-6 py-5 sm:px-8 sm:py-6'>
         <h2 className='font-display text-[20px] font-medium tracking-tight sm:text-[22px]'>
           {count} {count === 1 ? 'cut' : 'cuts'}{' '}
-          <em className='ml-1 text-base font-normal not-italic text-muted italic'>
+          <em className='ml-1 text-base font-normal not-italic text-muted'>
             in your cart
           </em>
         </h2>
-        {count > 0 && (
-          <button
-            type='button'
-            onClick={onClearCart}
-            className='text-[13px] text-muted transition-colors duration-300 hover:text-oxblood motion-reduce:transition-none'
-          >
-            Clear cart
-          </button>
-        )}
+        {count > 0 &&
+          (confirmingClear ? (
+            <span
+              role='group'
+              aria-label='Confirm clear cart'
+              className='inline-flex items-center gap-2 text-[13px]'
+            >
+              <span className='text-muted'>Clear cart?</span>
+              <button
+                type='button'
+                onClick={confirmClear}
+                aria-label='Confirm clear cart'
+                className='grid h-6 w-6 place-items-center rounded-full bg-oxblood text-cream transition-colors duration-300 hover:bg-ink motion-reduce:transition-none'
+              >
+                <CheckIcon className='h-3 w-3' />
+              </button>
+              <button
+                type='button'
+                onClick={cancelClearConfirm}
+                aria-label='Cancel'
+                className='grid h-6 w-6 place-items-center rounded-full border border-line text-ink-soft transition-colors duration-300 hover:border-ink hover:text-ink motion-reduce:transition-none'
+              >
+                <XIcon className='h-3 w-3' />
+              </button>
+            </span>
+          ) : (
+            <button
+              type='button'
+              onClick={startClearConfirm}
+              className='text-[13px] text-muted transition-colors duration-300 hover:text-oxblood motion-reduce:transition-none'
+            >
+              Clear cart
+            </button>
+          ))}
       </header>
 
       {count === 0 ? (

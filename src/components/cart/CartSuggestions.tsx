@@ -27,7 +27,11 @@ const PlusIcon = () => (
 );
 
 const SuggestionCard = ({ product }: SuggestProps) => {
-  const { isAddingToCart, handleAddToCart } = useHandleAddToCart(product);
+  // Silent on the cart page — the item appearing in the items panel beside
+  // this strip is feedback enough, no toast needed.
+  const { isAddingToCart, handleAddToCart } = useHandleAddToCart(product, {
+    silent: true,
+  });
 
   return (
     <div className='flex items-center gap-3 rounded-sm border border-transparent bg-cream p-3 transition-[border-color,transform] duration-300 hover:-translate-y-0.5 hover:border-line motion-reduce:transition-none motion-reduce:hover:translate-y-0'>

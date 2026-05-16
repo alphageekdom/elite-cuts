@@ -48,8 +48,11 @@ type CartContextValue = {
   cartCount: number;
   cartUpdatedAt: Date | null;
   loading: boolean;
-  addItemToCart: (item: AddItemArg) => Promise<void>;
-  removeItemFromCart: (productId: string) => Promise<void>;
+  addItemToCart: (item: AddItemArg, opts?: { silent?: boolean }) => Promise<void>;
+  removeItemFromCart: (
+    productId: string,
+    opts?: { silent?: boolean },
+  ) => Promise<void>;
   setItemQuantity: (productId: string, quantity: number) => Promise<void>;
   clearCart: (opts?: { silent?: boolean }) => Promise<void>;
   // Local-only reset for flows where the server cart is already known to be
@@ -191,7 +194,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
               quantity: line.quantity,
             }),
           });
-          if (!res.ok) throw new Error('merge line failed');
+          if (!res.ok) {
+            const body = await res.text().catch(() => '');
+            throw new Error(`status ${res.status}: ${body || res.statusText}`);
+          }
         } catch (err) {
           console.error('Failed to merge line', line.product?._id, err);
         }
@@ -236,7 +242,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [status, hasUser, fetchServerCart, mergeGuestCartIntoServer]);
 
   const addItemToCart = useCallback(
-    async (item: AddItemArg) => {
+    async (item: AddItemArg, opts?: { silent?: boolean }) => {
+      const silent = opts?.silent ?? false;
       if (!item?._id) {
         toast.error('Product not available');
         return;
@@ -259,7 +266,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         writeGuestCart(next);
         setCartItems(next);
         setCartUpdatedAt(new Date());
-        toast.success('Item added to cart');
+        if (!silent) toast.success('Item added to cart');
         return;
       }
 
@@ -285,7 +292,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         const data = (await res.json()) as CartApiResponse;
         setCartItems(data.items ?? []);
         setCartUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : null);
-        toast.success('Item added to cart');
+        if (!silent) toast.success('Item added to cart');
       } catch (error) {
         setCartItems(snapshot);
         console.error('Error adding item to cart:', error);
@@ -336,13 +343,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   const removeItemFromCart = useCallback(
-    async (productId: string) => {
+    async (productId: string, opts?: { silent?: boolean }) => {
+      const silent = opts?.silent ?? false;
       if (!isLoggedIn) {
         const updated = removeFromLines(cartItems, productId);
         writeGuestCart(updated);
         setCartItems(updated);
         setCartUpdatedAt(new Date());
-        toast.success('Item removed from cart');
+        if (!silent) toast.success('Item removed from cart');
         return;
       }
 
@@ -362,7 +370,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         const data = (await res.json()) as CartApiResponse;
         setCartItems(data.items ?? []);
         setCartUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : null);
-        toast.success('Item removed from cart');
+        if (!silent) toast.success('Item removed from cart');
       } catch (error) {
         setCartItems(snapshot);
         console.error('Error removing item:', error);

@@ -1,16 +1,13 @@
 'use client';
 
-import { useMemo, useState, type FormEvent } from 'react';
+import { useMemo } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
-import { toast } from 'sonner';
 
 import { useCartContext } from '@/context/CartContext';
 import { computeTotals, fmtPrice } from '@/lib/pricing';
 import { formatDaysUntil } from '@/lib/holidays';
 import StoreInfoModal from '@/components/ui/StoreInfoModal';
-
-type Fulfillment = 'pickup' | 'delivery';
 
 type Props = {
   activeHoliday?: { name: string; daysUntil: number } | null;
@@ -34,9 +31,6 @@ const CartSummary = ({ activeHoliday }: Props) => {
   const { data: session } = useSession();
   const isLoggedIn = Boolean(session?.user);
 
-  const [promo, setPromo] = useState('');
-  const [fulfillment, setFulfillment] = useState<Fulfillment>('pickup');
-
   const itemCount = cartItems.reduce(
     (acc, line) => acc + line.quantity,
     0,
@@ -47,18 +41,6 @@ const CartSummary = ({ activeHoliday }: Props) => {
     () => computeTotals(cartItems, { isLoggedIn }),
     [cartItems, isLoggedIn],
   );
-
-  const onApplyPromo = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!promo.trim()) return;
-    toast.info("We're not running promotions this week");
-    setPromo('');
-  };
-
-  const onSelectDelivery = () => {
-    toast.info('Delivery is coming soon — pickup only for now');
-    setFulfillment('pickup');
-  };
 
   const isEmpty = lineCount === 0;
 
@@ -104,65 +86,6 @@ const CartSummary = ({ activeHoliday }: Props) => {
               USD
             </em>
           </span>
-        </div>
-
-        <form onSubmit={onApplyPromo} className='mt-5 flex gap-2'>
-          <input
-            type='text'
-            value={promo}
-            onChange={(e) => setPromo(e.target.value)}
-            placeholder='Promo code'
-            aria-label='Promo code'
-            className='flex-1 rounded-full border border-line bg-cream px-4 py-2.5 text-[13px] text-ink outline-none placeholder:text-muted focus:border-ink'
-          />
-          <button
-            type='submit'
-            className='rounded-full bg-ink px-5 py-2.5 text-[13px] font-medium text-cream transition-colors duration-300 hover:bg-oxblood motion-reduce:transition-none'
-          >
-            Apply
-          </button>
-        </form>
-
-        <div className='mt-5 border-t border-line-soft pt-5'>
-          <div className='mb-3 text-[11px] font-medium tracking-[0.22em] uppercase text-muted'>
-            Fulfillment
-          </div>
-          <div className='grid grid-cols-2 gap-2'>
-            <button
-              type='button'
-              onClick={() => setFulfillment('pickup')}
-              aria-pressed={fulfillment === 'pickup'}
-              className={`rounded-sm border px-4 py-3.5 text-left transition-[background-color,border-color,color] duration-300 motion-reduce:transition-none ${
-                fulfillment === 'pickup'
-                  ? 'border-ink bg-ink text-cream'
-                  : 'border-line bg-cream text-ink hover:border-ink'
-              }`}
-            >
-              <div className='font-display text-[15px] font-medium tracking-tight'>
-                Pickup
-              </div>
-              <div
-                className={`font-mono text-[11px] tracking-[0.04em] ${
-                  fulfillment === 'pickup' ? 'text-cream/70' : 'text-muted'
-                }`}
-              >
-                ~1 hr · Free
-              </div>
-            </button>
-            <button
-              type='button'
-              onClick={onSelectDelivery}
-              aria-pressed={false}
-              className='rounded-sm border border-line bg-cream px-4 py-3.5 text-left text-ink transition-[border-color] duration-300 hover:border-ink motion-reduce:transition-none'
-            >
-              <div className='font-display text-[15px] font-medium tracking-tight'>
-                Delivery
-              </div>
-              <div className='font-mono text-[11px] tracking-[0.04em] text-muted'>
-                Coming soon
-              </div>
-            </button>
-          </div>
         </div>
 
         {isEmpty ? (
