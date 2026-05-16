@@ -159,6 +159,51 @@ export async function clearDormancyWarning(
   return { wasWarned: true };
 }
 
+// Records customer activity — bumps `lastActiveAt` and clears any pending
+// dormancy warning in one atomic write, then writes a
+// `self_dormancy_cleared` audit row when the activity actually rescued a
+// warned account. The shared entry point for the two order-route paths so
+// they stay in sync (the sign-in path is intentionally inline in
+// authorize() because it folds these writes into the same updateOne that
+// also resets failedLoginAttempts / lockoutUntil / soft-delete state).
+//
+// `performedBy` is the admin's userId for the admin-create-for-customer
+// path, null for the customer's own order. The audit's `userId` is always
+// the customer the activity belongs to.
+export async function recordCustomerActivity(opts: {
+  userId: UserId;
+  at: Date;
+  performedBy?: UserId | null;
+}): Promise<{ wasWarned: boolean }> {
+  await connectDB();
+
+  const prev = await User.findOneAndUpdate(
+    { _id: opts.userId },
+    { $set: { lastActiveAt: opts.at, dormancyWarnedAt: null } },
+    { projection: { dormancyWarnedAt: 1, email: 1 }, new: false },
+  ).lean<{ dormancyWarnedAt?: Date | null; email?: string } | null>();
+
+  if (!prev?.dormancyWarnedAt) return { wasWarned: false };
+
+  // Skip the audit write when the user has no email on record — the
+  // AccountDeletionAudit schema requires a non-empty `userEmailSnapshot`,
+  // and bubbling that ValidationError up would 500 the order request the
+  // helper is being called from. The clear itself already succeeded; the
+  // missing audit row is the lesser failure to swallow. Unreachable for
+  // accounts created through the register route (email required at
+  // sign-up) but worth the guard in case a future seeding path bypasses it.
+  if (prev.email) {
+    await AccountDeletionAudit.create({
+      userId: opts.userId,
+      userEmailSnapshot: prev.email,
+      action: 'self_dormancy_cleared',
+      performedBy: opts.performedBy ?? null,
+    });
+  }
+
+  return { wasWarned: true };
+}
+
 // Synthesizes a placeholder email when an anonymized order's user had no
 // email on record. Order.guestContact.email is required at the schema level,
 // and `updateMany` bypasses sub-schema validators — without this sentinel a

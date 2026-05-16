@@ -186,18 +186,15 @@ export const DELETE = withAdmin(async (request: NextRequest, ctx: unknown, perfo
       return NextResponse.json({ message: 'Admins cannot delete themselves' }, { status: 403 });
     }
 
-    let immediate = false;
-    let reason: string | undefined;
-    try {
-      const body = (await request.json().catch(() => ({}))) as {
-        reason?: string;
-        immediate?: boolean;
-      };
-      immediate = Boolean(body?.immediate);
-      reason = typeof body?.reason === 'string' ? body.reason.trim() : undefined;
-    } catch {
-      // Empty body is acceptable — defaults apply (soft delete, no reason).
-    }
+    // Empty / malformed body falls back to defaults (soft delete, no reason).
+    // The inline `.catch(() => ({}))` already converts a JSON-parse failure
+    // into an empty object, so no outer try/catch is needed here.
+    const body = (await request.json().catch(() => ({}))) as {
+      reason?: string;
+      immediate?: boolean;
+    };
+    const immediate = Boolean(body?.immediate);
+    const reason = typeof body?.reason === 'string' ? body.reason.trim() : undefined;
 
     const target = await User.findById(id).select('isAdmin');
     if (!target) {

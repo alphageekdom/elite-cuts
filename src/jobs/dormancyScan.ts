@@ -49,8 +49,12 @@ export async function runDormancyScan(now: Date = new Date()): Promise<DormancyS
   // existed, so they default to null. MongoDB `$lte` doesn't match null, which
   // would silently exempt every legacy user from the scan forever. Copy
   // `updatedAt` (which the Mongoose timestamps plugin keeps current) into
-  // `lastActiveAt` so they sort into the scan correctly. Idempotent — the
-  // filter is `lastActiveAt: null`, so this is a no-op after the first run.
+  // `lastActiveAt` so they sort into the scan correctly.
+  //
+  // After the first run this matches zero documents — every user written
+  // since the dormancy feature shipped gets a `lastActiveAt` value on
+  // creation (register route stamps it; admin-create flows hit
+  // `recordCustomerActivity`; sign-in writes it via `authorize()`).
   //
   // **Known nuance:** `updatedAt` is touched by any admin write on the User
   // doc (e.g. an admin-note edit), not just by customer activity. A legacy
@@ -59,8 +63,8 @@ export async function runDormancyScan(now: Date = new Date()): Promise<DormancyS
   // first warning pass. This matches the spec verbatim ("backfilled from
   // `updatedAt`"); the trade-off favors fewer false-positive dormancy
   // warnings over catching every truly-dormant legacy account on day one.
-  // The next scan after a fresh customer-side update (or 18 months of
-  // continued inactivity from today) will pick them up.
+  // The next scan after 18 months of continued inactivity from today will
+  // pick them up.
   await User.updateMany(
     { lastActiveAt: null, isAdmin: { $ne: true } },
     [{ $set: { lastActiveAt: '$updatedAt' } }],
@@ -114,7 +118,7 @@ export async function runDormancyScan(now: Date = new Date()): Promise<DormancyS
   const toSoftDelete = await User.find({
     isAdmin: { $ne: true },
     deletedAt: null,
-    dormancyWarnedAt: { $lte: followupCutoff, $ne: null },
+    dormancyWarnedAt: { $lte: followupCutoff },
     lastActiveAt: { $lte: thresholdCutoff },
   })
     .select('_id email')
@@ -137,9 +141,10 @@ export async function runDormancyScan(now: Date = new Date()): Promise<DormancyS
   return { thresholdMonths, warned, softDeleted, failures };
 }
 
-// Subtract whole months from a date. JS's Date arithmetic in months is
-// calendar-aware via setMonth, so this handles year rollovers and short
-// months correctly (e.g. March 31 minus 1 month → February 28/29).
+// Subtract whole months from a date. JS rolls month-overflow days into the
+// next month — March 31 minus 1 month becomes March 2/3, not February
+// 28/29 — so this is approximate near month boundaries. A few days of drift
+// is acceptable for 12/18/24-month dormancy thresholds.
 function monthsAgo(base: Date, months: number): Date {
   const d = new Date(base);
   d.setMonth(d.getMonth() - months);

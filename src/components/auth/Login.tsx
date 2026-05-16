@@ -99,13 +99,14 @@ export default function Login() {
         toast.error(wasLockout ? res.error : 'Invalid email or password');
       } else {
         // Sign-in can clear two lifecycle states inside authorize(): a soft-
-        // delete (handled with a cancellation toast, matching the
-        // account-deletion feature) or a dormancy warning (handled with the
-        // home-page banner per the spec). Soft-delete takes priority — that's
-        // the bigger reversal. Dormancy intentionally has no toast: the
-        // banner is the spec-mandated surface, and showing both would
-        // double-state the same message.
-        let dormancyCleared = false;
+        // delete (cancellation toast) or a dormancy warning (home-page
+        // banner per the spec). If both happened in the same sign-in (rare
+        // — would mean a user was both soft-deleted and had a stale
+        // dormancy warning), the soft-delete toast is the more meaningful
+        // reversal and stands alone. The dormancy banner only fires for
+        // dormancy-only clears so the two surfaces never double-state the
+        // same recovery to the same customer.
+        let bannerDormancyCleared = false;
         try {
           const probe = await fetch('/api/users/me/recently-restored');
           if (probe.ok) {
@@ -113,10 +114,10 @@ export default function Login() {
               recentlyRestored?: boolean;
               recentlyDormancyCleared?: boolean;
             };
-            dormancyCleared = Boolean(data.recentlyDormancyCleared);
             if (data.recentlyRestored) {
               toast.success("Welcome back — your deletion request was cancelled.");
             } else {
+              bannerDormancyCleared = Boolean(data.recentlyDormancyCleared);
               toast.success('Signed in successfully');
             }
           } else {
@@ -125,7 +126,7 @@ export default function Login() {
         } catch {
           toast.success('Signed in successfully');
         }
-        router.push(dormancyCleared ? '/?dormancyCleared=1' : '/');
+        router.push(bannerDormancyCleared ? '/?dormancyCleared=1' : '/');
       }
     } catch {
       toast.error('Something went wrong');
