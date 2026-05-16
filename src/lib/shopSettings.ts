@@ -40,6 +40,7 @@ const FALLBACK_SETTINGS: ShopSettings = {
   connoisseurThreshold: 250,
   masterCutThreshold: 1000,
   tierWindowMonths: 12,
+  dormancyWarningMonths: 18,
 };
 
 const SETTINGS_KEYS = Object.keys(FALLBACK_SETTINGS) as (keyof ShopSettings)[];

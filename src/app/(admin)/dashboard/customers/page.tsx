@@ -71,13 +71,14 @@ export default async function AdminCustomersPage() {
   const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
   const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
 
-  let newThisWeek = 0, newThisMonth = 0, activeCount = 0, connoisseurPlusCount = 0;
+  let newThisWeek = 0, newThisMonth = 0, activeCount = 0, connoisseurPlusCount = 0, dormantCount = 0;
   for (const c of customers) {
     const accountAge = now - new Date(c.createdAt).getTime();
     if (accountAge < ONE_WEEK_MS) newThisWeek++;
     if (accountAge < THIRTY_DAYS_MS) newThisMonth++;
     if (c.lastOrderAt && now - new Date(c.lastOrderAt).getTime() <= NINETY_DAYS_MS) activeCount++;
     if (c.orderCount >= 10) connoisseurPlusCount++;
+    if (c.dormancyWarnedAt && !c.deletedAt) dormantCount++;
   }
 
   const counts: CustomerCounts = {
@@ -85,6 +86,7 @@ export default async function AdminCustomersPage() {
     new: newThisMonth,
     active: activeCount,
     connoisseurPlus: connoisseurPlusCount,
+    dormant: dormantCount,
   };
 
   return (

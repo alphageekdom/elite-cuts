@@ -17,9 +17,17 @@ type Props = {
   onSave: (id: string, data: { name: string; email: string; phone: string }) => Promise<void>;
   onDelete: (id: string, opts?: { reason?: string; immediate?: boolean }) => Promise<void>;
   onCancelDeletion?: (id: string) => Promise<void>;
+  onCancelDormancy?: (id: string) => Promise<void>;
 };
 
-export default function CustomerDetailDrawer({ customer, onClose, onSave, onDelete, onCancelDeletion }: Props) {
+export default function CustomerDetailDrawer({
+  customer,
+  onClose,
+  onSave,
+  onDelete,
+  onCancelDeletion,
+  onCancelDormancy,
+}: Props) {
   const {
     editing, setEditing,
     values: { name: editName, email: editEmail, phone: editPhone },
@@ -37,13 +45,26 @@ export default function CustomerDetailDrawer({ customer, onClose, onSave, onDele
   const [deleteReason, setDeleteReason] = useState('');
   const [deleteImmediate, setDeleteImmediate] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [cancellingDormancy, setCancellingDormancy] = useState(false);
   const isSoftDeleted = Boolean(customer.deletedAt);
+  const isDormancyWarned = Boolean(customer.dormancyWarnedAt) && !isSoftDeleted;
   const scheduledForLabel = (() => {
     if (!customer.deletionScheduledFor) return '';
     const d = new Date(customer.deletionScheduledFor);
     return Number.isNaN(d.getTime())
       ? ''
       : d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  })();
+  // Format both the warning date and the scheduled cleanup date (warning + 30d)
+  // so the pill can show "sent on X, cleanup on Y".
+  const dormancyLabels = (() => {
+    if (!customer.dormancyWarnedAt) return { warned: '', cleanup: '' };
+    const warned = new Date(customer.dormancyWarnedAt);
+    if (Number.isNaN(warned.getTime())) return { warned: '', cleanup: '' };
+    const cleanup = new Date(warned.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const fmt = (d: Date) =>
+      d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    return { warned: fmt(warned), cleanup: fmt(cleanup) };
   })();
   const [noteEditing, setNoteEditing] = useState(false);
   const [noteText, setNoteText] = useState(customer.adminNote ?? '');
@@ -89,6 +110,16 @@ export default function CustomerDetailDrawer({ customer, onClose, onSave, onDele
       await onCancelDeletion(customer.id);
     } finally {
       setCancelling(false);
+    }
+  }
+
+  async function handleCancelDormancy() {
+    if (!onCancelDormancy) return;
+    setCancellingDormancy(true);
+    try {
+      await onCancelDormancy(customer.id);
+    } finally {
+      setCancellingDormancy(false);
     }
   }
 
@@ -142,6 +173,17 @@ export default function CustomerDetailDrawer({ customer, onClose, onSave, onDele
                     {scheduledForLabel
                       ? `Scheduled for deletion on ${scheduledForLabel}`
                       : 'Scheduled for deletion'}
+                  </span>
+                )}
+                {isDormancyWarned && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-[0.04em] bg-camel/25 text-cream border border-camel/40">
+                    <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                    {dormancyLabels.warned && dormancyLabels.cleanup
+                      ? `Dormancy warning sent ${dormancyLabels.warned} · cleanup on ${dormancyLabels.cleanup}`
+                      : 'Dormancy warning sent'}
                   </span>
                 )}
                 <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium tracking-[0.1em] uppercase ${tierCfg.pillClass}`}>
@@ -470,6 +512,25 @@ export default function CustomerDetailDrawer({ customer, onClose, onSave, onDele
               aria-label="Delete now"
               className="w-10 h-10 rounded-full border border-line text-ink-soft grid place-items-center hover:border-oxblood hover:text-oxblood transition-colors shrink-0"
               title="Delete immediately"
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+              </svg>
+            </button>
+          </div>
+        ) : isDormancyWarned ? (
+          <div className="flex gap-2">
+            <button
+              onClick={handleCancelDormancy}
+              disabled={cancellingDormancy || !onCancelDormancy}
+              className="flex-1 inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-full bg-ink text-cream text-[13px] font-medium hover:bg-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {cancellingDormancy ? 'Cancelling…' : 'Cancel dormancy cleanup'}
+            </button>
+            <button
+              onClick={() => setConfirmDelete(true)}
+              aria-label="Delete customer"
+              className="w-10 h-10 rounded-full border border-line text-ink-soft grid place-items-center hover:border-oxblood hover:text-oxblood transition-colors shrink-0"
             >
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>

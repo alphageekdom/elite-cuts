@@ -98,14 +98,22 @@ export default function Login() {
         const wasLockout = registerLockoutFromMessage(res.error);
         toast.error(wasLockout ? res.error : 'Invalid email or password');
       } else {
-        // Sign-in into a soft-deleted account cancels the pending deletion in
-        // authorize(). Check the audit-log helper to see if that just
-        // happened and surface a more specific message — otherwise fall back
-        // to the generic success toast.
+        // Sign-in can clear two lifecycle states inside authorize(): a soft-
+        // delete (handled with a cancellation toast, matching the
+        // account-deletion feature) or a dormancy warning (handled with the
+        // home-page banner per the spec). Soft-delete takes priority — that's
+        // the bigger reversal. Dormancy intentionally has no toast: the
+        // banner is the spec-mandated surface, and showing both would
+        // double-state the same message.
+        let dormancyCleared = false;
         try {
           const probe = await fetch('/api/users/me/recently-restored');
           if (probe.ok) {
-            const data = (await probe.json()) as { recentlyRestored?: boolean };
+            const data = (await probe.json()) as {
+              recentlyRestored?: boolean;
+              recentlyDormancyCleared?: boolean;
+            };
+            dormancyCleared = Boolean(data.recentlyDormancyCleared);
             if (data.recentlyRestored) {
               toast.success("Welcome back — your deletion request was cancelled.");
             } else {
@@ -117,7 +125,7 @@ export default function Login() {
         } catch {
           toast.success('Signed in successfully');
         }
-        router.push('/');
+        router.push(dormancyCleared ? '/?dormancyCleared=1' : '/');
       }
     } catch {
       toast.error('Something went wrong');

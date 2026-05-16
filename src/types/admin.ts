@@ -42,6 +42,11 @@ export type CustomerTableRow = {
   // admin) and is inside the 30-day grace window. Cleared on restore.
   deletedAt?: string;
   deletionScheduledFor?: string;
+  // Dormancy state — `dormancyWarnedAt` is set by the scan when the customer
+  // is inactive past the threshold and cleared on activity. `lastActiveAt`
+  // is the most recent sign-in or order timestamp.
+  dormancyWarnedAt?: string;
+  lastActiveAt?: string;
 };
 
 export type CustomerCounts = {
@@ -49,6 +54,7 @@ export type CustomerCounts = {
   new: number;
   active: number;
   connoisseurPlus: number;
+  dormant?: number;
 };
 
 export type OrderTableRow = {

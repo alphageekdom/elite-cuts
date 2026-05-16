@@ -1,5 +1,5 @@
 import { SelectField, inputCls, labelCls, sectionTitleCls, sectionSubCls, btnPrimary, btnGhost } from '../SettingsUI';
-import type { ShopSettings } from '@/models/ShopSettings';
+import type { ShopSettings, DormancyThreshold } from '@/models/ShopSettings';
 
 type Props = {
   values: ShopSettings;
@@ -124,6 +124,30 @@ export default function GeneralTab({ values, onChange, onSave, onDiscard, saving
             <SelectField value={values.maxBookingWindow} onChange={(e) => onChange({ maxBookingWindow: e.target.value })}>
               <option>Same day</option><option>3 days</option><option>7 days</option>
             </SelectField>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2 className={sectionTitleCls}>Customer <em className="italic text-oxblood font-normal">privacy</em></h2>
+        <p className={sectionSubCls}>Controls automatic cleanup of customers who haven't returned in a long time.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div>
+            <label className={labelCls}>Dormancy threshold</label>
+            <SelectField
+              value={String(values.dormancyWarningMonths)}
+              onChange={(e) =>
+                onChange({ dormancyWarningMonths: Number(e.target.value) as DormancyThreshold })
+              }
+            >
+              <option value="0">Off</option>
+              <option value="12">12 months</option>
+              <option value="18">18 months</option>
+              <option value="24">24 months</option>
+            </SelectField>
+            <p className="text-xs text-muted mt-2">
+              Customers inactive this long get a 30-day warning before automatic deletion. Set to Off to disable.
+            </p>
           </div>
         </div>
       </section>

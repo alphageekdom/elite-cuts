@@ -61,6 +61,8 @@ export type User = {
   lockoutUntil?: Date | null;
   deletedAt?: Date | null;
   deletionScheduledFor?: Date | null;
+  lastActiveAt?: Date | null;
+  dormancyWarnedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -166,6 +168,14 @@ const UserSchema = new Schema<User>(
       default: null,
     },
     deletionScheduledFor: {
+      type: Date,
+      default: null,
+    },
+    lastActiveAt: {
+      type: Date,
+      default: null,
+    },
+    dormancyWarnedAt: {
       type: Date,
       default: null,
     },

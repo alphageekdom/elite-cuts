@@ -1,5 +1,10 @@
 import { Schema, model, models, type Model } from 'mongoose';
 
+// Months an inactive customer can sit before the dormancy scan picks them up.
+// `0` disables the entire scan for shops that don't want auto-cleanup.
+export const DORMANCY_THRESHOLD_VALUES = [0, 12, 18, 24] as const;
+export type DormancyThreshold = (typeof DORMANCY_THRESHOLD_VALUES)[number];
+
 export type ShopSettings = {
   // General
   shopName: string;
@@ -35,6 +40,8 @@ export type ShopSettings = {
   connoisseurThreshold: number;
   masterCutThreshold: number;
   tierWindowMonths: number;         // qualifying-period length in months (default 12, 0 = lifetime / no window)
+  // Privacy / lifecycle
+  dormancyWarningMonths: DormancyThreshold; // 0 disables the dormancy scan entirely
 };
 
 const ShopSettingsSchema = new Schema<ShopSettings>(
@@ -69,6 +76,7 @@ const ShopSettingsSchema = new Schema<ShopSettings>(
     connoisseurThreshold: { type: Number, default: 250, min: 0 },
     masterCutThreshold:   { type: Number, default: 1000, min: 0 },
     tierWindowMonths:     { type: Number, default: 12, min: 0 },
+    dormancyWarningMonths:{ type: Number, default: 18, enum: [...DORMANCY_THRESHOLD_VALUES] },
   },
   { timestamps: true },
 );
