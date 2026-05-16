@@ -6,9 +6,14 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 
 import ArrowIcon from '@/components/uielements/ArrowIcon';
+import MinusIcon from '@/components/uielements/MinusIcon';
+import PlusIcon from '@/components/uielements/PlusIcon';
+import SpinnerIcon from '@/components/uielements/SpinnerIcon';
+import { useCartContext } from '@/context/CartContext';
 import useHandleAddToCart from '@/hooks/useHandleAddToCart';
 import useHandleBookmark from '@/hooks/useHandleBookmark';
 import { productImageSrc, formatMoney } from '@/lib/format';
+import { MAX_PER_LINE } from '@/lib/shopConfig';
 
 import { type SerializedProduct } from '@/models/Product';
 
@@ -83,7 +88,12 @@ const ProductCard = ({ product }: ProductCardProps) => {
 
   const { isBookmarked, loading, handleBookmarkClick, checkBookmarkStatus } =
     useHandleBookmark(userId, product._id);
-  const { isAddingToCart, handleAddToCart } = useHandleAddToCart(product);
+  // Silent add — the stepper appearing in place of the Add button is the
+  // visible feedback. A toast on top would be duplicate noise.
+  const { isAddingToCart, handleAddToCart } = useHandleAddToCart(product, {
+    silent: true,
+  });
+  const { cartItems, setItemQuantity } = useCartContext();
 
   // Hook does not auto-check on mount — caller responsibility.
   useEffect(() => {
@@ -102,11 +112,34 @@ const ProductCard = ({ product }: ProductCardProps) => {
       ? `${product.stockCount} left`
       : 'In stock';
 
+  const currentLine = cartItems.find(
+    (line) => line.product._id === product._id,
+  );
+  const currentQty = currentLine?.quantity ?? 0;
+  const inCart = currentQty > 0;
+  // Whichever cap kicks in first — the catalog stock or the per-line cap.
+  const maxQty = Math.min(product.stockCount, MAX_PER_LINE);
+
   const onAddClick = (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
     if (outOfStock) return;
     void handleAddToCart();
+  };
+
+  const onDecrement = (e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // setItemQuantity(_, 0) drops the line, so the stepper collapses back to
+    // the Add to cart button automatically.
+    void setItemQuantity(product._id, currentQty - 1);
+  };
+
+  const onIncrement = (e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (currentQty >= maxQty) return;
+    void setItemQuantity(product._id, currentQty + 1);
   };
 
   const onSaveClick = (e: MouseEvent<HTMLButtonElement>) => {
@@ -154,15 +187,51 @@ const ProductCard = ({ product }: ProductCardProps) => {
         </button>
 
         <div className='absolute right-4 bottom-4 left-4 z-2 translate-y-[120%] opacity-0 transition-[transform,opacity] duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] max-md:translate-y-0 max-md:opacity-100 md:group-hover:translate-y-0 md:group-hover:opacity-100 motion-reduce:transition-none motion-reduce:max-md:translate-y-0 motion-reduce:max-md:opacity-100'>
-          <button
-            type='button'
-            onClick={onAddClick}
-            disabled={isAddingToCart || outOfStock}
-            className='flex w-full items-center justify-center gap-2 rounded-full bg-ink px-4 py-3 text-[13px] font-medium tracking-[0.04em] text-cream transition-colors duration-300 hover:bg-oxblood disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none'
-          >
-            <CartIcon />
-            {isAddingToCart ? 'Adding…' : outOfStock ? 'Sold out' : 'Add to cart'}
-          </button>
+          {inCart ? (
+            <div
+              role='group'
+              aria-label={`${product.name} quantity`}
+              className='flex w-full items-center justify-between rounded-full bg-ink px-1.5 py-1.5 text-cream'
+            >
+              <button
+                type='button'
+                onClick={onDecrement}
+                aria-label={`Decrease ${product.name} quantity`}
+                className='grid h-9 w-9 place-items-center rounded-full transition-colors duration-300 hover:bg-oxblood motion-reduce:transition-none'
+              >
+                <MinusIcon className='h-3 w-3' />
+              </button>
+              <span
+                aria-live='polite'
+                className='font-display text-[15px] font-medium tracking-tight'
+              >
+                {currentQty}
+              </span>
+              <button
+                type='button'
+                onClick={onIncrement}
+                disabled={currentQty >= maxQty}
+                aria-label={`Increase ${product.name} quantity`}
+                className='grid h-9 w-9 place-items-center rounded-full transition-colors duration-300 hover:bg-oxblood disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none'
+              >
+                <PlusIcon className='h-3 w-3' />
+              </button>
+            </div>
+          ) : (
+            <button
+              type='button'
+              onClick={onAddClick}
+              disabled={isAddingToCart || outOfStock}
+              className='flex w-full items-center justify-center gap-2 rounded-full bg-ink px-4 py-3 text-[13px] font-medium tracking-[0.04em] text-cream transition-colors duration-300 hover:bg-oxblood disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none'
+            >
+              {isAddingToCart ? (
+                <SpinnerIcon className='h-3.5 w-3.5' />
+              ) : (
+                <CartIcon />
+              )}
+              {isAddingToCart ? 'Adding…' : outOfStock ? 'Sold out' : 'Add to cart'}
+            </button>
+          )}
         </div>
       </div>
 
