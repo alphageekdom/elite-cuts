@@ -50,6 +50,41 @@ export function withAuth(handler: AuthHandler): RouteHandler {
 }
 
 /**
+ * Wraps a cron-route handler with the standard `Authorization: Bearer
+ * <CRON_SECRET>` gate. Mirrors Vercel Cron's default invocation shape: it
+ * fires GETs with the bearer header, so the cron routes export both GET and
+ * POST pointing at the same handler (POST kept for ad-hoc admin triggering).
+ *
+ * Returns 503 when `CRON_SECRET` is unset (misconfigured deploy), 401 on a
+ * missing/incorrect header, and forwards the job's result body verbatim
+ * under `{ message: successMessage, ...result }` on success.
+ */
+type CronJob<TResult> = () => Promise<TResult>;
+export function withCronSecret<TResult extends Record<string, unknown>>(
+  job: CronJob<TResult>,
+  successMessage: string,
+): RouteHandler {
+  return async (request) => {
+    const secret = process.env.CRON_SECRET;
+    if (!secret) {
+      return NextResponse.json({ message: 'Cron secret not configured' }, { status: 503 });
+    }
+    const authHeader = request.headers.get('authorization') ?? '';
+    const provided = authHeader.replace(/^Bearer\s+/i, '').trim();
+    if (provided !== secret) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+    try {
+      const result = await job();
+      return NextResponse.json({ message: successMessage, ...result });
+    } catch (error) {
+      console.error('[cron]', error);
+      return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
+    }
+  };
+}
+
+/**
  * Parses `page` and `pageSize` from URL search params with safe defaults and a
  * 200-item hard cap on pageSize to prevent unbounded DB queries.
  */

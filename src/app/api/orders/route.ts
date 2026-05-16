@@ -8,7 +8,6 @@ import Order, { PAYMENT_METHODS, type PaymentMethod, type DeliveryAddressData } 
 import Cart from '@/models/Cart';
 import Product from '@/models/Product';
 import User from '@/models/User';
-import AccountDeletionAudit from '@/models/AccountDeletionAudit';
 import Notification from '@/models/Notification';
 import { getSessionUser } from '@/utils/getSessionUser';
 import { unauthorized, parsePagination } from '@/lib/api-handler';
@@ -19,6 +18,7 @@ import { MAX_PER_LINE } from '@/lib/shopConfig';
 import { getShopSettings } from '@/lib/shopSettings';
 import { awardOrderCompletion } from '@/lib/order-completion';
 import { applyRedemption } from '@/lib/rewards';
+import { recordCustomerActivity } from '@/lib/accountDeletion';
 import {
   buildOrderItemsFromCart,
   buildOrderItemsFromGuestItems,
@@ -337,25 +337,16 @@ export const POST = async (request: NextRequest) => {
       }
 
       // Activity tracking — the customer the order is FOR counts as having
-      // activity, even when an admin built the order on their behalf. Clears
-      // any pending dormancy warning so the next scan won't immediately try
-      // to soft-delete them. The admin's own lastActiveAt is bumped by their
-      // sign-in, not by orders they place for others. Capture the prior
-      // `dormancyWarnedAt` so the audit trail records that the admin's
-      // order placement rescued the customer from auto-deletion.
-      const prevCustomer = await User.findOneAndUpdate(
-        { _id: body.userId },
-        { $set: { lastActiveAt: now, dormancyWarnedAt: null } },
-        { projection: { dormancyWarnedAt: 1, email: 1 }, new: false },
-      ).lean<{ dormancyWarnedAt?: Date | null; email?: string } | null>();
-      if (prevCustomer?.dormancyWarnedAt) {
-        await AccountDeletionAudit.create({
-          userId: body.userId,
-          userEmailSnapshot: prevCustomer.email ?? customer.email ?? '',
-          action: 'self_dormancy_cleared',
-          performedBy: sessionUser.userId,
-        });
-      }
+      // activity, even when an admin built the order on their behalf. The
+      // admin's own lastActiveAt is bumped by their sign-in, not by orders
+      // they place for others. performedBy on the audit row credits the
+      // admin so an audit-log review can see who rescued the warned
+      // customer.
+      await recordCustomerActivity({
+        userId: body.userId,
+        at: now,
+        performedBy: sessionUser.userId,
+      });
 
       notifyAdminsOfNewOrder(String(order._id), totalCost, sessionUser.userId).catch((err) =>
         console.error('[orders POST admin-create] notification error', err),
@@ -610,24 +601,11 @@ export const POST = async (request: NextRequest) => {
     }
 
     // Activity tracking — signed-in customers count as active when they
-    // place an order, clearing any pending dormancy warning. Guest orders
-    // have no user to update. Capture the pre-update `dormancyWarnedAt` so
-    // an audit row lands when the activity actually rescued a warned
-    // account, matching the sign-in path's audit behavior.
+    // place an order. Guest orders have no user to update. The helper
+    // writes a `self_dormancy_cleared` audit row when the order rescued a
+    // warned account, matching the sign-in path's audit behavior.
     if (userId) {
-      const prev = await User.findOneAndUpdate(
-        { _id: userId },
-        { $set: { lastActiveAt: paidAt, dormancyWarnedAt: null } },
-        { projection: { dormancyWarnedAt: 1, email: 1 }, new: false },
-      ).lean<{ dormancyWarnedAt?: Date | null; email?: string } | null>();
-      if (prev?.dormancyWarnedAt) {
-        await AccountDeletionAudit.create({
-          userId,
-          userEmailSnapshot: prev.email ?? '',
-          action: 'self_dormancy_cleared',
-          performedBy: null,
-        });
-      }
+      await recordCustomerActivity({ userId, at: paidAt });
     }
 
     notifyAdminsOfNewOrder(String(order._id), totalCost).catch((err) =>

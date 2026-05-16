@@ -74,6 +74,12 @@ export const POST = async (request: NextRequest) => {
       name,
       email: normalizedEmail,
       password: hashedPassword,
+      // Account creation is itself activity — stamping `lastActiveAt` here
+      // means the dormancy scan won't pick the user up on day one before
+      // they've had a chance to sign in for the first time. The dormancy
+      // job's backfill skip-condition (`lastActiveAt: null`) no longer
+      // sweeps brand-new users into its query.
+      lastActiveAt: new Date(),
     }).save();
 
     // Attach any prior guest orders placed with this email to the new

@@ -262,25 +262,45 @@ export default function CustomersClient({ customers, counts }: Props) {
     setBulkLoading('delete');
     try {
       // Bulk action stays as a soft-delete (no body) — bulk hard-delete is out
-      // of scope for this feature. Reflect the actual state in the local row
-      // instead of filtering it out; the row stays visible with its
-      // "Scheduled for deletion" pill so the admin can still cancel.
+      // of scope for this feature. Read each response so the local row's
+      // `deletionScheduledFor` reflects the server's clock instead of the
+      // client's; otherwise a clock-skewed admin would see a date that
+      // doesn't match what the cron is actually working against.
+      const results = await Promise.all(
+        ids.map(async (id) => {
+          const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });
+          const data = (await res.json().catch(() => ({}))) as {
+            deletionScheduledFor?: string;
+          };
+          return { id, ok: res.ok, scheduledFor: data.deletionScheduledFor };
+        }),
+      );
+      const successById = new Map(
+        results.filter((r) => r.ok).map((r) => [r.id, r.scheduledFor]),
+      );
       const nowIso = new Date().toISOString();
-      const scheduledIso = new Date(
-        Date.now() + 30 * 24 * 60 * 60 * 1000,
-      ).toISOString();
-      await Promise.all(ids.map((id) => fetch(`/api/users/${id}`, { method: 'DELETE' })));
       setLocalCustomers((prev) =>
         prev.map((c) =>
-          selectedIds.has(c.id)
-            ? { ...c, deletedAt: nowIso, deletionScheduledFor: scheduledIso }
+          successById.has(c.id)
+            ? {
+                ...c,
+                deletedAt: nowIso,
+                deletionScheduledFor: successById.get(c.id),
+              }
             : c,
         ),
       );
       setSelectedIds(new Set());
-      toast.success(
-        `${ids.length} customer${ids.length !== 1 ? 's' : ''} scheduled for deletion`,
-      );
+      const okCount = successById.size;
+      if (okCount === ids.length) {
+        toast.success(
+          `${ids.length} customer${ids.length !== 1 ? 's' : ''} scheduled for deletion`,
+        );
+      } else {
+        toast.error(
+          `Scheduled ${okCount} of ${ids.length} — ${ids.length - okCount} failed`,
+        );
+      }
     } catch {
       toast.error('Failed to schedule deletion for some customers');
     } finally {
