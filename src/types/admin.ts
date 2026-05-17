@@ -37,6 +37,7 @@ export type CustomerTableRow = {
   lastOrderAt?: string;
   defaultCity?: string;
   savedCutsCount: number;
+  isStaff: boolean;
   adminNote?: string;
   // Soft-delete state — set when the user has requested deletion (self or
   // admin) and is inside the 30-day grace window. Cleared on restore.

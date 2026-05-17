@@ -131,6 +131,7 @@ type RawUser = {
   createdAt: Date;
   addresses?: Array<{ city: string; state: string; isDefault?: boolean }>;
   savedCuts?: unknown[];
+  isStaff?: boolean;
   adminNote?: string;
   deletedAt?: Date | null;
   deletionScheduledFor?: Date | null;
@@ -165,6 +166,7 @@ export function serializeCustomerRow(
       ? `${defaultAddress.city}, ${defaultAddress.state}`
       : undefined,
     savedCutsCount: (u.savedCuts ?? []).length,
+    isStaff: u.isStaff ?? false,
     adminNote: u.adminNote ?? '',
     deletedAt: u.deletedAt ? u.deletedAt.toISOString() : undefined,
     deletionScheduledFor: u.deletionScheduledFor
