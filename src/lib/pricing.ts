@@ -26,14 +26,24 @@ export function computeTotals(
   items: CartLineInput[],
   opts: {
     isLoggedIn?: boolean;
+    // Suppresses the member discount even for logged-in customers — used when
+    // an applied promo carries excludesMember to prevent stacking.
+    excludesMember?: boolean;
     promoDiscount?: number;
     pointsDiscount?: number;
     deliveryFee?: number;
   } = {},
 ): Totals {
-  const { isLoggedIn = false, promoDiscount = 0, pointsDiscount = 0, deliveryFee = 0 } = opts;
+  const {
+    isLoggedIn = false,
+    excludesMember = false,
+    promoDiscount = 0,
+    pointsDiscount = 0,
+    deliveryFee = 0,
+  } = opts;
   const subtotal = items.reduce((acc, line) => acc + line.price * line.quantity, 0);
-  const memberDiscount = isLoggedIn ? subtotal * MEMBER_DISCOUNT_RATE : 0;
+  const memberDiscount =
+    isLoggedIn && !excludesMember ? subtotal * MEMBER_DISCOUNT_RATE : 0;
   const afterDiscounts = Math.max(0, subtotal - memberDiscount - promoDiscount - pointsDiscount);
   const tax = (afterDiscounts + deliveryFee) * TAX_RATE;
   return {

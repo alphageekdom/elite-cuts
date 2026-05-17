@@ -32,7 +32,15 @@ export type CheckoutState = {
   isPaymentReady: boolean;
   fulfillment: Fulfillment;
   promoCode: string;
-  promoDiscount: number;
+  promoDiscount: number;         // dollar value of the applied promo
+  // Stored as the string form of the Promo ObjectId so the place-order POST
+  // can reference it without re-fetching, and the gating logic below can
+  // read it. Empty string when no promo is applied.
+  promoId: string;
+  // Stacking flags carried over from the applied promo. Drive UI gating on
+  // the points input and computeTotals' member-discount suppression.
+  promoExcludesPoints: boolean;
+  promoExcludesMember: boolean;
   pointsToRedeem: number;
   pointsDiscount: number;        // dollar value of the redeemed points
   contactName: string;
@@ -47,7 +55,16 @@ export type CheckoutState = {
 export type CheckoutAction =
   | { type: 'SET_FULFILLMENT'; payload: Fulfillment }
   | { type: 'SET_PAYMENT_READY'; payload: boolean }
-  | { type: 'SET_PROMO'; payload: { code: string; amount: number } }
+  | {
+      type: 'SET_PROMO';
+      payload: {
+        code: string;
+        amount: number;
+        promoId?: string;
+        excludesPoints?: boolean;
+        excludesMember?: boolean;
+      };
+    }
   | { type: 'SET_REDEMPTION'; payload: { points: number; dollars: number } }
   | { type: 'SET_CONTACT'; payload: { name: string; email: string; phone: string } }
   | { type: 'SET_PICKUP_SLOT'; payload: string }
@@ -66,6 +83,9 @@ const EMPTY_INITIAL_STATE: CheckoutState = {
   fulfillment: 'pickup',
   promoCode: '',
   promoDiscount: 0,
+  promoId: '',
+  promoExcludesPoints: false,
+  promoExcludesMember: false,
   pointsToRedeem: 0,
   pointsDiscount: 0,
   contactName: '',
@@ -118,7 +138,14 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
     case 'SET_PAYMENT_READY':
       return { ...state, isPaymentReady: action.payload };
     case 'SET_PROMO':
-      return { ...state, promoCode: action.payload.code, promoDiscount: action.payload.amount };
+      return {
+        ...state,
+        promoCode: action.payload.code,
+        promoDiscount: action.payload.amount,
+        promoId: action.payload.promoId ?? '',
+        promoExcludesPoints: action.payload.excludesPoints ?? false,
+        promoExcludesMember: action.payload.excludesMember ?? false,
+      };
     case 'SET_REDEMPTION':
       return { ...state, pointsToRedeem: action.payload.points, pointsDiscount: action.payload.dollars };
     case 'SET_CONTACT':

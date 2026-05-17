@@ -13,7 +13,7 @@ import { getSessionUser } from '@/utils/getSessionUser';
 import { unauthorized, parsePagination } from '@/lib/api-handler';
 import { formatMoney } from '@/lib/format';
 import { isIn, EMAIL_RE } from '@/lib/validation';
-import { validatePromoCode } from '@/actions/checkout';
+import { validatePromo } from '@/lib/promos/validate';
 import { MAX_PER_LINE } from '@/lib/shopConfig';
 import { getShopSettings } from '@/lib/shopSettings';
 import { awardOrderCompletion } from '@/lib/order-completion';
@@ -451,13 +451,24 @@ export const POST = async (request: NextRequest) => {
     }
 
     const subtotal = computeSubtotal(orderItems);
-    const memberDiscount = computeMemberDiscount(subtotal, Boolean(userId));
 
     let promoDiscount = 0;
+    let promoExcludesMember = false;
     if (body.promoCode) {
-      const promoResult = await validatePromoCode(body.promoCode.trim().toUpperCase(), subtotal);
-      if (promoResult.valid) promoDiscount = promoResult.amount;
+      const promoResult = await validatePromo({
+        code: body.promoCode,
+        userId: userId ?? null,
+        subtotalCents: Math.round(subtotal * 100),
+        isMember: Boolean(userId),
+      });
+      if (promoResult.valid) {
+        promoDiscount = promoResult.discountCents / 100;
+        promoExcludesMember = promoResult.promo.excludesMember;
+      }
     }
+    const memberDiscount = promoExcludesMember
+      ? 0
+      : computeMemberDiscount(subtotal, Boolean(userId));
 
     // Redemption — server-authoritative. Reads the user's live balance and
     // runs applyRedemption against current settings; the client's preview is
