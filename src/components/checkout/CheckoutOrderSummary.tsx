@@ -9,6 +9,7 @@ import { useCheckoutContext } from '@/context/CheckoutContext';
 import { computeTotals, DELIVERY_FEE, fmtPrice } from '@/lib/pricing';
 import CheckoutTrustStrip from '@/components/checkout/CheckoutTrustStrip';
 import CheckoutRewardsRedeem from '@/components/checkout/CheckoutRewardsRedeem';
+import CheckoutPublicPromos from '@/components/checkout/CheckoutPublicPromos';
 import { productImageSrc } from '@/lib/format';
 import type { PromoFailureReason } from '@/models/Promo';
 
@@ -59,10 +60,13 @@ const CheckoutOrderSummary = () => {
     [cartItems, isLoggedIn, promoExcludesMember, isDelivery, promoDiscount, pointsDiscount],
   );
 
-  const onApplyPromo = async (e: { preventDefault(): void }) => {
-    e.preventDefault();
-    const code = promo.trim().toUpperCase();
+  // Shared apply path. Both the form submit and a chip tap route through
+  // here so a chip-applied code goes through the exact same validate +
+  // dispatch + UI states as a manually-typed one.
+  const applyCode = async (rawCode: string) => {
+    const code = rawCode.trim().toUpperCase();
     if (!code) return;
+    setPromo(code);
     const subtotalCents = Math.round(
       cartItems.reduce((acc, l) => acc + l.price * l.quantity, 0) * 100,
     );
@@ -107,6 +111,11 @@ const CheckoutOrderSummary = () => {
       setPromoError("Couldn't reach the server — try again");
       dispatch({ type: 'SET_PROMO', payload: { code: '', amount: 0 } });
     }
+  };
+
+  const onApplyPromo = (e: { preventDefault(): void }) => {
+    e.preventDefault();
+    void applyCode(promo);
   };
 
   const onRemovePromo = () => {
@@ -237,7 +246,13 @@ const CheckoutOrderSummary = () => {
           )}
         </div>
 
-        <form onSubmit={onApplyPromo} className='mt-5'>
+        {promoStatus !== 'valid' && !pointsApplied && (
+          <div className='mt-5'>
+            <CheckoutPublicPromos onApply={applyCode} />
+          </div>
+        )}
+
+        <form onSubmit={onApplyPromo} className={promoStatus !== 'valid' && !pointsApplied ? '' : 'mt-5'}>
           <div className='flex gap-2'>
             <input
               type='text'

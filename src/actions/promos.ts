@@ -46,6 +46,7 @@ export async function createPromo(
       excludesPoints: data.excludesPoints,
       excludesMember: data.excludesMember,
       isActive: data.isActive,
+      isPublic: data.isPublic,
       createdBy: new Types.ObjectId(auth.userId),
     });
     revalidatePath('/dashboard/promos');

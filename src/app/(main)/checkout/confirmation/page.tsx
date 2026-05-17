@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation';
 import connectDB from '@/config/database';
 import OrderModel from '@/models/Order';
 import { getSessionUser } from '@/utils/getSessionUser';
-import { formatMoney } from '@/lib/format';
+import { formatMoney, productImageSrc } from '@/lib/format';
 import { DELIVERY_FEE } from '@/lib/pricing';
 import { SHOP_ADDRESS_FULL } from '@/lib/shopConfig';
 import CheckoutStepRail from '@/components/checkout/CheckoutStepRail';
@@ -151,12 +151,14 @@ export default async function ConfirmationPage({ searchParams }: Props) {
               Items ({order.orderItems.reduce((s, i) => s + i.qty, 0)})
             </p>
             <ul className='divide-y divide-line-soft'>
-              {order.orderItems.map((item, i) => (
+              {order.orderItems.map((item, i) => {
+                const imgSrc = productImageSrc(item.image);
+                return (
                 <li key={i} className='flex items-center gap-4 py-3.5 first:pt-0 last:pb-0'>
-                  {item.image && (
+                  {imgSrc && (
                     <div className='relative h-14 w-14 shrink-0 overflow-hidden rounded-sm bg-cream-deep'>
                       <Image
-                        src={item.image}
+                        src={imgSrc}
                         alt={item.name}
                         fill
                         className='object-cover'
@@ -174,7 +176,8 @@ export default async function ConfirmationPage({ searchParams }: Props) {
                     {formatMoney(item.price * item.qty)}
                   </p>
                 </li>
-              ))}
+                );
+              })}
             </ul>
 
             {/* Totals */}

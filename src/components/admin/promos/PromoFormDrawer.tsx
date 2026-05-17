@@ -24,6 +24,7 @@ export type PromoFormRow = {
   excludesPoints: boolean;
   excludesMember: boolean;
   isActive: boolean;
+  isPublic: boolean;
 };
 
 type Props = {
@@ -72,6 +73,7 @@ export default function PromoFormDrawer({ promo, onClose, onSaved }: Props) {
   const [excludesPoints, setExcludesPoints] = useState(promo?.excludesPoints ?? true);
   const [excludesMember, setExcludesMember] = useState(promo?.excludesMember ?? false);
   const [isActive, setIsActive] = useState(promo?.isActive ?? true);
+  const [isPublic, setIsPublic] = useState(promo?.isPublic ?? false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -117,6 +119,7 @@ export default function PromoFormDrawer({ promo, onClose, onSaved }: Props) {
     excludesPoints,
     excludesMember,
     isActive,
+    isPublic,
   });
 
   const onSubmit = async (e: React.FormEvent) => {
@@ -352,6 +355,15 @@ export default function PromoFormDrawer({ promo, onClose, onSaved }: Props) {
               className="h-4 w-4 cursor-pointer accent-oxblood"
             />
             Excludes member discount — the 5% won't stack with this code
+          </label>
+          <label className="flex items-center gap-2 text-[13px] text-ink-soft">
+            <input
+              type="checkbox"
+              checked={isPublic}
+              onChange={(e) => setIsPublic(e.target.checked)}
+              className="h-4 w-4 cursor-pointer accent-oxblood"
+            />
+            Show on checkout — surface this code as a one-tap chip for everyone
           </label>
         </div>
 

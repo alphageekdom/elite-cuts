@@ -59,6 +59,7 @@ export default async function AdminPromosPage() {
     excludesPoints: p.excludesPoints ?? true,
     excludesMember: p.excludesMember ?? false,
     isActive: p.isActive ?? true,
+    isPublic: p.isPublic ?? false,
   }));
 
   return <PromosClient promos={promos} savingsByPromoId={savingsByPromoId} />;
