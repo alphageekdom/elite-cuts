@@ -29,6 +29,13 @@ const ProductsIcon = ({ className = 'w-4 h-4 shrink-0' }: { className?: string }
   </svg>
 );
 
+const PromosIcon = ({ className = 'w-4 h-4 shrink-0' }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M20.59 13.41L13.42 20.58a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
+    <circle cx="7" cy="7" r="1.2" fill="currentColor" stroke="none" />
+  </svg>
+);
+
 const CustomersIcon = ({ className = 'w-4 h-4 shrink-0' }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
@@ -73,6 +80,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: '/dashboard',            label: 'Dashboard', group: 'workspace',  mobilePrimary: true,  Icon: DashboardIcon },
   { href: '/dashboard/orders',     label: 'Orders',    group: 'workspace',  mobilePrimary: true,  Icon: OrdersIcon },
   { href: '/dashboard/products',   label: 'Products',  group: 'workspace',  mobilePrimary: true,  Icon: ProductsIcon },
+  { href: '/dashboard/promos',     label: 'Promos',    group: 'workspace',  mobilePrimary: false, Icon: PromosIcon },
   { href: '/dashboard/customers',  label: 'Customers', group: 'workspace',  mobilePrimary: false, Icon: CustomersIcon },
   { href: '/dashboard/analytics',  label: 'Analytics', group: 'workspace',  mobilePrimary: false, Icon: AnalyticsIcon },
   { href: '/dashboard/inventory',  label: 'Inventory', group: 'operations', mobilePrimary: true,  Icon: InventoryIcon },
