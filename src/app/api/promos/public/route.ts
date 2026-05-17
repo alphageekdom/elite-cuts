@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import connectDB from '@/config/database';
 import Promo from '@/models/Promo';
+import { formatPromoLabel } from '@/lib/promos/format';
 
 // GET /api/promos/public — unauthenticated. Returns the codes the admin has
 // opted into public surfacing AND that are currently usable (active, in
@@ -37,10 +38,7 @@ export async function GET() {
 
     const items = promos.map((p) => ({
       code: p.code,
-      label:
-        p.type === 'percent'
-          ? `${p.value}% off`
-          : `$${(p.value / 100).toFixed(p.value % 100 === 0 ? 0 : 2)} off`,
+      label: formatPromoLabel(p),
     }));
 
     return NextResponse.json({ items });

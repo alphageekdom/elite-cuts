@@ -63,11 +63,15 @@ export async function validatePromo(
       if (paidCount > 0) return { valid: false, reason: 'first_order_only' };
     }
     if (promo.perCustomerLimit != null && promo.perCustomerLimit > 0) {
-      // Cancelled orders return the customer's seat (mirrors the refund-
-      // decrement rule), so they're excluded from the count.
+      // Only paid, non-cancelled orders consume a seat. Cancelled orders
+      // return the customer's seat (mirrors the refund-decrement rule),
+      // and an unpaid pending order — possible once Stripe lands — should
+      // never block the customer from re-trying the code on a fresh
+      // attempt. Matches the isPaid gate the firstOrderOnly branch uses.
       const usedCount = await Order.countDocuments({
         user: input.userId,
         promoId: promo._id,
+        isPaid: true,
         orderStatus: { $ne: 'Cancelled' },
       });
       if (usedCount >= promo.perCustomerLimit) {

@@ -51,10 +51,14 @@ export function validatePromoInput(raw: unknown): PromoInputResult {
     return { ok: false, error: 'Code must be 3-30 characters: letters, numbers, dash, underscore' };
   }
 
-  const description =
-    typeof body.description === 'string' && body.description.trim()
-      ? body.description.trim().slice(0, 280)
-      : undefined;
+  let description: string | undefined;
+  if (typeof body.description === 'string' && body.description.trim()) {
+    const trimmed = body.description.trim();
+    if (trimmed.length > 280) {
+      return { ok: false, error: 'Description must be 280 characters or fewer' };
+    }
+    description = trimmed;
+  }
 
   const type = body.type as PromoType;
   if (!PROMO_TYPES.includes(type)) {
