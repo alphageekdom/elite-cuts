@@ -52,7 +52,7 @@ type Props = {
 
 type DrawerState =
   | { kind: 'closed' }
-  | { kind: 'create' }
+  | { kind: 'create'; dayOfWeek?: number; hourIndex?: number }
   | { kind: 'edit'; shift: ShiftRow };
 
 export default function ScheduleClient({
@@ -224,7 +224,7 @@ export default function ScheduleClient({
                         <div key={`cell-${dayIdx}`}
                           className={`h-[72px] border-l border-t border-line-soft p-1 relative transition-colors hover:bg-camel/4 ${day.closed ? 'bg-oxblood/5' : ''}`}
                         >
-                          {shift && (
+                          {shift ? (
                             <button
                               type="button"
                               onClick={() => setDrawer({ kind: 'edit', shift })}
@@ -232,6 +232,15 @@ export default function ScheduleClient({
                             >
                               <div className="font-medium mb-px">{shift.staffName}</div>
                               <div className="opacity-75 text-[10px] tracking-[0.04em]">{shift.role}</div>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setDrawer({ kind: 'create', dayOfWeek: dayIdx, hourIndex: hourIdx })}
+                              aria-label={`Add shift on ${day.label} at ${HOURS[hourIdx]}`}
+                              className="group block w-full h-full rounded text-muted/0 hover:text-muted hover:bg-cream-deep/40 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-ink focus:ring-offset-1 focus:ring-offset-paper"
+                            >
+                              <span aria-hidden="true" className="font-mono text-[18px] leading-none opacity-0 group-hover:opacity-40 transition-opacity">+</span>
                             </button>
                           )}
                         </div>
@@ -271,7 +280,8 @@ export default function ScheduleClient({
       {drawer.kind !== 'closed' && (
         <ShiftFormDrawer
           shift={drawer.kind === 'edit' ? drawer.shift : null}
-          defaultDayOfWeek={drawer.kind === 'create' ? todayDow : undefined}
+          defaultDayOfWeek={drawer.kind === 'create' ? (drawer.dayOfWeek ?? todayDow) : undefined}
+          defaultHourIndex={drawer.kind === 'create' ? drawer.hourIndex : undefined}
           weekStart={weekStart}
           staffUsers={staffUsers}
           onClose={() => setDrawer({ kind: 'closed' })}
