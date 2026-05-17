@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { enablePromo, disablePromo } from '@/actions/promos';
 import { btnPrimary } from '@/components/admin/settings/SettingsUI';
 import PromoFormDrawer, { type PromoFormRow } from '@/components/admin/promos/PromoFormDrawer';
+import { formatPromoLabel } from '@/lib/promos/format';
 
 type PromoStatus = 'active' | 'scheduled' | 'expired' | 'exhausted' | 'disabled';
 
@@ -126,8 +127,7 @@ export default function PromosClient({ promos, savingsByPromoId }: Props) {
             {promos.map((p) => {
               const status = deriveStatus(p, now);
               const statusCopy = STATUS_COPY[status];
-              const typeLabel =
-                p.type === 'percent' ? `${p.value}% off` : `$${(p.value / 100).toFixed(2)} off`;
+              const typeLabel = formatPromoLabel(p);
               const usedDisplay =
                 p.usageLimit == null
                   ? `${p.usageCount} / ∞`

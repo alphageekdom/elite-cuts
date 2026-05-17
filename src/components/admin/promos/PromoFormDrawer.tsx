@@ -274,25 +274,30 @@ export default function PromoFormDrawer({ promo, onClose, onSaved }: Props) {
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className={fieldLabel}>Starts at</label>
-            <input
-              type="datetime-local"
-              value={startsAt}
-              onChange={(e) => setStartsAt(e.target.value)}
-              className={textInput}
-            />
+        <div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={fieldLabel}>Starts at</label>
+              <input
+                type="datetime-local"
+                value={startsAt}
+                onChange={(e) => setStartsAt(e.target.value)}
+                className={textInput}
+              />
+            </div>
+            <div>
+              <label className={fieldLabel}>Ends at</label>
+              <input
+                type="datetime-local"
+                value={endsAt}
+                onChange={(e) => setEndsAt(e.target.value)}
+                className={textInput}
+              />
+            </div>
           </div>
-          <div>
-            <label className={fieldLabel}>Ends at</label>
-            <input
-              type="datetime-local"
-              value={endsAt}
-              onChange={(e) => setEndsAt(e.target.value)}
-              className={textInput}
-            />
-          </div>
+          <p className="mt-1.5 text-[11px] text-muted">
+            Times are interpreted in your local timezone.
+          </p>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
