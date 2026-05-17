@@ -260,17 +260,6 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown, perfor
       });
     }
 
-    if (body?.action === 'set_staff') {
-      if (typeof body.value !== 'boolean') {
-        return NextResponse.json({ message: 'value must be a boolean' }, { status: 400 });
-      }
-      const result = await User.findByIdAndUpdate(id, { $set: { isStaff: body.value } });
-      if (!result) {
-        return NextResponse.json({ message: 'User not found' }, { status: 404 });
-      }
-      return NextResponse.json({ message: body.value ? 'Marked as staff' : 'Removed from staff' });
-    }
-
     return NextResponse.json({ message: 'Unsupported action' }, { status: 400 });
   } catch (error) {
     console.error('[users/:id PATCH]', error);
