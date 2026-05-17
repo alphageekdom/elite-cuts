@@ -63,6 +63,13 @@ const ScheduleIcon = ({ className = 'w-4 h-4 shrink-0' }: { className?: string }
   </svg>
 );
 
+const StaffIcon = ({ className = 'w-4 h-4 shrink-0' }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
+    <path d="M22 11l-3 3-2-2" />
+  </svg>
+);
+
 const MessagesIcon = ({ className = 'w-4 h-4 shrink-0' }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
@@ -86,6 +93,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: '/dashboard/inventory',  label: 'Inventory', group: 'operations', mobilePrimary: true,  Icon: InventoryIcon },
   { href: '/dashboard/messages',   label: 'Messages',  group: 'operations', mobilePrimary: false, Icon: MessagesIcon },
   { href: '/dashboard/schedule',   label: 'Schedule',  group: 'operations', mobilePrimary: false, Icon: ScheduleIcon },
+  { href: '/dashboard/staff',      label: 'Staff',     group: 'operations', mobilePrimary: false, Icon: StaffIcon },
   { href: '/dashboard/settings',   label: 'Settings',  group: 'operations', mobilePrimary: false, Icon: SettingsIcon },
 ];
 

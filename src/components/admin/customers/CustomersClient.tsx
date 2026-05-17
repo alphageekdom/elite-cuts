@@ -1,6 +1,5 @@
 'use client';
 import { useState, useMemo } from 'react';
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { toast } from 'sonner';
 import { useStatFilter } from '@/hooks/useStatFilter';
 import { useAdminDrawer } from '@/hooks/useAdminDrawer';
@@ -55,11 +54,6 @@ function countForStat(key: StatFilter, counts: CustomerCounts): number {
 }
 
 export default function CustomersClient({ customers, counts }: Props) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const staffOnly = searchParams.get('role') === 'staff';
-
   const [localCustomers, setLocalCustomers] = useState(customers);
   const [page, setPage] = useState(1);
   const { activeKey: activeStatFilter, selectKey: _selectStatFilter } = useStatFilter<string>('all', () => setPage(1));
@@ -172,39 +166,6 @@ export default function CustomersClient({ customers, counts }: Props) {
     }
   }
 
-  function toggleStaffOnly() {
-    const params = new URLSearchParams(searchParams.toString());
-    if (staffOnly) params.delete('role');
-    else params.set('role', 'staff');
-    const qs = params.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-    setPage(1);
-  }
-
-  async function handleSetStaff(id: string, value: boolean) {
-    try {
-      const res = await fetch(`/api/users/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'set_staff', value }),
-      });
-      if (!res.ok) {
-        const { message } = await res.json();
-        toast.error(message ?? 'Failed to update staff status');
-        return;
-      }
-      setLocalCustomers((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, isStaff: value } : c)),
-      );
-      setDrawerCustomer((prev) =>
-        prev && prev.id === id ? { ...prev, isStaff: value } : prev,
-      );
-      toast.success(value ? 'Marked as staff' : 'Removed from staff');
-    } catch {
-      toast.error('Failed to update staff status');
-    }
-  }
-
   async function handleCancelDormancy(id: string) {
     try {
       const res = await fetch(`/api/users/${id}`, {
@@ -232,7 +193,6 @@ export default function CustomersClient({ customers, counts }: Props) {
   const filtered = useMemo(() => {
     let rows = localCustomers;
     rows = rows.filter((r) => matchesStatFilter(r, activeStatFilter as StatFilter));
-    if (staffOnly) rows = rows.filter((r) => r.isStaff);
     if (search.trim()) {
       const q = search.toLowerCase();
       rows = rows.filter(
@@ -240,7 +200,7 @@ export default function CustomersClient({ customers, counts }: Props) {
       );
     }
     return rows;
-  }, [localCustomers, activeStatFilter, staffOnly, search]);
+  }, [localCustomers, activeStatFilter, search]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
   const pageRows = filtered.slice((page - 1) * perPage, page * perPage);
@@ -373,32 +333,12 @@ export default function CustomersClient({ customers, counts }: Props) {
         />
 
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={toggleStaffOnly}
-              aria-pressed={staffOnly}
-              className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[13px] transition-colors ${
-                staffOnly
-                  ? 'bg-ink text-cream border border-ink'
-                  : 'bg-paper border border-line text-ink-soft hover:border-ink hover:text-ink'
-              }`}
-            >
-              Staff
-              {staffOnly && (
-                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              )}
-            </button>
-
-            <button onClick={() => toast.info('Coming soon')} className="inline-flex items-center gap-1.5 bg-paper border border-line rounded-full px-3.5 py-2 text-[13px] text-ink-soft hover:border-ink hover:text-ink transition-colors">
-              More filters
-              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-              </svg>
-            </button>
-          </div>
+          <button onClick={() => toast.info('Coming soon')} className="inline-flex items-center gap-1.5 bg-paper border border-line rounded-full px-3.5 py-2 text-[13px] text-ink-soft hover:border-ink hover:text-ink transition-colors">
+            More filters
+            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+            </svg>
+          </button>
 
           <button onClick={() => toast.info('Coming soon')} className="inline-flex items-center gap-1.5 bg-paper border border-line rounded-full px-3.5 py-2 text-[13px] text-ink-soft hover:border-ink hover:text-ink transition-colors">
             Sort: Top spenders
@@ -551,7 +491,6 @@ export default function CustomersClient({ customers, counts }: Props) {
             onDelete={handleCustomerDelete}
             onCancelDeletion={handleCancelDeletion}
             onCancelDormancy={handleCancelDormancy}
-            onSetStaff={handleSetStaff}
           />
         )}
       </aside>
