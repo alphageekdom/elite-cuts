@@ -36,7 +36,7 @@ export default function ScheduleOnTodayCard({ todayStaff }: Props) {
         <span className="font-display text-lg font-medium tracking-tight">
           On <em className="italic text-oxblood font-normal">today</em>
         </span>
-        <a href="/dashboard/schedule" className="text-xs text-ink-soft border-b border-line pb-px inline-flex items-center gap-1 hover:text-oxblood transition-colors">
+        <a href="/dashboard/customers?role=staff" className="text-xs text-ink-soft border-b border-line pb-px inline-flex items-center gap-1 hover:text-oxblood transition-colors">
           All staff <ChevronRight />
         </a>
       </div>

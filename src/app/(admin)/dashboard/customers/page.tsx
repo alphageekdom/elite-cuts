@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 };
 
 type OrderAggResult = {
-  _id: Types.ObjectId;
+  _id: Types.ObjectId | null;
   count: number;
   totalSpend: number;
   lastOrderAt: Date;
@@ -55,6 +55,9 @@ export default async function AdminCustomersPage() {
 
   const orderMap = new Map<string, OrderStats>();
   for (const entry of orderAgg) {
+    // Guest orders have `user: null` and group into a null bucket — skip them
+    // so the orderMap only covers signed-in customers.
+    if (entry._id == null) continue;
     orderMap.set(entry._id.toString(), {
       count: entry.count,
       totalSpend: entry.totalSpend,

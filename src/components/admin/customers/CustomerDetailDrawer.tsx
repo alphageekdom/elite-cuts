@@ -18,6 +18,7 @@ type Props = {
   onDelete: (id: string, opts?: { reason?: string; immediate?: boolean }) => Promise<void>;
   onCancelDeletion?: (id: string) => Promise<void>;
   onCancelDormancy?: (id: string) => Promise<void>;
+  onSetStaff?: (id: string, value: boolean) => Promise<void>;
 };
 
 export default function CustomerDetailDrawer({
@@ -27,6 +28,7 @@ export default function CustomerDetailDrawer({
   onDelete,
   onCancelDeletion,
   onCancelDormancy,
+  onSetStaff,
 }: Props) {
   const {
     editing, setEditing,
@@ -46,6 +48,7 @@ export default function CustomerDetailDrawer({
   const [deleteImmediate, setDeleteImmediate] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [cancellingDormancy, setCancellingDormancy] = useState(false);
+  const [togglingStaff, setTogglingStaff] = useState(false);
   const isSoftDeleted = Boolean(customer.deletedAt);
   const isDormancyWarned = Boolean(customer.dormancyWarnedAt) && !isSoftDeleted;
   const scheduledForLabel = (() => {
@@ -120,6 +123,16 @@ export default function CustomerDetailDrawer({
       await onCancelDormancy(customer.id);
     } finally {
       setCancellingDormancy(false);
+    }
+  }
+
+  async function handleToggleStaff() {
+    if (!onSetStaff) return;
+    setTogglingStaff(true);
+    try {
+      await onSetStaff(customer.id, !customer.isStaff);
+    } finally {
+      setTogglingStaff(false);
     }
   }
 
@@ -332,6 +345,34 @@ export default function CustomerDetailDrawer({
             </div>
           )}
         </div>
+
+        {/* Role */}
+        {onSetStaff && (
+          <div className="pb-6 mb-6 border-b border-line-soft">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="text-[10px] font-medium tracking-[0.22em] uppercase text-muted mb-1">Role</div>
+                <div className="font-mono text-[12px] text-ink-soft">
+                  {customer.isStaff
+                    ? 'Appears in the schedule picker'
+                    : 'Promote to staff to assign shifts'}
+                </div>
+              </div>
+              <button
+                onClick={handleToggleStaff}
+                disabled={togglingStaff}
+                aria-pressed={customer.isStaff}
+                className={`shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] font-medium tracking-[0.04em] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                  customer.isStaff
+                    ? 'bg-green text-cream hover:bg-green/90'
+                    : 'bg-paper border border-line text-ink-soft hover:border-ink hover:text-ink'
+                }`}
+              >
+                {togglingStaff ? '…' : customer.isStaff ? 'Staff' : 'Mark as staff'}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Tags */}
         <div className="pb-6 mb-6 border-b border-line-soft">
