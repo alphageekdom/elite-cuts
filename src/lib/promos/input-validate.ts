@@ -15,6 +15,7 @@ export type PromoInput = {
   excludesPoints: boolean;
   excludesMember: boolean;
   isActive: boolean;
+  isPublic: boolean;
 };
 
 export type PromoInputResult =
@@ -120,6 +121,7 @@ export function validatePromoInput(raw: unknown): PromoInputResult {
       excludesPoints: body.excludesPoints == null ? true : Boolean(body.excludesPoints),
       excludesMember: Boolean(body.excludesMember),
       isActive: body.isActive == null ? true : Boolean(body.isActive),
+      isPublic: Boolean(body.isPublic),
     },
   };
 }

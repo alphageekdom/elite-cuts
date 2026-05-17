@@ -7,8 +7,10 @@ import Promo from '@/models/Promo';
 
 // Atomically reserve a seat against the promo's usageLimit. Returns true if
 // the increment landed, false if a concurrent placement just exhausted the
-// limit. The $expr filter handles both unlimited promos (usageLimit null or
-// missing) and capped promos (usageCount < usageLimit) in one round-trip.
+// limit. Three filter branches handle the three states cleanly: an explicit
+// null limit, a missing limit field (the default for unlimited promos —
+// $eq:null in an aggregation expression does NOT match missing fields),
+// and a present-but-under-limit capped promo.
 export async function reservePromoSeat(
   promoId: string | Types.ObjectId,
 ): Promise<boolean> {
@@ -16,12 +18,11 @@ export async function reservePromoSeat(
   const updated = await Promo.findOneAndUpdate(
     {
       _id: promoId,
-      $expr: {
-        $or: [
-          { $eq: ['$usageLimit', null] },
-          { $lt: ['$usageCount', '$usageLimit'] },
-        ],
-      },
+      $or: [
+        { usageLimit: null },
+        { usageLimit: { $exists: false } },
+        { $expr: { $lt: ['$usageCount', '$usageLimit'] } },
+      ],
     },
     { $inc: { usageCount: 1 } },
   );

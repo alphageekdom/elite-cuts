@@ -39,6 +39,10 @@ export type Promo = {
   excludesPoints: boolean;
   excludesMember: boolean;
   isActive: boolean;
+  // When true, the code is surfaced as a one-tap chip on the checkout page
+  // for every visitor. Default false so admins opt campaigns in deliberately
+  // (email-only or partner codes stay hidden).
+  isPublic: boolean;
   createdBy?: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -79,6 +83,7 @@ const PromoSchema = new Schema<Promo>(
     excludesPoints: { type: Boolean, default: true },
     excludesMember: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
+    isPublic: { type: Boolean, default: false },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true },
