@@ -1,21 +1,24 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
-import { SHIFT_COLORS, type ShiftColor } from '@/lib/shift-constants';
+import { type ShiftColor } from '@/lib/shift-constants';
+import FormDrawer from '@/components/admin/FormDrawer';
+import FieldLabel from '@/components/admin/FieldLabel';
+import ColorSwatchPicker from '@/components/admin/ColorSwatchPicker';
 import {
-  COLOR_SWATCH,
+  FORM_FIELD_CLS,
   ROLE_COLOR,
   ROLE_LABEL,
   STAFF_ROLE_KEYS,
   STAFF_STATUSES,
   STATUS_LABEL,
   type StaffRoleKey,
+  type StaffRow,
   type StaffStatus,
 } from '@/lib/staff-display';
-import type { StaffRow } from './StaffPageClient';
 
 const ROLE_OTHER_VALUE = '__other__';
 
@@ -37,6 +40,14 @@ function roleKeyFromMode(roleMode: string): StaffRoleKey {
   if (roleMode === ROLE_OTHER_VALUE) return 'other';
   const matchedKey = ROLE_QUICK_PICKS.find((k) => ROLE_LABEL[k] === roleMode);
   return matchedKey ?? 'other';
+}
+
+// Light email shape check — just ensure it has @ and a dot in the domain if
+// provided. The server-side validation in /api/staff is the real source of
+// truth; this is just a UX nudge that surfaces inline before submit.
+function isEmailShapeValid(value: string): boolean {
+  if (!value) return true;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
 type Props = {
@@ -133,12 +144,6 @@ export default function StaffFormDrawer({ staff, onClose }: Props) {
     notes.trim() !== initial.notes
   );
 
-  // Light email check — just ensure it has @ and a dot in the domain if provided.
-  // Server-side validation is the real source of truth.
-  function isEmailShapeValid(value: string): boolean {
-    if (!value) return true; // optional
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-  }
   const emailValid = isEmailShapeValid(email.trim());
 
   const submitDisabled = saving || name.trim().length === 0 || !isDirty || !emailValid;
@@ -210,86 +215,17 @@ export default function StaffFormDrawer({ staff, onClose }: Props) {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // A11y: Escape close + focus trap. Pattern mirrors StaffProfileModal.
-  // ---------------------------------------------------------------------------
-  const closeRef = useRef<HTMLButtonElement | null>(null);
-  const drawerRef = useRef<HTMLElement | null>(null);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-        return;
-      }
-      if (e.key !== 'Tab') return;
-      const root = drawerRef.current;
-      if (!root) return;
-      const focusables = root.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      );
-      if (focusables.length === 0) return;
-      const first = focusables[0];
-      const last = focusables[focusables.length - 1];
-      const active = document.activeElement as HTMLElement | null;
-      if (e.shiftKey && active === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && active === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
-
-  useEffect(() => {
-    const id = window.setTimeout(() => closeRef.current?.focus(), 50);
-    return () => window.clearTimeout(id);
-  }, []);
-
-  const fieldCls =
-    'w-full bg-cream border border-line-soft rounded-lg px-4 py-2.5 text-[14px] text-ink placeholder:text-muted focus:outline-none focus:border-ink transition-colors';
-
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-ink/40" onClick={onClose} aria-hidden="true" />
-      <aside
-        ref={drawerRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="staff-form-title"
-        className="relative bg-paper w-full max-w-md h-full overflow-y-auto shadow-2xl flex flex-col"
-      >
-        <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-line-soft shrink-0">
-          <div className="pr-4">
-            <div className="text-[11px] tracking-widest uppercase text-muted mb-1.5">
-              {isEdit ? 'Edit staff' : 'New staff'}
-            </div>
-            <h2 id="staff-form-title" className="font-display text-[20px] font-normal tracking-tight leading-snug">
-              {isEdit ? staff.name : 'Add a staff member'}
-            </h2>
-            <p className="mt-1 text-[12px] text-muted">
-              {isEdit ? 'Update or remove this staff record' : 'Roster entry — no login created'}
-            </p>
-          </div>
-          <button
-            ref={closeRef}
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="w-8 h-8 rounded-full grid place-items-center text-muted hover:text-ink hover:bg-cream-deep transition-colors shrink-0 mt-1"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 px-6 py-5 gap-5">
+    <FormDrawer
+      eyebrow={isEdit ? 'Edit staff' : 'New staff'}
+      title={isEdit ? staff.name : 'Add a staff member'}
+      titleId="staff-form-title"
+      subtitle={isEdit ? 'Update or remove this staff record' : 'Roster entry — no login created'}
+      onClose={onClose}
+    >
+      <form onSubmit={handleSubmit} className="flex flex-col flex-1 px-6 py-5 gap-5">
           <div>
-            <label className="block text-[12px] font-medium text-ink-soft tracking-widest uppercase mb-1.5">Name</label>
+            <FieldLabel>Name</FieldLabel>
             <input
               type="text"
               value={name}
@@ -297,16 +233,16 @@ export default function StaffFormDrawer({ staff, onClose }: Props) {
               placeholder="e.g. Carlos Mendez"
               maxLength={80}
               required
-              className={fieldCls}
+              className={FORM_FIELD_CLS}
             />
           </div>
 
           <div>
-            <label className="block text-[12px] font-medium text-ink-soft tracking-widest uppercase mb-1.5">Role</label>
+            <FieldLabel>Role</FieldLabel>
             <select
               value={roleMode}
               onChange={(e) => handleRoleChange(e.target.value)}
-              className={fieldCls}
+              className={FORM_FIELD_CLS}
             >
               {ROLE_QUICK_PICKS.map((k) => (
                 <option key={k} value={ROLE_LABEL[k]}>{ROLE_LABEL[k]}</option>
@@ -320,61 +256,35 @@ export default function StaffFormDrawer({ staff, onClose }: Props) {
                 onChange={(e) => setRoleOther(e.target.value)}
                 placeholder="e.g. Cleanup, Trainer"
                 maxLength={40}
-                className={`${fieldCls} mt-2`}
+                className={`${FORM_FIELD_CLS} mt-2`}
                 autoFocus
               />
             )}
           </div>
 
           <div>
-            <label className="block text-[12px] font-medium text-ink-soft tracking-widest uppercase mb-1.5">Station</label>
+            <FieldLabel>Station</FieldLabel>
             <input
               type="text"
               value={station}
               onChange={(e) => setStation(e.target.value)}
               placeholder="e.g. Front Counter, Butcher Station"
               maxLength={60}
-              className={fieldCls}
+              className={FORM_FIELD_CLS}
             />
           </div>
 
           <div>
-            <label className="block text-[12px] font-medium text-ink-soft tracking-widest uppercase mb-1.5">Color</label>
-            <div className="flex gap-3 flex-wrap">
-              {SHIFT_COLORS.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setColor(c)}
-                  aria-label={`Color ${c}`}
-                  aria-pressed={color === c}
-                  className="flex flex-col items-center gap-1.5 group focus:outline-none"
-                >
-                  <span
-                    className={`w-9 h-9 rounded-full ${COLOR_SWATCH[c]} transition-all ${
-                      color === c
-                        ? 'ring-2 ring-ink ring-offset-2 ring-offset-paper'
-                        : 'opacity-70 group-hover:opacity-100'
-                    }`}
-                  />
-                  <span
-                    className={`text-[10px] tracking-[0.06em] capitalize ${
-                      color === c ? 'text-ink font-medium' : 'text-muted'
-                    }`}
-                  >
-                    {c}
-                  </span>
-                </button>
-              ))}
-            </div>
+            <FieldLabel>Color</FieldLabel>
+            <ColorSwatchPicker value={color} onChange={setColor} />
           </div>
 
           <div>
-            <label className="block text-[12px] font-medium text-ink-soft tracking-widest uppercase mb-1.5">Status</label>
+            <FieldLabel>Status</FieldLabel>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as StaffStatus)}
-              className={fieldCls}
+              className={FORM_FIELD_CLS}
             >
               {STAFF_STATUSES.map((s) => (
                 <option key={s} value={s}>{STATUS_LABEL[s]}</option>
@@ -383,7 +293,7 @@ export default function StaffFormDrawer({ staff, onClose }: Props) {
           </div>
 
           <div>
-            <label className="block text-[12px] font-medium text-ink-soft tracking-widest uppercase mb-1.5">Email</label>
+            <FieldLabel>Email</FieldLabel>
             <input
               type="email"
               value={email}
@@ -391,7 +301,7 @@ export default function StaffFormDrawer({ staff, onClose }: Props) {
               placeholder="e.g. name@elitecuts.demo"
               maxLength={120}
               aria-invalid={!emailValid}
-              className={fieldCls}
+              className={FORM_FIELD_CLS}
             />
             {!emailValid && (
               <p className="mt-1.5 text-[11px] text-oxblood">Email looks malformed</p>
@@ -399,14 +309,14 @@ export default function StaffFormDrawer({ staff, onClose }: Props) {
           </div>
 
           <div>
-            <label className="block text-[12px] font-medium text-ink-soft tracking-widest uppercase mb-1.5">Notes</label>
+            <FieldLabel>Notes</FieldLabel>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Anything worth knowing about this staff member"
               maxLength={500}
               rows={3}
-              className={`${fieldCls} resize-none`}
+              className={`${FORM_FIELD_CLS} resize-none`}
             />
           </div>
 
@@ -453,8 +363,7 @@ export default function StaffFormDrawer({ staff, onClose }: Props) {
               )
             )}
           </div>
-        </form>
-      </aside>
-    </div>
+      </form>
+    </FormDrawer>
   );
 }

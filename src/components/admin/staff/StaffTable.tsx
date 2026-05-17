@@ -8,7 +8,7 @@ import {
   STATUS_LABEL,
 } from '@/lib/staff-display';
 import StaffActionsMenu from './StaffActionsMenu';
-import type { StaffRow } from './StaffPageClient';
+import type { StaffRow } from '@/lib/staff-display';
 
 type Props = {
   rows: StaffRow[];
@@ -46,10 +46,9 @@ export default function StaffTable({ rows, onOpenProfile, onEdit }: Props) {
           {rows.map((s, i) => (
             <tr
               key={s.id}
-              className={`group cursor-pointer hover:bg-cream/40 transition-colors ${
+              className={`group hover:bg-cream/40 transition-colors ${
                 i < rows.length - 1 ? 'border-b border-line-soft' : ''
               }`}
-              onClick={() => onOpenProfile(s)}
             >
               <td className="px-6 py-4">
                 <div className="flex items-center gap-3">

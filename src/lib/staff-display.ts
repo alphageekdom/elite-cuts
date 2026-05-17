@@ -1,5 +1,22 @@
 import type { ShiftColor } from '@/lib/shift-constants';
 
+// Shape used everywhere the staff dashboard renders rows. Lives in the
+// display lib (rather than in StaffPageClient) so the import direction
+// from leaf components to the orchestrator is one-way.
+export type StaffRow = {
+  id: string;
+  name: string;
+  role: string;
+  roleKey: StaffRoleKey;
+  station: string;
+  status: StaffStatus;
+  color: ShiftColor;
+  email: string;
+  notes: string;
+  workingToday: boolean;
+  todayShift: string | null;
+};
+
 // Enums live here (not in the Mongoose model) so client components can
 // import them without dragging mongoose/mongodb into the browser bundle.
 export const STAFF_STATUSES = ['active', 'inactive', 'seasonal', 'on-leave'] as const;
@@ -103,6 +120,11 @@ export const AVATAR_FG: Record<ShiftColor, string> = {
   maya: 'text-ink',
   delivery: 'text-ink-soft',
 };
+
+// Standard form-input classes shared by the admin form drawers
+// (staff + shift). Cream fill, soft border, focuses to ink.
+export const FORM_FIELD_CLS =
+  'w-full bg-cream border border-line-soft rounded-lg px-4 py-2.5 text-[14px] text-ink placeholder:text-muted focus:outline-none focus:border-ink transition-colors';
 
 // hourIndex 0 = 8 AM, … 8 = 4 PM. End uses +1 because the slot covers a full hour.
 export function formatShiftRange(startHourIndex: number, endHourIndex: number): string {

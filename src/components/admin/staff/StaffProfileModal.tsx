@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { getInitials } from '@/lib/format';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import {
   AVATAR_BG,
@@ -11,7 +12,7 @@ import {
   STATUS_BADGE,
   STATUS_LABEL,
 } from '@/lib/staff-display';
-import type { StaffRow } from './StaffPageClient';
+import type { StaffRow } from '@/lib/staff-display';
 
 type Props = {
   staff: StaffRow | null;
@@ -26,38 +27,9 @@ export default function StaffProfileModal({ staff, onClose, onEdit }: Props) {
 
   useScrollLock(open);
 
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-        return;
-      }
-      if (e.key !== 'Tab') return;
-
-      // Focus trap: cycle focus between the first and last focusable elements
-      // inside the dialog so keyboard users can't tab out to the page behind.
-      const root = dialogRef.current;
-      if (!root) return;
-      const focusables = root.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      );
-      if (focusables.length === 0) return;
-      const first = focusables[0];
-      const last = focusables[focusables.length - 1];
-      const active = document.activeElement as HTMLElement | null;
-
-      if (e.shiftKey && active === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && active === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
+  // Escape closes; Tab cycles inside the dialog. Hook is a no-op when the
+  // ref is null (which is the case while the modal is closed and renders null).
+  useFocusTrap(dialogRef, onClose);
 
   useEffect(() => {
     if (!open) return;
