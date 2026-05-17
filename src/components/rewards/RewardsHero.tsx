@@ -73,13 +73,11 @@ export default function RewardsHero({ settings }: Props) {
           <div className='relative overflow-hidden rounded-md bg-ink p-9 text-cream shadow-[0_30px_80px_rgba(28,24,20,0.18)] md:aspect-[1/1.15]'>
             <div
               aria-hidden
-              className='pointer-events-none absolute -top-37.5 -right-37.5 size-100 rounded-full'
-              style={{ background: 'radial-gradient(circle, rgba(184,137,90,0.25) 0%, transparent 60%)' }}
+              className='pointer-events-none absolute -top-37.5 -right-37.5 size-100 rounded-full bg-[radial-gradient(circle,rgba(184,137,90,0.25)_0%,transparent_60%)]'
             />
             <div
               aria-hidden
-              className='pointer-events-none absolute -bottom-25 -left-25 size-75 rounded-full'
-              style={{ background: 'radial-gradient(circle, rgba(107,31,31,0.4) 0%, transparent 60%)' }}
+              className='pointer-events-none absolute -bottom-25 -left-25 size-75 rounded-full bg-[radial-gradient(circle,rgba(107,31,31,0.4)_0%,transparent_60%)]'
             />
 
             <div className='relative z-10 flex h-full flex-col justify-between'>

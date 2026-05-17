@@ -156,14 +156,7 @@ export default function Login() {
       {/* Visual Side */}
       <aside className="relative hidden md:flex overflow-hidden bg-ink text-cream">
         <div
-          className="absolute inset-0 animate-[heroZoom_22s_ease-in-out_infinite_alternate]"
-          style={{
-            backgroundImage:
-              'linear-gradient(180deg, rgba(20,16,14,0.5) 0%, rgba(20,16,14,0.4) 50%, rgba(20,16,14,0.85) 100%), url("https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=1600&q=80")',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            transform: 'scale(1.05)',
-          }}
+          className="absolute inset-0 scale-[1.05] hero-bg-login animate-[heroZoom_22s_ease-in-out_infinite_alternate]"
         />
         <div className="relative z-10 flex flex-col justify-between w-full h-full p-12 xl:p-14">
           <div className="max-w-[36ch]">
@@ -200,28 +193,19 @@ export default function Login() {
 
         <div className="flex-1 flex items-center justify-center py-10">
           <div className="w-full max-w-105">
-            <span
-              className="auth-reveal block font-display italic text-sm text-camel mb-4 tracking-[0.02em]"
-              style={{ animationDelay: '0.1s' }}
-            >
+            <span className="auth-reveal block font-display italic text-sm text-camel mb-4 tracking-[0.02em] [animation-delay:100ms]">
               ↗ Sign in
             </span>
-            <h1
-              className="auth-reveal font-display font-normal text-[clamp(40px,4.5vw,56px)] leading-[1.05] tracking-tight mb-4"
-              style={{ animationDelay: '0.2s' }}
-            >
+            <h1 className="auth-reveal font-display font-normal text-[clamp(40px,4.5vw,56px)] leading-[1.05] tracking-tight mb-4 [animation-delay:200ms]">
               Good to see you <em className="italic text-oxblood">again.</em>
             </h1>
-            <p
-              className="auth-reveal text-ink-soft mb-12 text-[15px] leading-relaxed max-w-[38ch]"
-              style={{ animationDelay: '0.3s' }}
-            >
+            <p className="auth-reveal text-ink-soft mb-12 text-[15px] leading-relaxed max-w-[38ch] [animation-delay:300ms]">
               Sign in to track orders, save your cuts, and check out faster next time.
             </p>
 
             <form onSubmit={handleSubmit}>
               {/* Email */}
-              <div className="auth-reveal mb-7" style={{ animationDelay: '0.4s' }}>
+              <div className="auth-reveal mb-7 [animation-delay:400ms]">
                 <label htmlFor="email" className="block text-[11px] font-medium tracking-[0.22em] uppercase text-muted mb-3">
                   Email
                 </label>
@@ -244,7 +228,7 @@ export default function Login() {
               </div>
 
               {/* Password */}
-              <div className="auth-reveal mb-7" style={{ animationDelay: '0.5s' }}>
+              <div className="auth-reveal mb-7 [animation-delay:500ms]">
                 <label htmlFor="password" className="block text-[11px] font-medium tracking-[0.22em] uppercase text-muted mb-3">
                   Password
                 </label>
@@ -267,10 +251,7 @@ export default function Login() {
               </div>
 
               {/* Remember me + Forgot password */}
-              <div
-                className="auth-reveal flex justify-between items-center mb-9"
-                style={{ animationDelay: '0.55s' }}
-              >
+              <div className="auth-reveal flex justify-between items-center mb-9 [animation-delay:550ms]">
                 <label className="inline-flex items-center gap-2.5 text-[13px] text-ink-soft cursor-pointer select-none">
                   <input
                     type="checkbox"
@@ -290,8 +271,7 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={loading || isLocked}
-                className="auth-reveal w-full flex items-center justify-center gap-3 px-7 py-4.5 bg-ink text-cream rounded-full text-sm font-medium tracking-[0.04em] hover:bg-oxblood hover:-translate-y-px transition-all duration-300 disabled:opacity-60 disabled:hover:bg-ink disabled:hover:translate-y-0 disabled:cursor-not-allowed"
-                style={{ animationDelay: '0.6s' }}
+                className="auth-reveal w-full flex items-center justify-center gap-3 px-7 py-4.5 bg-ink text-cream rounded-full text-sm font-medium tracking-[0.04em] hover:bg-oxblood hover:-translate-y-px transition-all duration-300 disabled:opacity-60 disabled:hover:bg-ink disabled:hover:translate-y-0 disabled:cursor-not-allowed [animation-delay:600ms]"
               >
                 {isLocked
                   ? `Try again in ${formatLockoutCountdown(lockSecondsLeft!)}`
@@ -307,10 +287,7 @@ export default function Login() {
 
             </form>
 
-            <p
-              className="auth-reveal text-center mt-10 text-sm text-ink-soft"
-              style={{ animationDelay: '0.75s' }}
-            >
+            <p className="auth-reveal text-center mt-10 text-sm text-ink-soft [animation-delay:750ms]">
               By signing in, you agree to our{' '}
               <Link href="#" className="text-oxblood font-medium border-b border-oxblood pb-px">Terms</Link>
               {' '}&amp;{' '}

@@ -8,8 +8,7 @@ export default function RewardsCtaStrip() {
     <section className='relative overflow-hidden bg-oxblood py-25 text-cream'>
       <div
         aria-hidden
-        className='pointer-events-none absolute -top-50 -right-50 size-150 rounded-full'
-        style={{ background: 'radial-gradient(circle, rgba(184,137,90,0.2) 0%, transparent 60%)' }}
+        className='pointer-events-none absolute -top-50 -right-50 size-150 rounded-full bg-[radial-gradient(circle,rgba(184,137,90,0.2)_0%,transparent_60%)]'
       />
       <div className='relative z-10 mx-auto max-w-7xl px-6 text-center md:px-8'>
         <Reveal>

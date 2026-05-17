@@ -272,14 +272,7 @@ export default function Register() {
       {/* Visual Side */}
       <aside className="relative hidden md:flex overflow-hidden bg-ink text-cream">
         <div
-          className="absolute inset-0 animate-[heroZoom_22s_ease-in-out_infinite_alternate]"
-          style={{
-            backgroundImage:
-              'linear-gradient(180deg, rgba(20,16,14,0.45) 0%, rgba(20,16,14,0.35) 50%, rgba(20,16,14,0.85) 100%), url("https://images.unsplash.com/photo-1588168333986-5078d3ae3976?w=1600&q=80")',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            transform: 'scale(1.05)',
-          }}
+          className="absolute inset-0 scale-[1.05] hero-bg-register animate-[heroZoom_22s_ease-in-out_infinite_alternate]"
         />
         <div className="relative z-10 flex flex-col justify-between w-full h-full p-12 xl:p-14">
           <div className="max-w-[36ch]">
@@ -338,22 +331,13 @@ export default function Register() {
 
         <div className="flex-1 flex items-center justify-center py-10">
           <div className="w-full max-w-110">
-            <span
-              className="auth-reveal block font-display italic text-sm text-camel mb-4 tracking-[0.02em]"
-              style={{ animationDelay: '0.1s' }}
-            >
+            <span className="auth-reveal block font-display italic text-sm text-camel mb-4 tracking-[0.02em] [animation-delay:100ms]">
               ↗ Create account
             </span>
-            <h1
-              className="auth-reveal font-display font-normal text-[clamp(40px,4.5vw,56px)] leading-[1.05] tracking-tight mb-4"
-              style={{ animationDelay: '0.2s' }}
-            >
+            <h1 className="auth-reveal font-display font-normal text-[clamp(40px,4.5vw,56px)] leading-[1.05] tracking-tight mb-4 [animation-delay:200ms]">
               Welcome to the <em className="italic text-oxblood">counter.</em>
             </h1>
-            <p
-              className="auth-reveal text-ink-soft mb-11 text-[15px] leading-relaxed max-w-[40ch]"
-              style={{ animationDelay: '0.3s' }}
-            >
+            <p className="auth-reveal text-ink-soft mb-11 text-[15px] leading-relaxed max-w-[40ch] [animation-delay:300ms]">
               Takes about 30 seconds. We'll never share your details, and you
               can opt out of emails any time.
             </p>
@@ -431,7 +415,7 @@ export default function Register() {
             ) : (
             <form onSubmit={handleSubmit}>
               {/* Name */}
-              <div className="auth-reveal mb-6.5" style={{ animationDelay: '0.35s' }}>
+              <div className="auth-reveal mb-6.5 [animation-delay:350ms]">
                 <label
                   htmlFor="name"
                   className="block text-[11px] font-medium tracking-[0.22em] uppercase text-muted mb-3"
@@ -456,7 +440,7 @@ export default function Register() {
               </div>
 
               {/* Email */}
-              <div className="auth-reveal mb-6.5" style={{ animationDelay: '0.4s' }}>
+              <div className="auth-reveal mb-6.5 [animation-delay:400ms]">
                 <label
                   htmlFor="email"
                   className="block text-[11px] font-medium tracking-[0.22em] uppercase text-muted mb-3"
@@ -481,7 +465,7 @@ export default function Register() {
               </div>
 
               {/* Password + strength meter */}
-              <div className="auth-reveal mb-6.5" style={{ animationDelay: '0.45s' }}>
+              <div className="auth-reveal mb-6.5 [animation-delay:450ms]">
                 <label
                   htmlFor="password"
                   className="block text-[11px] font-medium tracking-[0.22em] uppercase text-muted mb-3"
@@ -522,7 +506,7 @@ export default function Register() {
               </div>
 
               {/* Confirm password */}
-              <div className="auth-reveal mb-3" style={{ animationDelay: '0.5s' }}>
+              <div className="auth-reveal mb-3 [animation-delay:500ms]">
                 <label
                   htmlFor="confirmPassword"
                   className="block text-[11px] font-medium tracking-[0.22em] uppercase text-muted mb-3"
@@ -550,10 +534,7 @@ export default function Register() {
               </div>
 
               {/* Terms */}
-              <label
-                className="auth-reveal flex items-start gap-3 my-8 text-[13px] text-ink-soft leading-relaxed cursor-pointer select-none"
-                style={{ animationDelay: '0.55s' }}
-              >
+              <label className="auth-reveal flex items-start gap-3 my-8 text-[13px] text-ink-soft leading-relaxed cursor-pointer select-none [animation-delay:550ms]">
                 <input
                   type="checkbox"
                   name="agreeToTerms"
@@ -579,8 +560,7 @@ export default function Register() {
               <button
                 type="submit"
                 disabled={loading}
-                className="auth-reveal w-full flex items-center justify-center gap-3 px-7 py-4.5 bg-ink text-cream rounded-full text-sm font-medium tracking-[0.04em] hover:bg-oxblood hover:-translate-y-px transition-all duration-300 disabled:opacity-60"
-                style={{ animationDelay: '0.6s' }}
+                className="auth-reveal w-full flex items-center justify-center gap-3 px-7 py-4.5 bg-ink text-cream rounded-full text-sm font-medium tracking-[0.04em] hover:bg-oxblood hover:-translate-y-px transition-all duration-300 disabled:opacity-60 [animation-delay:600ms]"
               >
                 {loading ? 'Creating account…' : 'Create my account'}
                 {!loading && (

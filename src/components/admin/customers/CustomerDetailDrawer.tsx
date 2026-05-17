@@ -127,10 +127,7 @@ export default function CustomerDetailDrawer({
     <>
       {/* Hero */}
       <div className="relative bg-ink text-cream px-8 py-8 shrink-0 overflow-hidden">
-        <div
-          className="absolute -top-[120px] -right-[120px] w-64 h-64 rounded-full pointer-events-none"
-          style={{ background: 'radial-gradient(circle, rgba(184,137,90,0.18) 0%, transparent 60%)' }}
-        />
+        <div className="absolute -top-30 -right-30 w-64 h-64 rounded-full pointer-events-none bg-[radial-gradient(circle,rgba(184,137,90,0.18)_0%,transparent_60%)]" />
 
         <div className="relative z-10">
           <div className="flex items-start justify-between mb-6">
@@ -142,8 +139,7 @@ export default function CustomerDetailDrawer({
             </div>
             <button
               onClick={onClose}
-              className="w-9 h-9 rounded-full border border-cream/15 text-cream grid place-items-center hover:border-cream/30 transition-colors shrink-0"
-              style={{ background: 'rgba(244,238,228,0.08)' }}
+              className="w-9 h-9 rounded-full border border-cream/15 bg-cream/8 text-cream grid place-items-center hover:border-cream/30 transition-colors shrink-0"
             >
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -186,7 +182,7 @@ export default function CustomerDetailDrawer({
                       : 'Dormancy warning sent'}
                   </span>
                 )}
-                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium tracking-[0.1em] uppercase ${tierCfg.pillClass}`}>
+                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium tracking-widest uppercase ${tierCfg.pillClass}`}>
                   {tierCfg.showStar && (
                     <svg className="w-2.5 h-2.5 fill-current shrink-0" viewBox="0 0 24 24">
                       <path d="M12 2l2.39 7.36H22l-6.18 4.49L18.21 21 12 16.51 5.79 21l2.39-7.15L2 9.36h7.61z" />
@@ -210,8 +206,8 @@ export default function CustomerDetailDrawer({
           </div>
 
           {/* KPI strip */}
-          <div className="grid grid-cols-3 pt-5 border-t border-cream/[0.12]">
-            <div className="pr-4 border-r border-cream/[0.08]">
+          <div className="grid grid-cols-3 pt-5 border-t border-cream/12">
+            <div className="pr-4 border-r border-cream/8">
               <div className="text-[10px] tracking-[0.18em] uppercase text-cream/50 mb-2">Lifetime spend</div>
               <div className="font-display text-[20px] font-normal leading-none tracking-tight mb-0.5">
                 {formatMoney(customer.totalSpend)}
@@ -220,7 +216,7 @@ export default function CustomerDetailDrawer({
                 {customer.orderCount} ORDER{customer.orderCount !== 1 ? 'S' : ''}
               </div>
             </div>
-            <div className="px-4 border-r border-cream/[0.08]">
+            <div className="px-4 border-r border-cream/8">
               <div className="text-[10px] tracking-[0.18em] uppercase text-cream/50 mb-2">Avg order</div>
               <div className="font-display text-[20px] font-normal leading-none tracking-tight mb-0.5">
                 {avgOrder > 0 ? formatMoney(avgOrder) : '—'}
@@ -374,7 +370,7 @@ export default function CustomerDetailDrawer({
             ].map(({ label, value }, i) => (
               <div key={label} className={`p-4 text-center ${i < 2 ? 'border-r border-line-soft' : ''}`}>
                 <div className="font-display text-[18px] font-normal tracking-tight mb-0.5">{value}</div>
-                <div className="font-mono text-[10px] text-muted uppercase tracking-[0.1em]">{label}</div>
+                <div className="font-mono text-[10px] text-muted uppercase tracking-widest">{label}</div>
               </div>
             ))}
           </div>
@@ -439,10 +435,7 @@ export default function CustomerDetailDrawer({
               </div>
             </div>
           ) : (
-            <div
-              className="p-4 border border-camel/20 rounded-sm font-display italic text-[13px] text-muted leading-relaxed"
-              style={{ background: 'rgba(184,137,90,0.08)' }}
-            >
+            <div className="p-4 border border-camel/20 bg-camel/8 rounded-sm font-display italic text-[13px] text-muted leading-relaxed">
               {noteText || 'No notes added yet.'}
             </div>
           )}

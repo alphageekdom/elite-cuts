@@ -28,6 +28,25 @@
   box-shadow: rgb(38, 57, 77) 0px 20px 30px -10px;
 }
 
+/* Hero backgrounds for the auth pages — the linear-gradient + remote
+   image-url combo is too long to read as a Tailwind arbitrary class,
+   so the styles live here and the JSX just toggles the utility. */
+@utility hero-bg-login {
+  background-image:
+    linear-gradient(180deg, rgba(20,16,14,0.5) 0%, rgba(20,16,14,0.4) 50%, rgba(20,16,14,0.85) 100%),
+    url('https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=1600&q=80');
+  background-size: cover;
+  background-position: center;
+}
+
+@utility hero-bg-register {
+  background-image:
+    linear-gradient(180deg, rgba(20,16,14,0.45) 0%, rgba(20,16,14,0.35) 50%, rgba(20,16,14,0.85) 100%),
+    url('https://images.unsplash.com/photo-1588168333986-5078d3ae3976?w=1600&q=80');
+  background-size: cover;
+  background-position: center;
+}
+
 @layer components {
   .modal {
     position: fixed;

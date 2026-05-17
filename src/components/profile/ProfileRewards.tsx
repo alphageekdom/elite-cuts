@@ -117,8 +117,8 @@ export default function ProfileRewards({
 
         {/* Status card — dark */}
         <div className='relative overflow-hidden rounded bg-ink text-cream p-6 sm:p-8'>
-          <div aria-hidden className='pointer-events-none absolute -top-30 -right-30 size-70 rounded-full' style={{ background: 'radial-gradient(circle, rgba(184,137,90,0.18) 0%, transparent 60%)' }} />
-          <div aria-hidden className='pointer-events-none absolute -bottom-20 -left-20 size-55 rounded-full' style={{ background: 'radial-gradient(circle, rgba(107,31,31,0.3) 0%, transparent 60%)' }} />
+          <div aria-hidden className='pointer-events-none absolute -top-30 -right-30 size-70 rounded-full bg-[radial-gradient(circle,rgba(184,137,90,0.18)_0%,transparent_60%)]' />
+          <div aria-hidden className='pointer-events-none absolute -bottom-20 -left-20 size-55 rounded-full bg-[radial-gradient(circle,rgba(107,31,31,0.3)_0%,transparent_60%)]' />
 
           <div className='relative z-10'>
             <div className='flex flex-wrap items-start justify-between gap-3 mb-7'>
