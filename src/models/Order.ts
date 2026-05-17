@@ -99,6 +99,7 @@ export type Order = {
   memberDiscount: number;
   promoDiscount: number;
   promoCode?: string;
+  promoId?: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -283,6 +284,7 @@ const OrderSchema = new Schema<Order>(
     memberDiscount: { type: Number, default: 0, min: 0 },
     promoDiscount: { type: Number, default: 0, min: 0 },
     promoCode: { type: String, trim: true },
+    promoId: { type: Schema.Types.ObjectId, ref: 'Promo' },
   },
   {
     timestamps: true,
