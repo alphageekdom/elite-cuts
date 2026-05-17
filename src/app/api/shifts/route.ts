@@ -3,12 +3,12 @@ import { NextResponse } from 'next/server';
 import Shift, { SHIFT_COLORS, type ShiftColor } from '@/models/Shift';
 import { withAdmin } from '@/lib/api-handler';
 import { getMondayOf } from '@/lib/schedule-utils';
-import { findShiftCollision } from '@/lib/shifts';
+import { findShiftCollision, normalizeWeekStart } from '@/lib/shifts';
 
 export const GET = withAdmin(async (request) => {
   try {
     const weekStartParam = request.nextUrl.searchParams.get('weekStart');
-    const weekStart = weekStartParam ? new Date(weekStartParam) : getMondayOf(new Date());
+    const weekStart = normalizeWeekStart(weekStartParam ? new Date(weekStartParam) : getMondayOf(new Date()));
     const weekEnd = new Date(weekStart.getTime() + 7 * 86400000);
     const shifts = await Shift.find({ weekStart: { $gte: weekStart, $lt: weekEnd } }).lean();
     return NextResponse.json(shifts);
@@ -25,10 +25,11 @@ export const POST = withAdmin(async (request) => {
     if (!weekStart) {
       return NextResponse.json({ message: 'weekStart is required' }, { status: 400 });
     }
-    const weekStartDate = new Date(weekStart);
-    if (Number.isNaN(weekStartDate.getTime())) {
+    const parsedWeekStart = new Date(weekStart);
+    if (Number.isNaN(parsedWeekStart.getTime())) {
       return NextResponse.json({ message: 'weekStart is not a valid date' }, { status: 400 });
     }
+    const weekStartDate = normalizeWeekStart(parsedWeekStart);
     if (!Number.isInteger(dayOfWeek) || dayOfWeek < 0 || dayOfWeek > 6) {
       return NextResponse.json({ message: 'dayOfWeek must be an integer 0–6' }, { status: 400 });
     }

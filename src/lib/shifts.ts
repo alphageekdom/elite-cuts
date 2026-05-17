@@ -9,6 +9,17 @@ export type ShiftSlot = {
   hourIndex: number;
 };
 
+// Snap a weekStart Date to UTC midnight of its calendar date so that a client
+// sending local-midnight Monday (e.g. `2026-05-11T07:00:00Z` from PDT) and a
+// client sending UTC-midnight Monday (`2026-05-11T00:00:00Z`) both land on
+// the same stored value. Without this normalization the unique compound
+// index `(weekStart, dayOfWeek, hourIndex)` doesn't fire because the two
+// timestamps differ.
+export function normalizeWeekStart(input: Date | string): Date {
+  const d = typeof input === 'string' ? new Date(input) : new Date(input.getTime());
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+}
+
 export type ShiftCollision = {
   _id: string;
   weekStart: string;
