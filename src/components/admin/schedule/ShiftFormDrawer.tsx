@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { SHIFT_COLORS, type ShiftColor } from '@/lib/shift-constants';
+import { ROLE_COLOR, ROLE_LABEL, STAFF_ROLE_KEYS, type StaffRoleKey } from '@/lib/staff-display';
 import type { ShiftRow, StaffUserOption } from './ScheduleClient';
 
 const HOUR_LABELS = ['8 AM', '9 AM', '10 AM', '11 AM', '12 PM', '1 PM', '2 PM', '3 PM', '4 PM'];
@@ -19,6 +20,23 @@ const COLOR_SWATCH: Record<ShiftColor, string> = {
 };
 
 const STAFF_OTHER_VALUE = '__other__';
+const ROLE_OTHER_VALUE = '__other__';
+
+// Quick-pick options: the six canonical role keys (skip 'other' since that's
+// the free-text fallback). The select stores the label string (not the key)
+// so the existing role-as-display-text shape on Shift documents is preserved.
+const ROLE_QUICK_PICKS: StaffRoleKey[] = STAFF_ROLE_KEYS.filter(
+  (k) => k !== 'other',
+);
+
+function findMatchingRoleLabel(role: string): string | null {
+  const trimmed = role.trim();
+  if (!trimmed) return null;
+  const match = ROLE_QUICK_PICKS.find(
+    (k) => ROLE_LABEL[k].toLowerCase() === trimmed.toLowerCase(),
+  );
+  return match ? ROLE_LABEL[match] : null;
+}
 
 type Props = {
   shift: ShiftRow | null;          // null = create mode
@@ -60,16 +78,75 @@ export default function ShiftFormDrawer({
 
   const [dayOfWeek, setDayOfWeek] = useState<number>(shift?.dayOfWeek ?? defaultDayOfWeek ?? 0);
   const [hourIndex, setHourIndex] = useState<number>(shift?.hourIndex ?? defaultHourIndex ?? 0);
-  const [role, setRole] = useState(shift?.role ?? '');
-  const [color, setColor] = useState<ShiftColor>(shift?.color ?? 'marcus');
+
+  // Role select: holds either a canonical label (one of ROLE_QUICK_PICKS via
+  // ROLE_LABEL) or ROLE_OTHER_VALUE — in which case the free-text input below
+  // carries the actual value.
+  const initialRoleLabel = shift?.role ?? '';
+  const initialMatchedLabel = findMatchingRoleLabel(initialRoleLabel);
+  const [roleMode, setRoleMode] = useState<string>(() => {
+    if (initialMatchedLabel) return initialMatchedLabel;
+    // Create mode without a matching role: default to whichever role the
+    // chosen staff member already has, otherwise "Other".
+    if (!shift) {
+      const initialStaff = staffUsers[0];
+      if (initialStaff && initialStaff.roleKey !== 'other') {
+        return ROLE_LABEL[initialStaff.roleKey];
+      }
+    }
+    return ROLE_OTHER_VALUE;
+  });
+  const [roleOther, setRoleOther] = useState(() => {
+    if (initialMatchedLabel) return '';
+    return initialRoleLabel;
+  });
+
+  const [color, setColor] = useState<ShiftColor>(() => {
+    if (shift?.color) return shift.color;
+    // Create mode: seed from the initial staff's role so the chain is
+    // consistent — subsequent changes also derive color from role.
+    const initialStaff = staffUsers[0];
+    if (initialStaff && initialStaff.roleKey !== 'other') {
+      return ROLE_COLOR[initialStaff.roleKey];
+    }
+    return 'marcus';
+  });
 
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // Smart-default chain: picking a staff member fills role, picking a role
+  // fills color. Both controls remain manually overridable afterward.
+  function handleStaffChange(next: string) {
+    setStaffMode(next);
+    if (next === STAFF_OTHER_VALUE) return;
+    const u = staffUsers.find((opt) => opt._id === next);
+    if (!u) return;
+    if (u.roleKey !== 'other') {
+      setRoleMode(ROLE_LABEL[u.roleKey]);
+      setRoleOther('');
+      setColor(ROLE_COLOR[u.roleKey]);
+    }
+  }
+
+  function handleRoleChange(next: string) {
+    setRoleMode(next);
+    if (next === ROLE_OTHER_VALUE) return;
+    const matchedKey = ROLE_QUICK_PICKS.find((k) => ROLE_LABEL[k] === next);
+    if (matchedKey) {
+      setColor(ROLE_COLOR[matchedKey]);
+    }
+  }
+
   function resolvedStaffName(): string {
     if (staffMode === STAFF_OTHER_VALUE) return staffNameOther.trim();
     return staffUsers.find((u) => u._id === staffMode)?.name.trim() ?? '';
+  }
+
+  function resolvedRole(): string {
+    if (roleMode === ROLE_OTHER_VALUE) return roleOther.trim();
+    return roleMode;
   }
 
   const submitDisabled = saving || resolvedStaffName().length === 0;
@@ -85,9 +162,10 @@ export default function ShiftFormDrawer({
     try {
       const url = isEdit ? `/api/shifts/${shift._id}` : '/api/shifts';
       const method = isEdit ? 'PATCH' : 'POST';
+      const role = resolvedRole();
       const body = isEdit
-        ? { staffName, role: role.trim(), color, dayOfWeek, hourIndex }
-        : { weekStart: weekStart.toISOString(), staffName, role: role.trim(), color, dayOfWeek, hourIndex };
+        ? { staffName, role, color, dayOfWeek, hourIndex }
+        : { weekStart: weekStart.toISOString(), staffName, role, color, dayOfWeek, hourIndex };
 
       const res = await fetch(url, {
         method,
@@ -174,7 +252,7 @@ export default function ShiftFormDrawer({
             <label className="block text-[12px] font-medium text-ink-soft tracking-widest uppercase mb-1.5">Staff</label>
             <select
               value={staffMode}
-              onChange={(e) => setStaffMode(e.target.value)}
+              onChange={(e) => handleStaffChange(e.target.value)}
               className={fieldCls}
             >
               {staffUsers.map((u) => (
@@ -227,19 +305,32 @@ export default function ShiftFormDrawer({
 
           <div>
             <label className="block text-[12px] font-medium text-ink-soft tracking-widest uppercase mb-1.5">Role</label>
-            <input
-              type="text"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              placeholder="e.g. Cutter, Counter, Delivery"
-              maxLength={40}
+            <select
+              value={roleMode}
+              onChange={(e) => handleRoleChange(e.target.value)}
               className={fieldCls}
-            />
+            >
+              {ROLE_QUICK_PICKS.map((k) => (
+                <option key={k} value={ROLE_LABEL[k]}>{ROLE_LABEL[k]}</option>
+              ))}
+              <option value={ROLE_OTHER_VALUE}>Other (type a role)</option>
+            </select>
+            {roleMode === ROLE_OTHER_VALUE && (
+              <input
+                type="text"
+                value={roleOther}
+                onChange={(e) => setRoleOther(e.target.value)}
+                placeholder="e.g. Cleanup, Trainer"
+                maxLength={40}
+                className={`${fieldCls} mt-2`}
+                autoFocus
+              />
+            )}
           </div>
 
           <div>
             <label className="block text-[12px] font-medium text-ink-soft tracking-widest uppercase mb-1.5">Color</label>
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-3 flex-wrap">
               {SHIFT_COLORS.map((c) => (
                 <button
                   key={c}
@@ -247,10 +338,23 @@ export default function ShiftFormDrawer({
                   onClick={() => setColor(c)}
                   aria-label={`Color ${c}`}
                   aria-pressed={color === c}
-                  className={`w-9 h-9 rounded-full ${COLOR_SWATCH[c]} transition-all ${
-                    color === c ? 'ring-2 ring-ink ring-offset-2 ring-offset-paper' : 'opacity-70 hover:opacity-100'
-                  }`}
-                />
+                  className="flex flex-col items-center gap-1.5 group focus:outline-none"
+                >
+                  <span
+                    className={`w-9 h-9 rounded-full ${COLOR_SWATCH[c]} transition-all ${
+                      color === c
+                        ? 'ring-2 ring-ink ring-offset-2 ring-offset-paper'
+                        : 'opacity-70 group-hover:opacity-100'
+                    }`}
+                  />
+                  <span
+                    className={`text-[10px] tracking-[0.06em] capitalize ${
+                      color === c ? 'text-ink font-medium' : 'text-muted'
+                    }`}
+                  >
+                    {c}
+                  </span>
+                </button>
               ))}
             </div>
           </div>

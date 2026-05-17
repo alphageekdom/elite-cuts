@@ -1,6 +1,9 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import mongoose from 'mongoose';
-import StaffMemberModel from '@/models/StaffMember';
+import StaffMemberModel, {
+  STAFF_ROLE_KEYS,
+  STAFF_STATUSES,
+} from '@/models/StaffMember';
 import { SHIFT_COLORS } from '@/lib/shift-constants';
 import { withAdmin } from '@/lib/api-handler';
 
@@ -15,8 +18,11 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
   const body = (await request.json().catch(() => ({}))) as {
     name?: string;
     role?: string;
+    roleKey?: string;
+    station?: string;
     color?: string;
-    isActive?: boolean;
+    status?: string;
+    email?: string;
     notes?: string;
   };
 
@@ -32,13 +38,26 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
     update.name = trimmed;
   }
   if (body.role !== undefined) update.role = body.role.trim();
+  if (body.roleKey !== undefined) {
+    if (!(STAFF_ROLE_KEYS as readonly string[]).includes(body.roleKey)) {
+      return NextResponse.json({ message: 'Invalid role' }, { status: 400 });
+    }
+    update.roleKey = body.roleKey;
+  }
+  if (body.station !== undefined) update.station = body.station.trim();
   if (body.color !== undefined) {
     if (!(SHIFT_COLORS as readonly string[]).includes(body.color)) {
       return NextResponse.json({ message: 'Invalid color' }, { status: 400 });
     }
     update.color = body.color;
   }
-  if (body.isActive !== undefined) update.isActive = Boolean(body.isActive);
+  if (body.status !== undefined) {
+    if (!(STAFF_STATUSES as readonly string[]).includes(body.status)) {
+      return NextResponse.json({ message: 'Invalid status' }, { status: 400 });
+    }
+    update.status = body.status;
+  }
+  if (body.email !== undefined) update.email = body.email.trim().toLowerCase();
   if (body.notes !== undefined) update.notes = body.notes.trim();
 
   const doc = await StaffMemberModel.findByIdAndUpdate(id, { $set: update }, {
@@ -54,7 +73,7 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
     name: doc.name,
     role: doc.role,
     color: doc.color,
-    isActive: doc.isActive,
+    status: doc.status,
   });
 });
 

@@ -1,12 +1,17 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import StaffMemberModel from '@/models/StaffMember';
+import StaffMemberModel, {
+  STAFF_ROLE_KEYS,
+  STAFF_STATUSES,
+  type StaffRoleKey,
+  type StaffStatus,
+} from '@/models/StaffMember';
 import { SHIFT_COLORS } from '@/lib/shift-constants';
 import { withAdmin } from '@/lib/api-handler';
 
 // GET /api/staff — admin-only roster lookup. Returns active staff ordered by name
 // for the schedule shift drawer.
 export const GET = withAdmin(async () => {
-  const docs = await StaffMemberModel.find({ isActive: true })
+  const docs = await StaffMemberModel.find({ status: 'active' })
     .select('name role color')
     .sort({ name: 1 })
     .lean();
@@ -26,7 +31,11 @@ export const POST = withAdmin(async (request: NextRequest) => {
   const body = (await request.json().catch(() => ({}))) as {
     name?: string;
     role?: string;
+    roleKey?: string;
+    station?: string;
     color?: string;
+    status?: string;
+    email?: string;
     notes?: string;
   };
 
@@ -42,12 +51,25 @@ export const POST = withAdmin(async (request: NextRequest) => {
     ? (body.color as (typeof SHIFT_COLORS)[number])
     : 'marcus';
 
+  const roleKey: StaffRoleKey =
+    body.roleKey && (STAFF_ROLE_KEYS as readonly string[]).includes(body.roleKey)
+      ? (body.roleKey as StaffRoleKey)
+      : 'other';
+
+  const status: StaffStatus =
+    body.status && (STAFF_STATUSES as readonly string[]).includes(body.status)
+      ? (body.status as StaffStatus)
+      : 'active';
+
   const doc = await StaffMemberModel.create({
     name,
     role: body.role?.trim() ?? '',
+    roleKey,
+    station: body.station?.trim() ?? '',
     color,
+    status,
+    email: body.email?.trim() ?? '',
     notes: body.notes?.trim() ?? '',
-    isActive: true,
   });
 
   return NextResponse.json(

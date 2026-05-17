@@ -11,6 +11,7 @@ import { MONTH_ABBR } from '@/lib/format';
 import { getMondayOf } from '@/lib/schedule-utils';
 import type { ShopHoursDay } from '@/models/ShopHours';
 import type { ShiftColor } from '@/models/Shift';
+import type { StaffRoleKey } from '@/lib/staff-display';
 // ShiftColor re-exported for ScheduleOnTodayCard usage via ScheduleClient import
 
 
@@ -26,6 +27,7 @@ export type ShiftRow = {
 export type StaffUserOption = {
   _id: string;
   name: string;
+  roleKey: StaffRoleKey;
 };
 
 const HOURS = ['8 AM', '9 AM', '10 AM', '11 AM', '12 PM', '1 PM', '2 PM', '3 PM', '4 PM'];
