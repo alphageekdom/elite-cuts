@@ -6,61 +6,113 @@ import { useSession } from 'next-auth/react';
 
 import { useCartContext } from '@/context/CartContext';
 import { useCheckoutContext } from '@/context/CheckoutContext';
-import { validatePromoCode } from '@/actions/checkout';
 import { computeTotals, DELIVERY_FEE, fmtPrice } from '@/lib/pricing';
 import CheckoutTrustStrip from '@/components/checkout/CheckoutTrustStrip';
 import CheckoutRewardsRedeem from '@/components/checkout/CheckoutRewardsRedeem';
 import { productImageSrc } from '@/lib/format';
-
-const PROMO_SUGGESTIONS = ['ELITECUTS10', 'FIRSTORDER', 'NORTHPARK'];
+import type { PromoFailureReason } from '@/models/Promo';
 
 type PromoStatus = 'idle' | 'valid' | 'invalid';
+
+const PROMO_FAILURE_MESSAGES: Record<PromoFailureReason, string> = {
+  not_found: "We don't recognize that code",
+  disabled: 'This code is no longer available',
+  not_started: 'This code is not active yet',
+  expired: 'This code has expired',
+  exhausted: 'This code has reached its usage limit',
+  customer_limit: "You've already used this code",
+  min_subtotal: "Your order doesn't meet the minimum for this code",
+  first_order_only: 'This code is for first orders only',
+};
 
 const CheckoutOrderSummary = () => {
   const { cartItems, setItemQuantity } = useCartContext();
   const { data: session } = useSession();
   const { state, dispatch } = useCheckoutContext();
-  const { fulfillment, promoDiscount, pointsDiscount } = state;
+  const {
+    fulfillment,
+    promoCode,
+    promoDiscount,
+    promoExcludesMember,
+    pointsDiscount,
+  } = state;
   const isLoggedIn = Boolean(session?.user);
   const [promo, setPromo] = useState('');
-  const [promoStatus, setPromoStatus] = useState<PromoStatus>('idle');
-  const [appliedLabel, setAppliedLabel] = useState('');
+  const [promoStatus, setPromoStatus] = useState<PromoStatus>(
+    promoDiscount > 0 ? 'valid' : 'idle',
+  );
+  const [promoError, setPromoError] = useState('');
   const [isEditing, setIsEditing] = useState(false);
 
   const itemCount = cartItems.reduce((acc, line) => acc + line.quantity, 0);
   const isDelivery = fulfillment === 'delivery';
+  const pointsApplied = pointsDiscount > 0;
 
   const totals = useMemo(
     () => computeTotals(cartItems, {
       isLoggedIn,
+      excludesMember: promoExcludesMember,
       promoDiscount,
       pointsDiscount,
       deliveryFee: isDelivery ? DELIVERY_FEE : 0,
     }),
-    [cartItems, isLoggedIn, isDelivery, promoDiscount, pointsDiscount],
+    [cartItems, isLoggedIn, promoExcludesMember, isDelivery, promoDiscount, pointsDiscount],
   );
 
   const onApplyPromo = async (e: { preventDefault(): void }) => {
     e.preventDefault();
     const code = promo.trim().toUpperCase();
     if (!code) return;
-    const subtotal = cartItems.reduce((acc, l) => acc + l.price * l.quantity, 0);
-    const result = await validatePromoCode(code, subtotal);
-    if (!result.valid) {
+    const subtotalCents = Math.round(
+      cartItems.reduce((acc, l) => acc + l.price * l.quantity, 0) * 100,
+    );
+
+    try {
+      const res = await fetch('/api/promos/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, subtotalCents }),
+      });
+      const data = (await res.json()) as
+        | { valid: true; code: string; discountCents: number; promoId: string; excludesPoints: boolean; excludesMember: boolean }
+        | { valid: false; reason: PromoFailureReason }
+        | { message: string };
+
+      if (!res.ok || !('valid' in data)) {
+        setPromoStatus('invalid');
+        setPromoError("Couldn't apply that code — try again");
+        dispatch({ type: 'SET_PROMO', payload: { code: '', amount: 0 } });
+        return;
+      }
+      if (!data.valid) {
+        setPromoStatus('invalid');
+        setPromoError(PROMO_FAILURE_MESSAGES[data.reason] ?? "Couldn't apply that code");
+        dispatch({ type: 'SET_PROMO', payload: { code: '', amount: 0 } });
+        return;
+      }
+      dispatch({
+        type: 'SET_PROMO',
+        payload: {
+          code: data.code,
+          amount: data.discountCents / 100,
+          promoId: data.promoId,
+          excludesPoints: data.excludesPoints,
+          excludesMember: data.excludesMember,
+        },
+      });
+      setPromoError('');
+      setPromoStatus('valid');
+    } catch {
       setPromoStatus('invalid');
+      setPromoError("Couldn't reach the server — try again");
       dispatch({ type: 'SET_PROMO', payload: { code: '', amount: 0 } });
-      setAppliedLabel('');
-      return;
     }
-    dispatch({ type: 'SET_PROMO', payload: { code, amount: result.amount } });
-    setAppliedLabel(result.label);
-    setPromoStatus('valid');
   };
 
   const onRemovePromo = () => {
     dispatch({ type: 'SET_PROMO', payload: { code: '', amount: 0 } });
-    setAppliedLabel('');
     setPromoStatus('idle');
+    setPromoError('');
     setPromo('');
   };
 
@@ -185,31 +237,15 @@ const CheckoutOrderSummary = () => {
           )}
         </div>
 
-        {promoStatus !== 'valid' && (
-          <div className='mt-5 mb-3 flex flex-wrap gap-2'>
-            {PROMO_SUGGESTIONS.map((code) => (
-              <button
-                key={code}
-                type='button'
-                onClick={() => { setPromo(code); setPromoStatus('idle'); }}
-                className='inline-flex items-center gap-1.5 rounded-full border border-line bg-cream px-3 py-1.5 font-mono text-[11px] tracking-[0.04em] text-ink-soft transition-colors duration-200 hover:border-ink hover:text-ink'
-              >
-                <span className='text-camel'>+</span>
-                {code}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <form onSubmit={onApplyPromo} className={promoStatus === 'valid' ? 'mt-5' : ''}>
+        <form onSubmit={onApplyPromo} className='mt-5'>
           <div className='flex gap-2'>
             <input
               type='text'
               value={promo}
-              onChange={(e) => { setPromo(e.target.value.toUpperCase()); setPromoStatus('idle'); }}
+              onChange={(e) => { setPromo(e.target.value.toUpperCase()); setPromoStatus('idle'); setPromoError(''); }}
               placeholder='Promo code'
               aria-label='Promo code'
-              disabled={promoStatus === 'valid'}
+              disabled={promoStatus === 'valid' || pointsApplied}
               className={`flex-1 rounded-full border px-4 py-2.5 text-[13px] text-ink outline-none placeholder:text-muted transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-50 ${
                 promoStatus === 'valid'
                   ? 'border-green bg-green/5'
@@ -229,7 +265,8 @@ const CheckoutOrderSummary = () => {
             ) : (
               <button
                 type='submit'
-                className='rounded-full bg-ink px-5 py-2.5 text-[13px] font-medium text-cream transition-colors duration-300 hover:bg-oxblood motion-reduce:transition-none'
+                disabled={pointsApplied}
+                className='rounded-full bg-ink px-5 py-2.5 text-[13px] font-medium text-cream transition-colors duration-300 hover:bg-oxblood disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none'
               >
                 Apply
               </button>
@@ -241,7 +278,7 @@ const CheckoutOrderSummary = () => {
               <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2.5} aria-hidden='true' className='h-3 w-3 shrink-0'>
                 <polyline points='20 6 9 17 4 12' />
               </svg>
-              {appliedLabel} applied
+              {promoCode} applied · −${fmtPrice(promoDiscount)}
             </p>
           )}
           {promoStatus === 'invalid' && (
@@ -249,7 +286,12 @@ const CheckoutOrderSummary = () => {
               <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2} aria-hidden='true' className='h-3 w-3 shrink-0'>
                 <circle cx='12' cy='12' r='10' /><line x1='4.93' y1='4.93' x2='19.07' y2='19.07' />
               </svg>
-              Invalid code — check your promo and try again
+              {promoError || "Couldn't apply that code"}
+            </p>
+          )}
+          {pointsApplied && promoStatus !== 'valid' && (
+            <p className='mt-2 text-[12px] text-muted'>
+              Remove points to apply a promo code instead.
             </p>
           )}
         </form>
@@ -265,7 +307,7 @@ const CheckoutOrderSummary = () => {
               {isDelivery ? `$${fmtPrice(DELIVERY_FEE)}` : 'Free'}
             </dd>
           </div>
-          {isLoggedIn && (
+          {isLoggedIn && totals.memberDiscount > 0 && (
             <div className='flex items-baseline justify-between text-[14px]'>
               <dt className='text-ink-soft'>Member discount (5%)</dt>
               <dd className='font-mono text-[13px] text-green'>
@@ -273,9 +315,15 @@ const CheckoutOrderSummary = () => {
               </dd>
             </div>
           )}
+          {isLoggedIn && promoExcludesMember && (
+            <div className='flex items-baseline justify-between text-[12px] text-muted'>
+              <dt>Member discount not combinable with this promo</dt>
+              <dd />
+            </div>
+          )}
           {promoDiscount > 0 && (
             <div className='flex items-baseline justify-between text-[14px]'>
-              <dt className='text-ink-soft'>Promo — {appliedLabel}</dt>
+              <dt className='text-ink-soft'>Promo · {promoCode}</dt>
               <dd className='font-mono text-[13px] text-green'>
                 −${fmtPrice(promoDiscount)}
               </dd>

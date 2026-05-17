@@ -113,6 +113,11 @@ export default function CheckoutRewardsRedeem({ subtotal, maxDiscountable }: Pro
 
   const hasEnoughToRedeem = info.balance >= Math.max(block, info.minToRedeem);
   const active = state.pointsToRedeem > 0;
+  // A promo that opts into stacking (excludesPoints === false) leaves the
+  // redemption open. Default promos block it; the customer removes the promo
+  // first if they prefer to spend points on this order.
+  const blockedByPromo =
+    state.promoDiscount > 0 && state.promoExcludesPoints && !active;
 
   const onApply = () => {
     setError(null);
@@ -178,7 +183,7 @@ export default function CheckoutRewardsRedeem({ subtotal, maxDiscountable }: Pro
           </button>
         )}
       </div>
-      {!active && dollarCap > 0 && (
+      {!active && !blockedByPromo && dollarCap > 0 && (
         <p className='mb-5 font-mono text-[11px] tracking-[0.04em] text-muted'>
           Max on this order: ${dollarCap.toFixed(2)}
         </p>
@@ -190,6 +195,10 @@ export default function CheckoutRewardsRedeem({ subtotal, maxDiscountable }: Pro
             <polyline points='20 6 9 17 4 12' />
           </svg>
           {fmt(state.pointsToRedeem)} pts applied · ${state.pointsDiscount.toFixed(2)} off
+        </p>
+      ) : blockedByPromo ? (
+        <p className='text-[12px] text-muted'>
+          Remove the promo code to redeem points on this order instead.
         </p>
       ) : !hasEnoughToRedeem ? (
         <p className='text-[12px] text-muted'>
