@@ -6,6 +6,7 @@ import ScheduleTodayCard from './ScheduleTodayCard';
 import ScheduleOnTodayCard from './ScheduleOnTodayCard';
 import SchedulePickupSlots, { type PickupSlotRow } from './SchedulePickupSlots';
 import ScheduleShopHours from './ScheduleShopHours';
+import ShiftFormDrawer from './ShiftFormDrawer';
 import { MONTH_ABBR } from '@/lib/format';
 import { getMondayOf } from '@/lib/schedule-utils';
 import type { ShopHoursDay } from '@/models/ShopHours';
@@ -20,6 +21,11 @@ export type ShiftRow = {
   staffName: string;
   role: string;
   color: ShiftColor;
+};
+
+export type StaffUserOption = {
+  _id: string;
+  name: string;
 };
 
 const HOURS = ['8 AM', '9 AM', '10 AM', '11 AM', '12 PM', '1 PM', '2 PM', '3 PM', '4 PM'];
@@ -41,15 +47,23 @@ type Props = {
   slotsBooked: number;
   projectedRevenue: number;
   deliveryCount: number;
+  staffUsers: StaffUserOption[];
 };
+
+type DrawerState =
+  | { kind: 'closed' }
+  | { kind: 'create' }
+  | { kind: 'edit'; shift: ShiftRow };
 
 export default function ScheduleClient({
   initialShifts, shopHours, pickupSlots,
   slotsBooked, projectedRevenue, deliveryCount,
+  staffUsers,
 }: Props) {
   const [weekStart, setWeekStart] = useState<Date>(() => getMondayOf(new Date()));
   const [shifts, setShifts] = useState<ShiftRow[]>(initialShifts);
   const [loadingShifts, setLoadingShifts] = useState(false);
+  const [drawer, setDrawer] = useState<DrawerState>({ kind: 'closed' });
 
   const fetchShifts = useCallback(async (ws: Date) => {
     setLoadingShifts(true);
@@ -140,7 +154,7 @@ export default function ScheduleClient({
               </svg>
               Print
             </button>
-            <button onClick={() => toast.info('Coming soon')} className="inline-flex items-center gap-2 px-4.5 py-2.5 rounded-full bg-ink text-cream text-[13px] font-medium tracking-[0.02em] hover:bg-oxblood transition-colors">
+            <button onClick={() => setDrawer({ kind: 'create' })} className="inline-flex items-center gap-2 px-4.5 py-2.5 rounded-full bg-ink text-cream text-[13px] font-medium tracking-[0.02em] hover:bg-oxblood transition-colors">
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
@@ -211,10 +225,14 @@ export default function ScheduleClient({
                           className={`h-[72px] border-l border-t border-line-soft p-1 relative transition-colors hover:bg-camel/4 ${day.closed ? 'bg-oxblood/5' : ''}`}
                         >
                           {shift && (
-                            <div className={`rounded p-1.5 text-[11px] leading-tight cursor-pointer overflow-hidden transition-transform hover:scale-[1.02] hover:z-[2] hover:shadow-md ${SHIFT_STYLES[shift.color]}`}>
+                            <button
+                              type="button"
+                              onClick={() => setDrawer({ kind: 'edit', shift })}
+                              className={`block w-full text-left rounded p-1.5 text-[11px] leading-tight cursor-pointer overflow-hidden transition-transform hover:scale-[1.02] hover:z-2 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-ink focus:ring-offset-1 focus:ring-offset-paper ${SHIFT_STYLES[shift.color]}`}
+                            >
                               <div className="font-medium mb-px">{shift.staffName}</div>
                               <div className="opacity-75 text-[10px] tracking-[0.04em]">{shift.role}</div>
-                            </div>
+                            </button>
                           )}
                         </div>
                       );
@@ -249,6 +267,17 @@ export default function ScheduleClient({
           <ScheduleShopHours hours={shopHours} />
         </div>
       </div>
+
+      {drawer.kind !== 'closed' && (
+        <ShiftFormDrawer
+          shift={drawer.kind === 'edit' ? drawer.shift : null}
+          defaultDayOfWeek={drawer.kind === 'create' ? todayDow : undefined}
+          weekStart={weekStart}
+          staffUsers={staffUsers}
+          onClose={() => setDrawer({ kind: 'closed' })}
+          onSaved={() => fetchShifts(weekStart)}
+        />
+      )}
     </div>
   );
 }

@@ -1,7 +1,8 @@
 import { Schema, model, models, type Model } from 'mongoose';
+import { SHIFT_COLORS, type ShiftColor } from '@/lib/shift-constants';
 
-export const SHIFT_COLORS = ['tangelo', 'marcus', 'elena', 'sam', 'maya', 'delivery'] as const;
-export type ShiftColor = (typeof SHIFT_COLORS)[number];
+// Re-export so existing server-side imports (`from '@/models/Shift'`) keep working.
+export { SHIFT_COLORS, type ShiftColor };
 
 export type Shift = {
   weekStart: Date;   // Monday 00:00 UTC of the displayed week

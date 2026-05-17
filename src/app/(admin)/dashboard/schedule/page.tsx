@@ -7,11 +7,13 @@ import ShopHoursModel, { DEFAULT_DAYS } from '@/models/ShopHours';
 import ShopSettingsModel from '@/models/ShopSettings';
 import Order from '@/models/Order';
 import DeliveryModel from '@/models/Delivery';
-import ScheduleClient, { type ShiftRow } from '@/components/admin/schedule/ScheduleClient';
+import UserModel from '@/models/User';
+import ScheduleClient, { type ShiftRow, type StaffUserOption } from '@/components/admin/schedule/ScheduleClient';
 import GrillEventSection from '@/components/grill-event/GrillEventSection';
 import type { PickupSlotRow } from '@/components/admin/schedule/SchedulePickupSlots';
 import { SLOT_LABELS } from '@/components/admin/schedule/SchedulePickupSlots';
 import { getMondayOf } from '@/lib/schedule-utils';
+import { normalizeWeekStart } from '@/lib/shifts';
 import { getPastEvents, getUpcomingEvents } from '@/lib/events';
 
 export const dynamic = 'force-dynamic';
@@ -28,7 +30,7 @@ export default async function AdminSchedulePage() {
 
   await connectDB();
 
-  const weekStart = getMondayOf(new Date());
+  const weekStart = normalizeWeekStart(getMondayOf(new Date()));
   const weekEnd = new Date(weekStart.getTime() + 7 * 86400000);
 
   // Today's date range for pickup slot counts
@@ -36,7 +38,7 @@ export default async function AdminSchedulePage() {
   todayStart.setHours(0, 0, 0, 0);
   const todayEnd = new Date(todayStart.getTime() + 86400000);
 
-  const [rawShifts, shopHoursDoc, settingsDoc, pickupOrders, deliveryCount, upcomingEvents, pastEvents] = await Promise.all([
+  const [rawShifts, shopHoursDoc, settingsDoc, pickupOrders, deliveryCount, upcomingEvents, pastEvents, rawStaff] = await Promise.all([
     ShiftModel.find({ weekStart: { $gte: weekStart, $lt: weekEnd } }).lean(),
     ShopHoursModel.findOneAndUpdate({}, {}, { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }).lean(),
     ShopSettingsModel.findOneAndUpdate({}, {}, { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }).lean(),
@@ -46,6 +48,7 @@ export default async function AdminSchedulePage() {
     DeliveryModel.countDocuments({ deliveryDate: { $gte: todayStart, $lt: todayEnd } }),
     getUpcomingEvents(20),
     getPastEvents(20),
+    UserModel.find({ isStaff: true, deletedAt: null }).select('name').sort({ name: 1 }).lean(),
   ]);
 
   const initialShifts: ShiftRow[] = rawShifts.map((s) => ({
@@ -78,6 +81,11 @@ export default async function AdminSchedulePage() {
     max: slotsPerHour,
   }));
 
+  const staffUsers: StaffUserOption[] = rawStaff.map((u) => ({
+    _id: u._id.toString(),
+    name: u.name,
+  }));
+
   return (
     <>
       <ScheduleClient
@@ -87,6 +95,7 @@ export default async function AdminSchedulePage() {
         slotsBooked={slotsBooked}
         projectedRevenue={projectedRevenue}
         deliveryCount={deliveryCount}
+        staffUsers={staffUsers}
       />
       <GrillEventSection upcoming={upcomingEvents} past={pastEvents} />
     </>
