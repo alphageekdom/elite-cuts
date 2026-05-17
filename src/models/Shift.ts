@@ -24,6 +24,11 @@ const ShiftSchema = new Schema<Shift>(
   { timestamps: true },
 );
 
+// One shift per cell — backstops the application-level collision check in
+// `lib/shifts.ts` so a race between two concurrent POSTs can't double-book
+// the same hour slot.
+ShiftSchema.index({ weekStart: 1, dayOfWeek: 1, hourIndex: 1 }, { unique: true });
+
 const ShiftModel =
   (models.Shift as Model<Shift> | undefined) ??
   model<Shift>('Shift', ShiftSchema);
