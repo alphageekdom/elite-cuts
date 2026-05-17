@@ -13,9 +13,10 @@ import type { StaffRow } from './StaffPageClient';
 type Props = {
   rows: StaffRow[];
   onOpenProfile: (row: StaffRow) => void;
+  onEdit: (row: StaffRow) => void;
 };
 
-export default function StaffTable({ rows, onOpenProfile }: Props) {
+export default function StaffTable({ rows, onOpenProfile, onEdit }: Props) {
   return (
     <div className="bg-paper border border-line-soft rounded-sm overflow-hidden hidden md:block">
       <table className="w-full border-collapse text-[14px]">
@@ -65,7 +66,7 @@ export default function StaffTable({ rows, onOpenProfile }: Props) {
               </td>
               <td className="px-4 py-4">
                 {s.role ? (
-                  <span className="inline-block px-2 py-0.5 rounded-full text-[10px] tracking-[0.1em] uppercase font-medium bg-ink/6 text-ink-soft">
+                  <span className="inline-block px-2 py-0.5 rounded-full text-[10px] tracking-widest uppercase font-medium bg-ink/6 text-ink-soft">
                     {s.role}
                   </span>
                 ) : (
@@ -106,6 +107,7 @@ export default function StaffTable({ rows, onOpenProfile }: Props) {
                 <StaffActionsMenu
                   staffName={s.name}
                   onViewProfile={() => onOpenProfile(s)}
+                  onEdit={() => onEdit(s)}
                 />
               </td>
             </tr>

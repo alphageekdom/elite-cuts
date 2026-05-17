@@ -8,11 +8,13 @@ import StaffMemberModel, {
 import { SHIFT_COLORS } from '@/lib/shift-constants';
 import { withAdmin } from '@/lib/api-handler';
 
-// GET /api/staff — admin-only roster lookup. Returns active staff ordered by name
-// for the schedule shift drawer.
+// GET /api/staff — admin-only roster lookup. Returns assignable staff
+// (anyone not 'inactive') ordered by name for the schedule shift drawer;
+// shape mirrors StaffUserOption. Seasonal and on-leave staff are still
+// scheduleable — only 'inactive' (no longer employed) is excluded.
 export const GET = withAdmin(async () => {
-  const docs = await StaffMemberModel.find({ status: 'active' })
-    .select('name role color')
+  const docs = await StaffMemberModel.find({ status: { $ne: 'inactive' } })
+    .select('name roleKey')
     .sort({ name: 1 })
     .lean();
 
@@ -20,8 +22,7 @@ export const GET = withAdmin(async () => {
     docs.map((d) => ({
       _id: d._id.toString(),
       name: d.name,
-      role: d.role,
-      color: d.color,
+      roleKey: d.roleKey ?? 'other',
     })),
   );
 });

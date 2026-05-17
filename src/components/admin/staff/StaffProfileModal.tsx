@@ -16,9 +16,10 @@ import type { StaffRow } from './StaffPageClient';
 type Props = {
   staff: StaffRow | null;
   onClose: () => void;
+  onEdit: (staff: StaffRow) => void;
 };
 
-export default function StaffProfileModal({ staff, onClose }: Props) {
+export default function StaffProfileModal({ staff, onClose, onEdit }: Props) {
   const closeRef = useRef<HTMLButtonElement | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const open = staff !== null;
@@ -159,20 +160,29 @@ export default function StaffProfileModal({ staff, onClose }: Props) {
           )}
         </div>
 
-        <div className="border-t border-line-soft px-6 py-4 flex items-center justify-between gap-3">
+        <div className="border-t border-line-soft px-6 py-4 flex items-center justify-between gap-3 flex-wrap">
           <Link
             href="/dashboard/schedule"
             className="text-[12px] tracking-[0.04em] uppercase text-oxblood hover:text-oxblood-deep transition-colors font-medium"
           >
             View schedule →
           </Link>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-[12px] tracking-[0.04em] uppercase text-muted hover:text-ink transition-colors font-medium"
-          >
-            Close
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => onEdit(staff)}
+              className="text-[12px] tracking-[0.04em] uppercase text-ink hover:text-oxblood transition-colors font-medium"
+            >
+              Edit
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-[12px] tracking-[0.04em] uppercase text-muted hover:text-ink transition-colors font-medium"
+            >
+              Close
+            </button>
+          </div>
         </div>
       </div>
     </div>,

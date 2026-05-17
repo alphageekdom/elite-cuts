@@ -1,23 +1,20 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { SHIFT_COLORS, type ShiftColor } from '@/lib/shift-constants';
-import { ROLE_COLOR, ROLE_LABEL, STAFF_ROLE_KEYS, type StaffRoleKey } from '@/lib/staff-display';
+import {
+  COLOR_SWATCH,
+  ROLE_COLOR,
+  ROLE_LABEL,
+  STAFF_ROLE_KEYS,
+  type StaffRoleKey,
+} from '@/lib/staff-display';
 import type { ShiftRow, StaffUserOption } from './ScheduleClient';
 
 const HOUR_LABELS = ['8 AM', '9 AM', '10 AM', '11 AM', '12 PM', '1 PM', '2 PM', '3 PM', '4 PM'];
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-const COLOR_SWATCH: Record<ShiftColor, string> = {
-  tangelo:  'bg-oxblood',
-  marcus:   'bg-ink',
-  elena:    'bg-camel',
-  sam:      'bg-green',
-  maya:     'bg-camel-soft',
-  delivery: 'bg-cream-deep border border-dashed border-line',
-};
 
 const STAFF_OTHER_VALUE = '__other__';
 const ROLE_OTHER_VALUE = '__other__';
@@ -53,11 +50,32 @@ export default function ShiftFormDrawer({
   defaultDayOfWeek,
   defaultHourIndex,
   weekStart,
-  staffUsers,
+  staffUsers: staffUsersProp,
   onClose,
   onSaved,
 }: Props) {
   const isEdit = !!shift;
+
+  // Refresh the staff dropdown each time the drawer opens — the parent
+  // schedule page only fetches at server-render time, so staff added on the
+  // Staff tab after this page first loaded would otherwise be missing.
+  // `cache: 'no-store'` bypasses any browser caching of the GET response.
+  const [staffUsers, setStaffUsers] = useState<StaffUserOption[]>(staffUsersProp);
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/staff', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !Array.isArray(data)) return;
+        setStaffUsers(data as StaffUserOption[]);
+      })
+      .catch(() => {
+        // Silent — the server-passed snapshot remains in place.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Staff value: match by name against the staff users list; if no match,
   // assume "Other (type in)" and keep the existing string in the text input.
