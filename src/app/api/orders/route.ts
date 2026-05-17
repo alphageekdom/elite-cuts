@@ -14,6 +14,7 @@ import { unauthorized, parsePagination } from '@/lib/api-handler';
 import { formatMoney } from '@/lib/format';
 import { isIn, EMAIL_RE } from '@/lib/validation';
 import { validatePromo } from '@/lib/promos/validate';
+import { reservePromoSeat, releasePromoSeat } from '@/lib/promos/apply';
 import { MAX_PER_LINE } from '@/lib/shopConfig';
 import { getShopSettings } from '@/lib/shopSettings';
 import { awardOrderCompletion } from '@/lib/order-completion';
@@ -454,6 +455,7 @@ export const POST = async (request: NextRequest) => {
 
     let promoDiscount = 0;
     let promoExcludesMember = false;
+    let promoIdForOrder: Types.ObjectId | null = null;
     if (body.promoCode) {
       const promoResult = await validatePromo({
         code: body.promoCode,
@@ -464,6 +466,7 @@ export const POST = async (request: NextRequest) => {
       if (promoResult.valid) {
         promoDiscount = promoResult.discountCents / 100;
         promoExcludesMember = promoResult.promo.excludesMember;
+        promoIdForOrder = promoResult.promo._id;
       }
     }
     const memberDiscount = promoExcludesMember
@@ -540,6 +543,22 @@ export const POST = async (request: NextRequest) => {
       throw err;
     }
 
+    // Race-aware seat reservation. validatePromo passed at read time, but a
+    // concurrent placement may have exhausted the limit since. If the
+    // increment fails, restock the just-decremented items and refuse the
+    // order — the customer didn't sign up for "no discount", so we don't
+    // silently proceed without the promo.
+    if (promoIdForOrder) {
+      const reserved = await reservePromoSeat(promoIdForOrder);
+      if (!reserved) {
+        await restoreStock(decremented);
+        return NextResponse.json(
+          { message: 'That promo code is no longer available — please remove it and try again.' },
+          { status: 409 },
+        );
+      }
+    }
+
     const paidAt = new Date();
 
     let order;
@@ -579,10 +598,15 @@ export const POST = async (request: NextRequest) => {
         ...(body.orderNotes && { orderNotes: body.orderNotes }),
         ...(pointsRedeemed > 0 && { pointsRedeemed, pointsRedemptionValueCents }),
         ...(memberDiscount > 0 && { memberDiscount }),
-        ...(promoDiscount > 0 && { promoDiscount, promoCode: body.promoCode?.trim().toUpperCase() }),
+        ...(promoDiscount > 0 && {
+          promoDiscount,
+          promoCode: body.promoCode?.trim().toUpperCase(),
+          ...(promoIdForOrder && { promoId: promoIdForOrder }),
+        }),
       });
     } catch (err) {
       await restoreStock(decremented);
+      if (promoIdForOrder) await releasePromoSeat(promoIdForOrder);
       throw err;
     }
 

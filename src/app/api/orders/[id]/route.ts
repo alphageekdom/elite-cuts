@@ -9,6 +9,7 @@ import { withAdmin } from '@/lib/api-handler';
 import { isIn } from '@/lib/validation';
 import { refundSummary, paymentStatusFor } from '@/lib/order-refunds';
 import { awardOrderCompletion, reverseOrderAward, reverseOrderRedemption } from '@/lib/order-completion';
+import { releasePromoSeat } from '@/lib/promos/apply';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -341,6 +342,12 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
       }
       if ((existing.pointsRedeemed ?? 0) > 0) {
         await reverseOrderRedemption({ orderId: id, reason: reverseReason });
+      }
+      // Promo seat returns to the pool only on full cancellation — partial
+      // refunds leave the seat consumed since the customer still benefited
+      // from the code on the surviving line items.
+      if (existing.promoId) {
+        await releasePromoSeat(existing.promoId);
       }
     }
 
