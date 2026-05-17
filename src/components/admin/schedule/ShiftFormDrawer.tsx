@@ -3,9 +3,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
-import { SHIFT_COLORS, type ShiftColor } from '@/lib/shift-constants';
+import { type ShiftColor } from '@/lib/shift-constants';
+import FormDrawer from '@/components/admin/FormDrawer';
+import FieldLabel from '@/components/admin/FieldLabel';
+import ColorSwatchPicker from '@/components/admin/ColorSwatchPicker';
 import {
-  COLOR_SWATCH,
+  FORM_FIELD_CLS,
   ROLE_COLOR,
   ROLE_LABEL,
   STAFF_ROLE_KEYS,
@@ -234,44 +237,21 @@ export default function ShiftFormDrawer({
     }
   }
 
-  const fieldCls =
-    'w-full bg-cream border border-line-soft rounded-lg px-4 py-2.5 text-[14px] text-ink placeholder:text-muted focus:outline-none focus:border-ink transition-colors';
-
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-ink/40" onClick={onClose} aria-hidden="true" />
-      <aside className="relative bg-paper w-full max-w-md h-full overflow-y-auto shadow-2xl flex flex-col">
-        <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-line-soft shrink-0">
-          <div className="pr-4">
-            <div className="text-[11px] tracking-widest uppercase text-muted mb-1.5">
-              {isEdit ? 'Edit shift' : 'New shift'}
-            </div>
-            <h2 className="font-display text-[20px] font-normal tracking-tight leading-snug">
-              {isEdit ? shift.staffName : 'Schedule a shift'}
-            </h2>
-            <p className="mt-1 text-[12px] text-muted">
-              {isEdit ? 'Update or remove this hour slot' : 'One staff member, one hour slot'}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="w-8 h-8 rounded-full grid place-items-center text-muted hover:text-ink hover:bg-cream-deep transition-colors shrink-0 mt-1"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 px-6 py-5 gap-5">
+    <FormDrawer
+      eyebrow={isEdit ? 'Edit shift' : 'New shift'}
+      title={isEdit ? shift.staffName : 'Schedule a shift'}
+      titleId="shift-form-title"
+      subtitle={isEdit ? 'Update or remove this hour slot' : 'One staff member, one hour slot'}
+      onClose={onClose}
+    >
+      <form onSubmit={handleSubmit} className="flex flex-col flex-1 px-6 py-5 gap-5">
           <div>
-            <label className="block text-[12px] font-medium text-ink-soft tracking-widest uppercase mb-1.5">Staff</label>
+            <FieldLabel>Staff</FieldLabel>
             <select
               value={staffMode}
               onChange={(e) => handleStaffChange(e.target.value)}
-              className={fieldCls}
+              className={FORM_FIELD_CLS}
             >
               {staffUsers.map((u) => (
                 <option key={u._id} value={u._id}>{u.name}</option>
@@ -285,7 +265,7 @@ export default function ShiftFormDrawer({
                 onChange={(e) => setStaffNameOther(e.target.value)}
                 placeholder="e.g. Casual contractor"
                 maxLength={60}
-                className={`${fieldCls} mt-2`}
+                className={`${FORM_FIELD_CLS} mt-2`}
                 autoFocus
               />
             )}
@@ -296,11 +276,11 @@ export default function ShiftFormDrawer({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-[12px] font-medium text-ink-soft tracking-widest uppercase mb-1.5">Day</label>
+              <FieldLabel>Day</FieldLabel>
               <select
                 value={dayOfWeek}
                 onChange={(e) => setDayOfWeek(Number(e.target.value))}
-                className={fieldCls}
+                className={FORM_FIELD_CLS}
               >
                 {DAY_LABELS.map((label, i) => (
                   <option key={label} value={i}>{label}</option>
@@ -308,11 +288,11 @@ export default function ShiftFormDrawer({
               </select>
             </div>
             <div>
-              <label className="block text-[12px] font-medium text-ink-soft tracking-widest uppercase mb-1.5">Hour</label>
+              <FieldLabel>Hour</FieldLabel>
               <select
                 value={hourIndex}
                 onChange={(e) => setHourIndex(Number(e.target.value))}
-                className={fieldCls}
+                className={FORM_FIELD_CLS}
               >
                 {HOUR_LABELS.map((label, i) => (
                   <option key={label} value={i}>{label}</option>
@@ -322,11 +302,11 @@ export default function ShiftFormDrawer({
           </div>
 
           <div>
-            <label className="block text-[12px] font-medium text-ink-soft tracking-widest uppercase mb-1.5">Role</label>
+            <FieldLabel>Role</FieldLabel>
             <select
               value={roleMode}
               onChange={(e) => handleRoleChange(e.target.value)}
-              className={fieldCls}
+              className={FORM_FIELD_CLS}
             >
               {ROLE_QUICK_PICKS.map((k) => (
                 <option key={k} value={ROLE_LABEL[k]}>{ROLE_LABEL[k]}</option>
@@ -340,41 +320,15 @@ export default function ShiftFormDrawer({
                 onChange={(e) => setRoleOther(e.target.value)}
                 placeholder="e.g. Cleanup, Trainer"
                 maxLength={40}
-                className={`${fieldCls} mt-2`}
+                className={`${FORM_FIELD_CLS} mt-2`}
                 autoFocus
               />
             )}
           </div>
 
           <div>
-            <label className="block text-[12px] font-medium text-ink-soft tracking-widest uppercase mb-1.5">Color</label>
-            <div className="flex gap-3 flex-wrap">
-              {SHIFT_COLORS.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setColor(c)}
-                  aria-label={`Color ${c}`}
-                  aria-pressed={color === c}
-                  className="flex flex-col items-center gap-1.5 group focus:outline-none"
-                >
-                  <span
-                    className={`w-9 h-9 rounded-full ${COLOR_SWATCH[c]} transition-all ${
-                      color === c
-                        ? 'ring-2 ring-ink ring-offset-2 ring-offset-paper'
-                        : 'opacity-70 group-hover:opacity-100'
-                    }`}
-                  />
-                  <span
-                    className={`text-[10px] tracking-[0.06em] capitalize ${
-                      color === c ? 'text-ink font-medium' : 'text-muted'
-                    }`}
-                  >
-                    {c}
-                  </span>
-                </button>
-              ))}
-            </div>
+            <FieldLabel>Color</FieldLabel>
+            <ColorSwatchPicker value={color} onChange={setColor} />
           </div>
 
           <div className="mt-auto pt-4 border-t border-line-soft space-y-3">
@@ -417,8 +371,7 @@ export default function ShiftFormDrawer({
               )
             )}
           </div>
-        </form>
-      </aside>
-    </div>
+      </form>
+    </FormDrawer>
   );
 }

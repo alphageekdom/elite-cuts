@@ -9,10 +9,8 @@ import StaffMemberModel, {
 import ShiftModel from '@/models/Shift';
 import { getMondayOf } from '@/lib/schedule-utils';
 import { normalizeWeekStart } from '@/lib/shifts';
-import { formatShiftRange } from '@/lib/staff-display';
-import StaffPageClient, {
-  type StaffRow,
-} from '@/components/admin/staff/StaffPageClient';
+import { formatShiftRange, type StaffRow } from '@/lib/staff-display';
+import StaffPageClient from '@/components/admin/staff/StaffPageClient';
 import type { ShiftColor } from '@/lib/shift-constants';
 
 export const dynamic = 'force-dynamic';

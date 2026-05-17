@@ -5,10 +5,8 @@ import { useMemo, useState } from 'react';
 import {
   ROLE_GROUPS,
   type StaffFilterKey,
-  type StaffRoleKey,
-  type StaffStatus,
+  type StaffRow,
 } from '@/lib/staff-display';
-import type { ShiftColor } from '@/lib/shift-constants';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import StaffSummaryCards from './StaffSummaryCards';
 import StaffFilters from './StaffFilters';
@@ -16,20 +14,6 @@ import StaffTable from './StaffTable';
 import StaffMobileCards from './StaffMobileCards';
 import StaffProfileModal from './StaffProfileModal';
 import StaffFormDrawer from './StaffFormDrawer';
-
-export type StaffRow = {
-  id: string;
-  name: string;
-  role: string;
-  roleKey: StaffRoleKey;
-  station: string;
-  status: StaffStatus;
-  color: ShiftColor;
-  email: string;
-  notes: string;
-  workingToday: boolean;
-  todayShift: string | null;
-};
 
 type Props = {
   rows: StaffRow[];
@@ -112,33 +96,7 @@ export default function StaffPageClient({ rows, headerSubtitle }: Props) {
   const workingToday = counts['working-today'];
   const offToday = counts['off-today'];
 
-  if (rows.length === 0) {
-    return (
-      <>
-        <AdminPageHeader
-          eyebrow="✦ Roster"
-          breadcrumb="Staff"
-          title="Shop"
-          titleAccent="staff"
-          subtitle={headerSubtitle}
-          actions={headerActions}
-        />
-
-        <div className="bg-paper border border-line-soft rounded-sm p-12 text-center">
-          <p className="text-muted text-sm">
-            No staff members yet. Click <span className="text-ink font-medium">Add staff</span> to create one.
-          </p>
-        </div>
-
-        {drawerOpen && (
-          <StaffFormDrawer
-            staff={drawerStaff}
-            onClose={() => setDrawer({ kind: 'closed' })}
-          />
-        )}
-      </>
-    );
-  }
+  const isEmpty = rows.length === 0;
 
   return (
     <>
@@ -151,28 +109,38 @@ export default function StaffPageClient({ rows, headerSubtitle }: Props) {
         actions={headerActions}
       />
 
-      <StaffSummaryCards active={active} workingToday={workingToday} offToday={offToday} />
-
-      <StaffFilters active={filter} onChange={setFilter} counts={counts} />
-
-      {filteredRows.length === 0 ? (
-        <FilterEmptyState filter={filter} onReset={() => setFilter('all')} />
+      {isEmpty ? (
+        <div className="bg-paper border border-line-soft rounded-sm p-12 text-center">
+          <p className="text-muted text-sm">
+            No staff members yet. Click <span className="text-ink font-medium">Add staff</span> to create one.
+          </p>
+        </div>
       ) : (
         <>
-          <StaffTable
-            rows={filteredRows}
-            onOpenProfile={setSelectedStaff}
+          <StaffSummaryCards active={active} workingToday={workingToday} offToday={offToday} />
+
+          <StaffFilters active={filter} onChange={setFilter} counts={counts} />
+
+          {filteredRows.length === 0 ? (
+            <FilterEmptyState filter={filter} onReset={() => setFilter('all')} />
+          ) : (
+            <>
+              <StaffTable
+                rows={filteredRows}
+                onOpenProfile={setSelectedStaff}
+                onEdit={handleEdit}
+              />
+              <StaffMobileCards rows={filteredRows} onOpenProfile={setSelectedStaff} />
+            </>
+          )}
+
+          <StaffProfileModal
+            staff={selectedStaff}
+            onClose={() => setSelectedStaff(null)}
             onEdit={handleEdit}
           />
-          <StaffMobileCards rows={filteredRows} onOpenProfile={setSelectedStaff} />
         </>
       )}
-
-      <StaffProfileModal
-        staff={selectedStaff}
-        onClose={() => setSelectedStaff(null)}
-        onEdit={handleEdit}
-      />
 
       {drawerOpen && (
         <StaffFormDrawer
