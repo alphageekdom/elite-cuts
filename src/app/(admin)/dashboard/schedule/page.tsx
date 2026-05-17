@@ -7,7 +7,7 @@ import ShopHoursModel, { DEFAULT_DAYS } from '@/models/ShopHours';
 import ShopSettingsModel from '@/models/ShopSettings';
 import Order from '@/models/Order';
 import DeliveryModel from '@/models/Delivery';
-import StaffMemberModel from '@/models/StaffMember';
+import StaffMemberModel, { type StaffRoleKey } from '@/models/StaffMember';
 import ScheduleClient, { type ShiftRow, type StaffUserOption } from '@/components/admin/schedule/ScheduleClient';
 import GrillEventSection from '@/components/grill-event/GrillEventSection';
 import type { PickupSlotRow } from '@/components/admin/schedule/SchedulePickupSlots';
@@ -48,7 +48,7 @@ export default async function AdminSchedulePage() {
     DeliveryModel.countDocuments({ deliveryDate: { $gte: todayStart, $lt: todayEnd } }),
     getUpcomingEvents(20),
     getPastEvents(20),
-    StaffMemberModel.find({ isActive: true }).select('name').sort({ name: 1 }).lean(),
+    StaffMemberModel.find({ status: 'active' }).select('name roleKey').sort({ name: 1 }).lean(),
   ]);
 
   const initialShifts: ShiftRow[] = rawShifts.map((s) => ({
@@ -84,6 +84,7 @@ export default async function AdminSchedulePage() {
   const staffUsers: StaffUserOption[] = rawStaff.map((s) => ({
     _id: s._id.toString(),
     name: s.name,
+    roleKey: (s.roleKey ?? 'other') as StaffRoleKey,
   }));
 
   return (
