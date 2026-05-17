@@ -4,6 +4,12 @@ import connectDB from '@/config/database';
 import Promo from '@/models/Promo';
 import { formatPromoLabel } from '@/lib/promos/format';
 
+// Cache the response across all callers for 60 seconds. Admins change
+// promos a few times a week; customers hit /checkout constantly. The 60s
+// window means an admin's edit takes up to a minute to appear in the
+// chip strip, which is acceptable trade vs the per-visit DB read.
+export const revalidate = 60;
+
 // GET /api/promos/public — unauthenticated. Returns the codes the admin has
 // opted into public surfacing AND that are currently usable (active, in
 // window, not exhausted). The customer-side chip strip on checkout fetches
