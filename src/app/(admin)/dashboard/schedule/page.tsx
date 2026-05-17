@@ -48,7 +48,7 @@ export default async function AdminSchedulePage() {
     DeliveryModel.countDocuments({ deliveryDate: { $gte: todayStart, $lt: todayEnd } }),
     getUpcomingEvents(20),
     getPastEvents(20),
-    StaffMemberModel.find({ status: 'active' }).select('name roleKey').sort({ name: 1 }).lean(),
+    StaffMemberModel.find({ status: { $ne: 'inactive' } }).select('name roleKey').sort({ name: 1 }).lean(),
   ]);
 
   const initialShifts: ShiftRow[] = rawShifts.map((s) => ({

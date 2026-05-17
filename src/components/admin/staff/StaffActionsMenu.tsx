@@ -6,9 +6,10 @@ import Link from 'next/link';
 type Props = {
   staffName: string;
   onViewProfile: () => void;
+  onEdit: () => void;
 };
 
-export default function StaffActionsMenu({ staffName, onViewProfile }: Props) {
+export default function StaffActionsMenu({ staffName, onViewProfile, onEdit }: Props) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
 
@@ -72,6 +73,17 @@ export default function StaffActionsMenu({ staffName, onViewProfile }: Props) {
             className="w-full text-left px-3 py-2 text-[13px] text-ink hover:bg-cream transition-colors"
           >
             View profile
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              onEdit();
+            }}
+            className="w-full text-left px-3 py-2 text-[13px] text-ink hover:bg-cream transition-colors"
+          >
+            Edit staff
           </button>
           <Link
             href="/dashboard/schedule"

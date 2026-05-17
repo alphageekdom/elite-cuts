@@ -83,6 +83,18 @@ export const AVATAR_BG: Record<ShiftColor, string> = {
   delivery: 'bg-cream-deep',
 };
 
+// Swatch classes for the color pickers in the shift and staff drawers.
+// Mirrors AVATAR_BG but adds the dashed border treatment for the 'delivery'
+// option so it reads as a generic-but-distinct picker chip.
+export const COLOR_SWATCH: Record<ShiftColor, string> = {
+  tangelo:  'bg-oxblood',
+  marcus:   'bg-ink',
+  elena:    'bg-camel',
+  sam:      'bg-green',
+  maya:     'bg-camel-soft',
+  delivery: 'bg-cream-deep border border-dashed border-line',
+};
+
 export const AVATAR_FG: Record<ShiftColor, string> = {
   tangelo: 'text-cream',
   marcus: 'text-cream',

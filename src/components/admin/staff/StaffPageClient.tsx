@@ -9,11 +9,13 @@ import {
   type StaffStatus,
 } from '@/lib/staff-display';
 import type { ShiftColor } from '@/lib/shift-constants';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import StaffSummaryCards from './StaffSummaryCards';
 import StaffFilters from './StaffFilters';
 import StaffTable from './StaffTable';
 import StaffMobileCards from './StaffMobileCards';
 import StaffProfileModal from './StaffProfileModal';
+import StaffFormDrawer from './StaffFormDrawer';
 
 export type StaffRow = {
   id: string;
@@ -31,7 +33,16 @@ export type StaffRow = {
 
 type Props = {
   rows: StaffRow[];
+  headerSubtitle: string;
 };
+
+// Sentinel for "drawer is open in create mode" — we can't use null because that
+// also means "drawer is closed." Carrying an explicit shape keeps the prop type
+// to StaffFormDrawer simple (StaffRow | null).
+type DrawerState =
+  | { kind: 'closed' }
+  | { kind: 'create' }
+  | { kind: 'edit'; staff: StaffRow };
 
 function matchesFilter(row: StaffRow, filter: StaffFilterKey): boolean {
   switch (filter) {
@@ -52,9 +63,32 @@ function matchesFilter(row: StaffRow, filter: StaffFilterKey): boolean {
   }
 }
 
-export default function StaffPageClient({ rows }: Props) {
+export default function StaffPageClient({ rows, headerSubtitle }: Props) {
   const [filter, setFilter] = useState<StaffFilterKey>('all');
   const [selectedStaff, setSelectedStaff] = useState<StaffRow | null>(null);
+  const [drawer, setDrawer] = useState<DrawerState>({ kind: 'closed' });
+
+  const headerActions = (
+    <button
+      type="button"
+      onClick={() => setDrawer({ kind: 'create' })}
+      className="inline-flex items-center gap-2 bg-ink text-cream text-[12px] font-medium tracking-[0.04em] px-4 py-2.5 rounded-full hover:bg-oxblood transition-colors"
+    >
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </svg>
+      Add staff
+    </button>
+  );
+
+  function handleEdit(row: StaffRow) {
+    setSelectedStaff(null); // close profile modal if it was open
+    setDrawer({ kind: 'edit', staff: row });
+  }
+
+  const drawerStaff = drawer.kind === 'edit' ? drawer.staff : null;
+  const drawerOpen = drawer.kind !== 'closed';
 
   const counts = useMemo<Record<StaffFilterKey, number>>(
     () => ({
@@ -80,16 +114,43 @@ export default function StaffPageClient({ rows }: Props) {
 
   if (rows.length === 0) {
     return (
-      <div className="bg-paper border border-line-soft rounded-sm p-12 text-center">
-        <p className="text-muted text-sm">
-          No staff members yet. Run the seed or POST to /api/staff to add some.
-        </p>
-      </div>
+      <>
+        <AdminPageHeader
+          eyebrow="✦ Roster"
+          breadcrumb="Staff"
+          title="Shop"
+          titleAccent="staff"
+          subtitle={headerSubtitle}
+          actions={headerActions}
+        />
+
+        <div className="bg-paper border border-line-soft rounded-sm p-12 text-center">
+          <p className="text-muted text-sm">
+            No staff members yet. Click <span className="text-ink font-medium">Add staff</span> to create one.
+          </p>
+        </div>
+
+        {drawerOpen && (
+          <StaffFormDrawer
+            staff={drawerStaff}
+            onClose={() => setDrawer({ kind: 'closed' })}
+          />
+        )}
+      </>
     );
   }
 
   return (
     <>
+      <AdminPageHeader
+        eyebrow="✦ Roster"
+        breadcrumb="Staff"
+        title="Shop"
+        titleAccent="staff"
+        subtitle={headerSubtitle}
+        actions={headerActions}
+      />
+
       <StaffSummaryCards active={active} workingToday={workingToday} offToday={offToday} />
 
       <StaffFilters active={filter} onChange={setFilter} counts={counts} />
@@ -98,7 +159,11 @@ export default function StaffPageClient({ rows }: Props) {
         <FilterEmptyState filter={filter} onReset={() => setFilter('all')} />
       ) : (
         <>
-          <StaffTable rows={filteredRows} onOpenProfile={setSelectedStaff} />
+          <StaffTable
+            rows={filteredRows}
+            onOpenProfile={setSelectedStaff}
+            onEdit={handleEdit}
+          />
           <StaffMobileCards rows={filteredRows} onOpenProfile={setSelectedStaff} />
         </>
       )}
@@ -106,7 +171,15 @@ export default function StaffPageClient({ rows }: Props) {
       <StaffProfileModal
         staff={selectedStaff}
         onClose={() => setSelectedStaff(null)}
+        onEdit={handleEdit}
       />
+
+      {drawerOpen && (
+        <StaffFormDrawer
+          staff={drawerStaff}
+          onClose={() => setDrawer({ kind: 'closed' })}
+        />
+      )}
     </>
   );
 }

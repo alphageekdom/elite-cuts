@@ -7,7 +7,6 @@ import StaffMemberModel, {
   type StaffStatus,
 } from '@/models/StaffMember';
 import ShiftModel from '@/models/Shift';
-import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import { getMondayOf } from '@/lib/schedule-utils';
 import { normalizeWeekStart } from '@/lib/shifts';
 import { formatShiftRange } from '@/lib/staff-display';
@@ -69,22 +68,9 @@ export default async function AdminStaffPage() {
 
   const activeCount = rows.filter((r) => r.status === 'active').length;
   const workingCount = rows.filter((r) => r.workingToday).length;
+  const subtitle = rows.length === 0
+    ? 'No staff members yet'
+    : `${activeCount} active · ${workingCount} working today`;
 
-  return (
-    <>
-      <AdminPageHeader
-        eyebrow="✦ Roster"
-        breadcrumb="Staff"
-        title="Shop"
-        titleAccent="staff"
-        subtitle={
-          rows.length === 0
-            ? 'No staff members yet'
-            : `${activeCount} active · ${workingCount} working today`
-        }
-      />
-
-      <StaffPageClient rows={rows} />
-    </>
-  );
+  return <StaffPageClient rows={rows} headerSubtitle={subtitle} />;
 }
