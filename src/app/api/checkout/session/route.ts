@@ -21,6 +21,7 @@ import {
 } from '@/lib/orderBuilder';
 import { getStripe, dollarsToCents, isStubMode } from '@/lib/payments/stripe';
 import { completeSessionForOrder } from '@/lib/payments/completeSession';
+import { getOrCreateStripeCustomer } from '@/lib/payments/savedCards';
 
 // POST /api/checkout/session — customer-facing checkout entry point.
 // Creates a pending Order (no stock decrement, no points deduction, no
@@ -305,6 +306,12 @@ export const POST = async (request: NextRequest) => {
 
     try {
       const stripe = getStripe();
+      // Logged-in shoppers get tied to their Stripe Customer so the hosted
+      // Checkout page pre-lists any cards they've saved on prior orders. Guests
+      // fall back to customer_email — Stripe disallows passing both at once.
+      const stripeCustomerId = userId
+        ? await getOrCreateStripeCustomer(userId)
+        : null;
       const session = await stripe.checkout.sessions.create({
         mode: 'payment',
         payment_method_types: ['card'],
@@ -324,9 +331,13 @@ export const POST = async (request: NextRequest) => {
         metadata: { orderId: String(order._id) },
         success_url: `${origin}/checkout/confirmation?orderId=${String(order._id)}&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${origin}/checkout?cancelled=1`,
-        customer_email: userId
-          ? sessionUser?.email ?? undefined
-          : body.contactEmail!.trim().toLowerCase(),
+        ...(stripeCustomerId
+          ? { customer: stripeCustomerId }
+          : {
+              customer_email: userId
+                ? sessionUser?.email ?? undefined
+                : body.contactEmail!.trim().toLowerCase(),
+            }),
       });
 
       // Stripe's typed response promises a string url on success but allows null
