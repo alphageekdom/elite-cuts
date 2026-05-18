@@ -1,7 +1,11 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import mongoose from 'mongoose';
 
+import connectDB from '@/config/database';
+import Order from '@/models/Order';
 import { isStubMode } from '@/lib/payments/stripe';
 import { completeSessionForOrder } from '@/lib/payments/completeSession';
+import { getSessionUser } from '@/utils/getSessionUser';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,8 +35,28 @@ export const POST = async (request: NextRequest) => {
     orderId = typeof value === 'string' ? value : undefined;
   }
 
-  if (!orderId) {
-    return NextResponse.json({ message: 'orderId is required' }, { status: 400 });
+  if (!orderId || !mongoose.isValidObjectId(orderId)) {
+    return NextResponse.json({ message: 'Valid orderId is required' }, { status: 400 });
+  }
+
+  // Ownership gate — without this anyone with a pending orderId could
+  // complete the order in stub mode (no money moves, but the DB flips and
+  // stock/promo/points settle). User orders must match the session user;
+  // guest orders rely on the orderId-as-token model and only the order's
+  // pending status to gate replay.
+  await connectDB();
+  const order = await Order.findById(orderId).select('user paymentResult.status').lean();
+  if (!order) {
+    return NextResponse.json({ message: 'Order not found' }, { status: 404 });
+  }
+  if (order.paymentResult?.status !== 'Pending') {
+    return NextResponse.json({ message: 'Order is no longer pending' }, { status: 409 });
+  }
+  if (order.user) {
+    const sessionUser = await getSessionUser();
+    if (!sessionUser?.userId || sessionUser.userId !== String(order.user)) {
+      return NextResponse.json({ message: 'Order not found' }, { status: 404 });
+    }
   }
 
   const result = await completeSessionForOrder({
