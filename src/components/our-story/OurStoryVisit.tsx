@@ -1,6 +1,33 @@
 import Image from 'next/image';
 import Reveal from '@/components/uielements/Reveal';
 
+const ICON_PIN = (
+  <>
+    <path d='M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z' />
+    <circle cx='12' cy='10' r='3' />
+  </>
+);
+
+const ICON_CLOCK = (
+  <>
+    <circle cx='12' cy='12' r='10' />
+    <polyline points='12 6 12 12 16 14' />
+  </>
+);
+
+const ICON_PHONE = (
+  <path d='M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z' />
+);
+
+const HOURS_TEXT = (
+  <>
+    <strong className='text-ink font-medium'>Tue–Sat:</strong> 9am–7pm
+    <br />
+    <strong className='text-ink font-medium'>Sun:</strong> 10am–4pm · Closed
+    Mondays
+  </>
+);
+
 type Props = {
   street: string;
   cityStateZip: string;
@@ -10,12 +37,7 @@ type Props = {
 export default function OurStoryVisit({ street, cityStateZip, phone }: Props) {
   const infoRows = [
     {
-      icon: (
-        <>
-          <path d='M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z' />
-          <circle cx='12' cy='10' r='3' />
-        </>
-      ),
+      icon: ICON_PIN,
       text: (
         <>
           <strong className='text-ink font-medium'>{street}</strong>
@@ -25,25 +47,11 @@ export default function OurStoryVisit({ street, cityStateZip, phone }: Props) {
       ),
     },
     {
-      icon: (
-        <>
-          <circle cx='12' cy='12' r='10' />
-          <polyline points='12 6 12 12 16 14' />
-        </>
-      ),
-      text: (
-        <>
-          <strong className='text-ink font-medium'>Tue–Sat:</strong> 9am–7pm
-          <br />
-          <strong className='text-ink font-medium'>Sun:</strong> 10am–4pm · Closed
-          Mondays
-        </>
-      ),
+      icon: ICON_CLOCK,
+      text: HOURS_TEXT,
     },
     {
-      icon: (
-        <path d='M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z' />
-      ),
+      icon: ICON_PHONE,
       text: (
         <>
           <strong className='text-ink font-medium'>{phone}</strong> · Call to
