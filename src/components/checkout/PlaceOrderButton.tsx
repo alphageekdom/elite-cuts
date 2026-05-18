@@ -7,9 +7,10 @@ import { toast } from 'sonner';
 
 import { useCartContext } from '@/context/CartContext';
 import { useCheckoutContext } from '@/context/CheckoutContext';
+import { useShopSettings } from '@/context/ShopSettingsContext';
 import { computeTotals, fmtPrice, DELIVERY_FEE } from '@/lib/pricing';
 import { isContactComplete } from '@/lib/checkoutValidation';
-import { SHOP_ADDRESS_FULL } from '@/lib/shopConfig';
+import { formatShopAddress } from '@/lib/shopSettingsFormat';
 
 const SpinnerIcon = () => (
   <svg
@@ -61,6 +62,7 @@ const PlaceOrderButton = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const isLoggedIn = Boolean(session?.user);
+  const shopAddress = formatShopAddress(useShopSettings());
 
   const total = useMemo(
     () =>
@@ -82,7 +84,7 @@ const PlaceOrderButton = () => {
 
     const pickupLocation =
       fulfillment === 'pickup'
-        ? `${pickupSlot ? `${pickupSlot} — ` : ''}${SHOP_ADDRESS_FULL}`
+        ? `${pickupSlot ? `${pickupSlot} — ` : ''}${shopAddress}`
         : [
             deliveryAddress.address1,
             deliveryAddress.address2,

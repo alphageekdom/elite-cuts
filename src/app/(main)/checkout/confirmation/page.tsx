@@ -8,7 +8,7 @@ import OrderModel from '@/models/Order';
 import { getSessionUser } from '@/utils/getSessionUser';
 import { formatMoney, productImageSrc } from '@/lib/format';
 import { DELIVERY_FEE } from '@/lib/pricing';
-import { SHOP_ADDRESS_FULL } from '@/lib/shopConfig';
+import { getShopSettings, formatShopAddress } from '@/lib/shopSettings';
 import CheckoutStepRail from '@/components/checkout/CheckoutStepRail';
 import ConfirmationCartReset from '@/components/checkout/ConfirmationCartReset';
 
@@ -27,6 +27,8 @@ export default async function ConfirmationPage({ searchParams }: Props) {
   if (!orderId) redirect('/cart');
 
   const sessionUser = await getSessionUser();
+  const shopSettings = await getShopSettings();
+  const shopAddress = formatShopAddress(shopSettings);
 
   await connectDB();
 
@@ -115,7 +117,7 @@ export default async function ConfirmationPage({ searchParams }: Props) {
                   <p className='text-[15px] font-medium text-ink'>
                     {order.pickupSlot ? `Slot: ${order.pickupSlot}` : 'Today'}
                   </p>
-                  <p className='mt-1 text-[13px] text-ink-soft'>{SHOP_ADDRESS_FULL}</p>
+                  <p className='mt-1 text-[13px] text-ink-soft'>{shopAddress}</p>
                   <p className='mt-1 font-mono text-[11px] tracking-[0.06em] text-green'>
                     FREE · ~1 HOUR
                   </p>
