@@ -50,6 +50,9 @@ export default async function ConfirmationPage({ searchParams }: Props) {
 
   const shortId = String(order._id).slice(-8).toUpperCase();
   const isPickup = order.fulfillmentType !== 'delivery';
+  // Only orders that genuinely paid via the Demo path (admin walk-out / legacy
+  // seed) are labelled as such. Stripe-paid orders get honest wording.
+  const isDemoOrder = order.paymentMethod === 'Demo';
 
   return (
     <div className='min-h-screen bg-cream'>
@@ -65,14 +68,15 @@ export default async function ConfirmationPage({ searchParams }: Props) {
             </svg>
           </div>
           <p className='mb-3 text-[11px] font-medium uppercase tracking-[0.22em] text-muted'>
-            Demo order placed
+            {isDemoOrder ? 'Demo order placed' : 'Order placed'}
           </p>
           <h1 className='font-display text-[clamp(36px,5vw,60px)] font-normal leading-none tracking-tight'>
             You&apos;re all <em className='text-oxblood'>set.</em>
           </h1>
           <p className='mx-auto mt-3.5 max-w-[42ch] text-[15px] text-ink-soft'>
-            This was a simulated checkout — no real payment was processed and
-            no real order will be fulfilled.
+            {isDemoOrder
+              ? 'This was a simulated checkout — no real payment was processed and no real order will be fulfilled.'
+              : "We've sent a confirmation to your email. You'll get a pickup-ready notification when your order is hand-cut and waiting for you."}
           </p>
         </div>
 
@@ -258,10 +262,12 @@ export default async function ConfirmationPage({ searchParams }: Props) {
             </div>
           )}
 
-          {/* Demo notice */}
-          <div className='rounded-sm border border-line bg-cream-deep px-6 py-4 text-center text-[13px] text-muted'>
-            Demo checkout · no real payment was processed · no cuts were actually reserved
-          </div>
+          {/* Demo notice — only when the order really paid via the Demo path. */}
+          {isDemoOrder && (
+            <div className='rounded-sm border border-line bg-cream-deep px-6 py-4 text-center text-[13px] text-muted'>
+              Demo checkout · no real payment was processed · no cuts were actually reserved
+            </div>
+          )}
 
           {isGuestOrder && (
             <div className='rounded-sm border border-line-soft bg-paper px-6 py-5 text-[13px] leading-relaxed text-ink-soft'>
