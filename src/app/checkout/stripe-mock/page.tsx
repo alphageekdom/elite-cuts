@@ -29,11 +29,6 @@ export default async function StripeMockPage({ searchParams }: Props) {
     currency: 'USD',
   });
 
-  // Mirror the {CHECKOUT_SESSION_ID} substitution real Stripe performs on the
-  // success URL — the confirmation page (and later the 1C webhook) can rely on
-  // the same shape regardless of mode.
-  const stubSessionId = `cs_test_stub_${orderId}`;
-  const completeHref = `/checkout/confirmation?orderId=${orderId}&session_id=${stubSessionId}`;
   const cancelHref = `/checkout?cancelled=1`;
 
   return (
@@ -69,12 +64,17 @@ export default async function StripeMockPage({ searchParams }: Props) {
             is configured, this page is bypassed.
           </div>
 
-          <Link
-            href={completeHref}
-            className='mt-6 block rounded-md bg-indigo-600 px-4 py-3 text-center text-[14px] font-semibold text-white shadow-sm transition-colors hover:bg-indigo-500'
-          >
-            Complete payment
-          </Link>
+          {/* Real POST so the stub-complete route can flip the order to paid
+              via completeSessionForOrder before redirecting to confirmation. */}
+          <form action='/api/checkout/stripe-mock/complete' method='post' className='mt-6'>
+            <input type='hidden' name='orderId' value={orderId} />
+            <button
+              type='submit'
+              className='block w-full rounded-md bg-indigo-600 px-4 py-3 text-center text-[14px] font-semibold text-white shadow-sm transition-colors hover:bg-indigo-500'
+            >
+              Complete payment
+            </button>
+          </form>
 
           <Link
             href={cancelHref}

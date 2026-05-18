@@ -146,6 +146,32 @@ export default async function ConfirmationPage({ searchParams }: Props) {
             </div>
           </div>
 
+          {/* Payment */}
+          <div className='rounded-sm border border-line-soft bg-paper px-6 py-5'>
+            <p className='mb-3.5 text-[11px] font-medium uppercase tracking-[0.18em] text-muted'>
+              Payment
+            </p>
+            <div className='flex items-baseline justify-between gap-4'>
+              <p className='text-[15px] font-medium text-ink'>
+                {order.paymentMethod}
+              </p>
+              <p
+                className={`font-mono text-[11px] tracking-[0.06em] ${
+                  order.paymentResult?.status === 'Completed'
+                    ? 'text-green'
+                    : 'text-muted'
+                }`}
+              >
+                {(order.paymentResult?.status ?? 'PENDING').toUpperCase()}
+              </p>
+            </div>
+            {order.paymentResult?.paymentIntentId && (
+              <p className='mt-1.5 font-mono text-[12px] text-ink-soft'>
+                {order.paymentResult.paymentIntentId.slice(0, 14)}…
+              </p>
+            )}
+          </div>
+
           {/* Order items */}
           <div className='rounded-sm border border-line-soft bg-paper px-6 py-5'>
             <p className='mb-4 text-[11px] font-medium uppercase tracking-[0.18em] text-muted'>
