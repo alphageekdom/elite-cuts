@@ -5,6 +5,7 @@ import connectDB from '@/config/database';
 import Order from '@/models/Order';
 import { isStubMode } from '@/lib/payments/stripe';
 import { completeSessionForOrder } from '@/lib/payments/completeSession';
+import { recordStubSavedCard } from '@/lib/payments/savedCards';
 import { getSessionUser } from '@/utils/getSessionUser';
 
 export const dynamic = 'force-dynamic';
@@ -45,7 +46,7 @@ export const POST = async (request: NextRequest) => {
   // guest orders rely on the orderId-as-token model and only the order's
   // pending status to gate replay.
   await connectDB();
-  const order = await Order.findById(orderId).select('user paymentResult.status').lean();
+  const order = await Order.findById(orderId).select('user paymentResult.status saveCardIntent').lean();
   if (!order) {
     return NextResponse.json({ message: 'Order not found' }, { status: 404 });
   }
@@ -58,6 +59,12 @@ export const POST = async (request: NextRequest) => {
       return NextResponse.json({ message: 'Order not found' }, { status: 404 });
     }
   }
+  // Snapshot now so we can call recordStubSavedCard after a successful paid
+  // result. Trusting the server-stamped saveCardIntent (not the form `saveCard`
+  // field) avoids letting a tampered POST add a card row for an order the
+  // customer never ticked Save on.
+  const savedCardUserId =
+    order.user && order.saveCardIntent ? String(order.user) : null;
 
   const result = await completeSessionForOrder({
     orderId,
@@ -88,6 +95,20 @@ export const POST = async (request: NextRequest) => {
       request.nextUrl.origin,
     );
     return NextResponse.redirect(url, 303);
+  }
+
+  // Mirror the save to the stub-mode SavedCard collection only on a fresh
+  // 'paid' transition — not on 'already_advanced', which means the order had
+  // already been completed by a prior request and re-saving would create a
+  // duplicate card on a replay.
+  if (result.status === 'paid' && savedCardUserId) {
+    try {
+      await recordStubSavedCard(savedCardUserId);
+    } catch (err) {
+      // Don't fail the checkout because the stub card mirror failed; the
+      // order is already paid and the customer is mid-redirect.
+      console.error('[stripe-mock/complete] recordStubSavedCard failed', err);
+    }
   }
 
   // paid / already_advanced both land on the confirmation page.

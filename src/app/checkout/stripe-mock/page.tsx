@@ -29,7 +29,7 @@ export default async function StripeMockPage({ searchParams }: Props) {
   // tampered link show the customer a different total than what's stamped
   // on the order; reading `totalCost` from the DB keeps the two in sync.
   await connectDB();
-  const order = await Order.findById(orderId).select('user totalCost paymentResult.status').lean();
+  const order = await Order.findById(orderId).select('user totalCost paymentResult.status saveCardIntent').lean();
   if (!order) redirect('/checkout');
   if (order.paymentResult?.status !== 'Pending') redirect('/checkout');
 
@@ -73,6 +73,11 @@ export default async function StripeMockPage({ searchParams }: Props) {
             <p className='mt-2 text-[13px] text-slate-600'>
               Order reference{' '}
               <span className='font-mono text-slate-900'>{ref}</span>
+            </p>
+          )}
+          {order.saveCardIntent && (
+            <p className='mt-2 text-[12px] text-slate-500'>
+              This card will be saved to your profile for next time.
             </p>
           )}
 

@@ -58,7 +58,14 @@ const formatCardNumber = (raw: string): string => {
   return digits.replace(/(\d{4})(?=\d)/g, '$1 ');
 };
 
-const PaymentMethodSelector = () => {
+type Props = {
+  // True when the checkout page rendered with a signed-in user. The Save card
+  // checkbox under the Stripe tile only appears for logged-in shoppers — guests
+  // have no user record for a card to attach to.
+  isLoggedIn?: boolean;
+};
+
+const PaymentMethodSelector = ({ isLoggedIn = false }: Props) => {
   const [cardName, setCardName] = useState('');
   const [cardNumber, setCardNumber] = useState('');
   const [month, setMonth] = useState('');
@@ -292,6 +299,24 @@ const PaymentMethodSelector = () => {
           <p className='mt-3 text-[12px] text-muted'>
             Card details are never collected or stored on EliteCuts.
           </p>
+          {isLoggedIn && (
+            <label className='mt-4 flex cursor-pointer items-start gap-2.5 border-t border-line pt-4 text-[13px] text-ink-soft'>
+              <input
+                type='checkbox'
+                checked={state.saveCard}
+                onChange={(e) =>
+                  dispatch({ type: 'SET_SAVE_CARD', payload: e.target.checked })
+                }
+                className='mt-0.5 h-3.5 w-3.5 cursor-pointer accent-ink'
+              />
+              <span>
+                Save this card for next time
+                <span className='mt-0.5 block text-[11px] text-muted'>
+                  Available in your profile under Payment methods.
+                </span>
+              </span>
+            </label>
+          )}
         </div>
       )}
 

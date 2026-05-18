@@ -56,6 +56,9 @@ export type CheckoutState = {
   deliveryAddress: DeliveryAddress;
   savedAddresses: SavedAddress[];
   orderNotes: string;
+  // Whether the customer ticked "Save this card" under the Stripe tile. Only
+  // meaningful for logged-in shoppers — the UI hides the checkbox for guests.
+  saveCard: boolean;
 };
 
 export type CheckoutAction =
@@ -77,6 +80,7 @@ export type CheckoutAction =
   | { type: 'SET_PICKUP_SLOT'; payload: string }
   | { type: 'SET_DELIVERY_ADDRESS'; payload: DeliveryAddress }
   | { type: 'SET_ORDER_NOTES'; payload: string }
+  | { type: 'SET_SAVE_CARD'; payload: boolean }
   | {
       type: 'PREFILL_FROM_PROPS';
       payload: {
@@ -103,6 +107,7 @@ const EMPTY_INITIAL_STATE: CheckoutState = {
   deliveryAddress: EMPTY_ADDRESS,
   savedAddresses: [],
   orderNotes: '',
+  saveCard: false,
 };
 
 export type CheckoutInitialContact = {
@@ -171,6 +176,8 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
       return { ...state, deliveryAddress: action.payload };
     case 'SET_ORDER_NOTES':
       return { ...state, orderNotes: action.payload };
+    case 'SET_SAVE_CARD':
+      return { ...state, saveCard: action.payload };
     case 'PREFILL_FROM_PROPS': {
       // Used when the server-rendered prefill props change mid-session (e.g.
       // a guest signs in inline and the page re-renders with the user's

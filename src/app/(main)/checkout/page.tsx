@@ -104,7 +104,7 @@ export default async function CheckoutPage() {
               <CheckoutOrderNotes />
 
               {/* Card 04: Payment */}
-              <PaymentMethodSelector />
+              <PaymentMethodSelector isLoggedIn={Boolean(sessionUser?.userId)} />
 
               {/* Place order */}
               <PlaceOrderButton />
