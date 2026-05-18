@@ -104,6 +104,9 @@ export default function ProfileOrderList({ orders, showAll = false }: Props) {
               <p className="text-[13px] text-muted">
                 {itemCount} item{itemCount !== 1 ? 's' : ''}{extra}
               </p>
+              <p className="mt-1 text-[12px] text-muted/80">
+                Paid with {order.paymentMethod}
+              </p>
             </div>
 
             {/* Status + price + help */}
