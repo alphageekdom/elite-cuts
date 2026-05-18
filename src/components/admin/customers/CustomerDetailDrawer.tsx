@@ -335,10 +335,7 @@ export default function CustomerDetailDrawer({
 
         {/* Tags */}
         <div className="pb-6 mb-6 border-b border-line-soft">
-          <div className="flex items-center justify-between mb-4">
-            <div className="text-[10px] font-medium tracking-[0.22em] uppercase text-muted">Tags</div>
-            <button onClick={() => toast.info('Coming soon')} className="text-[12px] text-ink-soft border-b border-line hover:text-oxblood transition-colors">Manage</button>
-          </div>
+          <div className="mb-4 text-[10px] font-medium tracking-[0.22em] uppercase text-muted">Tags</div>
           <div className="flex flex-wrap gap-1.5">
             {tags.map((tag) => (
               <span
