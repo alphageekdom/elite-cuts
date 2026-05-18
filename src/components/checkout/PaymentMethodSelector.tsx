@@ -294,17 +294,6 @@ const PaymentMethodSelector = () => {
               </div>
             </div>
           </div>
-
-          <label className='mt-5 flex cursor-pointer items-start gap-3'>
-            <input
-              type='checkbox'
-              name='saveCard'
-              className='mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-oxblood'
-            />
-            <span className='text-[13px] leading-relaxed text-ink-soft'>
-              Save this card for faster checkout next time.
-            </span>
-          </label>
         </div>
       )}
 
