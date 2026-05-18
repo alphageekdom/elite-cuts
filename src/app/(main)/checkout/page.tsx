@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
+import CheckoutCancelToast from '@/components/checkout/CheckoutCancelToast';
 import CheckoutContactCard from '@/components/checkout/CheckoutContactCard';
 import CheckoutGuard from '@/components/checkout/CheckoutGuard';
 import CheckoutOrderNotes from '@/components/checkout/CheckoutOrderNotes';
@@ -66,6 +67,7 @@ export default async function CheckoutPage() {
 
   return (
     <CheckoutGuard>
+      <CheckoutCancelToast />
       <div className='min-h-screen bg-cream'>
         <CheckoutStepRail currentStep={2} />
 

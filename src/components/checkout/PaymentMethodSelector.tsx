@@ -6,7 +6,7 @@ import { useCheckoutContext } from '@/context/CheckoutContext';
 import CheckoutFieldCheck from '@/components/checkout/CheckoutFieldCheck';
 import { FIELD_CLASS, LABEL_CLASS } from '@/components/checkout/checkoutStyles';
 
-type PayMethod = 'card' | 'paypal' | 'apple';
+type PayMethod = 'card' | 'paypal' | 'apple' | 'stripe';
 
 const LockIcon = () => (
   <svg
@@ -26,6 +26,7 @@ const PAY_METHODS: { id: PayMethod; label: string }[] = [
   { id: 'card', label: 'Card' },
   { id: 'paypal', label: 'PayPal' },
   { id: 'apple', label: 'Apple Pay' },
+  { id: 'stripe', label: 'Stripe' },
 ];
 
 const PayMethodIcon = ({ id }: { id: PayMethod }) => {
@@ -56,6 +57,18 @@ const PayMethodIcon = ({ id }: { id: PayMethod }) => {
       </svg>
     );
   }
+  if (id === 'apple') {
+    return (
+      <svg
+        viewBox='0 0 24 24'
+        fill='currentColor'
+        aria-hidden='true'
+        className='h-4.5 w-4.5'
+      >
+        <path d='M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z' />
+      </svg>
+    );
+  }
   return (
     <svg
       viewBox='0 0 24 24'
@@ -63,7 +76,7 @@ const PayMethodIcon = ({ id }: { id: PayMethod }) => {
       aria-hidden='true'
       className='h-4.5 w-4.5'
     >
-      <path d='M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z' />
+      <path d='M13.479 9.883c-1.626-.604-2.512-1.067-2.512-1.803 0-.622.511-.977 1.423-.977 1.667 0 3.379.642 4.558 1.22l.665-4.084C16.685 3.755 15.067 3 12.491 3 10.673 3 9.158 3.476 8.077 4.359c-1.127.93-1.71 2.272-1.71 3.892 0 2.939 1.795 4.195 4.728 5.262 1.881.684 2.513 1.169 2.513 1.916 0 .724-.617 1.142-1.738 1.142-1.396 0-3.69-.685-5.189-1.561l-.674 4.137C8.318 19.93 10.275 21 12.475 21c1.916 0 3.515-.453 4.602-1.31 1.214-.953 1.844-2.366 1.844-4.094 0-2.987-1.823-4.226-4.442-5.213z' />
     </svg>
   );
 };
@@ -96,10 +109,14 @@ const PaymentMethodSelector = () => {
   const isCvcValid = cvc.length === 3;
 
   useEffect(() => {
-    dispatch({
-      type: 'SET_PAYMENT_READY',
-      payload: method === 'card' && isNameValid && isCardNumberValid && isExpiryValid && isCvcValid,
-    });
+    const ready =
+      method === 'stripe' ||
+      (method === 'card' &&
+        isNameValid &&
+        isCardNumberValid &&
+        isExpiryValid &&
+        isCvcValid);
+    dispatch({ type: 'SET_PAYMENT_READY', payload: ready });
   }, [method, isNameValid, isCardNumberValid, isExpiryValid, isCvcValid, dispatch]);
 
   const onCardNumber = (e: ChangeEvent<HTMLInputElement>) =>
@@ -132,18 +149,18 @@ const PaymentMethodSelector = () => {
         </span>
         <span className='inline-flex items-center gap-1.5 text-[12px] text-muted'>
           <LockIcon />
-          Demo — no real charge
+          Encrypted by Stripe
         </span>
       </div>
 
-      <div className='mb-6 grid grid-cols-3 gap-2'>
+      <div className='mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4'>
         {PAY_METHODS.map(({ id, label }) => (
           <button
             key={id}
             type='button'
             onClick={() => setMethod(id)}
             aria-pressed={method === id}
-            className={`inline-flex items-center justify-center gap-1.5 rounded-sm border px-2 py-3 text-[12px] font-medium transition-[background-color,border-color,color] duration-300 sm:gap-2 sm:px-4 sm:py-3.5 sm:text-[13px] motion-reduce:transition-none ${
+            className={`inline-flex items-center justify-center gap-1.5 rounded-sm border px-2 py-3 text-[12px] font-medium transition-[background-color,border-color,color] duration-300 sm:gap-2 sm:px-3 sm:py-3.5 sm:text-[13px] motion-reduce:transition-none ${
               method === id
                 ? 'border-ink bg-ink text-cream'
                 : 'border-line bg-cream text-ink-soft hover:border-ink hover:text-ink'
@@ -291,7 +308,32 @@ const PaymentMethodSelector = () => {
         </div>
       )}
 
-      {method !== 'card' && (
+      {method === 'stripe' && (
+        <div className='rounded-sm border border-line bg-cream px-5 py-6'>
+          <div className='mb-3 flex items-center justify-between gap-3'>
+            <span className='font-display text-[15px] font-medium tracking-tight text-ink'>
+              Pay with Stripe
+            </span>
+            <span className='inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.14em] text-muted'>
+              <LockIcon />
+              Secure redirect
+            </span>
+          </div>
+          <p className='text-[13px] leading-relaxed text-ink-soft'>
+            You&apos;ll be sent to Stripe&apos;s secure checkout page to
+            complete your payment. Stripe supports{' '}
+            <span className='text-ink'>credit and debit cards</span>, and
+            wallets like{' '}
+            <span className='text-ink'>Apple Pay</span> and{' '}
+            <span className='text-ink'>Google Pay</span> on supported devices.
+          </p>
+          <p className='mt-3 text-[12px] text-muted'>
+            Card details are never collected or stored on EliteCuts.
+          </p>
+        </div>
+      )}
+
+      {(method === 'paypal' || method === 'apple') && (
         <div className='rounded-sm border border-line bg-cream px-5 py-7 text-center'>
           <p className='text-[13px] text-muted'>
             {method === 'paypal' ? 'PayPal' : 'Apple Pay'} integration coming

@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 
@@ -40,7 +39,6 @@ const ArrowIcon = () => (
 );
 
 const PlaceOrderButton = () => {
-  const router = useRouter();
   const { cartItems } = useCartContext();
   const { data: session } = useSession();
   const { state } = useCheckoutContext();
@@ -97,8 +95,8 @@ const PlaceOrderButton = () => {
             .join(', ');
 
     // Guests have no server-side Cart record — their items live in localStorage
-    // via CartContext. Pass them along so the order route can build the order
-    // from request body items instead of a Cart lookup.
+    // via CartContext. Pass them along so the route can build the order from
+    // body items instead of a Cart lookup.
     const guestItems = isLoggedIn
       ? undefined
       : cartItems.map((line) => ({
@@ -107,11 +105,10 @@ const PlaceOrderButton = () => {
         }));
 
     try {
-      const res = await fetch('/api/orders', {
+      const res = await fetch('/api/checkout/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          paymentMethod: 'Demo',
           pickupLocation,
           contactName: contactName.trim(),
           contactEmail: contactEmail.trim(),
@@ -132,16 +129,17 @@ const PlaceOrderButton = () => {
         return;
       }
 
-      const order = (await res.json()) as { _id?: unknown };
-      if (typeof order._id !== 'string' || !order._id) {
-        toast.error('Order created but response was malformed.');
+      const data = (await res.json()) as { url?: unknown };
+      if (typeof data.url !== 'string' || !data.url) {
+        toast.error('Could not start payment. Please try again.');
         return;
       }
-      // Cart reset happens on the confirmation page (ConfirmationCartReset)
-      // — clearing here would trip CheckoutGuard and bounce to /cart mid-nav.
-      router.push(`/checkout/confirmation?orderId=${order._id}`);
+      // Hand off to Stripe's hosted Checkout (or the local stub when no
+      // STRIPE_SECRET_KEY is set). Cart reset happens after the customer
+      // returns to the confirmation page via ConfirmationCartReset.
+      window.location.assign(data.url);
     } catch (err) {
-      console.error('[PlaceOrderButton] place order failed', err);
+      console.error('[PlaceOrderButton] checkout session failed', err);
       toast.error('Something went wrong. Please try again.');
     } finally {
       setIsLoading(false);
@@ -160,7 +158,7 @@ const PlaceOrderButton = () => {
           : 'cursor-not-allowed bg-ink/30 text-cream/60'
       }`}
     >
-      {isLoading ? 'Placing order…' : 'Place demo order'}
+      {isLoading ? 'Redirecting to Stripe…' : 'Continue to payment'}
       {total > 0 && !isLoading && (
         <span className='rounded-full bg-cream/15 px-3 py-1 font-display text-[14px] font-medium'>
           ${fmtPrice(total)}
