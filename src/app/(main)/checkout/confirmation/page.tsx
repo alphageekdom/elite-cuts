@@ -27,8 +27,7 @@ export default async function ConfirmationPage({ searchParams }: Props) {
   if (!orderId) redirect('/cart');
 
   const sessionUser = await getSessionUser();
-  const shopSettings = await getShopSettings();
-  const shopAddress = formatShopAddress(shopSettings);
+  const shopAddress = formatShopAddress(await getShopSettings());
 
   await connectDB();
 

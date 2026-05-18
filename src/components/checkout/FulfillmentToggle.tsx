@@ -23,7 +23,8 @@ const SLOT_DEFINITIONS = [
 const FulfillmentToggle = () => {
   const { state, dispatch } = useCheckoutContext();
   const { fulfillment, pickupSlot } = state;
-  const shopAddress = formatShopAddress(useShopSettings());
+  const shopSettings = useShopSettings();
+  const shopAddress = formatShopAddress(shopSettings);
 
   const currentHour = useMemo(() => new Date().getHours(), []);
 

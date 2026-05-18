@@ -62,7 +62,8 @@ const PlaceOrderButton = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const isLoggedIn = Boolean(session?.user);
-  const shopAddress = formatShopAddress(useShopSettings());
+  const shopSettings = useShopSettings();
+  const shopAddress = formatShopAddress(shopSettings);
 
   const total = useMemo(
     () =>
