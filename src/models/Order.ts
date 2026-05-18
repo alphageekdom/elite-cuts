@@ -17,20 +17,25 @@ export const PAYMENT_METHODS = [
   'PayPal',
   'Crypto',
   'Demo',
+  'Card or wallet',
 ] as const;
 
 export const PAYMENT_STATUSES = [
   'Pending',
+  'Authorized',
   'Completed',
   'Failed',
   'Partially Refunded',
   'Refunded',
 ] as const;
 
+export const PAYMENT_PROVIDERS = ['stripe', 'paypal', 'demo'] as const;
+
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 export type CancellationReason = (typeof CANCELLATION_REASONS)[number];
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
+export type PaymentProvider = (typeof PAYMENT_PROVIDERS)[number];
 
 export type OrderItem = {
   product: Types.ObjectId;
@@ -45,7 +50,10 @@ export type OrderItem = {
 
 export type PaymentResult = {
   status: PaymentStatus;
+  provider: PaymentProvider;
   transactionId?: string;
+  checkoutSessionId?: string;
+  paymentIntentId?: string;
   amountPaid: number;
   currency: string;
   paymentDate: Date;
@@ -159,7 +167,19 @@ const PaymentResultSchema = new Schema<PaymentResult>(
       default: 'Pending',
       enum: [...PAYMENT_STATUSES],
     },
+    provider: {
+      type: String,
+      required: true,
+      default: 'demo',
+      enum: [...PAYMENT_PROVIDERS],
+    },
     transactionId: {
+      type: String,
+    },
+    checkoutSessionId: {
+      type: String,
+    },
+    paymentIntentId: {
       type: String,
     },
     amountPaid: {
