@@ -9,6 +9,14 @@ declare global {
   var stripeClient: Stripe | undefined;
 }
 
+// True when no STRIPE_SECRET_KEY is set in the environment. Callers that touch
+// Stripe (route handlers, webhook handlers, refund branches) should branch on
+// this and substitute a local mock flow instead of hitting the real API. Lets
+// the project ship in environments without Stripe credentials — useful for
+// portfolio demos where sandbox keys live on a different project. When a key
+// is eventually set, the stub disengages with no code change required.
+export const isStubMode = (): boolean => !process.env.STRIPE_SECRET_KEY;
+
 // Lazy-throws so the module can be imported by code paths that don't actually
 // hit Stripe (e.g. type-only imports). The error surfaces at first real use.
 export const getStripe = (): Stripe => {
