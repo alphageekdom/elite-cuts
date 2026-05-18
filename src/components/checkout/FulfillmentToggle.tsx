@@ -3,9 +3,11 @@
 import { useEffect, useMemo } from 'react';
 
 import { useCheckoutContext } from '@/context/CheckoutContext';
+import { useShopSettings } from '@/context/ShopSettingsContext';
+import { formatShopAddress } from '@/lib/shopSettingsFormat';
 import { BLOCK_LABEL_CLASS } from '@/components/checkout/checkoutStyles';
 import DeliveryAddressForm from '@/components/checkout/DeliveryAddressForm';
-import { SHOP_ADDRESS_DISPLAY, DELIVERY_RADIUS_MILES } from '@/lib/shopConfig';
+import { DELIVERY_RADIUS_MILES } from '@/lib/shopConfig';
 
 const SLOT_DEFINITIONS = [
   { id: '10-11a', label: '10–11a', startHour: 10 },
@@ -21,6 +23,7 @@ const SLOT_DEFINITIONS = [
 const FulfillmentToggle = () => {
   const { state, dispatch } = useCheckoutContext();
   const { fulfillment, pickupSlot } = state;
+  const shopAddress = formatShopAddress(useShopSettings());
 
   const currentHour = useMemo(() => new Date().getHours(), []);
 
@@ -93,7 +96,7 @@ const FulfillmentToggle = () => {
                 fulfillment === 'pickup' ? 'text-cream/65' : 'text-muted'
               }`}
             >
-              {SHOP_ADDRESS_DISPLAY}
+              {shopAddress}
             </div>
             <div
               className={`mt-1.5 font-mono text-[11px] tracking-[0.04em] ${

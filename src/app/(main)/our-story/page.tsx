@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 
+import { getShopSettings, formatShopCityStateZip } from '@/lib/shopSettings';
 import OurStoryHero from '@/components/our-story/OurStoryHero';
 import OurStoryCover from '@/components/our-story/OurStoryCover';
 import OurStoryOrigin from '@/components/our-story/OurStoryOrigin';
@@ -16,7 +17,8 @@ export const metadata: Metadata = {
     'A neighborhood butcher shop, modernized. Learn how EliteCuts started and what we stand for.',
 };
 
-export default function OurStoryPage() {
+export default async function OurStoryPage() {
+  const settings = await getShopSettings();
   return (
     <>
       <OurStoryHero />
@@ -27,7 +29,11 @@ export default function OurStoryPage() {
       <OurStoryTeam />
       <OurStorySourcing />
       <OurStoryCraftNumbers />
-      <OurStoryVisit />
+      <OurStoryVisit
+        street={settings.street}
+        cityStateZip={formatShopCityStateZip(settings)}
+        phone={settings.phone}
+      />
     </>
   );
 }
