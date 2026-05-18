@@ -299,7 +299,7 @@ export const POST = async (request: NextRequest) => {
         { _id: order._id },
         { $set: { 'paymentResult.checkoutSessionId': stubSessionId } },
       );
-      const mockUrl = `${origin}/checkout/stripe-mock?orderId=${String(order._id)}&total=${dollarsToCents(totalCost)}&ref=${encodeURIComponent(orderRef)}`;
+      const mockUrl = `${origin}/checkout/stripe-mock?orderId=${String(order._id)}&ref=${encodeURIComponent(orderRef)}`;
       return NextResponse.json({ url: mockUrl });
     }
 

@@ -1,12 +1,16 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import mongoose from 'mongoose';
+
+import connectDB from '@/config/database';
+import Order from '@/models/Order';
+import { getSessionUser } from '@/utils/getSessionUser';
 
 export const dynamic = 'force-dynamic';
 
 type Props = {
   searchParams: Promise<{
     orderId?: string;
-    total?: string;
     ref?: string;
   }>;
 };
@@ -17,14 +21,29 @@ type Props = {
 // runs end-to-end without sandbox credentials. Once a real key is configured
 // the route bypasses this page entirely.
 export default async function StripeMockPage({ searchParams }: Props) {
-  const { orderId, total, ref } = await searchParams;
+  const { orderId, ref } = await searchParams;
 
-  if (!orderId || !total) redirect('/checkout');
+  if (!orderId || !mongoose.isValidObjectId(orderId)) redirect('/checkout');
 
-  const totalCents = Number.parseInt(total, 10);
-  if (!Number.isFinite(totalCents) || totalCents <= 0) redirect('/checkout');
+  // Look up the order server-side. Trusting a URL `total` would let a
+  // tampered link show the customer a different total than what's stamped
+  // on the order; reading `totalCost` from the DB keeps the two in sync.
+  await connectDB();
+  const order = await Order.findById(orderId).select('user totalCost paymentResult.status').lean();
+  if (!order) redirect('/checkout');
+  if (order.paymentResult?.status !== 'Pending') redirect('/checkout');
 
-  const totalDollars = (totalCents / 100).toLocaleString('en-US', {
+  // Ownership gate — same shape as the mock-complete route. User orders
+  // require a session match; guest orders rely on the orderId-as-token
+  // model plus the Pending status check above.
+  if (order.user) {
+    const sessionUser = await getSessionUser();
+    if (!sessionUser?.userId || sessionUser.userId !== String(order.user)) {
+      redirect('/checkout');
+    }
+  }
+
+  const totalDollars = order.totalCost.toLocaleString('en-US', {
     style: 'currency',
     currency: 'USD',
   });

@@ -27,7 +27,12 @@ export const getStripe = (): Stripe => {
     throw new Error('STRIPE_SECRET_KEY environment variable is not set');
   }
 
+  // Pin the API version explicitly so an SDK upgrade can't silently change
+  // the contract of `refunds.create` or `checkout.sessions.create`. Stripe's
+  // SDK exposes its own pinned version as a runtime constant; using that
+  // beats hardcoding a date string and keeps the SDK + API in lockstep.
   globalThis.stripeClient = new Stripe(key, {
+    apiVersion: Stripe.API_VERSION,
     typescript: true,
   });
   return globalThis.stripeClient;
