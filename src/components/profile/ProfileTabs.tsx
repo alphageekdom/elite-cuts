@@ -7,13 +7,14 @@ type Tab = {
 };
 
 const TABS: Tab[] = [
-  { id: 'overview',  label: 'Overview',    href: '/profile' },
-  { id: 'orders',    label: 'Orders',      href: '/profile?tab=orders' },
-  { id: 'saved',     label: 'Saved cuts',  href: '/profile?tab=saved' },
-  { id: 'addresses', label: 'Addresses',   href: '/profile?tab=addresses' },
-  { id: 'messages',  label: 'Messages',    href: '/profile?tab=messages' },
-  { id: 'settings',  label: 'Settings',    href: '/profile?tab=settings' },
-  { id: 'rewards',   label: 'Rewards',     href: '/profile?tab=rewards' },
+  { id: 'overview',  label: 'Overview',         href: '/profile' },
+  { id: 'orders',    label: 'Orders',           href: '/profile?tab=orders' },
+  { id: 'paymentMethods', label: 'Payment methods', href: '/profile?tab=paymentMethods' },
+  { id: 'saved',     label: 'Saved cuts',       href: '/profile?tab=saved' },
+  { id: 'addresses', label: 'Addresses',        href: '/profile?tab=addresses' },
+  { id: 'messages',  label: 'Messages',         href: '/profile?tab=messages' },
+  { id: 'settings',  label: 'Settings',         href: '/profile?tab=settings' },
+  { id: 'rewards',   label: 'Rewards',          href: '/profile?tab=rewards' },
 ];
 
 type Props = {

@@ -57,6 +57,7 @@ const PlaceOrderButton = () => {
     pickupSlot,
     deliveryAddress,
     orderNotes,
+    saveCard,
   } = state;
 
   const [isLoading, setIsLoading] = useState(false);
@@ -122,6 +123,9 @@ const PlaceOrderButton = () => {
           ...(promoCode ? { promoCode } : {}),
           ...(pointsToRedeem > 0 ? { pointsToRedeem } : {}),
           ...(guestItems ? { guestItems } : {}),
+          ...(saveCard && isLoggedIn && paymentMethod === 'stripe'
+            ? { saveCard: true }
+            : {}),
         }),
       });
 

@@ -27,6 +27,7 @@ import ProfileLoyaltyCard from '@/components/profile/ProfileLoyaltyCard';
 import ProfileAccountInfo from '@/components/profile/ProfileAccountInfo';
 import ProfileRecentlyViewed from '@/components/profile/ProfileRecentlyViewed';
 import ProfileAddresses from '@/components/profile/ProfileAddresses';
+import ProfilePaymentMethods from '@/components/profile/ProfilePaymentMethods';
 import ProfileInfoForm from '@/components/profile/ProfileInfoForm';
 import UpdateProfile from '@/components/profile/UpdateProfile';
 import DeleteAccountSection from '@/components/profile/DeleteAccountSection';
@@ -332,6 +333,20 @@ export default async function ProfilePage({ searchParams }: Props) {
 
             {activeTab === 'addresses' && (
               <ProfileAddresses addresses={serializedAddresses} />
+            )}
+
+            {activeTab === 'paymentMethods' && (
+              <section>
+                <div className="mb-7">
+                  <h2 className="font-display text-[28px] font-normal tracking-tight leading-tight">
+                    Payment <em className="italic text-oxblood">methods</em>
+                  </h2>
+                  <p className="mt-2 text-[13px] text-ink-soft">
+                    Cards saved at checkout. Add a new one by ticking Save this card on your next Stripe checkout.
+                  </p>
+                </div>
+                <ProfilePaymentMethods />
+              </section>
             )}
 
             {activeTab === 'messages' && (

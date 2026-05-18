@@ -48,7 +48,16 @@ export const POST = async (request: NextRequest) => {
       promoCode?: string;
       pointsToRedeem?: number;
       guestItems?: Array<{ productId: string; qty: number }>;
+      saveCard?: boolean;
     };
+
+    // Only honor the Save card intent when the shopper is logged-in and going
+    // through Stripe — the demo card path never touches Stripe, and guests
+    // have no user record for a card to attach to.
+    const saveCardIntent =
+      Boolean(body.saveCard) &&
+      Boolean(sessionUser?.userId) &&
+      body.paymentMethod !== 'card';
 
     // 'card' is the demo card-form path — order is created paid directly
     // with paymentMethod 'Credit Card', no Stripe round trip. 'stripe' (the
@@ -253,6 +262,7 @@ export const POST = async (request: NextRequest) => {
         promoCode: body.promoCode?.trim().toUpperCase(),
         ...(promoIdForOrder && { promoId: promoIdForOrder }),
       }),
+      ...(saveCardIntent && { saveCardIntent: true }),
     });
 
     const orderRef = `EC-${String(order._id).slice(-4).toUpperCase()}`;
@@ -338,6 +348,14 @@ export const POST = async (request: NextRequest) => {
                 ? sessionUser?.email ?? undefined
                 : body.contactEmail!.trim().toLowerCase(),
             }),
+        // setup_future_usage: 'on_session' tells Stripe to attach the card to
+        // the customer at the end of payment so it pre-lists on the next
+        // checkout. 'on_session' is correct here because the customer is
+        // present and authorizing — 'off_session' would mean recurring
+        // unattended charges, which the shop doesn't do.
+        ...(saveCardIntent && stripeCustomerId
+          ? { payment_intent_data: { setup_future_usage: 'on_session' as const } }
+          : {}),
       });
 
       // Stripe's typed response promises a string url on success but allows null
