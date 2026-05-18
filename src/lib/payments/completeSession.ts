@@ -107,14 +107,26 @@ export const completeSessionForOrder = async (
     return { ok: false, status: 'not_found' };
   }
 
-  const order: OrderDocument | null = await Order.findById(input.orderId);
-  if (!order) return { ok: false, status: 'not_found' };
+  // Atomic claim — flip Pending → Authorized in one Mongo op. Only the
+  // winning handler runs the stock/promo/points/save sequence below;
+  // concurrent webhook retries (and the retry-after-crash window of a single
+  // handler) bail at `already_advanced` and never reapply side effects. The
+  // happy-path save below flips Authorized → Completed; the cancellation
+  // branches flip Authorized → Refunded.
+  const order: OrderDocument | null = await Order.findOneAndUpdate(
+    { _id: input.orderId, 'paymentResult.status': 'Pending' },
+    { $set: { 'paymentResult.status': 'Authorized' } },
+    { new: true },
+  );
 
-  // Idempotency — webhook retries fire more than once. Only Pending orders
-  // get progressed; anything past Pending is a no-op so a duplicate event
-  // never reapplies stock decrements or fires duplicate admin pings.
-  if (order.paymentResult.status !== 'Pending') {
-    return { ok: false, status: 'already_advanced', orderId: input.orderId };
+  if (!order) {
+    // Either the order doesn't exist or another handler already claimed it.
+    // One disambiguating exists-check so the caller can distinguish a
+    // missing order from a duplicate webhook delivery.
+    const exists = await Order.exists({ _id: input.orderId });
+    return exists
+      ? { ok: false, status: 'already_advanced', orderId: input.orderId }
+      : { ok: false, status: 'not_found' };
   }
 
   // ── Stock decrement ─────────────────────────────────────────────────
