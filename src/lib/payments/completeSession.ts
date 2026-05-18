@@ -3,10 +3,7 @@ import 'server-only';
 import mongoose, { type Types } from 'mongoose';
 
 import connectDB from '@/config/database';
-import Order, {
-  type OrderDocument,
-  type PaymentMethod,
-} from '@/models/Order';
+import Order, { type OrderDocument } from '@/models/Order';
 import Product from '@/models/Product';
 import User from '@/models/User';
 import Cart from '@/models/Cart';
@@ -15,29 +12,10 @@ import { recordCustomerActivity } from '@/lib/accountDeletion';
 import { notifyAdminsOfNewOrder } from '@/lib/order-notifications';
 import { dollarsToCents } from '@/lib/payments/stripe';
 
-// Stripe's payment_method.type values map onto our PaymentMethod enum here.
-// Anything we don't recognize falls back to the generic 'Card or wallet'
-// placeholder so the order still lands cleanly.
-const STRIPE_METHOD_MAP: Record<string, PaymentMethod> = {
-  card: 'Credit Card',
-  apple_pay: 'Apple Pay',
-  google_pay: 'Google Pay',
-};
-
-export const stripeMethodToPaymentMethod = (
-  stripeType: string | undefined,
-): PaymentMethod => {
-  if (!stripeType) return 'Card or wallet';
-  return STRIPE_METHOD_MAP[stripeType] ?? 'Card or wallet';
-};
-
 export type CompleteSessionInput = {
   orderId: string;
   // Stripe PaymentIntent id from the webhook event. Undefined in stub mode.
   paymentIntentId?: string;
-  // Resolved real payment method (Credit Card, Apple Pay, Google Pay…).
-  // Defaults to 'Card or wallet' if missing.
-  paymentMethod?: PaymentMethod;
   // Called when the order can't proceed after payment captured (stock race,
   // promo seat exhausted). Real webhook: stripe.refunds.create. Stub mode:
   // no-op (no real money moved).
@@ -197,6 +175,9 @@ export const completeSessionForOrder = async (
   }
 
   // ── Flip to paid ────────────────────────────────────────────────────
+  // paymentMethod was stamped at order creation ('Stripe' for the Stripe-
+  // redirect path, 'Credit Card' for the demo card-form path). The Stripe
+  // webhook just records the real PaymentIntent id and flips status.
   const paidAt = new Date();
   order.isPaid = true;
   order.paidAt = paidAt;
@@ -205,9 +186,6 @@ export const completeSessionForOrder = async (
   order.paymentResult.paymentDate = paidAt;
   if (input.paymentIntentId) {
     order.paymentResult.paymentIntentId = input.paymentIntentId;
-  }
-  if (input.paymentMethod) {
-    order.paymentMethod = input.paymentMethod;
   }
   await order.save();
 

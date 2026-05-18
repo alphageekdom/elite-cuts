@@ -137,7 +137,7 @@ export default function OrderCreateDrawer({
           userId: customerId,
           items: lines.map((l) => ({ productId: l.productId, qty: l.qty })),
           orderStatus,
-          paymentMethod: orderStatus === 'Completed' ? 'Demo' : 'Demo',
+          paymentMethod: 'Credit Card',
           pickupLocation: pickupLocation.trim(),
           ...(pickupSlot.trim() && { pickupSlot: pickupSlot.trim() }),
           fulfillmentType: 'pickup' as const,

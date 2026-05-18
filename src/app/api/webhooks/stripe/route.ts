@@ -4,10 +4,7 @@ import type Stripe from 'stripe';
 import connectDB from '@/config/database';
 import Order from '@/models/Order';
 import { getStripe, isStubMode } from '@/lib/payments/stripe';
-import {
-  completeSessionForOrder,
-  stripeMethodToPaymentMethod,
-} from '@/lib/payments/completeSession';
+import { completeSessionForOrder } from '@/lib/payments/completeSession';
 
 export const dynamic = 'force-dynamic';
 
@@ -98,34 +95,15 @@ const handleSessionCompleted = async (
     return;
   }
 
-  // Fetch the payment intent to read the real payment method type. Stripe
-  // could embed it on the session.payment_intent when expanded, but the safer
-  // path is to fetch it explicitly.
-  let paymentMethod: ReturnType<typeof stripeMethodToPaymentMethod> = 'Card or wallet';
-  let paymentIntentId: string | undefined;
-
-  if (typeof session.payment_intent === 'string') {
-    paymentIntentId = session.payment_intent;
-    try {
-      const pi = await stripe.paymentIntents.retrieve(session.payment_intent, {
-        expand: ['payment_method'],
-      });
-      const pm = pi.payment_method;
-      const stripeType =
-        pm && typeof pm !== 'string' ? pm.type : undefined;
-      paymentMethod = stripeMethodToPaymentMethod(stripeType);
-    } catch (err) {
-      console.error(
-        '[stripe webhook] failed to resolve payment method, falling back to Card or wallet',
-        err,
-      );
-    }
-  }
+  // paymentMethod stays 'Stripe' (stamped at session creation). The only
+  // thing the webhook records is the real PaymentIntent id so admin
+  // refunds can target it.
+  const paymentIntentId =
+    typeof session.payment_intent === 'string' ? session.payment_intent : undefined;
 
   await completeSessionForOrder({
     orderId,
     paymentIntentId,
-    paymentMethod,
     issueRefund: async (amountCents, reason) => {
       if (!paymentIntentId) return;
       await stripe.refunds.create({
