@@ -108,6 +108,11 @@ export type Order = {
   promoDiscount: number;
   promoCode?: string;
   promoId?: Types.ObjectId;
+  // Snapshot of whether the customer ticked "Save this card" at checkout-session
+  // time. The stub-mode complete route reads this back to mirror the save after
+  // the mock payment clears (real Stripe handles the save via setup_future_usage
+  // on the session). Only meaningful for logged-in shoppers.
+  saveCardIntent?: boolean;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -305,6 +310,7 @@ const OrderSchema = new Schema<Order>(
     promoDiscount: { type: Number, default: 0, min: 0 },
     promoCode: { type: String, trim: true },
     promoId: { type: Schema.Types.ObjectId, ref: 'Promo' },
+    saveCardIntent: { type: Boolean },
   },
   {
     timestamps: true,

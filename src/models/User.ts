@@ -63,6 +63,9 @@ export type User = {
   deletionScheduledFor?: Date | null;
   lastActiveAt?: Date | null;
   dormancyWarnedAt?: Date | null;
+  // Lazily created on the user's first checkout (real Stripe mode only); stays
+  // undefined for stub-mode customers and for users who have never checked out.
+  stripeCustomerId?: string;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -178,6 +181,10 @@ const UserSchema = new Schema<User>(
     dormancyWarnedAt: {
       type: Date,
       default: null,
+    },
+    stripeCustomerId: {
+      type: String,
+      trim: true,
     },
   },
   {
