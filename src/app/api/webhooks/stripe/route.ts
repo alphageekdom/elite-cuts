@@ -67,7 +67,7 @@ export const POST = async (request: NextRequest) => {
         await handlePaymentFailed(event.data.object);
         break;
       case 'charge.refunded':
-        // Refund mirror lands in Phase 1E. Acknowledge so Stripe doesn't retry.
+        await handleChargeRefunded(event.data.object);
         break;
       default:
         // Unhandled event types are acknowledged silently — Stripe sends a
@@ -152,6 +152,51 @@ const handlePaymentFailed = async (
   const orderId = intent.metadata?.orderId;
   if (!orderId) return;
   await cancelPendingOrder(orderId);
+};
+
+// Handles refunds initiated outside the EliteCuts admin (e.g. inside the
+// Stripe Dashboard). Idempotent for admin-initiated refunds — the order
+// drawer route flips paymentResult.status before this event fires, so the
+// early-return below absorbs the duplicate notification.
+//
+// External refunds don't carry line-item context (Stripe doesn't know about
+// our line items), so we flip the order's paymentResult.status based on the
+// charge's amount_refunded vs the order total. Specific items are NOT marked
+// refunded — that audit gap is acceptable for the portfolio scope; admins
+// who refund inside Stripe should also flag items inside EliteCuts if they
+// want item-level granularity.
+const handleChargeRefunded = async (charge: Stripe.Charge): Promise<void> => {
+  const paymentIntentId =
+    typeof charge.payment_intent === 'string'
+      ? charge.payment_intent
+      : charge.payment_intent?.id;
+  if (!paymentIntentId) return;
+
+  const order = await Order.findOne({
+    'paymentResult.paymentIntentId': paymentIntentId,
+  });
+  if (!order) return;
+
+  // Idempotency — admin-initiated refunds already advanced the status. This
+  // event is informational confirmation.
+  if (
+    order.paymentResult.status === 'Refunded' ||
+    order.paymentResult.status === 'Partially Refunded'
+  ) {
+    return;
+  }
+
+  const amountRefundedDollars = (charge.amount_refunded ?? 0) / 100;
+  const fullRefund = amountRefundedDollars + 0.005 >= order.totalCost;
+
+  order.paymentResult.status = fullRefund ? 'Refunded' : 'Partially Refunded';
+  order.paymentResult.paymentDate = new Date();
+  order.paymentResult.amountPaid = Math.max(
+    0,
+    Math.round((order.totalCost - amountRefundedDollars) * 100) / 100,
+  );
+  order.paymentResult.refundedExternally = true;
+  await order.save();
 };
 
 const cancelPendingOrder = async (orderId: string): Promise<void> => {

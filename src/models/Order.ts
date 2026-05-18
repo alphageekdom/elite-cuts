@@ -58,6 +58,11 @@ export type PaymentResult = {
   amountPaid: number;
   currency: string;
   paymentDate: Date;
+  // True when the refund mirror was triggered by Stripe (e.g. admin refunded
+  // inside the Stripe Dashboard) rather than by an EliteCuts admin action.
+  // External refunds don't carry line-item context, so the schema can't mark
+  // specific items refunded — this flag tells the audit trail apart.
+  refundedExternally?: boolean;
 };
 
 export type DeliveryAddressData = {
@@ -198,6 +203,9 @@ const PaymentResultSchema = new Schema<PaymentResult>(
     paymentDate: {
       type: Date,
       default: Date.now,
+    },
+    refundedExternally: {
+      type: Boolean,
     },
   },
   {
