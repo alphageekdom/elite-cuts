@@ -10,16 +10,11 @@ import {
 import { ORDER_STATUSES, CANCELLATION_REASONS } from '@/lib/order-constants';
 export { ORDER_STATUSES, CANCELLATION_REASONS };
 
-export const PAYMENT_METHODS = [
-  'Credit Card',
-  'Debit Card',
-  'Apple Pay',
-  'Google Pay',
-  'PayPal',
-  'Crypto',
-  'Demo',
-  'Card or wallet',
-] as const;
+// The shop's two payment surfaces — `'Credit Card'` for the demo card-form
+// path and admin walk-out orders, `'Stripe'` for everything that flowed
+// through Stripe Checkout. Cash purchases happen in-store only and don't
+// enter the system.
+export const PAYMENT_METHODS = ['Credit Card', 'Stripe'] as const;
 
 export const PAYMENT_STATUSES = [
   'Pending',

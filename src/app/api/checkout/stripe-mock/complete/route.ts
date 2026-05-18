@@ -37,8 +37,8 @@ export const POST = async (request: NextRequest) => {
 
   const result = await completeSessionForOrder({
     orderId,
-    // No real PaymentIntent in stub mode; helper falls back to 'Card or wallet'
-    // on paymentMethod and leaves paymentIntentId unset.
+    // No real PaymentIntent in stub mode; helper leaves paymentIntentId unset
+    // and the order keeps 'Stripe' as the paymentMethod from creation.
     issueRefund: async () => {
       // Stub mode never moved real money, so a "refund" is a no-op. The
       // helper still marks the order Refunded when stock/promo fails so the

@@ -12,6 +12,11 @@ import {
 
 export type Fulfillment = 'pickup' | 'delivery';
 
+// 'card' is the demo card-form path (no Stripe round trip — order is created
+// paid directly with paymentMethod 'Credit Card'); 'stripe' redirects through
+// Stripe Checkout and the order stamps 'Stripe'.
+export type PayMethod = 'card' | 'stripe';
+
 export type DeliveryAddress = {
   address1: string;
   address2: string;
@@ -30,6 +35,7 @@ const EMPTY_ADDRESS: DeliveryAddress = { address1: '', address2: '', city: '', s
 
 export type CheckoutState = {
   isPaymentReady: boolean;
+  paymentMethod: PayMethod;
   fulfillment: Fulfillment;
   promoCode: string;
   promoDiscount: number;         // dollar value of the applied promo
@@ -54,6 +60,7 @@ export type CheckoutState = {
 
 export type CheckoutAction =
   | { type: 'SET_FULFILLMENT'; payload: Fulfillment }
+  | { type: 'SET_PAYMENT_METHOD'; payload: PayMethod }
   | { type: 'SET_PAYMENT_READY'; payload: boolean }
   | {
       type: 'SET_PROMO';
@@ -80,6 +87,7 @@ export type CheckoutAction =
 
 const EMPTY_INITIAL_STATE: CheckoutState = {
   isPaymentReady: false,
+  paymentMethod: 'card',
   fulfillment: 'pickup',
   promoCode: '',
   promoDiscount: 0,
@@ -135,6 +143,8 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
         fulfillment: action.payload,
         ...(action.payload === 'delivery' ? { pickupSlot: '' } : {}),
       };
+    case 'SET_PAYMENT_METHOD':
+      return { ...state, paymentMethod: action.payload };
     case 'SET_PAYMENT_READY':
       return { ...state, isPaymentReady: action.payload };
     case 'SET_PROMO':

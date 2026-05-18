@@ -312,13 +312,11 @@ export default async function ReceiptPage({ params }: Props) {
           <div className="mx-8 sm:mx-12 mb-5 px-5 py-4 bg-cream border border-line-soft rounded flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3.5">
               <div className="w-10 h-7 rounded bg-ink text-cream grid place-items-center font-display text-[10px] font-semibold tracking-wider shrink-0">
-                {order.paymentMethod === 'Demo' ? 'DEMO' : order.paymentMethod.slice(0, 4).toUpperCase()}
+                {order.paymentMethod.slice(0, 4).toUpperCase()}
               </div>
               <div>
                 <div className="font-mono text-[10px] tracking-[0.18em] uppercase text-muted mb-0.5">Payment</div>
-                <div className="font-mono text-[13px] text-ink">
-                  {order.paymentMethod === 'Demo' ? 'Demo — no real charge' : order.paymentMethod}
-                </div>
+                <div className="font-mono text-[13px] text-ink">{order.paymentMethod}</div>
               </div>
             </div>
             {(order.paymentResult?.paymentIntentId || order.paymentResult?.transactionId) && (

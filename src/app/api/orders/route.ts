@@ -267,7 +267,7 @@ export const POST = async (request: NextRequest) => {
         orderStatus: initialStatus,
         paymentMethod: (body.paymentMethod && isIn(PAYMENT_METHODS, body.paymentMethod)
           ? body.paymentMethod
-          : 'Demo') as PaymentMethod,
+          : 'Credit Card') as PaymentMethod,
         paymentResult: {
           status: isCompletedNow ? 'Completed' : 'Pending',
           amountPaid: isCompletedNow ? totalCost : 0,

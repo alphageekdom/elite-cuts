@@ -2,11 +2,9 @@
 
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 
-import { useCheckoutContext } from '@/context/CheckoutContext';
+import { useCheckoutContext, type PayMethod } from '@/context/CheckoutContext';
 import CheckoutFieldCheck from '@/components/checkout/CheckoutFieldCheck';
 import { FIELD_CLASS, LABEL_CLASS } from '@/components/checkout/checkoutStyles';
-
-type PayMethod = 'card' | 'stripe';
 
 const LockIcon = () => (
   <svg
@@ -61,7 +59,6 @@ const formatCardNumber = (raw: string): string => {
 };
 
 const PaymentMethodSelector = () => {
-  const [method, setMethod] = useState<PayMethod>('card');
   const [cardName, setCardName] = useState('');
   const [cardNumber, setCardNumber] = useState('');
   const [month, setMonth] = useState('');
@@ -70,7 +67,9 @@ const PaymentMethodSelector = () => {
 
   const yearRef = useRef<HTMLInputElement>(null);
 
-  const { dispatch } = useCheckoutContext();
+  const { state, dispatch } = useCheckoutContext();
+  const method = state.paymentMethod;
+  const setMethod = (m: PayMethod) => dispatch({ type: 'SET_PAYMENT_METHOD', payload: m });
 
   const isNameValid = cardName.trim().length >= 5;
   const isCardNumberValid = cardNumber.replace(/\s/g, '').length === 16;

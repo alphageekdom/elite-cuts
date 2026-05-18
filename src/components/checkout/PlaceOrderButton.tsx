@@ -44,6 +44,7 @@ const PlaceOrderButton = () => {
   const { state } = useCheckoutContext();
   const {
     isPaymentReady,
+    paymentMethod,
     promoCode,
     promoDiscount,
     promoExcludesMember,
@@ -109,6 +110,7 @@ const PlaceOrderButton = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          paymentMethod,
           pickupLocation,
           contactName: contactName.trim(),
           contactEmail: contactEmail.trim(),
@@ -158,7 +160,11 @@ const PlaceOrderButton = () => {
           : 'cursor-not-allowed bg-ink/30 text-cream/60'
       }`}
     >
-      {isLoading ? 'Redirecting to Stripe…' : 'Continue to payment'}
+      {isLoading
+        ? paymentMethod === 'card'
+          ? 'Placing order…'
+          : 'Redirecting to Stripe…'
+        : 'Continue to payment'}
       {total > 0 && !isLoading && (
         <span className='rounded-full bg-cream/15 px-3 py-1 font-display text-[14px] font-medium'>
           ${fmtPrice(total)}

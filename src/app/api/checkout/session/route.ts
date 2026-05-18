@@ -20,6 +20,7 @@ import {
   computeOrderTotals,
 } from '@/lib/orderBuilder';
 import { getStripe, dollarsToCents, isStubMode } from '@/lib/payments/stripe';
+import { completeSessionForOrder } from '@/lib/payments/completeSession';
 
 // POST /api/checkout/session — customer-facing checkout entry point.
 // Creates a pending Order (no stock decrement, no points deduction, no
@@ -34,6 +35,7 @@ export const POST = async (request: NextRequest) => {
     await connectDB();
 
     const body = (await request.json()) as {
+      paymentMethod?: 'card' | 'stripe';
       pickupLocation?: string;
       contactName?: string;
       contactEmail?: string;
@@ -46,6 +48,11 @@ export const POST = async (request: NextRequest) => {
       pointsToRedeem?: number;
       guestItems?: Array<{ productId: string; qty: number }>;
     };
+
+    // 'card' is the demo card-form path — order is created paid directly
+    // with paymentMethod 'Credit Card', no Stripe round trip. 'stripe' (the
+    // default) goes through Stripe Checkout and stamps 'Stripe'.
+    const isCardDemo = body.paymentMethod === 'card';
 
     if (!body.pickupLocation?.trim()) {
       return NextResponse.json({ message: 'Pickup location is required' }, { status: 400 });
@@ -221,10 +228,10 @@ export const POST = async (request: NextRequest) => {
       totalCost,
       isPaid: false,
       orderStatus: 'Order Placed',
-      paymentMethod: 'Card or wallet',
+      paymentMethod: isCardDemo ? 'Credit Card' : 'Stripe',
       paymentResult: {
         status: 'Pending',
-        provider: 'stripe',
+        provider: isCardDemo ? 'demo' : 'stripe',
         amountPaid: 0,
         currency: 'USD',
         paymentDate: new Date(),
@@ -247,14 +254,39 @@ export const POST = async (request: NextRequest) => {
       }),
     });
 
+    const orderRef = `EC-${String(order._id).slice(-4).toUpperCase()}`;
+    const origin = request.nextUrl.origin;
+
+    // Card-form demo path — flip the order to paid via the shared completion
+    // helper (same stock decrement + promo seat + points deduction logic the
+    // Stripe webhook runs) and return the confirmation URL. No real money
+    // moves, so `issueRefund` is a no-op if a stock/promo race forces cancel.
+    if (isCardDemo) {
+      const result = await completeSessionForOrder({
+        orderId: String(order._id),
+        issueRefund: async () => {},
+      });
+      if (result.status === 'cancelled_out_of_stock') {
+        return NextResponse.json(
+          { url: `${origin}/checkout?paymentFailed=out_of_stock` },
+        );
+      }
+      if (result.status === 'cancelled_promo_exhausted') {
+        return NextResponse.json(
+          { url: `${origin}/checkout?paymentFailed=promo_exhausted` },
+        );
+      }
+      return NextResponse.json({
+        url: `${origin}/checkout/confirmation?orderId=${String(order._id)}`,
+      });
+    }
+
     // Create the Stripe Checkout Session. A single summary line item keeps
     // Stripe's page simple — the detailed breakdown lives on EliteCuts's
     // confirmation page. Tax is rolled into the summary because EliteCuts
     // computes its own tax via computeOrderTotals; Stripe Tax stays off.
-    const orderRef = `EC-${String(order._id).slice(-4).toUpperCase()}`;
     const settings = await getShopSettings();
     const itemCount = orderItems.reduce((acc, it) => acc + it.qty, 0);
-    const origin = request.nextUrl.origin;
 
     // Stub-mode short-circuit: when no STRIPE_SECRET_KEY is set, skip the real
     // Stripe API call entirely and hand the customer to a local mock that
