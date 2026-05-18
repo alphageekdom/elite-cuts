@@ -127,6 +127,7 @@ export default function CustomersFilterPanel({ filters, onChange, onClear, onClo
                 <button
                   key={opt.value}
                   type="button"
+                  aria-pressed={active}
                   onClick={() => toggleTier(opt.value)}
                   className={`px-2.5 py-1 rounded-full text-[12px] tracking-[0.02em] border transition-colors ${
                     active
@@ -150,6 +151,7 @@ export default function CustomersFilterPanel({ filters, onChange, onClear, onClo
               <button
                 key={opt.value}
                 type="button"
+                aria-pressed={filters.hasOrders === opt.value}
                 onClick={() => update('hasOrders', opt.value)}
                 className={`flex-1 px-2.5 py-1 rounded-full text-[12px] border transition-colors ${
                   filters.hasOrders === opt.value
@@ -172,6 +174,7 @@ export default function CustomersFilterPanel({ filters, onChange, onClear, onClo
               <button
                 key={opt.value}
                 type="button"
+                aria-pressed={filters.hasSavedCuts === opt.value}
                 onClick={() => update('hasSavedCuts', opt.value)}
                 className={`flex-1 px-2.5 py-1 rounded-full text-[12px] border transition-colors ${
                   filters.hasSavedCuts === opt.value
