@@ -48,6 +48,7 @@ type OrderLean = {
   tax: number;
   totalCost: number;
   orderStatus: string;
+  paymentMethod?: string;
   paidAt?: Date | null;
   readyAt?: Date | null;
   pickedUpAt?: Date | null;
@@ -112,6 +113,7 @@ export const GET = withAdmin(async (req) => {
       { header: 'subtotal', value: (o) => o.subtotal.toFixed(2) },
       { header: 'tax', value: (o) => o.tax.toFixed(2) },
       { header: 'total', value: (o) => o.totalCost.toFixed(2) },
+      { header: 'paymentMethod', value: (o) => o.paymentMethod ?? '' },
       {
         header: 'refundedAmount',
         value: (o) => {

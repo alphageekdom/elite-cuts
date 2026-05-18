@@ -6,7 +6,7 @@ import { useCheckoutContext } from '@/context/CheckoutContext';
 import CheckoutFieldCheck from '@/components/checkout/CheckoutFieldCheck';
 import { FIELD_CLASS, LABEL_CLASS } from '@/components/checkout/checkoutStyles';
 
-type PayMethod = 'card' | 'paypal' | 'apple' | 'stripe';
+type PayMethod = 'card' | 'stripe';
 
 const LockIcon = () => (
   <svg
@@ -24,8 +24,6 @@ const LockIcon = () => (
 
 const PAY_METHODS: { id: PayMethod; label: string }[] = [
   { id: 'card', label: 'Card' },
-  { id: 'paypal', label: 'PayPal' },
-  { id: 'apple', label: 'Apple Pay' },
   { id: 'stripe', label: 'Stripe' },
 ];
 
@@ -42,30 +40,6 @@ const PayMethodIcon = ({ id }: { id: PayMethod }) => {
       >
         <rect x='2' y='5' width='20' height='14' rx='2' />
         <line x1='2' y1='10' x2='22' y2='10' />
-      </svg>
-    );
-  }
-  if (id === 'paypal') {
-    return (
-      <svg
-        viewBox='0 0 24 24'
-        fill='currentColor'
-        aria-hidden='true'
-        className='h-4.5 w-4.5'
-      >
-        <path d='M7.4 7.5h3.6c2.4 0 3.4 1.4 3.1 3.7-.4 2.7-2 3.7-4.4 3.7H8.5l-.6 3.7H5.6L7.4 7.5zm1.7 5.4h.7c1.1 0 1.9-.5 2-1.7.1-.9-.4-1.4-1.4-1.4h-.8l-.5 3.1zM15.4 7.5H19c2.4 0 3.4 1.4 3.1 3.7-.4 2.7-2 3.7-4.4 3.7h-1.2l-.6 3.7h-2.3l1.8-11.1zm1.7 5.4h.7c1.1 0 1.9-.5 2-1.7.1-.9-.4-1.4-1.4-1.4h-.8l-.5 3.1z' />
-      </svg>
-    );
-  }
-  if (id === 'apple') {
-    return (
-      <svg
-        viewBox='0 0 24 24'
-        fill='currentColor'
-        aria-hidden='true'
-        className='h-4.5 w-4.5'
-      >
-        <path d='M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z' />
       </svg>
     );
   }
@@ -153,7 +127,7 @@ const PaymentMethodSelector = () => {
         </span>
       </div>
 
-      <div className='mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4'>
+      <div className='mb-6 grid grid-cols-2 gap-2'>
         {PAY_METHODS.map(({ id, label }) => (
           <button
             key={id}
@@ -322,14 +296,6 @@ const PaymentMethodSelector = () => {
         </div>
       )}
 
-      {(method === 'paypal' || method === 'apple') && (
-        <div className='rounded-sm border border-line bg-cream px-5 py-7 text-center'>
-          <p className='text-[13px] text-muted'>
-            {method === 'paypal' ? 'PayPal' : 'Apple Pay'} integration coming
-            soon.
-          </p>
-        </div>
-      )}
     </div>
   );
 };
