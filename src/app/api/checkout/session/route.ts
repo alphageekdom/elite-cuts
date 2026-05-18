@@ -21,7 +21,12 @@ import {
 } from '@/lib/orderBuilder';
 import { getStripe, dollarsToCents, isStubMode } from '@/lib/payments/stripe';
 import { completeSessionForOrder } from '@/lib/payments/completeSession';
-import { getOrCreateStripeCustomer } from '@/lib/payments/savedCards';
+import {
+  getOrCreateStripeCustomer,
+  getSavedCard,
+  recordTypedCardSave,
+  validateTypedCardDetails,
+} from '@/lib/payments/savedCards';
 
 // POST /api/checkout/session — customer-facing checkout entry point.
 // Creates a pending Order (no stock decrement, no points deduction, no
@@ -49,7 +54,31 @@ export const POST = async (request: NextRequest) => {
       pointsToRedeem?: number;
       guestItems?: Array<{ productId: string; qty: number }>;
       saveCard?: boolean;
+      cardDetails?: unknown;
+      savedCardId?: string;
     };
+
+    // Saved-card shortcut: shopper picked a card from the strip above the
+    // Card/Stripe tile selector. We validate ownership server-side before
+    // letting it stand in for the form. Only applies to the demo card path —
+    // Stripe's hosted page surfaces saved cards on its own via the customer
+    // link in this same route.
+    const savedCardIdRaw =
+      typeof body.savedCardId === 'string' ? body.savedCardId.trim() : '';
+    let resolvedSavedCard: Awaited<ReturnType<typeof getSavedCard>> = null;
+    if (
+      savedCardIdRaw &&
+      sessionUser?.userId &&
+      body.paymentMethod !== 'stripe'
+    ) {
+      resolvedSavedCard = await getSavedCard(sessionUser.userId, savedCardIdRaw);
+      if (!resolvedSavedCard) {
+        return NextResponse.json(
+          { message: 'That saved card is no longer available. Pick a different card or enter a new one.' },
+          { status: 400 },
+        );
+      }
+    }
 
     // Only honor the Save card intent when the shopper is logged-in and going
     // through Stripe — the demo card path never touches Stripe, and guests
@@ -58,6 +87,19 @@ export const POST = async (request: NextRequest) => {
       Boolean(body.saveCard) &&
       Boolean(sessionUser?.userId) &&
       body.paymentMethod !== 'card';
+
+    // The Card-tile demo path has its own save handling — it never reaches
+    // Stripe, so we mirror the typed-in display fields straight into the
+    // SavedCard collection after the demo order completes. Skipped when the
+    // shopper picked a saved card (that path doesn't take typed-card data)
+    // so a tampered POST that sends both can't write a duplicate row.
+    const typedCardSave =
+      !resolvedSavedCard &&
+      Boolean(body.saveCard) &&
+      Boolean(sessionUser?.userId) &&
+      body.paymentMethod === 'card'
+        ? validateTypedCardDetails(body.cardDetails)
+        : null;
 
     // 'card' is the demo card-form path — order is created paid directly
     // with paymentMethod 'Credit Card', no Stripe round trip. 'stripe' (the
@@ -263,6 +305,7 @@ export const POST = async (request: NextRequest) => {
         ...(promoIdForOrder && { promoId: promoIdForOrder }),
       }),
       ...(saveCardIntent && { saveCardIntent: true }),
+      ...(resolvedSavedCard && { savedCardIdAtPurchase: resolvedSavedCard.id }),
     });
 
     const orderRef = `EC-${String(order._id).slice(-4).toUpperCase()}`;
@@ -286,6 +329,17 @@ export const POST = async (request: NextRequest) => {
         return NextResponse.json(
           { url: `${origin}/checkout?paymentFailed=promo_exhausted` },
         );
+      }
+      // Mirror the typed card into the SavedCard collection on a fresh paid
+      // result only (not already_advanced, which would create a duplicate on
+      // any replay). Failure to save shouldn't fail the order — log and move
+      // on; the customer is mid-redirect to confirmation.
+      if (result.status === 'paid' && typedCardSave && sessionUser?.userId) {
+        try {
+          await recordTypedCardSave(sessionUser.userId, typedCardSave);
+        } catch (err) {
+          console.error('[checkout/session POST] recordTypedCardSave failed', err);
+        }
       }
       return NextResponse.json({
         url: `${origin}/checkout/confirmation?orderId=${String(order._id)}`,

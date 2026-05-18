@@ -58,6 +58,8 @@ const PlaceOrderButton = () => {
     deliveryAddress,
     orderNotes,
     saveCard,
+    cardDetails,
+    selectedSavedCardId,
   } = state;
 
   const [isLoading, setIsLoading] = useState(false);
@@ -123,9 +125,20 @@ const PlaceOrderButton = () => {
           ...(promoCode ? { promoCode } : {}),
           ...(pointsToRedeem > 0 ? { pointsToRedeem } : {}),
           ...(guestItems ? { guestItems } : {}),
-          ...(saveCard && isLoggedIn && paymentMethod === 'stripe'
-            ? { saveCard: true }
-            : {}),
+          // When the shopper picked a card from the saved-cards strip, send
+          // only the id — the server validates ownership and uses it. Skip
+          // the typed-card save fields entirely so a stale form-state doesn't
+          // accidentally write a duplicate row.
+          ...(selectedSavedCardId
+            ? { savedCardId: selectedSavedCardId }
+            : {
+                ...(saveCard && isLoggedIn && paymentMethod === 'stripe'
+                  ? { saveCard: true }
+                  : {}),
+                ...(saveCard && isLoggedIn && paymentMethod === 'card' && cardDetails
+                  ? { saveCard: true, cardDetails }
+                  : {}),
+              }),
         }),
       });
 

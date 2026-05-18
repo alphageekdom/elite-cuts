@@ -56,9 +56,27 @@ export type CheckoutState = {
   deliveryAddress: DeliveryAddress;
   savedAddresses: SavedAddress[];
   orderNotes: string;
-  // Whether the customer ticked "Save this card" under the Stripe tile. Only
-  // meaningful for logged-in shoppers — the UI hides the checkbox for guests.
+  // Whether the customer ticked "Save this card" under the Stripe tile or the
+  // Card tile. Only meaningful for logged-in shoppers — the UI hides the
+  // checkbox for guests.
   saveCard: boolean;
+  // Display attributes derived from the Card tile's typed-in card form,
+  // populated only when the form is fully valid. Used when saveCard is on and
+  // paymentMethod is 'card' to write a SavedCard row after the demo order
+  // completes. Raw card number is never lifted out of the form — only the
+  // four display fields the profile tab needs.
+  cardDetails: {
+    cardholderName: string;
+    brand: string;
+    last4: string;
+    expMonth: number;
+    expYear: number;
+  } | null;
+  // When set, the shopper picked a card from the saved-cards strip at the
+  // top of the Payment section. Locks paymentMethod to 'card' (saved-card
+  // pay routes through the demo path on EliteCuts; real Stripe-attached
+  // cards are surfaced on Stripe's hosted page via the customer link).
+  selectedSavedCardId: string | null;
 };
 
 export type CheckoutAction =
@@ -81,6 +99,8 @@ export type CheckoutAction =
   | { type: 'SET_DELIVERY_ADDRESS'; payload: DeliveryAddress }
   | { type: 'SET_ORDER_NOTES'; payload: string }
   | { type: 'SET_SAVE_CARD'; payload: boolean }
+  | { type: 'SET_CARD_DETAILS'; payload: CheckoutState['cardDetails'] }
+  | { type: 'SET_SELECTED_SAVED_CARD'; payload: string | null }
   | {
       type: 'PREFILL_FROM_PROPS';
       payload: {
@@ -108,6 +128,8 @@ const EMPTY_INITIAL_STATE: CheckoutState = {
   savedAddresses: [],
   orderNotes: '',
   saveCard: false,
+  cardDetails: null,
+  selectedSavedCardId: null,
 };
 
 export type CheckoutInitialContact = {
@@ -178,6 +200,19 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
       return { ...state, orderNotes: action.payload };
     case 'SET_SAVE_CARD':
       return { ...state, saveCard: action.payload };
+    case 'SET_CARD_DETAILS':
+      return { ...state, cardDetails: action.payload };
+    case 'SET_SELECTED_SAVED_CARD':
+      // Picking a saved card forces the demo Card path and counts the form
+      // as ready immediately (no need to retype). Clearing it (null) returns
+      // control to the manual form's own ready-state effect.
+      return {
+        ...state,
+        selectedSavedCardId: action.payload,
+        ...(action.payload
+          ? { paymentMethod: 'card' as const, isPaymentReady: true }
+          : {}),
+      };
     case 'PREFILL_FROM_PROPS': {
       // Used when the server-rendered prefill props change mid-session (e.g.
       // a guest signs in inline and the page re-renders with the user's

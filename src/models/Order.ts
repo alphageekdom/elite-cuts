@@ -113,6 +113,12 @@ export type Order = {
   // the mock payment clears (real Stripe handles the save via setup_future_usage
   // on the session). Only meaningful for logged-in shoppers.
   saveCardIntent?: boolean;
+  // Snapshot of the saved card id the shopper picked at checkout, when they
+  // used the saved-cards strip instead of typing a new card. Carries the
+  // local `card_...` prefix or the Stripe `pm_...` prefix so future analytics
+  // can answer "which card paid for this order" without needing to re-read
+  // the card store at the time of the query.
+  savedCardIdAtPurchase?: string;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -311,6 +317,7 @@ const OrderSchema = new Schema<Order>(
     promoCode: { type: String, trim: true },
     promoId: { type: Schema.Types.ObjectId, ref: 'Promo' },
     saveCardIntent: { type: Boolean },
+    savedCardIdAtPurchase: { type: String, trim: true },
   },
   {
     timestamps: true,
