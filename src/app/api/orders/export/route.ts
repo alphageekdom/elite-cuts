@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { Types } from 'mongoose';
 
-import OrderModel from '@/models/Order';
+import OrderModel, { type PaymentMethod } from '@/models/Order';
 import { ORDER_STATUSES } from '@/lib/order-constants';
 import { withAdmin } from '@/lib/api-handler';
 import { toCsv, csvFilename } from '@/lib/csv';
@@ -48,7 +48,7 @@ type OrderLean = {
   tax: number;
   totalCost: number;
   orderStatus: string;
-  paymentMethod?: string;
+  paymentMethod: PaymentMethod;
   paidAt?: Date | null;
   readyAt?: Date | null;
   pickedUpAt?: Date | null;
@@ -113,7 +113,7 @@ export const GET = withAdmin(async (req) => {
       { header: 'subtotal', value: (o) => o.subtotal.toFixed(2) },
       { header: 'tax', value: (o) => o.tax.toFixed(2) },
       { header: 'total', value: (o) => o.totalCost.toFixed(2) },
-      { header: 'paymentMethod', value: (o) => o.paymentMethod ?? '' },
+      { header: 'paymentMethod', value: (o) => o.paymentMethod },
       {
         header: 'refundedAmount',
         value: (o) => {
