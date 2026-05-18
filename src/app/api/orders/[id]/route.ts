@@ -10,6 +10,7 @@ import { isIn } from '@/lib/validation';
 import { refundSummary, paymentStatusFor } from '@/lib/order-refunds';
 import { awardOrderCompletion, reverseOrderAward, reverseOrderRedemption } from '@/lib/order-completion';
 import { releasePromoSeat } from '@/lib/promos/apply';
+import { getStripe, isStubMode, dollarsToCents } from '@/lib/payments/stripe';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -181,6 +182,65 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
     if (indicesToRefund.size > 0) {
       const refundedAt = new Date();
 
+      // ── Stripe refund (Phase 1E) ──────────────────────────────────────
+      // Hit Stripe's refund API BEFORE any schema or stock changes so a
+      // failed Stripe call leaves the schema clean — the admin sees an
+      // error and can retry. The delta is the amount being refunded in
+      // THIS request (cumulative-after minus cumulative-before), not the
+      // grand total — Stripe receives a separate Refund object per call,
+      // additive against the same PaymentIntent.
+      const projectedItems = existing.orderItems.map((item, idx) =>
+        indicesToRefund.has(idx) ? { ...item, refunded: true, refundedAt } : item,
+      );
+      const refundContext = {
+        subtotal: existing.subtotal,
+        tax: existing.tax,
+        totalCost: existing.totalCost,
+      };
+      const previousSummary = refundSummary(existing.orderItems, refundContext);
+      const projectedSummary = refundSummary(projectedItems, refundContext);
+      const refundDeltaDollars = Math.max(
+        0,
+        projectedSummary.refundedAmount - previousSummary.refundedAmount,
+      );
+
+      const provider = existing.paymentResult.provider;
+
+      if (
+        refundDeltaDollars > 0 &&
+        provider === 'stripe' &&
+        existing.paymentResult.paymentIntentId &&
+        !isStubMode()
+      ) {
+        try {
+          const stripe = getStripe();
+          await stripe.refunds.create({
+            payment_intent: existing.paymentResult.paymentIntentId,
+            amount: dollarsToCents(refundDeltaDollars),
+            reason: 'requested_by_customer',
+            metadata: {
+              orderId: id,
+              refundedLineIndices: Array.from(indicesToRefund).join(','),
+            },
+          });
+        } catch (err) {
+          console.error('[orders PATCH] stripe.refunds.create failed', err);
+          const message =
+            err instanceof Error
+              ? `Stripe refund failed: ${err.message}`
+              : 'Stripe refund failed — please try again.';
+          return NextResponse.json({ message }, { status: 502 });
+        }
+      } else if (refundDeltaDollars > 0 && provider === 'paypal') {
+        // PayPal refunds are out of scope (project went Stripe-only). Leaving
+        // a clear 501 here so any legacy PayPal order in the database can't
+        // silently process as a schema-only refund.
+        return NextResponse.json(
+          { message: 'PayPal refunds are not supported in this version.' },
+          { status: 501 },
+        );
+      }
+
       // Atomic restock — mirror the order-creation bulkWrite pattern in reverse
       await Product.bulkWrite(
         Array.from(indicesToRefund).map((idx) => ({
@@ -191,24 +251,18 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
         })),
       );
 
-      const nextOrderItems = existing.orderItems.map((item, idx) =>
-        indicesToRefund.has(idx) ? { ...item, refunded: true, refundedAt } : item,
-      );
-      updateFields.orderItems = nextOrderItems;
+      // `projectedItems` and `projectedSummary` were computed above for the
+      // Stripe-refund delta calc; reuse them here as the canonical next-state.
+      updateFields.orderItems = projectedItems;
 
-      const summary = refundSummary(nextOrderItems, {
-        subtotal: existing.subtotal,
-        tax: existing.tax,
-        totalCost: existing.totalCost,
-      });
-      const nextPaymentStatus = paymentStatusFor(existing.paymentResult.status, summary);
+      const nextPaymentStatus = paymentStatusFor(existing.paymentResult.status, projectedSummary);
 
       updateFields['paymentResult.status'] = nextPaymentStatus;
       updateFields['paymentResult.paymentDate'] = refundedAt;
       updateFields['paymentResult.amountPaid'] =
         nextPaymentStatus === 'Refunded'
           ? 0
-          : Math.max(0, Math.round((existing.totalCost - summary.refundedAmount) * 100) / 100);
+          : Math.max(0, Math.round((existing.totalCost - projectedSummary.refundedAmount) * 100) / 100);
 
       // If individual refunds have drained the order to fully refunded and the
       // admin didn't explicitly pick an orderStatus this request, mirror what
