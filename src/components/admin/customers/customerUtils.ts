@@ -1,7 +1,11 @@
 import type { CustomerTableRow } from '@/types/admin';
+import { getTier, getActivity, type Tier, type ActivityStatus } from '@/lib/customer-tier';
 
-export type Tier = 'master' | 'connoisseur' | 'regular';
-export type ActivityStatus = 'active' | 'dormant' | 'at-risk' | 'new';
+// Re-export the pure helpers + types so existing client imports keep working
+// without changing every file. New server-side code should import directly
+// from `@/lib/customer-tier`.
+export { getTier, getActivity };
+export type { Tier, ActivityStatus };
 
 export const TIER_CONFIG: Record<Tier, { label: string; pillClass: string; showStar: boolean }> = {
   master: { label: 'Master Cut', pillClass: 'bg-ink text-camel-soft', showStar: true },
@@ -15,24 +19,6 @@ export const ACTIVITY_CONFIG: Record<ActivityStatus, { label: string; pillClass:
   'at-risk': { label: 'At risk', pillClass: 'bg-red-soft text-oxblood' },
   new: { label: 'New', pillClass: 'bg-ink text-cream' },
 };
-
-export function getTier(orderCount: number): Tier {
-  if (orderCount >= 20) return 'master';
-  if (orderCount >= 10) return 'connoisseur';
-  return 'regular';
-}
-
-export function getActivity(row: CustomerTableRow): ActivityStatus {
-  const now = Date.now();
-  const THIRTY_DAYS = 30 * 86400000;
-  const accountAge = now - new Date(row.createdAt).getTime();
-  if (accountAge < THIRTY_DAYS) return 'new';
-  if (!row.lastOrderAt) return 'at-risk';
-  const lastOrderAge = now - new Date(row.lastOrderAt).getTime();
-  if (lastOrderAge <= THIRTY_DAYS) return 'active';
-  if (lastOrderAge <= 90 * 86400000) return 'dormant';
-  return 'at-risk';
-}
 
 export function deriveTags(row: CustomerTableRow): Array<{ label: string; cls: string }> {
   const tier = getTier(row.orderCount);

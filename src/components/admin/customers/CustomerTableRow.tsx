@@ -181,7 +181,7 @@ export default function CustomerTableRowComponent({
             <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="1.5" /><circle cx="19" cy="12" r="1.5" /><circle cx="5" cy="12" r="1.5" /></svg>
           </button>
         </div>
-        {isOpen && menuPos && typeof document !== 'undefined' && createPortal(
+        {isOpen && menuPos && createPortal(
           <div
             role="menu"
             style={{ top: menuPos.top, left: menuPos.left, width: MENU_WIDTH }}

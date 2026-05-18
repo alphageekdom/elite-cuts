@@ -5,15 +5,10 @@ import UserModel from '@/models/User';
 import OrderModel from '@/models/Order';
 import { withAdmin } from '@/lib/api-handler';
 import { toCsv, csvFilename } from '@/lib/csv';
-import { getTier, type Tier } from '@/components/admin/customers/customerUtils';
+import { getTier, type Tier } from '@/lib/customer-tier';
+import { matchesStatFilter, STAT_FILTERS, type StatFilter } from '@/lib/customer-status';
 
 export const dynamic = 'force-dynamic';
-
-const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
-const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
-
-const ALLOWED_STATUSES = ['all', 'new', 'active', 'connoisseurPlus', 'dormant'] as const;
-type StatusValue = (typeof ALLOWED_STATUSES)[number];
 
 const ALLOWED_TIERS: readonly Tier[] = ['regular', 'connoisseur', 'master'];
 
@@ -53,8 +48,8 @@ export const GET = withAdmin(async (req) => {
   try {
     const url = new URL(req.url);
     const rawStatus = url.searchParams.get('status')?.trim() ?? 'all';
-    const status: StatusValue = (ALLOWED_STATUSES as readonly string[]).includes(rawStatus)
-      ? (rawStatus as StatusValue)
+    const status: StatFilter = (STAT_FILTERS as readonly string[]).includes(rawStatus)
+      ? (rawStatus as StatFilter)
       : 'all';
     const search = url.searchParams.get('search')?.trim().toLowerCase() ?? '';
     const noteSearch = url.searchParams.get('noteSearch')?.trim().toLowerCase() ?? '';
@@ -125,15 +120,7 @@ export const GET = withAdmin(async (req) => {
         };
       })
       .filter((r) => {
-        if (status === 'new') {
-          if (now - r.createdAt.getTime() >= THIRTY_DAYS_MS) return false;
-        } else if (status === 'active') {
-          if (!r.lastOrderAt || now - r.lastOrderAt.getTime() > NINETY_DAYS_MS) return false;
-        } else if (status === 'connoisseurPlus') {
-          if (r.orderCount < 10) return false;
-        } else if (status === 'dormant') {
-          if (!r.dormancyWarnedAt || r.deletedAt) return false;
-        }
+        if (!matchesStatFilter(r, status, now)) return false;
         if (tierFilter.length > 0 && !tierFilter.includes(r.tier)) return false;
         if (hasOrders === true && r.orderCount === 0) return false;
         if (hasOrders === false && r.orderCount > 0) return false;

@@ -50,12 +50,6 @@ export default function CustomerCreateDrawer({ onClose, onCreated }: Props) {
     e.preventDefault();
     if (!canSubmit || saving) return;
 
-    const trimmedEmail = email.trim();
-    if (!EMAIL_RE.test(trimmedEmail)) {
-      setEmailError('Enter a valid email address');
-      return;
-    }
-
     setSaving(true);
     try {
       const res = await fetch('/api/users', {
@@ -63,7 +57,7 @@ export default function CustomerCreateDrawer({ onClose, onCreated }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: name.trim(),
-          email: trimmedEmail,
+          email: email.trim(),
           phone: phone.trim(),
           adminNote: adminNote.trim(),
         }),
@@ -83,6 +77,7 @@ export default function CustomerCreateDrawer({ onClose, onCreated }: Props) {
         totalSpend: 0,
         savedCutsCount: 0,
         adminNote: data.user.adminNote,
+        lastActiveAt: new Date().toISOString(),
       });
       if (data.tempPassword) {
         toast.success(`Customer created · temp password: ${data.tempPassword}`, {

@@ -17,6 +17,7 @@ import CustomersFilterPanel, {
   type CustomerFilters,
 } from './CustomersFilterPanel';
 import { getTier } from './customerUtils';
+import { matchesStatFilter, type StatFilter } from '@/lib/customer-status';
 
 export type { CustomerTableRow, CustomerCounts };
 
@@ -26,11 +27,6 @@ type Props = {
   total: number;
   newThisWeek: number;
 };
-
-// Tier filtering was dropped earlier — the Tier column still surfaces the
-// value when there's enough data to make filtering useful. The Dormant chip
-// is the first scan-driven filter (set by the dormancy cron's warn pass).
-type StatFilter = 'all' | 'new' | 'active' | 'connoisseurPlus' | 'dormant';
 
 type SortBy = 'top-spenders' | 'newest' | 'most-orders' | 'recently-active' | 'name-asc';
 
@@ -51,19 +47,6 @@ const STAT_CELLS = [
 ];
 
 const PAGE_SIZES = [8, 20, 50];
-
-function matchesStatFilter(row: CustomerTableRow, filter: StatFilter): boolean {
-  if (filter === 'all') return true;
-  const now = Date.now();
-  const THIRTY_DAYS = 30 * 86400000;
-  const NINETY_DAYS = 90 * 86400000;
-  const accountAge = now - new Date(row.createdAt).getTime();
-  if (filter === 'new') return accountAge < THIRTY_DAYS;
-  if (filter === 'active') return !!row.lastOrderAt && now - new Date(row.lastOrderAt).getTime() <= NINETY_DAYS;
-  if (filter === 'connoisseurPlus') return row.orderCount >= 10;
-  if (filter === 'dormant') return Boolean(row.dormancyWarnedAt) && !row.deletedAt;
-  return true;
-}
 
 function countForStat(key: StatFilter, counts: CustomerCounts): number {
   if (key === 'all') return counts.all;
@@ -610,9 +593,13 @@ export default function CustomersClient({ customers, counts, total, newThisWeek 
         <div className="fixed inset-0 z-10" onClick={() => setOpenMenuId(null)} />
       )}
 
-      {/* Drawer backdrop */}
+      {/* Drawer backdrop — only one drawer is ever open at a time, so close
+          whichever it is rather than chain both calls. */}
       {(isDrawerOpen || createOpen) && (
-        <div className="fixed inset-0 bg-ink/40 backdrop-blur-sm z-50" onClick={() => { closeDrawer(); setCreateOpen(false); }} />
+        <div
+          className="fixed inset-0 bg-ink/40 backdrop-blur-sm z-50"
+          onClick={() => (createOpen ? setCreateOpen(false) : closeDrawer())}
+        />
       )}
 
       {/* Customer detail drawer */}

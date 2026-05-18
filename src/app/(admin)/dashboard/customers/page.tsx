@@ -7,9 +7,9 @@ import OrderModel from '@/models/Order';
 import type { Types } from 'mongoose';
 
 import { serializeCustomerRow, type OrderStats } from '@/lib/serializers';
+import { countByStat } from '@/lib/customer-status';
 import CustomersClient, {
   type CustomerTableRow,
-  type CustomerCounts,
 } from '@/components/admin/customers/CustomersClient';
 
 export const dynamic = 'force-dynamic';
@@ -67,29 +67,18 @@ export default async function AdminCustomersPage() {
   // Pure serialization — no side effects
   const customers: CustomerTableRow[] = rawUsers.map((u) => serializeCustomerRow(u, orderMap));
 
-  // Aggregation — separate pass over the already-serialized rows
+  // Stat-strip counts share the same matcher the client uses to filter the
+  // table, so the chip counts can't drift from what the chips actually show.
+  const counts = countByStat(customers);
+
+  // `new this week` is a header-only metric (not one of the stat filters),
+  // so it stays inline.
   const now = Date.now();
-  const ONE_WEEK_MS    =  7 * 24 * 60 * 60 * 1000;
-  const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
-  const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
-
-  let newThisWeek = 0, newThisMonth = 0, activeCount = 0, connoisseurPlusCount = 0, dormantCount = 0;
+  const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+  let newThisWeek = 0;
   for (const c of customers) {
-    const accountAge = now - new Date(c.createdAt).getTime();
-    if (accountAge < ONE_WEEK_MS) newThisWeek++;
-    if (accountAge < THIRTY_DAYS_MS) newThisMonth++;
-    if (c.lastOrderAt && now - new Date(c.lastOrderAt).getTime() <= NINETY_DAYS_MS) activeCount++;
-    if (c.orderCount >= 10) connoisseurPlusCount++;
-    if (c.dormancyWarnedAt && !c.deletedAt) dormantCount++;
+    if (now - new Date(c.createdAt).getTime() < ONE_WEEK_MS) newThisWeek++;
   }
-
-  const counts: CustomerCounts = {
-    all: customers.length,
-    new: newThisMonth,
-    active: activeCount,
-    connoisseurPlus: connoisseurPlusCount,
-    dormant: dormantCount,
-  };
 
   return (
     <CustomersClient
