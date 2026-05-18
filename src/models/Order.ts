@@ -30,7 +30,7 @@ export const PAYMENT_STATUSES = [
   'Refunded',
 ] as const;
 
-export const PAYMENT_PROVIDERS = ['stripe', 'paypal', 'demo'] as const;
+export const PAYMENT_PROVIDERS = ['stripe', 'demo'] as const;
 
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 export type CancellationReason = (typeof CANCELLATION_REASONS)[number];

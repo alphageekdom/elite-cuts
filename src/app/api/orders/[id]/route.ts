@@ -231,14 +231,6 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
               : 'Stripe refund failed — please try again.';
           return NextResponse.json({ message }, { status: 502 });
         }
-      } else if (refundDeltaDollars > 0 && provider === 'paypal') {
-        // PayPal refunds are out of scope (project went Stripe-only). Leaving
-        // a clear 501 here so any legacy PayPal order in the database can't
-        // silently process as a schema-only refund.
-        return NextResponse.json(
-          { message: 'PayPal refunds are not supported in this version.' },
-          { status: 501 },
-        );
       }
 
       // Atomic restock — mirror the order-creation bulkWrite pattern in reverse
