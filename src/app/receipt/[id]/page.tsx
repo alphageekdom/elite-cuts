@@ -319,11 +319,11 @@ export default async function ReceiptPage({ params }: Props) {
                 <div className="font-mono text-[13px] text-ink">{order.paymentMethod}</div>
               </div>
             </div>
-            {(order.paymentResult?.paymentIntentId || order.paymentResult?.transactionId) && (
+            {order.paymentResult?.paymentIntentId && (
               <div className="text-right">
                 <div className="font-mono text-[10px] tracking-[0.18em] uppercase text-muted mb-0.5">Transaction</div>
                 <div className="font-mono text-[13px] text-ink">
-                  {(order.paymentResult.paymentIntentId ?? order.paymentResult.transactionId)!.slice(0, 14)}…
+                  {order.paymentResult.paymentIntentId.slice(0, 14)}…
                 </div>
               </div>
             )}

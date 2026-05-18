@@ -47,7 +47,6 @@ export type OrderItem = {
 export type PaymentResult = {
   status: PaymentStatus;
   provider: PaymentProvider;
-  transactionId?: string;
   checkoutSessionId?: string;
   paymentIntentId?: string;
   amountPaid: number;
@@ -173,9 +172,6 @@ const PaymentResultSchema = new Schema<PaymentResult>(
       required: true,
       default: 'demo',
       enum: [...PAYMENT_PROVIDERS],
-    },
-    transactionId: {
-      type: String,
     },
     checkoutSessionId: {
       type: String,
