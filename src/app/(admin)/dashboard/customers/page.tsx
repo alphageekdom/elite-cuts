@@ -7,7 +7,6 @@ import OrderModel from '@/models/Order';
 import type { Types } from 'mongoose';
 
 import { serializeCustomerRow, type OrderStats } from '@/lib/serializers';
-import CustomersPageHeader from '@/components/admin/customers/CustomersPageHeader';
 import CustomersClient, {
   type CustomerTableRow,
   type CustomerCounts,
@@ -93,12 +92,11 @@ export default async function AdminCustomersPage() {
   };
 
   return (
-    <>
-      <CustomersPageHeader
-        total={customers.length}
-        newThisWeek={newThisWeek}
-      />
-      <CustomersClient customers={customers} counts={counts} />
-    </>
+    <CustomersClient
+      customers={customers}
+      counts={counts}
+      total={customers.length}
+      newThisWeek={newThisWeek}
+    />
   );
 }

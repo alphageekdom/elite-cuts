@@ -9,18 +9,38 @@ import AdminStatStrip from '@/components/admin/AdminStatStrip';
 import type { CustomerTableRow, CustomerCounts } from '@/types/admin';
 import CustomerDetailDrawer from './CustomerDetailDrawer';
 import CustomerTableRowComponent from './CustomerTableRow';
+import CustomersPageHeader from './CustomersPageHeader';
+import CustomerCreateDrawer from './CustomerCreateDrawer';
+import CustomersFilterPanel, {
+  EMPTY_FILTERS,
+  activeFilterCount,
+  type CustomerFilters,
+} from './CustomersFilterPanel';
+import { getTier } from './customerUtils';
 
 export type { CustomerTableRow, CustomerCounts };
 
 type Props = {
   customers: CustomerTableRow[];
   counts: CustomerCounts;
+  total: number;
+  newThisWeek: number;
 };
 
 // Tier filtering was dropped earlier — the Tier column still surfaces the
 // value when there's enough data to make filtering useful. The Dormant chip
 // is the first scan-driven filter (set by the dormancy cron's warn pass).
 type StatFilter = 'all' | 'new' | 'active' | 'connoisseurPlus' | 'dormant';
+
+type SortBy = 'top-spenders' | 'newest' | 'most-orders' | 'recently-active' | 'name-asc';
+
+const SORT_OPTIONS: { value: SortBy; label: string }[] = [
+  { value: 'top-spenders',    label: 'Top spenders' },
+  { value: 'newest',          label: 'Newest' },
+  { value: 'most-orders',     label: 'Most orders' },
+  { value: 'recently-active', label: 'Recently active' },
+  { value: 'name-asc',        label: 'Name A–Z' },
+];
 
 const STAT_CELLS = [
   { key: 'all' as StatFilter, label: 'All', metaLabel: 'REGISTERED', dotClass: '' },
@@ -53,11 +73,37 @@ function countForStat(key: StatFilter, counts: CustomerCounts): number {
   return counts.connoisseurPlus;
 }
 
-export default function CustomersClient({ customers, counts }: Props) {
+function matchesAdvancedFilters(row: CustomerTableRow, f: CustomerFilters): boolean {
+  if (f.createdFrom) {
+    const start = new Date(`${f.createdFrom}T00:00:00`).getTime();
+    if (!Number.isNaN(start) && new Date(row.createdAt).getTime() < start) return false;
+  }
+  if (f.createdTo) {
+    const end = new Date(`${f.createdTo}T23:59:59.999`).getTime();
+    if (!Number.isNaN(end) && new Date(row.createdAt).getTime() > end) return false;
+  }
+  if (f.hasOrders === 'yes' && row.orderCount === 0) return false;
+  if (f.hasOrders === 'no' && row.orderCount > 0) return false;
+  if (f.hasSavedCuts === 'yes' && row.savedCutsCount === 0) return false;
+  if (f.hasSavedCuts === 'no' && row.savedCutsCount > 0) return false;
+  if (f.tiers.length > 0 && !f.tiers.includes(getTier(row.orderCount))) return false;
+  const note = f.noteSearch.trim().toLowerCase();
+  if (note) {
+    if (!(row.adminNote ?? '').toLowerCase().includes(note)) return false;
+  }
+  return true;
+}
+
+export default function CustomersClient({ customers, counts, total, newThisWeek }: Props) {
   const [localCustomers, setLocalCustomers] = useState(customers);
   const [page, setPage] = useState(1);
   const { activeKey: activeStatFilter, selectKey: _selectStatFilter } = useStatFilter<string>('all', () => setPage(1));
   const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState<SortBy>('top-spenders');
+  const [filters, setFilters] = useState<CustomerFilters>(EMPTY_FILTERS);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const { item: drawerCustomer, isOpen: isDrawerOpen, open: openDrawer, close: closeDrawer, setItem: setDrawerCustomer } = useAdminDrawer<CustomerTableRow>();
   const [perPage, setPerPage] = useState(PAGE_SIZES[0]);
@@ -190,6 +236,49 @@ export default function CustomersClient({ customers, counts }: Props) {
     }
   }
 
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const params = new URLSearchParams();
+      if (activeStatFilter !== 'all') params.set('status', String(activeStatFilter));
+      if (search.trim()) params.set('search', search.trim());
+      if (filters.createdFrom) params.set('from', filters.createdFrom);
+      if (filters.createdTo) params.set('to', filters.createdTo);
+      if (filters.hasOrders !== 'any') params.set('hasOrders', filters.hasOrders === 'yes' ? 'true' : 'false');
+      if (filters.hasSavedCuts !== 'any') params.set('hasSavedCuts', filters.hasSavedCuts === 'yes' ? 'true' : 'false');
+      if (filters.tiers.length > 0) params.set('tier', filters.tiers.join(','));
+      if (filters.noteSearch.trim()) params.set('noteSearch', filters.noteSearch.trim());
+      const url = `/api/users/export${params.size ? `?${params.toString()}` : ''}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        toast.error('Export failed');
+        return;
+      }
+      const blob = await res.blob();
+      const disposition = res.headers.get('Content-Disposition') ?? '';
+      const filenameMatch = disposition.match(/filename="([^"]+)"/);
+      const filename = filenameMatch?.[1] ?? 'customers.csv';
+      const objectUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(objectUrl);
+      toast.success('Customers exported');
+    } catch {
+      toast.error('Export failed');
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  function handleCustomerCreated(row: CustomerTableRow) {
+    setLocalCustomers((prev) => [row, ...prev]);
+    setPage(1);
+  }
+
   const filtered = useMemo(() => {
     let rows = localCustomers;
     rows = rows.filter((r) => matchesStatFilter(r, activeStatFilter as StatFilter));
@@ -199,11 +288,24 @@ export default function CustomersClient({ customers, counts }: Props) {
         (r) => r.name.toLowerCase().includes(q) || r.email.toLowerCase().includes(q),
       );
     }
-    return rows;
-  }, [localCustomers, activeStatFilter, search]);
+    rows = rows.filter((r) => matchesAdvancedFilters(r, filters));
+    const sorted = [...rows];
+    if (sortBy === 'top-spenders') sorted.sort((a, b) => b.totalSpend - a.totalSpend);
+    else if (sortBy === 'newest') sorted.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+    else if (sortBy === 'most-orders') sorted.sort((a, b) => b.orderCount - a.orderCount);
+    else if (sortBy === 'recently-active') {
+      sorted.sort((a, b) => {
+        const av = a.lastOrderAt ? new Date(a.lastOrderAt).getTime() : 0;
+        const bv = b.lastOrderAt ? new Date(b.lastOrderAt).getTime() : 0;
+        return bv - av;
+      });
+    } else if (sortBy === 'name-asc') sorted.sort((a, b) => a.name.localeCompare(b.name));
+    return sorted;
+  }, [localCustomers, activeStatFilter, search, sortBy, filters]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
   const pageRows = filtered.slice((page - 1) * perPage, page * perPage);
+  const filterBadgeCount = activeFilterCount(filters);
 
   function toggleSelect(id: string) {
     setSelectedIds((prev) => {
@@ -310,6 +412,14 @@ export default function CustomersClient({ customers, counts }: Props) {
 
   return (
     <>
+      <CustomersPageHeader
+        total={total}
+        newThisWeek={newThisWeek}
+        exporting={exporting}
+        onExport={handleExport}
+        onAddCustomer={() => setCreateOpen(true)}
+      />
+
       <AdminStatStrip
         cells={STAT_CELLS.map((cell) => ({
           key: cell.key,
@@ -333,19 +443,48 @@ export default function CustomersClient({ customers, counts }: Props) {
         />
 
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <button onClick={() => toast.info('Coming soon')} className="inline-flex items-center gap-1.5 bg-paper border border-line rounded-full px-3.5 py-2 text-[13px] text-ink-soft hover:border-ink hover:text-ink transition-colors">
-            More filters
-            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-            </svg>
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setFiltersOpen((v) => !v)}
+              className="inline-flex items-center gap-1.5 bg-paper border border-line rounded-full px-3.5 py-2 text-[13px] text-ink-soft hover:border-ink hover:text-ink transition-colors"
+            >
+              More filters
+              {filterBadgeCount > 0 && (
+                <span className="bg-ink text-cream text-[10px] font-medium tracking-[0.04em] px-1.5 py-0.5 rounded-full leading-none">
+                  {filterBadgeCount}
+                </span>
+              )}
+              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+              </svg>
+            </button>
+            {filtersOpen && (
+              <CustomersFilterPanel
+                filters={filters}
+                onChange={(next) => { setFilters(next); setPage(1); }}
+                onClear={() => { setFilters(EMPTY_FILTERS); setPage(1); }}
+                onClose={() => setFiltersOpen(false)}
+              />
+            )}
+          </div>
 
-          <button onClick={() => toast.info('Coming soon')} className="inline-flex items-center gap-1.5 bg-paper border border-line rounded-full px-3.5 py-2 text-[13px] text-ink-soft hover:border-ink hover:text-ink transition-colors">
-            Sort: Top spenders
-            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <div className="relative inline-flex items-center bg-paper border border-line rounded-full hover:border-ink transition-colors">
+            <span className="pl-3.5 pr-1 text-[13px] text-ink-soft pointer-events-none whitespace-nowrap">
+              Sort:
+            </span>
+            <select
+              value={sortBy}
+              onChange={(e) => { setSortBy(e.target.value as SortBy); setPage(1); }}
+              className="appearance-none bg-transparent border-none outline-none text-[13px] text-ink-soft pr-7 pl-1 py-2 cursor-pointer"
+            >
+              {SORT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+            <svg className="w-3 h-3 text-muted absolute right-3 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="6 9 12 15 18 9" />
             </svg>
-          </button>
+          </div>
         </div>
       </div>
 
@@ -472,8 +611,8 @@ export default function CustomersClient({ customers, counts }: Props) {
       )}
 
       {/* Drawer backdrop */}
-      {isDrawerOpen && (
-        <div className="fixed inset-0 bg-ink/40 backdrop-blur-sm z-50" onClick={closeDrawer} />
+      {(isDrawerOpen || createOpen) && (
+        <div className="fixed inset-0 bg-ink/40 backdrop-blur-sm z-50" onClick={() => { closeDrawer(); setCreateOpen(false); }} />
       )}
 
       {/* Customer detail drawer */}
@@ -491,6 +630,20 @@ export default function CustomersClient({ customers, counts }: Props) {
             onDelete={handleCustomerDelete}
             onCancelDeletion={handleCancelDeletion}
             onCancelDormancy={handleCancelDormancy}
+          />
+        )}
+      </aside>
+
+      {/* Customer create drawer */}
+      <aside
+        className={`fixed top-0 right-0 w-full max-w-145 h-screen bg-cream z-51 shadow-2xl transition-transform duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
+          createOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        {createOpen && (
+          <CustomerCreateDrawer
+            onClose={() => setCreateOpen(false)}
+            onCreated={handleCustomerCreated}
           />
         )}
       </aside>
