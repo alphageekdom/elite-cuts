@@ -14,6 +14,7 @@ export const PAYMENT_METHODS = [
   'Credit Card',
   'Debit Card',
   'Apple Pay',
+  'Google Pay',
   'PayPal',
   'Crypto',
   'Demo',

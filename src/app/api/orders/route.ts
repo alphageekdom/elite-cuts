@@ -8,10 +8,8 @@ import Order, { PAYMENT_METHODS, type PaymentMethod, type DeliveryAddressData } 
 import Cart from '@/models/Cart';
 import Product from '@/models/Product';
 import User from '@/models/User';
-import Notification from '@/models/Notification';
 import { getSessionUser } from '@/utils/getSessionUser';
 import { unauthorized, parsePagination } from '@/lib/api-handler';
-import { formatMoney } from '@/lib/format';
 import { isIn, EMAIL_RE } from '@/lib/validation';
 import { validatePromo } from '@/lib/promos/validate';
 import { reservePromoSeat, releasePromoSeat } from '@/lib/promos/apply';
@@ -20,6 +18,7 @@ import { getShopSettings } from '@/lib/shopSettings';
 import { awardOrderCompletion } from '@/lib/order-completion';
 import { applyRedemption } from '@/lib/rewards';
 import { recordCustomerActivity } from '@/lib/accountDeletion';
+import { notifyAdminsOfNewOrder } from '@/lib/order-notifications';
 import {
   buildOrderItemsFromCart,
   buildOrderItemsFromGuestItems,
@@ -79,32 +78,6 @@ async function restoreStock(decremented: { productId: Types.ObjectId; qty: numbe
     })),
   );
 }
-
-async function notifyAdminsOfNewOrder(
-  orderId: string,
-  totalCost: number,
-  excludeUserId?: string,
-) {
-  // Fire and forget — gated on settings.notifNewOrder; getShopSettings fails
-  // open so a settings outage doesn't silence the alert. `excludeUserId`
-  // suppresses the self-notification when an admin is the one placing the order.
-  const settings = await getShopSettings();
-  if (!settings.notifNewOrder) return;
-  const adminFilter: Record<string, unknown> = { isAdmin: true };
-  if (excludeUserId) adminFilter._id = { $ne: excludeUserId };
-  const admins = await User.find(adminFilter, '_id').lean();
-  if (!admins.length) return;
-  const orderRef = `#EC-${orderId.slice(-4).toUpperCase()}`;
-  const docs = admins.map((a) => ({
-    type: 'new_order' as const,
-    title: 'New order placed',
-    body: `${orderRef} — ${formatMoney(totalCost)}`,
-    userId: a._id,
-    readAt: null,
-  }));
-  await Notification.insertMany(docs);
-}
-
 
 // GET /api/orders
 // Admin: all orders (paginated). Customer: own orders only.

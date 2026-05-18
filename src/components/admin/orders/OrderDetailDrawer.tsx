@@ -364,6 +364,7 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
             {[
               { l: 'Method', v: order.fulfillmentType === 'delivery' ? 'DELIVERY' : 'PICKUP' },
               { l: 'Location', v: order.pickupLocation || 'San Diego, CA' },
+              { l: 'Paid with', v: order.paymentMethod || '—' },
               { l: 'Payment', v: (order.paymentStatus ?? (order.isPaid ? 'Completed' : 'Pending')).toUpperCase() },
               { l: 'Picked up', v: order.pickedUp ? 'Yes' : 'Awaiting' },
             ].map(({ l, v }) => (
