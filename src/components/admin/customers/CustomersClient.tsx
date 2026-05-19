@@ -2,7 +2,7 @@
 import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import { useStatFilter } from '@/hooks/useStatFilter';
-import { useAdminDrawer } from '@/hooks/useAdminDrawer';
+import { useCustomersTable } from '@/hooks/useCustomersTable';
 import AdminSearchInput from '@/components/admin/AdminSearchInput';
 import AdminPagination from '@/components/admin/AdminPagination';
 import AdminStatStrip from '@/components/admin/AdminStatStrip';
@@ -53,7 +53,7 @@ const STAT_CELLS = [
 const PAGE_SIZES = [8, 20, 50];
 
 export default function CustomersClient({ customers, counts, total, newThisWeek }: Props) {
-  const [localCustomers, setLocalCustomers] = useState(customers);
+  const table = useCustomersTable(customers);
   const [page, setPage] = useState(1);
   const { activeKey: activeStatFilter, selectKey: _selectStatFilter } = useStatFilter<string>('all', () => setPage(1));
   const [search, setSearch] = useState('');
@@ -62,137 +62,8 @@ export default function CustomersClient({ customers, counts, total, newThisWeek 
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const { item: drawerCustomer, isOpen: isDrawerOpen, open: openDrawer, close: closeDrawer, setItem: setDrawerCustomer } = useAdminDrawer<CustomerTableRow>();
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [perPage, setPerPage] = useState(PAGE_SIZES[0]);
-
-  async function handleCustomerSave(id: string, data: { name: string; email: string; phone: string }) {
-    try {
-      const res = await fetch(`/api/users/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) {
-        const { message } = await res.json();
-        toast.error(message ?? 'Failed to update customer');
-        return;
-      }
-      setLocalCustomers((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, ...data } : c)),
-      );
-      setDrawerCustomer((prev) => (prev ? { ...prev, ...data } : prev));
-      toast.success('Customer updated');
-    } catch {
-      toast.error('Failed to update customer');
-    }
-  }
-
-  async function handleCustomerDelete(
-    id: string,
-    opts: { reason?: string; immediate?: boolean } = {},
-  ) {
-    try {
-      const res = await fetch(`/api/users/${id}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          reason: opts.reason?.trim() || undefined,
-          immediate: Boolean(opts.immediate),
-        }),
-      });
-      if (!res.ok) {
-        const { message } = await res.json();
-        toast.error(message ?? 'Failed to delete customer');
-        return;
-      }
-      const data = (await res.json().catch(() => ({}))) as {
-        deletionScheduledFor?: string;
-      };
-
-      if (opts.immediate) {
-        setLocalCustomers((prev) => prev.filter((c) => c.id !== id));
-        closeDrawer();
-        toast.success('Customer permanently deleted');
-      } else {
-        setLocalCustomers((prev) =>
-          prev.map((c) =>
-            c.id === id
-              ? {
-                  ...c,
-                  deletedAt: new Date().toISOString(),
-                  deletionScheduledFor: data.deletionScheduledFor,
-                }
-              : c,
-          ),
-        );
-        setDrawerCustomer((prev) =>
-          prev && prev.id === id
-            ? {
-                ...prev,
-                deletedAt: new Date().toISOString(),
-                deletionScheduledFor: data.deletionScheduledFor,
-              }
-            : prev,
-        );
-        toast.success('Customer scheduled for deletion');
-      }
-    } catch {
-      toast.error('Failed to delete customer');
-    }
-  }
-
-  async function handleCancelDeletion(id: string) {
-    try {
-      const res = await fetch(`/api/users/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'cancel_deletion' }),
-      });
-      if (!res.ok) {
-        const { message } = await res.json();
-        toast.error(message ?? 'Failed to cancel deletion');
-        return;
-      }
-      setLocalCustomers((prev) =>
-        prev.map((c) =>
-          c.id === id ? { ...c, deletedAt: undefined, deletionScheduledFor: undefined } : c,
-        ),
-      );
-      setDrawerCustomer((prev) =>
-        prev && prev.id === id
-          ? { ...prev, deletedAt: undefined, deletionScheduledFor: undefined }
-          : prev,
-      );
-      toast.success('Deletion cancelled');
-    } catch {
-      toast.error('Failed to cancel deletion');
-    }
-  }
-
-  async function handleCancelDormancy(id: string) {
-    try {
-      const res = await fetch(`/api/users/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'cancel_dormancy' }),
-      });
-      if (!res.ok) {
-        const { message } = await res.json();
-        toast.error(message ?? 'Failed to cancel dormancy cleanup');
-        return;
-      }
-      setLocalCustomers((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, dormancyWarnedAt: undefined } : c)),
-      );
-      setDrawerCustomer((prev) =>
-        prev && prev.id === id ? { ...prev, dormancyWarnedAt: undefined } : prev,
-      );
-      toast.success('Dormancy cleanup cancelled');
-    } catch {
-      toast.error('Failed to cancel dormancy cleanup');
-    }
-  }
 
   async function handleExport() {
     setExporting(true);
@@ -233,123 +104,32 @@ export default function CustomersClient({ customers, counts, total, newThisWeek 
   }
 
   function handleCustomerCreated(row: CustomerTableRow) {
-    setLocalCustomers((prev) => [row, ...prev]);
+    table.prepend(row);
     setPage(1);
   }
 
   const filtered = useMemo(() => {
-    const rows = localCustomers
+    const rows = table.customers
       .filter((r) => matchesStatFilter(r, activeStatFilter as StatFilter))
       .filter((r) => matchesSearch(r, search))
       .filter((r) => matchesAdvancedFilters(r, filters));
     return sortCustomers(rows, sortBy);
-  }, [localCustomers, activeStatFilter, search, sortBy, filters]);
+  }, [table.customers, activeStatFilter, search, sortBy, filters]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
   const pageRows = filtered.slice((page - 1) * perPage, page * perPage);
   const filterBadgeCount = activeFilterCount(filters);
-
-  function toggleSelect(id: string) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
+  const { selectedIds } = table.selection;
+  const allPageSelected = pageRows.length > 0 && pageRows.every((r) => selectedIds.has(r.id));
+  const someSelected = selectedIds.size > 0;
 
   function toggleAll(checked: boolean) {
-    if (checked) setSelectedIds(new Set(pageRows.map((r) => r.id)));
-    else setSelectedIds(new Set());
+    table.selection.setSelection(checked ? pageRows.map((r) => r.id) : []);
   }
 
   function handleStatFilter(key: string) {
     _selectStatFilter(key);
-    setSelectedIds(new Set());
-  }
-
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const allPageSelected = pageRows.length > 0 && pageRows.every((r) => selectedIds.has(r.id));
-  const someSelected = selectedIds.size > 0;
-  const [bulkLoading, setBulkLoading] = useState('');
-  const [adjustPointsMode, setAdjustPointsMode] = useState(false);
-  const [pointsDelta, setPointsDelta] = useState('');
-
-  async function bulkAdjustPoints() {
-    const delta = parseInt(pointsDelta, 10);
-    if (isNaN(delta)) { toast.error('Enter a valid number'); return; }
-    const ids = [...selectedIds];
-    setBulkLoading('points');
-    try {
-      await Promise.all(
-        ids.map((id) =>
-          fetch(`/api/users/${id}/points`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ delta }),
-          }),
-        ),
-      );
-      setSelectedIds(new Set());
-      setAdjustPointsMode(false);
-      setPointsDelta('');
-      toast.success(`Points adjusted for ${ids.length} customer${ids.length !== 1 ? 's' : ''}`);
-    } catch {
-      toast.error('Failed to adjust points');
-    } finally {
-      setBulkLoading('');
-    }
-  }
-
-  async function bulkDeleteCustomers() {
-    const ids = [...selectedIds];
-    setBulkLoading('delete');
-    try {
-      // Bulk action stays as a soft-delete (no body) — bulk hard-delete is out
-      // of scope for this feature. Read each response so the local row's
-      // `deletionScheduledFor` reflects the server's clock instead of the
-      // client's; otherwise a clock-skewed admin would see a date that
-      // doesn't match what the cron is actually working against.
-      const results = await Promise.all(
-        ids.map(async (id) => {
-          const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });
-          const data = (await res.json().catch(() => ({}))) as {
-            deletionScheduledFor?: string;
-          };
-          return { id, ok: res.ok, scheduledFor: data.deletionScheduledFor };
-        }),
-      );
-      const successById = new Map(
-        results.filter((r) => r.ok).map((r) => [r.id, r.scheduledFor]),
-      );
-      const nowIso = new Date().toISOString();
-      setLocalCustomers((prev) =>
-        prev.map((c) =>
-          successById.has(c.id)
-            ? {
-                ...c,
-                deletedAt: nowIso,
-                deletionScheduledFor: successById.get(c.id),
-              }
-            : c,
-        ),
-      );
-      setSelectedIds(new Set());
-      const okCount = successById.size;
-      if (okCount === ids.length) {
-        toast.success(
-          `${ids.length} customer${ids.length !== 1 ? 's' : ''} scheduled for deletion`,
-        );
-      } else {
-        toast.error(
-          `Scheduled ${okCount} of ${ids.length} — ${ids.length - okCount} failed`,
-        );
-      }
-    } catch {
-      toast.error('Failed to schedule deletion for some customers');
-    } finally {
-      setBulkLoading('');
-    }
+    table.selection.clearSelection();
   }
 
   return (
@@ -441,25 +221,25 @@ export default function CustomersClient({ customers, counts, total, newThisWeek 
               selected
             </div>
             <div className="flex items-center gap-1.5 flex-wrap">
-              {adjustPointsMode ? (
+              {table.bulk.adjustMode ? (
                 <div className="flex items-center gap-1">
                   <input
                     type="number"
-                    value={pointsDelta}
-                    onChange={(e) => setPointsDelta(e.target.value)}
+                    value={table.bulk.pointsDelta}
+                    onChange={(e) => table.bulk.setPointsDelta(e.target.value)}
                     placeholder="+100 or -50"
                     autoFocus
                     className="w-28 bg-cream/10 border border-cream/30 rounded-full px-3 py-1 text-[12px] text-cream outline-none placeholder:text-cream/40"
                   />
                   <button
-                    onClick={bulkAdjustPoints}
-                    disabled={!!bulkLoading || !pointsDelta}
+                    onClick={table.bulk.adjustPoints}
+                    disabled={!!table.bulk.loading || !table.bulk.pointsDelta}
                     className="bg-camel text-ink rounded-full px-3 py-1.5 text-[12px] font-medium disabled:opacity-50"
                   >
-                    {bulkLoading === 'points' ? '…' : 'Apply'}
+                    {table.bulk.loading === 'points' ? '…' : 'Apply'}
                   </button>
                   <button
-                    onClick={() => { setAdjustPointsMode(false); setPointsDelta(''); }}
+                    onClick={() => { table.bulk.setAdjustMode(false); table.bulk.setPointsDelta(''); }}
                     className="text-cream/60 text-[12px] px-2 hover:text-cream"
                   >
                     ✕
@@ -467,19 +247,19 @@ export default function CustomersClient({ customers, counts, total, newThisWeek 
                 </div>
               ) : (
                 <button
-                  onClick={() => setAdjustPointsMode(true)}
-                  disabled={!!bulkLoading}
+                  onClick={() => table.bulk.setAdjustMode(true)}
+                  disabled={!!table.bulk.loading}
                   className="bg-cream/10 text-cream border border-cream/20 rounded-full px-3 py-1.5 text-[12px] hover:bg-cream/20 hover:border-cream/40 transition-colors disabled:opacity-50"
                 >
                   Adjust points
                 </button>
               )}
               <button
-                onClick={bulkDeleteCustomers}
-                disabled={!!bulkLoading}
+                onClick={table.bulk.delete}
+                disabled={!!table.bulk.loading}
                 className="bg-oxblood/70 text-cream border border-oxblood rounded-full px-3 py-1.5 text-[12px] hover:bg-oxblood transition-colors disabled:opacity-50"
               >
-                {bulkLoading === 'delete' ? 'Scheduling…' : 'Schedule delete'}
+                {table.bulk.loading === 'delete' ? 'Scheduling…' : 'Schedule delete'}
               </button>
             </div>
           </div>
@@ -523,10 +303,10 @@ export default function CustomersClient({ customers, counts, total, newThisWeek 
                       cust={cust}
                       isSelected={selectedIds.has(cust.id)}
                       openMenuId={openMenuId}
-                      onView={openDrawer}
-                      onToggleSelect={toggleSelect}
+                      onView={table.drawer.open}
+                      onToggleSelect={table.selection.toggleSelect}
                       onMenuToggle={setOpenMenuId}
-                      onDelete={handleCustomerDelete}
+                      onDelete={table.actions.softDelete}
                     />
                   ))
                 )}
@@ -554,28 +334,28 @@ export default function CustomersClient({ customers, counts, total, newThisWeek 
 
       {/* Drawer backdrop — only one drawer is ever open at a time, so close
           whichever it is rather than chain both calls. */}
-      {(isDrawerOpen || createOpen) && (
+      {(table.drawer.isOpen || createOpen) && (
         <div
           className="fixed inset-0 bg-ink/40 backdrop-blur-sm z-50"
-          onClick={() => (createOpen ? setCreateOpen(false) : closeDrawer())}
+          onClick={() => (createOpen ? setCreateOpen(false) : table.drawer.close())}
         />
       )}
 
       {/* Customer detail drawer */}
       <aside
         className={`fixed top-0 right-0 w-full max-w-145 h-screen bg-cream z-51 flex flex-col shadow-2xl transition-transform duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
-          isDrawerOpen ? 'translate-x-0' : 'translate-x-full'
+          table.drawer.isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        {drawerCustomer && (
+        {table.drawer.item && (
           <CustomerDetailDrawer
-            key={drawerCustomer.id}
-            customer={drawerCustomer}
-            onClose={closeDrawer}
-            onSave={handleCustomerSave}
-            onDelete={handleCustomerDelete}
-            onCancelDeletion={handleCancelDeletion}
-            onCancelDormancy={handleCancelDormancy}
+            key={table.drawer.item.id}
+            customer={table.drawer.item}
+            onClose={table.drawer.close}
+            onSave={table.actions.save}
+            onDelete={table.actions.softDelete}
+            onCancelDeletion={table.actions.cancelDeletion}
+            onCancelDormancy={table.actions.cancelDormancy}
           />
         )}
       </aside>
