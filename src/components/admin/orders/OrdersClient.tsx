@@ -1,12 +1,14 @@
 'use client';
-import { useState, useMemo, useEffect, useLayoutEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useStatFilter } from '@/hooks/useStatFilter';
 import { useOrdersTable } from '@/hooks/useOrdersTable';
+import { useOrderColumns, ORDER_COLUMN_OPTIONS, type OrderColumnVisibility } from '@/hooks/useOrderColumns';
 import OrderTableRowComponent from './OrderTableRow';
 import OrdersPageHeader from './OrdersPageHeader';
 import OrdersFilterPanel from './OrdersFilterPanel';
+import OrdersColumnsPopover from './OrdersColumnsPopover';
 import OrderCreateDrawer, {
   type AdminOrderCustomer,
   type AdminOrderProduct,
@@ -19,9 +21,12 @@ import { AVATAR_COLORS } from '@/lib/admin-constants';
 import type { OrderTableRow, StatusCounts } from '@/types/admin';
 import {
   applyOrdersFilter,
+  buildOrderExportParams,
   countForOrderStat,
+  ORDER_RANGE_META_LABEL,
+  ORDER_SORT_OPTIONS,
+  ORDER_STAT_CELLS,
   type OrderSortMode,
-  type OrderStatKey,
   type PaymentFilter,
   type FulfillmentFilter,
 } from '@/lib/admin-orders';
@@ -39,61 +44,6 @@ type Props = {
   defaultPickupLocation: string;
 };
 
-const RANGE_META_LABEL: Record<RangeKey, string> = {
-  '7D': 'LAST 7 DAYS',
-  '30D': 'LAST 30 DAYS',
-  '90D': 'LAST 90 DAYS',
-  '1Y':  'LAST YEAR',
-};
-
-const SORT_OPTIONS: { value: OrderSortMode; label: string }[] = [
-  { value: 'newest', label: 'Newest first' },
-  { value: 'oldest', label: 'Oldest first' },
-  { value: 'total-desc', label: 'Total: High → Low' },
-  { value: 'total-asc', label: 'Total: Low → High' },
-  { value: 'customer-asc', label: 'Customer: A → Z' },
-];
-
-type ColumnKey = 'customer' | 'status' | 'items' | 'total' | 'pickup' | 'created';
-
-export type OrderColumnVisibility = Record<ColumnKey, boolean>;
-
-const COLUMN_OPTIONS: { key: ColumnKey; label: string }[] = [
-  { key: 'customer', label: 'Customer' },
-  { key: 'status',   label: 'Status' },
-  { key: 'items',    label: 'Items' },
-  { key: 'total',    label: 'Total' },
-  { key: 'pickup',   label: 'Pickup' },
-  { key: 'created',  label: 'Created' },
-];
-
-const DEFAULT_COLUMNS: OrderColumnVisibility = {
-  customer: true,
-  status: true,
-  items: true,
-  total: true,
-  pickup: true,
-  created: true,
-};
-
-const COLUMNS_STORAGE_KEY = 'admin.orders.columns';
-
-// useLayoutEffect runs synchronously after DOM mutation but before paint, which
-// lets us apply the persisted column preference without a visible flash.
-// Fall back to useEffect on the server so React doesn't emit a no-op warning.
-const useIsomorphicLayoutEffect =
-  typeof window !== 'undefined' ? useLayoutEffect : useEffect;
-
-const STAT_CELLS: { key: OrderStatKey; label: string; metaLabel: string; dotClass: string }[] = [
-  { key: 'all',               label: 'All',        metaLabel: '',                dotClass: '' },
-  { key: 'Order Placed',      label: 'New',         metaLabel: 'ORDER PLACED',    dotClass: '' },
-  { key: 'Preparing',         label: 'Preparing',   metaLabel: 'IN PROGRESS',     dotClass: 'bg-camel' },
-  { key: 'Ready for Pickup',  label: 'Ready',       metaLabel: 'AWAITING PICKUP', dotClass: 'bg-camel' },
-  { key: 'Out for Delivery',  label: 'Delivering',  metaLabel: 'OUT FOR DELIVERY',dotClass: 'bg-camel' },
-  { key: 'Completed',         label: 'Completed',   metaLabel: 'COMPLETED',       dotClass: 'bg-green' },
-  { key: 'Cancelled',         label: 'Cancelled',   metaLabel: 'CANCELLED',       dotClass: 'bg-oxblood' },
-];
-
 const PAGE_SIZES = [8, 20, 50];
 
 export default function OrdersClient({ orders, counts, monthOrdersCount, range, customers, products, defaultPickupLocation }: Props) {
@@ -106,8 +56,7 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
   const [perPage, setPerPage] = useState(PAGE_SIZES[0]);
   const [sortBy, setSortBy] = useState<OrderSortMode>('newest');
   const [exporting, setExporting] = useState(false);
-  const [columnsOpen, setColumnsOpen] = useState(false);
-  const [visibleColumns, setVisibleColumns] = useState<OrderColumnVisibility>(DEFAULT_COLUMNS);
+  const { columns: visibleColumns, toggle: toggleColumn } = useOrderColumns();
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>('any');
   const [fulfillmentFilter, setFulfillmentFilter] = useState<FulfillmentFilter>('any');
@@ -115,38 +64,6 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
 
   const activeFilterCount =
     (paymentFilter === 'any' ? 0 : 1) + (fulfillmentFilter === 'any' ? 0 : 1);
-
-  // Hydrate column visibility from localStorage before first paint. Unknown /
-  // stale keys are ignored so a schema change can't lock a column off invisibly.
-  useIsomorphicLayoutEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(COLUMNS_STORAGE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as Partial<OrderColumnVisibility>;
-      const next: OrderColumnVisibility = { ...DEFAULT_COLUMNS };
-      for (const { key } of COLUMN_OPTIONS) {
-        if (typeof parsed[key] === 'boolean') next[key] = parsed[key]!;
-      }
-      setVisibleColumns(next);
-    } catch {
-      // Bad JSON — fall back to defaults silently.
-    }
-  }, []);
-
-  function toggleColumn(key: ColumnKey) {
-    setVisibleColumns((prev) => {
-      const next = { ...prev, [key]: !prev[key] };
-      // Never let the admin hide every toggleable column — would leave an empty grid.
-      const anyVisible = COLUMN_OPTIONS.some((c) => next[c.key]);
-      if (!anyVisible) return prev;
-      try {
-        window.localStorage.setItem(COLUMNS_STORAGE_KEY, JSON.stringify(next));
-      } catch {
-        // Ignore quota/privacy-mode failures — visibility still applies in memory.
-      }
-      return next;
-    });
-  }
 
   const filtered = useMemo(
     () =>
@@ -166,12 +83,13 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
   async function handleExport() {
     setExporting(true);
     try {
-      const params = new URLSearchParams();
-      params.set('range', range);
-      if (activeStatus !== 'all') params.set('status', String(activeStatus));
-      if (search.trim()) params.set('search', search.trim());
-      if (paymentFilter !== 'any') params.set('payment', paymentFilter);
-      if (fulfillmentFilter !== 'any') params.set('fulfillment', fulfillmentFilter);
+      const params = buildOrderExportParams({
+        range,
+        status: activeStatus,
+        search,
+        payment: paymentFilter,
+        fulfillment: fulfillmentFilter,
+      });
       const url = `/api/orders/export?${params.toString()}`;
       const res = await fetch(url);
       if (!res.ok) {
@@ -224,13 +142,13 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
       />
 
       <AdminStatStrip
-        cells={STAT_CELLS.map((cell) => {
+        cells={ORDER_STAT_CELLS.map((cell) => {
           const count = countForOrderStat(cell.key, counts);
           return {
             key: String(cell.key),
             label: cell.label,
             value: count,
-            meta: cell.key === 'all' ? RANGE_META_LABEL[range] : cell.metaLabel,
+            meta: cell.key === 'all' ? ORDER_RANGE_META_LABEL[range] : cell.metaLabel,
             dotClass: cell.dotClass || undefined,
             badge: cell.key === 'Order Placed' && count > 0 ? 'new' : undefined,
           };
@@ -292,7 +210,7 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
                 onChange={(e) => { setSortBy(e.target.value as OrderSortMode); setPage(1); }}
                 className="appearance-none bg-transparent border-none outline-none text-[13px] text-ink-soft pr-7 pl-1 py-2 cursor-pointer"
               >
-                {SORT_OPTIONS.map((o) => (
+                {ORDER_SORT_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
               </select>
@@ -300,39 +218,7 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
                 <polyline points="6 9 12 15 18 9" />
               </svg>
             </div>
-            <div className="relative">
-              <button
-                onClick={() => setColumnsOpen((v) => !v)}
-                className="inline-flex items-center gap-1.5 bg-paper border border-line rounded-full px-3.5 py-2 text-[13px] text-ink-soft hover:border-ink hover:text-ink transition-colors"
-              >
-                Columns
-                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-              </button>
-              {columnsOpen && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setColumnsOpen(false)} />
-                  <div className="absolute right-0 top-full mt-2 z-20 w-52 bg-paper border border-line rounded-lg shadow-xl py-1.5">
-                    <div className="px-3.5 py-1.5 text-[11px] font-medium tracking-[0.16em] uppercase text-muted">
-                      Show columns
-                    </div>
-                    {COLUMN_OPTIONS.map((col) => (
-                      <label
-                        key={col.key}
-                        className="flex items-center gap-2.5 px-3.5 py-1.5 text-[13px] text-ink-soft hover:bg-cream cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={visibleColumns[col.key]}
-                          onChange={() => toggleColumn(col.key)}
-                          className="w-3.5 h-3.5 rounded-sm border border-line bg-cream cursor-pointer accent-oxblood"
-                        />
-                        {col.label}
-                      </label>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
+            <OrdersColumnsPopover visibleColumns={visibleColumns} onToggle={toggleColumn} />
           </div>
         </div>
       </div>
@@ -399,7 +285,7 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
               <tbody>
                 {pageRows.length === 0 ? (
                   <tr>
-                    <td colSpan={3 + COLUMN_OPTIONS.filter((c) => visibleColumns[c.key]).length} className="text-center py-16 text-muted text-sm">
+                    <td colSpan={3 + ORDER_COLUMN_OPTIONS.filter((c) => visibleColumns[c.key]).length} className="text-center py-16 text-muted text-sm">
                       No orders found.
                     </td>
                   </tr>

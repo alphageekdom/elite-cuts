@@ -2,6 +2,7 @@
 // Sits in lib/ so a future export route, analytics widget, or test file can
 // reuse the same in-memory rules without depending on the components/ tree.
 
+import type { RangeKey } from '@/components/admin/analytics/RangeToggle';
 import type { OrderTableRow, StatusCounts } from '@/types/admin';
 
 export type OrderSortMode =
@@ -136,3 +137,47 @@ export function applyOrdersFilter<T extends FilterableOrder & SortableOrder>(
 // Re-export OrderTableRow for tests/consumers that want to reference the
 // concrete row shape without pulling from @/types/admin.
 export type { OrderTableRow };
+
+export const ORDER_SORT_OPTIONS: { value: OrderSortMode; label: string }[] = [
+  { value: 'newest',        label: 'Newest first' },
+  { value: 'oldest',        label: 'Oldest first' },
+  { value: 'total-desc',    label: 'Total: High → Low' },
+  { value: 'total-asc',     label: 'Total: Low → High' },
+  { value: 'customer-asc',  label: 'Customer: A → Z' },
+];
+
+export const ORDER_STAT_CELLS: { key: OrderStatKey; label: string; metaLabel: string; dotClass: string }[] = [
+  { key: 'all',               label: 'All',         metaLabel: '',                 dotClass: '' },
+  { key: 'Order Placed',      label: 'New',         metaLabel: 'ORDER PLACED',     dotClass: '' },
+  { key: 'Preparing',         label: 'Preparing',   metaLabel: 'IN PROGRESS',      dotClass: 'bg-camel' },
+  { key: 'Ready for Pickup',  label: 'Ready',       metaLabel: 'AWAITING PICKUP',  dotClass: 'bg-camel' },
+  { key: 'Out for Delivery',  label: 'Delivering',  metaLabel: 'OUT FOR DELIVERY', dotClass: 'bg-camel' },
+  { key: 'Completed',         label: 'Completed',   metaLabel: 'COMPLETED',        dotClass: 'bg-green' },
+  { key: 'Cancelled',         label: 'Cancelled',   metaLabel: 'CANCELLED',        dotClass: 'bg-oxblood' },
+];
+
+export const ORDER_RANGE_META_LABEL: Record<RangeKey, string> = {
+  '7D': 'LAST 7 DAYS',
+  '30D': 'LAST 30 DAYS',
+  '90D': 'LAST 90 DAYS',
+  '1Y':  'LAST YEAR',
+};
+
+// Build the URLSearchParams the admin export endpoint expects. Mirrors the
+// shape the in-memory filter uses so what the admin sees on screen and what
+// the CSV reflects stay in sync.
+export function buildOrderExportParams(opts: {
+  range: string;
+  status: OrderStatKey | string;
+  search: string;
+  payment: PaymentFilter;
+  fulfillment: FulfillmentFilter;
+}): URLSearchParams {
+  const params = new URLSearchParams();
+  params.set('range', opts.range);
+  if (opts.status !== 'all') params.set('status', String(opts.status));
+  if (opts.search.trim()) params.set('search', opts.search.trim());
+  if (opts.payment !== 'any') params.set('payment', opts.payment);
+  if (opts.fulfillment !== 'any') params.set('fulfillment', opts.fulfillment);
+  return params;
+}
