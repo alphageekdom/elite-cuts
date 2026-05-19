@@ -3,7 +3,7 @@ import connectDB from '@/config/database';
 import MessageModel from '@/models/Message';
 import User from '@/models/User';
 import { getSessionUser } from '@/utils/getSessionUser';
-import { unauthorized } from '@/lib/api-handler';
+import { unauthorized, withAuth } from '@/lib/api-handler';
 import mongoose, { type Types } from 'mongoose';
 
 export const dynamic = 'force-dynamic';
@@ -46,12 +46,7 @@ export const GET = async () => {
 };
 
 // POST /api/messages
-export const POST = async (request: NextRequest) => {
-  const sessionUser = await getSessionUser();
-  if (!sessionUser?.userId) {
-    return unauthorized();
-  }
-
+export const POST = withAuth(async (request: NextRequest, _ctx, userId) => {
   try {
     const body = await request.json();
     const { subject, body: msgBody, orderId, orderRef } = body as {
@@ -80,12 +75,10 @@ export const POST = async (request: NextRequest) => {
       return NextResponse.json({ message: 'orderRef must be 100 characters or fewer' }, { status: 400 });
     }
 
-    await connectDB();
-
-    const author = await User.findById(sessionUser.userId).select('name').lean<{ name?: string }>();
+    const author = await User.findById(userId).select('name').lean<{ name?: string }>();
 
     const message = await MessageModel.create({
-      user: sessionUser.userId,
+      user: userId,
       authorNameSnapshot: author?.name?.trim() || '',
       subject: subject.trim(),
       body: msgBody.trim(),
@@ -98,4 +91,4 @@ export const POST = async (request: NextRequest) => {
     console.error('[messages POST]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
-};
+});
