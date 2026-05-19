@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 
@@ -42,10 +42,17 @@ export function useOrdersTable(initialOrders: OrderTableRow[]) {
     drawer.setItem((prev) => (prev && prev.id === id ? updater(prev) : prev));
   }
 
-  function openDrawer(order: OrderTableRow) {
-    drawer.open(order);
-    setStatusUpdate(order.status);
-  }
+  // Wrapped in useCallback so the deep-link effect below can list it as a
+  // dep without re-firing every render. `drawer.open` and `setStatusUpdate`
+  // are both stable themselves.
+  const drawerOpen = drawer.open;
+  const openDrawer = useCallback(
+    (order: OrderTableRow) => {
+      drawerOpen(order);
+      setStatusUpdate(order.status);
+    },
+    [drawerOpen],
+  );
 
   // Deep-link support: when arriving with ?openOrder=<id>, open that order's
   // drawer once and strip the param so a refresh doesn't reopen it. The ref
@@ -56,12 +63,9 @@ export function useOrdersTable(initialOrders: OrderTableRow[]) {
     if (!openOrderId || handledDeepLinkRef.current === openOrderId) return;
     handledDeepLinkRef.current = openOrderId;
     const target = orders.find((o) => o.id === openOrderId);
-    if (target) {
-      drawer.open(target);
-      setStatusUpdate(target.status);
-    }
+    if (target) openDrawer(target);
     router.replace(pathname);
-  }, [openOrderId, orders, drawer, pathname, router]);
+  }, [openOrderId, orders, openDrawer, pathname, router]);
 
   function toggleSelect(id: string) {
     setSelectedIds((prev) => {
