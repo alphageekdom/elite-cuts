@@ -4,43 +4,13 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { toast } from 'sonner';
 
 import { brandFromBin } from '@/lib/payments/brand';
-
-type SavedCardSummary = {
-  id: string;
-  cardholderName?: string;
-  brand: string;
-  last4: string;
-  expMonth: number;
-  expYear: number;
-};
-
-const formatBrand = (brand: string): string => {
-  const lower = brand.toLowerCase();
-  if (lower === 'amex' || lower === 'american express') return 'Amex';
-  return brand.charAt(0).toUpperCase() + brand.slice(1).toLowerCase();
-};
-
-
-// Masked card display in the conventional "•••• •••• •••• ####" format used
-// by Stripe, Apple Pay, and most wallet UIs. The first twelve digits never
-// leave the form — there's nothing to show.
-const maskedNumber = (last4: string): string => `•••• •••• •••• ${last4}`;
-
-const formatExpiry = (month: number, year: number): string => {
-  const mm = String(month).padStart(2, '0');
-  const yy = String(year).slice(-2);
-  return `${mm}/${yy}`;
-};
-
-// True when the card's expiry month/year has already passed. Treated as
-// "first day of the month after expiry" — a Dec 2025 card is valid through
-// Dec 31 2025, expired starting Jan 1 2026.
-const isExpired = (month: number, year: number): boolean => {
-  const now = new Date();
-  const nowMonths = now.getFullYear() * 12 + now.getMonth();
-  const cardMonths = year * 12 + (month - 1);
-  return cardMonths < nowMonths;
-};
+import {
+  formatBrand,
+  formatExpiry,
+  isCardExpired,
+  maskedNumber,
+  type SavedCardSummary,
+} from '@/lib/payments/card-display';
 
 export default function ProfilePaymentMethods() {
   const [cards, setCards] = useState<SavedCardSummary[] | null>(null);
@@ -228,7 +198,7 @@ export default function ProfilePaymentMethods() {
         const isDeleting = deletingId === card.id;
         const isEditing = editingId === card.id;
         const isSaving = savingId === card.id;
-        const expired = isExpired(card.expMonth, card.expYear);
+        const expired = isCardExpired(card.expMonth, card.expYear);
 
         return (
           <li

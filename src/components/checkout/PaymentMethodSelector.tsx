@@ -6,6 +6,12 @@ import { useCheckoutContext, type PayMethod } from '@/context/CheckoutContext';
 import CheckoutFieldCheck from '@/components/checkout/CheckoutFieldCheck';
 import { FIELD_CLASS, LABEL_CLASS } from '@/components/checkout/checkoutStyles';
 import { brandFromBin } from '@/lib/payments/brand';
+import {
+  formatBrand,
+  formatCardNumber,
+  isCardExpired,
+  type SavedCardSummary,
+} from '@/lib/payments/card-display';
 
 const LockIcon = () => (
   <svg
@@ -54,12 +60,6 @@ const PayMethodIcon = ({ id }: { id: PayMethod }) => {
   );
 };
 
-const formatCardNumber = (raw: string): string => {
-  const digits = raw.replace(/\D/g, '').slice(0, 16);
-  return digits.replace(/(\d{4})(?=\d)/g, '$1 ');
-};
-
-
 type Props = {
   // True when the checkout page rendered with a signed-in user. The Save card
   // checkbox under the Stripe tile only appears for logged-in shoppers — guests
@@ -69,26 +69,6 @@ type Props = {
   // When false, the no-charge Card tile is hidden and the in-app saved-cards
   // strip stays empty — Stripe's hosted page is the only payment surface.
   demoCardEnabled?: boolean;
-};
-
-type SavedCardSummary = {
-  id: string;
-  cardholderName?: string;
-  brand: string;
-  last4: string;
-  expMonth: number;
-  expYear: number;
-};
-
-const formatBrand = (brand: string): string => {
-  const lower = brand.toLowerCase();
-  if (lower === 'amex' || lower === 'american express') return 'Amex';
-  return brand.charAt(0).toUpperCase() + brand.slice(1).toLowerCase();
-};
-
-const isCardExpired = (month: number, year: number): boolean => {
-  const now = new Date();
-  return year * 12 + (month - 1) < now.getFullYear() * 12 + now.getMonth();
 };
 
 const PaymentMethodSelector = ({
