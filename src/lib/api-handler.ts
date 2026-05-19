@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'crypto';
 import { NextResponse, type NextRequest } from 'next/server';
 import connectDB from '@/config/database';
 import { getSessionUser } from '@/utils/getSessionUser';
@@ -71,7 +72,19 @@ export function withCronSecret<TResult extends Record<string, unknown>>(
     }
     const authHeader = request.headers.get('authorization') ?? '';
     const provided = authHeader.replace(/^Bearer\s+/i, '').trim();
-    if (provided !== secret) {
+    // Constant-time compare: `===` short-circuits on the first mismatched
+    // byte, which leaks how many leading bytes of the secret an attacker
+    // got right. timingSafeEqual costs the same regardless of where (or
+    // whether) the mismatch is. The length pre-check is necessary because
+    // the Node API throws on mismatched buffer lengths — we accept the
+    // tiny "secret is N bytes" leak (the env-configured length is fixed
+    // per deploy) in exchange for closing the per-byte timing signal.
+    const providedBuf = Buffer.from(provided);
+    const secretBuf = Buffer.from(secret);
+    const ok =
+      providedBuf.length === secretBuf.length &&
+      timingSafeEqual(providedBuf, secretBuf);
+    if (!ok) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
     try {
