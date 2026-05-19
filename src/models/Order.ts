@@ -350,6 +350,17 @@ OrderSchema.index(
   { partialFilterExpression: { user: null } },
 );
 
+// Customer "My Orders" history + admin filter-by-customer both query by user
+// and sort by createdAt desc. Compound index covers both halves so neither
+// page scans the collection as orders accumulate.
+OrderSchema.index({ user: 1, createdAt: -1 });
+
+// Admin orders dashboard status-pill filtering: combinations of isPaid +
+// orderStatus + sort by createdAt desc. The pill UI is the most-clicked
+// admin surface, so this index pays for itself once the orders collection
+// passes a few thousand rows.
+OrderSchema.index({ isPaid: 1, orderStatus: 1, createdAt: -1 });
+
 // In dev, Next.js hot-reload keeps `mongoose.models.Order` cached on the
 // global Mongoose singleton even after this file is re-evaluated. That
 // makes schema additions (e.g. new fields) invisible at runtime — the old

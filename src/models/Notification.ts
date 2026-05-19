@@ -30,8 +30,13 @@ const NotificationSchema = new Schema<Notification>(
   { timestamps: true },
 );
 
-// Compound index: fast "unread for admin" queries
+// Compound index: fast feed queries (user's notifications sorted by recency).
 NotificationSchema.index({ userId: 1, createdAt: -1 });
+
+// Navbar unread-badge polls count of `{ userId, readAt: null }`. The plain
+// (userId, createdAt) index can't satisfy that without scanning all of the
+// user's notifications, so add a covering compound for the unread filter.
+NotificationSchema.index({ userId: 1, readAt: 1, createdAt: -1 });
 
 const NotificationModel =
   (models.Notification as Model<Notification> | undefined) ??
