@@ -1,0 +1,264 @@
+'use client';
+import { useEffect, useRef, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { toast } from 'sonner';
+
+import type { OrderTableRow } from '@/types/admin';
+import { refundSummary } from '@/lib/order-refunds';
+import { useAdminDrawer } from './useAdminDrawer';
+
+// Owns the order list state, the detail drawer + its status-update mirror,
+// the selection + bulk-action state, the deep-link `?openOrder=…` handler,
+// and the fetch glue for every single-row mutation that OrdersClient.tsx
+// fires (status update, refund/unrefund line items, delete, bulk update).
+// The component keeps presentational state (search, sort, range, filter
+// popover, columns popover, exporting) and renders.
+
+export function useOrdersTable(initialOrders: OrderTableRow[]) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const openOrderId = searchParams.get('openOrder');
+
+  const [orders, setOrders] = useState(initialOrders);
+  const [prevOrdersProp, setPrevOrdersProp] = useState(initialOrders);
+  // Range navigation re-renders the page server-side with a new `orders` prop.
+  // Adjusting state during render (React's recommended pattern over a
+  // mirroring useEffect) avoids the extra paint and the "state derived from
+  // props" smell.
+  if (initialOrders !== prevOrdersProp) {
+    setPrevOrdersProp(initialOrders);
+    setOrders(initialOrders);
+  }
+
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [statusUpdate, setStatusUpdate] = useState<string>('');
+  const [bulkLoading, setBulkLoading] = useState('');
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const drawer = useAdminDrawer<OrderTableRow>();
+
+  function patchRow(id: string, updater: (row: OrderTableRow) => OrderTableRow) {
+    setOrders((prev) => prev.map((o) => (o.id === id ? updater(o) : o)));
+    drawer.setItem((prev) => (prev && prev.id === id ? updater(prev) : prev));
+  }
+
+  function openDrawer(order: OrderTableRow) {
+    drawer.open(order);
+    setStatusUpdate(order.status);
+  }
+
+  // Deep-link support: when arriving with ?openOrder=<id>, open that order's
+  // drawer once and strip the param so a refresh doesn't reopen it. The ref
+  // guard makes this idempotent under React strict-mode double-invocation
+  // and any incidental re-fires from order-list mutations.
+  const handledDeepLinkRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!openOrderId || handledDeepLinkRef.current === openOrderId) return;
+    handledDeepLinkRef.current = openOrderId;
+    const target = orders.find((o) => o.id === openOrderId);
+    if (target) {
+      drawer.open(target);
+      setStatusUpdate(target.status);
+    }
+    router.replace(pathname);
+  }, [openOrderId, orders, drawer, pathname, router]);
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function setSelection(ids: string[]) {
+    setSelectedIds(new Set(ids));
+  }
+
+  function clearSelection() {
+    setSelectedIds(new Set());
+  }
+
+  async function updateOrder(newStatus: string, cancellationReason?: string) {
+    const target = drawer.item;
+    if (!target) return;
+    try {
+      const body: Record<string, string> = { orderStatus: newStatus };
+      if (cancellationReason) body.cancellationReason = cancellationReason;
+      const res = await fetch(`/api/orders/${target.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const { message } = await res.json();
+        toast.error(message ?? 'Failed to update order');
+        return;
+      }
+      // Cancellation refunds every remaining line — reflect optimistically.
+      const isCancelTransition = newStatus === 'Cancelled' && target.status !== 'Cancelled';
+      patchRow(target.id, (o) => {
+        const items = isCancelTransition
+          ? o.items.map((it) => (it.refunded ? it : { ...it, refunded: true }))
+          : o.items;
+        // Note: this is the cancel-transition branch — using o.total
+        // (totalCost) caps the displayed refund at what the customer paid.
+        const summary = refundSummary(items, { subtotal: o.subtotal, tax: o.tax, totalCost: o.total });
+        return {
+          ...o,
+          status: newStatus,
+          cancellationReason,
+          items,
+          refundedAmount: summary.refundedAmount,
+          paymentStatus: isCancelTransition ? 'Refunded' : o.paymentStatus,
+        };
+      });
+      router.refresh();
+      toast.success(isCancelTransition ? 'Order cancelled and refunded' : 'Order status updated');
+    } catch {
+      toast.error('Failed to update order');
+    }
+  }
+
+  async function refundItem(itemIndex: number) {
+    const target = drawer.item;
+    if (!target) return;
+    try {
+      const res = await fetch(`/api/orders/${target.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refundItemIndices: [itemIndex] }),
+      });
+      if (!res.ok) {
+        const { message } = await res.json();
+        toast.error(message ?? 'Failed to refund item');
+        return;
+      }
+      patchRow(target.id, (o) => {
+        const items = o.items.map((it, idx) => (idx === itemIndex ? { ...it, refunded: true } : it));
+        const summary = refundSummary(items, { subtotal: o.subtotal, tax: o.tax, totalCost: o.total });
+        const allRefunded = summary.refundedCount >= items.length;
+        const cascadeCancel = allRefunded && o.status !== 'Cancelled';
+        return {
+          ...o,
+          items,
+          refundedAmount: summary.refundedAmount,
+          paymentStatus: allRefunded ? 'Refunded' : 'Partially Refunded',
+          status: cascadeCancel ? 'Cancelled' : o.status,
+          cancellationReason: cascadeCancel ? undefined : o.cancellationReason,
+        };
+      });
+      router.refresh();
+      toast.success('Item refunded');
+    } catch {
+      toast.error('Failed to refund item');
+    }
+  }
+
+  async function unrefundItem(itemIndex: number) {
+    const target = drawer.item;
+    if (!target) return;
+    try {
+      const res = await fetch(`/api/orders/${target.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ unrefundItemIndices: [itemIndex] }),
+      });
+      if (!res.ok) {
+        const { message } = await res.json();
+        toast.error(message ?? 'Failed to undo refund');
+        return;
+      }
+      patchRow(target.id, (o) => {
+        const items = o.items.map((it, idx) => (idx === itemIndex ? { ...it, refunded: false } : it));
+        const summary = refundSummary(items, { subtotal: o.subtotal, tax: o.tax, totalCost: o.total });
+        const noneRefunded = summary.refundedCount === 0;
+        const allRefunded = !noneRefunded && summary.refundedCount >= items.length;
+        return {
+          ...o,
+          items,
+          refundedAmount: summary.refundedAmount,
+          paymentStatus: noneRefunded ? 'Completed' : allRefunded ? 'Refunded' : 'Partially Refunded',
+        };
+      });
+      router.refresh();
+      toast.success('Refund undone — item restored');
+    } catch {
+      toast.error('Failed to undo refund');
+    }
+  }
+
+  async function deleteOrder(id: string) {
+    try {
+      const res = await fetch(`/api/orders/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const { message } = await res.json();
+        toast.error(message ?? 'Failed to delete order');
+        return;
+      }
+      setOrders((prev) => prev.filter((o) => o.id !== id));
+      setOpenMenuId(null);
+      toast.success('Order deleted');
+    } catch {
+      toast.error('Failed to delete order');
+    }
+  }
+
+  async function bulkUpdateStatus(newStatus: string) {
+    const ids = [...selectedIds];
+    setBulkLoading(newStatus);
+    try {
+      await Promise.all(
+        ids.map((id) =>
+          fetch(`/api/orders/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderStatus: newStatus }),
+          }),
+        ),
+      );
+      setOrders((prev) =>
+        prev.map((o) => (selectedIds.has(o.id) ? { ...o, status: newStatus } : o)),
+      );
+      clearSelection();
+      toast.success(`${ids.length} order${ids.length !== 1 ? 's' : ''} updated to ${newStatus}`);
+    } catch {
+      toast.error('Failed to update some orders');
+    } finally {
+      setBulkLoading('');
+    }
+  }
+
+  return {
+    orders,
+    drawer: {
+      item: drawer.item,
+      isOpen: drawer.isOpen,
+      open: openDrawer,
+      close: drawer.close,
+    },
+    statusUpdate,
+    setStatusUpdate,
+    selection: {
+      selectedIds,
+      toggleSelect,
+      setSelection,
+      clearSelection,
+    },
+    bulk: {
+      loading: bulkLoading,
+      updateStatus: bulkUpdateStatus,
+    },
+    menu: {
+      openId: openMenuId,
+      setOpenId: setOpenMenuId,
+    },
+    actions: {
+      updateOrder,
+      refundItem,
+      unrefundItem,
+      deleteOrder,
+    },
+  };
+}

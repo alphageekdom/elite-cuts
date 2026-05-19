@@ -1,10 +1,9 @@
 'use client';
-import { useState, useMemo, useEffect, useLayoutEffect, useRef } from 'react';
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useState, useMemo, useEffect, useLayoutEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { refundSummary } from '@/lib/order-refunds';
 import { useStatFilter } from '@/hooks/useStatFilter';
-import { useAdminDrawer } from '@/hooks/useAdminDrawer';
+import { useOrdersTable } from '@/hooks/useOrdersTable';
 import OrderTableRowComponent from './OrderTableRow';
 import OrdersPageHeader from './OrdersPageHeader';
 import OrdersFilterPanel from './OrdersFilterPanel';
@@ -99,26 +98,12 @@ const PAGE_SIZES = [8, 20, 50];
 
 export default function OrdersClient({ orders, counts, monthOrdersCount, range, customers, products, defaultPickupLocation }: Props) {
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const openOrderId = searchParams.get('openOrder');
-  const [localOrders, setLocalOrders] = useState(orders);
-  // Range navigation re-renders the page server-side with a new `orders` prop.
-  // Adjusting state during render (React's recommended pattern over a mirroring
-  // useEffect) avoids the extra paint and the "state derived from props" smell.
-  const [prevOrdersProp, setPrevOrdersProp] = useState(orders);
-  if (orders !== prevOrdersProp) {
-    setPrevOrdersProp(orders);
-    setLocalOrders(orders);
-  }
+  const table = useOrdersTable(orders);
 
   const [page, setPage] = useState(1);
   const { activeKey: activeStatus, selectKey: _selectStatus } = useStatFilter<string>('all', () => setPage(1));
   const [search, setSearch] = useState('');
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const { item: drawerOrder, isOpen: isDrawerOpen, open: _openDrawer, close: closeDrawer, setItem: setDrawerOrder } = useAdminDrawer<OrderTableRow>();
   const [perPage, setPerPage] = useState(PAGE_SIZES[0]);
-  const [statusUpdate, setStatusUpdate] = useState<string>('');
   const [sortBy, setSortBy] = useState<OrderSortMode>('newest');
   const [exporting, setExporting] = useState(false);
   const [columnsOpen, setColumnsOpen] = useState(false);
@@ -166,7 +151,7 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
   const filtered = useMemo(
     () =>
       applyOrdersFilter(
-        localOrders,
+        table.orders,
         {
           status: activeStatus,
           search,
@@ -175,7 +160,7 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
         },
         sortBy,
       ),
-    [localOrders, activeStatus, search, sortBy, paymentFilter, fulfillmentFilter],
+    [table.orders, activeStatus, search, sortBy, paymentFilter, fulfillmentFilter],
   );
 
   async function handleExport() {
@@ -213,216 +198,19 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
     }
   }
 
-  async function updateOrder(newStatus: string, cancellationReason?: string) {
-    if (!drawerOrder) return;
-    try {
-      const body: Record<string, string> = { orderStatus: newStatus };
-      if (cancellationReason) body.cancellationReason = cancellationReason;
-      const res = await fetch(`/api/orders/${drawerOrder.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        const { message } = await res.json();
-        toast.error(message ?? 'Failed to update order');
-        return;
-      }
-      // Cancellation refunds every remaining line — reflect optimistically.
-      const isCancelTransition = newStatus === 'Cancelled' && drawerOrder.status !== 'Cancelled';
-      setLocalOrders((prev) =>
-        prev.map((o) => {
-          if (o.id !== drawerOrder.id) return o;
-          const items = isCancelTransition
-            ? o.items.map((it) => (it.refunded ? it : { ...it, refunded: true }))
-            : o.items;
-          const summary = refundSummary(items, { subtotal: o.subtotal, tax: o.tax, totalCost: o.total });
-          // Note: this is the cancel-transition branch — using o.total
-          // (totalCost) caps the displayed refund at what the customer paid.
-          return {
-            ...o,
-            status: newStatus,
-            cancellationReason,
-            items,
-            refundedAmount: summary.refundedAmount,
-            paymentStatus: isCancelTransition ? 'Refunded' : o.paymentStatus,
-          };
-        }),
-      );
-      setDrawerOrder((prev) => {
-        if (!prev) return prev;
-        const items = isCancelTransition
-          ? prev.items.map((it) => (it.refunded ? it : { ...it, refunded: true }))
-          : prev.items;
-        const summary = refundSummary(items, { subtotal: prev.subtotal, tax: prev.tax, totalCost: prev.total });
-        return {
-          ...prev,
-          status: newStatus,
-          cancellationReason,
-          items,
-          refundedAmount: summary.refundedAmount,
-          paymentStatus: isCancelTransition ? 'Refunded' : prev.paymentStatus,
-        };
-      });
-      router.refresh();
-      toast.success(isCancelTransition ? 'Order cancelled and refunded' : 'Order status updated');
-    } catch {
-      toast.error('Failed to update order');
-    }
-  }
-
-  async function refundItem(itemIndex: number) {
-    if (!drawerOrder) return;
-    try {
-      const res = await fetch(`/api/orders/${drawerOrder.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refundItemIndices: [itemIndex] }),
-      });
-      if (!res.ok) {
-        const { message } = await res.json();
-        toast.error(message ?? 'Failed to refund item');
-        return;
-      }
-      const apply = (o: OrderTableRow): OrderTableRow => {
-        const items = o.items.map((it, idx) => (idx === itemIndex ? { ...it, refunded: true } : it));
-        const summary = refundSummary(items, { subtotal: o.subtotal, tax: o.tax, totalCost: o.total });
-        const allRefunded = summary.refundedCount >= items.length;
-        const cascadeCancel = allRefunded && o.status !== 'Cancelled';
-        return {
-          ...o,
-          items,
-          refundedAmount: summary.refundedAmount,
-          paymentStatus: allRefunded ? 'Refunded' : 'Partially Refunded',
-          status: cascadeCancel ? 'Cancelled' : o.status,
-          cancellationReason: cascadeCancel ? undefined : o.cancellationReason,
-        };
-      };
-      setLocalOrders((prev) => prev.map((o) => (o.id === drawerOrder.id ? apply(o) : o)));
-      setDrawerOrder((prev) => (prev ? apply(prev) : prev));
-      router.refresh();
-      toast.success('Item refunded');
-    } catch {
-      toast.error('Failed to refund item');
-    }
-  }
-
-  async function unrefundItem(itemIndex: number) {
-    if (!drawerOrder) return;
-    try {
-      const res = await fetch(`/api/orders/${drawerOrder.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ unrefundItemIndices: [itemIndex] }),
-      });
-      if (!res.ok) {
-        const { message } = await res.json();
-        toast.error(message ?? 'Failed to undo refund');
-        return;
-      }
-      const apply = (o: OrderTableRow): OrderTableRow => {
-        const items = o.items.map((it, idx) => (idx === itemIndex ? { ...it, refunded: false } : it));
-        const summary = refundSummary(items, { subtotal: o.subtotal, tax: o.tax, totalCost: o.total });
-        const noneRefunded = summary.refundedCount === 0;
-        const allRefunded = !noneRefunded && summary.refundedCount >= items.length;
-        return {
-          ...o,
-          items,
-          refundedAmount: summary.refundedAmount,
-          paymentStatus: noneRefunded ? 'Completed' : allRefunded ? 'Refunded' : 'Partially Refunded',
-        };
-      };
-      setLocalOrders((prev) => prev.map((o) => (o.id === drawerOrder.id ? apply(o) : o)));
-      setDrawerOrder((prev) => (prev ? apply(prev) : prev));
-      router.refresh();
-      toast.success('Refund undone — item restored');
-    } catch {
-      toast.error('Failed to undo refund');
-    }
-  }
-
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
   const pageRows = filtered.slice((page - 1) * perPage, page * perPage);
-
-  function toggleSelect(id: string) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
+  const { selectedIds } = table.selection;
+  const allPageSelected = pageRows.length > 0 && pageRows.every((r) => selectedIds.has(r.id));
+  const someSelected = selectedIds.size > 0;
 
   function toggleAll(checked: boolean) {
-    if (checked) setSelectedIds(new Set(pageRows.map((r) => r.id)));
-    else setSelectedIds(new Set());
+    table.selection.setSelection(checked ? pageRows.map((r) => r.id) : []);
   }
-
-  function openDrawer(order: OrderTableRow) {
-    _openDrawer(order);
-    setStatusUpdate(order.status);
-  }
-
-  // Deep-link support: when arriving with ?openOrder=<id>, open that order's
-  // drawer once and strip the param so a refresh doesn't reopen it. The ref
-  // guard makes this idempotent under React strict-mode double-invocation
-  // and any incidental re-fires from order-list mutations.
-  const handledDeepLinkRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (!openOrderId || handledDeepLinkRef.current === openOrderId) return;
-    handledDeepLinkRef.current = openOrderId;
-    const target = localOrders.find((o) => o.id === openOrderId);
-    if (target) {
-      _openDrawer(target);
-      setStatusUpdate(target.status);
-    }
-    router.replace(pathname);
-  }, [openOrderId, localOrders, _openDrawer, pathname, router]);
 
   function handleStatusFilter(key: string) {
     _selectStatus(key);
-    setSelectedIds(new Set());
-  }
-
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-
-  async function deleteOrder(id: string) {
-    try {
-      const res = await fetch(`/api/orders/${id}`, { method: 'DELETE' });
-      if (!res.ok) { const { message } = await res.json(); toast.error(message ?? 'Failed to delete order'); return; }
-      setLocalOrders((prev) => prev.filter((o) => o.id !== id));
-      setOpenMenuId(null);
-      toast.success('Order deleted');
-    } catch { toast.error('Failed to delete order'); }
-  }
-
-  const allPageSelected = pageRows.length > 0 && pageRows.every((r) => selectedIds.has(r.id));
-  const someSelected = selectedIds.size > 0;
-  const [bulkLoading, setBulkLoading] = useState('');
-
-  async function bulkUpdateStatus(newStatus: string) {
-    const ids = [...selectedIds];
-    setBulkLoading(newStatus);
-    try {
-      await Promise.all(
-        ids.map((id) =>
-          fetch(`/api/orders/${id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderStatus: newStatus }),
-          }),
-        ),
-      );
-      setLocalOrders((prev) =>
-        prev.map((o) => (selectedIds.has(o.id) ? { ...o, status: newStatus } : o)),
-      );
-      setSelectedIds(new Set());
-      toast.success(`${ids.length} order${ids.length !== 1 ? 's' : ''} updated to ${newStatus}`);
-    } catch {
-      toast.error('Failed to update some orders');
-    } finally {
-      setBulkLoading('');
-    }
+    table.selection.clearSelection();
   }
 
   return (
@@ -561,25 +349,25 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
             </div>
             <div className="flex gap-1.5">
               <button
-                onClick={() => bulkUpdateStatus('Preparing')}
-                disabled={!!bulkLoading}
+                onClick={() => table.bulk.updateStatus('Preparing')}
+                disabled={!!table.bulk.loading}
                 className="bg-cream/10 text-cream border border-cream/20 rounded-full px-3 py-1.5 text-[12px] hover:bg-cream/20 hover:border-cream/40 transition-colors disabled:opacity-50"
               >
-                {bulkLoading === 'Preparing' ? 'Updating…' : 'Mark preparing'}
+                {table.bulk.loading === 'Preparing' ? 'Updating…' : 'Mark preparing'}
               </button>
               <button
-                onClick={() => bulkUpdateStatus('Ready for Pickup')}
-                disabled={!!bulkLoading}
+                onClick={() => table.bulk.updateStatus('Ready for Pickup')}
+                disabled={!!table.bulk.loading}
                 className="bg-cream/10 text-cream border border-cream/20 rounded-full px-3 py-1.5 text-[12px] hover:bg-cream/20 hover:border-cream/40 transition-colors disabled:opacity-50"
               >
-                {bulkLoading === 'Ready for Pickup' ? 'Updating…' : 'Mark ready'}
+                {table.bulk.loading === 'Ready for Pickup' ? 'Updating…' : 'Mark ready'}
               </button>
               <button
-                onClick={() => bulkUpdateStatus('Cancelled')}
-                disabled={!!bulkLoading}
+                onClick={() => table.bulk.updateStatus('Cancelled')}
+                disabled={!!table.bulk.loading}
                 className="bg-cream/10 text-cream border border-cream/20 rounded-full px-3 py-1.5 text-[12px] hover:bg-cream/20 hover:border-cream/40 transition-colors disabled:opacity-50"
               >
-                {bulkLoading === 'Cancelled' ? 'Updating…' : 'Cancel orders'}
+                {table.bulk.loading === 'Cancelled' ? 'Updating…' : 'Cancel orders'}
               </button>
             </div>
           </div>
@@ -622,12 +410,12 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
                       order={order}
                       avatarColor={AVATAR_COLORS[i % AVATAR_COLORS.length]}
                       isSelected={selectedIds.has(order.id)}
-                      openMenuId={openMenuId}
+                      openMenuId={table.menu.openId}
                       visibleColumns={visibleColumns}
-                      onView={openDrawer}
-                      onToggleSelect={toggleSelect}
-                      onMenuToggle={setOpenMenuId}
-                      onDelete={deleteOrder}
+                      onView={table.drawer.open}
+                      onToggleSelect={table.selection.toggleSelect}
+                      onMenuToggle={table.menu.setOpenId}
+                      onDelete={table.actions.deleteOrder}
                     />
                   ))
                 )}
@@ -649,34 +437,34 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
         />
       </div>
 
-      {openMenuId && (
-        <div className="fixed inset-0 z-10" onClick={() => setOpenMenuId(null)} />
+      {table.menu.openId && (
+        <div className="fixed inset-0 z-10" onClick={() => table.menu.setOpenId(null)} />
       )}
 
       {/* Drawer backdrop */}
-      {isDrawerOpen && (
+      {table.drawer.isOpen && (
         <div
           className="fixed inset-0 bg-ink/40 backdrop-blur-sm z-50"
-          onClick={closeDrawer}
+          onClick={table.drawer.close}
         />
       )}
 
       {/* Order detail drawer */}
       <aside
         className={`fixed top-0 right-0 w-full max-w-135 h-screen bg-cream z-51 flex flex-col shadow-2xl transition-transform duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
-          isDrawerOpen ? 'translate-x-0' : 'translate-x-full'
+          table.drawer.isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        {drawerOrder && (
+        {table.drawer.item && (
           <OrderDetailDrawer
-            key={drawerOrder.id}
-            order={drawerOrder}
-            statusUpdate={statusUpdate}
-            setStatusUpdate={setStatusUpdate}
-            onClose={closeDrawer}
-            onUpdate={updateOrder}
-            onRefundItem={refundItem}
-            onUnrefundItem={unrefundItem}
+            key={table.drawer.item.id}
+            order={table.drawer.item}
+            statusUpdate={table.statusUpdate}
+            setStatusUpdate={table.setStatusUpdate}
+            onClose={table.drawer.close}
+            onUpdate={table.actions.updateOrder}
+            onRefundItem={table.actions.refundItem}
+            onUnrefundItem={table.actions.unrefundItem}
           />
         )}
       </aside>
