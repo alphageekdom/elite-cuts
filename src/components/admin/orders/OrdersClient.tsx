@@ -7,10 +7,7 @@ import { useStatFilter } from '@/hooks/useStatFilter';
 import { useAdminDrawer } from '@/hooks/useAdminDrawer';
 import OrderTableRowComponent from './OrderTableRow';
 import OrdersPageHeader from './OrdersPageHeader';
-import OrdersFilterPanel, {
-  type PaymentFilter,
-  type FulfillmentFilter,
-} from './OrdersFilterPanel';
+import OrdersFilterPanel from './OrdersFilterPanel';
 import OrderCreateDrawer, {
   type AdminOrderCustomer,
   type AdminOrderProduct,
@@ -21,6 +18,14 @@ import AdminPagination from '@/components/admin/AdminPagination';
 import RangeToggle, { type RangeKey } from '@/components/admin/analytics/RangeToggle';
 import { AVATAR_COLORS } from '@/lib/admin-constants';
 import type { OrderTableRow, StatusCounts } from '@/types/admin';
+import {
+  applyOrdersFilter,
+  countForOrderStat,
+  type OrderSortMode,
+  type OrderStatKey,
+  type PaymentFilter,
+  type FulfillmentFilter,
+} from '@/lib/admin-orders';
 import OrderDetailDrawer from './OrderDetailDrawer';
 
 export type { OrderTableRow, StatusCounts, AdminOrderCustomer, AdminOrderProduct };
@@ -42,9 +47,7 @@ const RANGE_META_LABEL: Record<RangeKey, string> = {
   '1Y':  'LAST YEAR',
 };
 
-type SortBy = 'newest' | 'oldest' | 'total-desc' | 'total-asc' | 'customer-asc';
-
-const SORT_OPTIONS: { value: SortBy; label: string }[] = [
+const SORT_OPTIONS: { value: OrderSortMode; label: string }[] = [
   { value: 'newest', label: 'Newest first' },
   { value: 'oldest', label: 'Oldest first' },
   { value: 'total-desc', label: 'Total: High → Low' },
@@ -82,7 +85,7 @@ const COLUMNS_STORAGE_KEY = 'admin.orders.columns';
 const useIsomorphicLayoutEffect =
   typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
-const STAT_CELLS = [
+const STAT_CELLS: { key: OrderStatKey; label: string; metaLabel: string; dotClass: string }[] = [
   { key: 'all',               label: 'All',        metaLabel: '',                dotClass: '' },
   { key: 'Order Placed',      label: 'New',         metaLabel: 'ORDER PLACED',    dotClass: '' },
   { key: 'Preparing',         label: 'Preparing',   metaLabel: 'IN PROGRESS',     dotClass: 'bg-camel' },
@@ -90,21 +93,7 @@ const STAT_CELLS = [
   { key: 'Out for Delivery',  label: 'Delivering',  metaLabel: 'OUT FOR DELIVERY',dotClass: 'bg-camel' },
   { key: 'Completed',         label: 'Completed',   metaLabel: 'COMPLETED',       dotClass: 'bg-green' },
   { key: 'Cancelled',         label: 'Cancelled',   metaLabel: 'CANCELLED',       dotClass: 'bg-oxblood' },
-] as const;
-
-type StatKey = (typeof STAT_CELLS)[number]['key'];
-
-
-function countForKey(key: StatKey, counts: StatusCounts): number {
-  if (key === 'all')               return counts.all;
-  if (key === 'Order Placed')      return counts.orderPlaced;
-  if (key === 'Preparing')         return counts.preparing;
-  if (key === 'Ready for Pickup')  return counts.readyForPickup;
-  if (key === 'Out for Delivery')  return counts.outForDelivery;
-  if (key === 'Completed')         return counts.completed;
-  if (key === 'Cancelled')         return counts.cancelled;
-  return 0;
-}
+];
 
 const PAGE_SIZES = [8, 20, 50];
 
@@ -130,7 +119,7 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
   const { item: drawerOrder, isOpen: isDrawerOpen, open: _openDrawer, close: closeDrawer, setItem: setDrawerOrder } = useAdminDrawer<OrderTableRow>();
   const [perPage, setPerPage] = useState(PAGE_SIZES[0]);
   const [statusUpdate, setStatusUpdate] = useState<string>('');
-  const [sortBy, setSortBy] = useState<SortBy>('newest');
+  const [sortBy, setSortBy] = useState<OrderSortMode>('newest');
   const [exporting, setExporting] = useState(false);
   const [columnsOpen, setColumnsOpen] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<OrderColumnVisibility>(DEFAULT_COLUMNS);
@@ -174,34 +163,20 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
     });
   }
 
-  const filtered = useMemo(() => {
-    let rows = localOrders;
-    if (activeStatus !== 'all') {
-      rows = rows.filter((o) => o.status === activeStatus);
-    }
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      rows = rows.filter(
-        (o) =>
-          o.orderRef.toLowerCase().includes(q) ||
-          o.customerName.toLowerCase().includes(q) ||
-          o.customerEmail.toLowerCase().includes(q),
-      );
-    }
-    if (paymentFilter !== 'any') {
-      rows = rows.filter((o) => o.paymentStatus === paymentFilter);
-    }
-    if (fulfillmentFilter !== 'any') {
-      rows = rows.filter((o) => (o.fulfillmentType ?? 'pickup') === fulfillmentFilter);
-    }
-    const sorted = [...rows];
-    if (sortBy === 'newest')         sorted.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
-    else if (sortBy === 'oldest')    sorted.sort((a, b) => (a.createdAt > b.createdAt ? 1 : -1));
-    else if (sortBy === 'total-desc') sorted.sort((a, b) => b.total - a.total);
-    else if (sortBy === 'total-asc')  sorted.sort((a, b) => a.total - b.total);
-    else if (sortBy === 'customer-asc') sorted.sort((a, b) => a.customerName.localeCompare(b.customerName));
-    return sorted;
-  }, [localOrders, activeStatus, search, sortBy, paymentFilter, fulfillmentFilter]);
+  const filtered = useMemo(
+    () =>
+      applyOrdersFilter(
+        localOrders,
+        {
+          status: activeStatus,
+          search,
+          payment: paymentFilter,
+          fulfillment: fulfillmentFilter,
+        },
+        sortBy,
+      ),
+    [localOrders, activeStatus, search, sortBy, paymentFilter, fulfillmentFilter],
+  );
 
   async function handleExport() {
     setExporting(true);
@@ -462,7 +437,7 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
 
       <AdminStatStrip
         cells={STAT_CELLS.map((cell) => {
-          const count = countForKey(cell.key, counts);
+          const count = countForOrderStat(cell.key, counts);
           return {
             key: String(cell.key),
             label: cell.label,
@@ -526,7 +501,7 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
               </span>
               <select
                 value={sortBy}
-                onChange={(e) => { setSortBy(e.target.value as SortBy); setPage(1); }}
+                onChange={(e) => { setSortBy(e.target.value as OrderSortMode); setPage(1); }}
                 className="appearance-none bg-transparent border-none outline-none text-[13px] text-ink-soft pr-7 pl-1 py-2 cursor-pointer"
               >
                 {SORT_OPTIONS.map((o) => (

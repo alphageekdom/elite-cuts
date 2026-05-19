@@ -1,12 +1,11 @@
 'use client';
 
-// Filter values for the More filters popover. The payment values mirror the
-// model's PAYMENT_STATUSES strings so comparisons against `order.paymentStatus`
-// are direct. Date range and status are handled separately (RangeToggle and the
-// stat strip respectively), so this panel just covers the dimensions those two
-// don't.
-export type PaymentFilter = 'any' | 'Completed' | 'Pending' | 'Refunded' | 'Partially Refunded';
-export type FulfillmentFilter = 'any' | 'pickup' | 'delivery';
+// Filter values for the More filters popover. Canonical types live in
+// `@/lib/admin-orders` so the in-memory filter helpers and this UI panel
+// share one source of truth. Re-exported here for back-compat with any
+// existing imports (OrdersClient already pulls them from lib).
+import type { PaymentFilter, FulfillmentFilter } from '@/lib/admin-orders';
+export type { PaymentFilter, FulfillmentFilter };
 
 const PAYMENT_OPTIONS: { value: PaymentFilter; label: string }[] = [
   { value: 'any',                  label: 'Any state' },
