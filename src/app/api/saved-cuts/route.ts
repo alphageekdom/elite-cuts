@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import mongoose from 'mongoose';
 
 import User from '@/models/User';
 import Product from '@/models/Product';
@@ -30,6 +31,17 @@ export const POST = withAuth(async (request: NextRequest, _ctx, userId) => {
 
     if (!productId) {
       return NextResponse.json({ message: 'productId is required' }, { status: 400 });
+    }
+    if (!mongoose.isValidObjectId(productId)) {
+      return NextResponse.json({ message: 'Invalid productId' }, { status: 400 });
+    }
+
+    // Confirm the product exists before mutating the user's savedCuts array.
+    // Mongo silently no-ops an $addToSet of a non-existent _id, which means a
+    // sloppy caller could quietly accumulate dead references in the array.
+    const productExists = await Product.exists({ _id: productId });
+    if (!productExists) {
+      return NextResponse.json({ message: 'Product not found' }, { status: 404 });
     }
 
     const user = await User.findById(userId, 'savedCuts');

@@ -8,7 +8,7 @@ import Order, { PAYMENT_METHODS, type PaymentMethod, type DeliveryAddressData } 
 import Product from '@/models/Product';
 import User from '@/models/User';
 import { getSessionUser } from '@/utils/getSessionUser';
-import { unauthorized, parsePagination } from '@/lib/api-handler';
+import { unauthorized, parsePagination, withAdmin } from '@/lib/api-handler';
 import { isIn } from '@/lib/validation';
 import { MAX_PER_LINE } from '@/lib/shopConfig';
 import { awardOrderCompletion } from '@/lib/order-completion';
@@ -103,18 +103,12 @@ export const GET = async (request: NextRequest) => {
 };
 
 // POST /api/orders — admin-only.
-// Admin passes `source: 'admin'`, `userId`, and `items[]` to record an order
-// on behalf of a customer (in-store pickup recording). Customer and guest
-// order placement runs through /api/checkout/session → Stripe webhook
-// instead; calls without `source: 'admin'` return 405.
-export const POST = async (request: NextRequest) => {
-  const sessionUser = await getSessionUser();
-
+// Admin passes `userId` and `items[]` to record an order on behalf of a
+// customer (in-store pickup recording). Customer and guest order placement
+// runs through /api/checkout/session → Stripe webhook instead.
+export const POST = withAdmin(async (request: NextRequest, _ctx, adminUserId) => {
   try {
-    await connectDB();
-
     const body = (await request.json()) as {
-      source?: 'admin';
       userId?: string;
       items?: Array<{ productId: string; qty: number }>;
       orderStatus?: AdminInitialStatus;
@@ -126,17 +120,6 @@ export const POST = async (request: NextRequest) => {
       deliveryAddress?: DeliveryAddressData;
       orderNotes?: string;
     };
-
-    if (body.source !== 'admin') {
-      return NextResponse.json(
-        { message: 'Customer order placement is handled by /api/checkout/session' },
-        { status: 405 },
-      );
-    }
-
-    if (!sessionUser?.userId || !sessionUser.user?.isAdmin) {
-      return unauthorized();
-    }
 
     if (!body.userId || !mongoose.isValidObjectId(body.userId)) {
       return NextResponse.json({ message: 'Valid userId is required' }, { status: 400 });
@@ -308,10 +291,10 @@ export const POST = async (request: NextRequest) => {
     await recordCustomerActivity({
       userId: body.userId,
       at: now,
-      performedBy: sessionUser.userId,
+      performedBy: adminUserId,
     });
 
-    notifyAdminsOfNewOrder(String(order._id), totalCost, sessionUser.userId).catch((err) =>
+    notifyAdminsOfNewOrder(String(order._id), totalCost, adminUserId).catch((err) =>
       console.error('[orders POST admin-create] notification error', err),
     );
 
@@ -320,4 +303,4 @@ export const POST = async (request: NextRequest) => {
     console.error('[orders POST]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
-};
+});

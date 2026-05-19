@@ -133,7 +133,6 @@ export default function OrderCreateDrawer({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          source: 'admin',
           userId: customerId,
           items: lines.map((l) => ({ productId: l.productId, qty: l.qty })),
           orderStatus,
