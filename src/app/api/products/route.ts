@@ -4,7 +4,11 @@ import type { SortOrder } from 'mongoose';
 import cloudinary from '@/config/cloudinary';
 import connectDB from '@/config/database';
 import Product from '@/models/Product';
-import { productRecordFromFormData, validateProductInput } from '@/lib/product-validate';
+import {
+  productRecordFromFormData,
+  validateProductImages,
+  validateProductInput,
+} from '@/lib/product-validate';
 import { withAdmin, parsePagination } from '@/lib/api-handler';
 
 const ALLOWED_PRODUCT_SORT_FIELDS = new Set(['_id', 'name', 'price', 'createdAt', 'stockCount']);
@@ -57,13 +61,23 @@ export const POST = withAdmin(async (request: NextRequest) => {
       .getAll('images')
       .filter((image): image is File => image instanceof File && image.name !== '');
 
+    // Reject SVG, oversized files, and unexpected MIME types before any
+    // Cloudinary round-trip — Cloudinary trusts what we hand it, so this is
+    // the only gate between an admin upload and our trusted image domain.
+    const imagesCheck = validateProductImages(images);
+    if (!imagesCheck.ok) {
+      return NextResponse.json({ message: imagesCheck.error }, { status: 400 });
+    }
+
     const uploadedImages = await Promise.all(
       images.map(async (image) => {
         const imageBuffer = await image.arrayBuffer();
         const imageBase64 = Buffer.from(imageBuffer).toString('base64');
 
+        // Use the real MIME type — validateProductImages above guarantees
+        // it's one of the safe raster types, so interpolation is safe.
         const result = await cloudinary.uploader.upload(
-          `data:image/png;base64,${imageBase64}`,
+          `data:${image.type};base64,${imageBase64}`,
           { folder: 'elitecuts' },
         );
 

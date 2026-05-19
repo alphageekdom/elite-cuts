@@ -1,7 +1,14 @@
 'use client';
+import { useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { productImageSrc, formatMoney } from '@/lib/format';
 import { CATEGORY_COLORS } from '@/lib/admin-constants';
+import { computeFloatingMenuPos, type FloatingMenuPos } from '@/lib/floatingMenu';
 import type { ProductTableRow } from '@/types/admin';
+
+// Matches w-44 (11rem at 16px). The portal-positioned menu pins to the More
+// button right-aligned, matching the row-relative version it replaced.
+const MENU_WIDTH = 176;
 
 const STOCK_FILL: Record<string, string> = {
   healthy: 'var(--color-green)',
@@ -51,13 +58,47 @@ export default function ProductTableRowComponent({
   const catClass = CATEGORY_COLORS[product.category] ?? 'bg-cream-deep text-ink-soft';
   const thumb    = productImageSrc(product.images[0]);
 
+  const moreBtnRef = useRef<HTMLButtonElement | null>(null);
+  const [menuPos, setMenuPos] = useState<FloatingMenuPos | null>(null);
+  const isMenuOpen = openMenuId === product.id;
+
+  // The products table sits inside an `overflow-x-auto` wrapper that also
+  // has `overflow-hidden` ancestors, so a normally positioned absolute
+  // dropdown gets clipped on the last row. Portal the menu to body and
+  // pin it via the shared floating-menu helper, which also flips above
+  // the trigger when the viewport is too short to fit the menu below.
+  useLayoutEffect(() => {
+    if (!isMenuOpen) {
+      setMenuPos(null);
+      return;
+    }
+    const update = () => {
+      const btn = moreBtnRef.current;
+      if (!btn) return;
+      // 3 items × ~44px + 1 divider ≈ 145px.
+      setMenuPos(
+        computeFloatingMenuPos(btn.getBoundingClientRect(), {
+          menuWidth: MENU_WIDTH,
+          estimatedMenuHeight: 150,
+        }),
+      );
+    };
+    update();
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update, true);
+      window.removeEventListener('resize', update);
+    };
+  }, [isMenuOpen]);
+
   return (
     <tr
       key={product.id}
       onClick={() => onEdit(product)}
       className={`group border-b border-line-soft last:border-b-0 cursor-pointer transition-colors ${
         isSelected ? 'bg-camel/6' : 'hover:bg-cream'
-      }`}
+      } ${isMenuOpen ? 'ring-1 ring-inset ring-ink' : ''}`}
     >
       {/* Checkbox */}
       <td className="pl-6 pr-0 py-4" onClick={(e) => e.stopPropagation()}>
@@ -161,7 +202,7 @@ export default function ProductTableRowComponent({
 
       {/* Row actions */}
       <td className="pr-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
-        <div className="relative inline-flex items-center gap-1">
+        <div className="inline-flex items-center gap-1">
           <div className="inline-flex gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
             <button
               onClick={() => onEdit(product)}
@@ -174,8 +215,11 @@ export default function ProductTableRowComponent({
               </svg>
             </button>
             <button
-              onClick={() => onMenuToggle(openMenuId === product.id ? null : product.id)}
+              ref={moreBtnRef}
+              onClick={() => onMenuToggle(isMenuOpen ? null : product.id)}
               aria-label="More actions"
+              aria-haspopup="menu"
+              aria-expanded={isMenuOpen}
               className="w-7 h-7 rounded-full border border-line text-ink-soft grid place-items-center hover:border-ink hover:bg-cream hover:text-ink transition-colors"
             >
               <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
@@ -183,8 +227,13 @@ export default function ProductTableRowComponent({
               </svg>
             </button>
           </div>
-          {openMenuId === product.id && (
-            <div className="absolute right-0 top-full mt-1 z-20 w-44 rounded-lg shadow-xl overflow-hidden bg-ink border border-cream/25">
+          {isMenuOpen && menuPos && createPortal(
+            <div
+              role="menu"
+              style={{ top: menuPos.top, left: menuPos.left, width: MENU_WIDTH }}
+              className="fixed z-50 rounded-lg shadow-xl overflow-hidden bg-ink border border-cream/25"
+              onClick={(e) => e.stopPropagation()}
+            >
               <button onClick={() => onDuplicate(product)} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left text-cream hover:bg-cream/10 transition-colors">
                 <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
@@ -204,7 +253,8 @@ export default function ProductTableRowComponent({
                 </svg>
                 Delete
               </button>
-            </div>
+            </div>,
+            document.body,
           )}
         </div>
       </td>
