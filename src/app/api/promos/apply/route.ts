@@ -2,6 +2,15 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 import { validatePromo } from '@/lib/promos/validate';
 import { getSessionUser } from '@/utils/getSessionUser';
+import { clientIpFromHeaders, rateLimit } from '@/lib/rateLimit';
+
+// Per-IP cap. The checkout customer types in a handful of codes at most;
+// 20/minute leaves real users untouched while shutting down a brute-force
+// or quiet-enumeration bot. Usage limits still gate at order placement, so
+// the only thing rate-limiting protects here is DB time and the privacy of
+// which codes are valid.
+const APPLY_MAX = 20;
+const APPLY_WINDOW_MS = 60_000;
 
 // POST: validates a code against the live Promo collection and returns the
 // discount and stacking flags the checkout UI needs. Never increments
@@ -12,6 +21,19 @@ import { getSessionUser } from '@/utils/getSessionUser';
 // discount.
 export async function POST(request: NextRequest) {
   try {
+    const ip = clientIpFromHeaders(request.headers);
+    const limit = rateLimit({
+      key: `promo-apply:${ip}`,
+      max: APPLY_MAX,
+      windowMs: APPLY_WINDOW_MS,
+    });
+    if (!limit.ok) {
+      return NextResponse.json(
+        { message: 'Too many requests, please try again shortly' },
+        { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } },
+      );
+    }
+
     const body = (await request.json()) as {
       code?: unknown;
       subtotalCents?: unknown;

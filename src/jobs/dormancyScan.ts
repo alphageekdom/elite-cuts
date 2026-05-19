@@ -65,9 +65,14 @@ export async function runDormancyScan(now: Date = new Date()): Promise<DormancyS
   // warnings over catching every truly-dormant legacy account on day one.
   // The next scan after 18 months of continued inactivity from today will
   // pick them up.
+  // The array second-arg is an aggregation-pipeline update — newer
+  // Mongoose versions require the explicit `updatePipeline: true` option
+  // to disambiguate from a malformed update document, otherwise the call
+  // throws synchronously and the whole scan aborts before warning anyone.
   await User.updateMany(
     { lastActiveAt: null, isAdmin: { $ne: true } },
     [{ $set: { lastActiveAt: '$updatedAt' } }],
+    { updatePipeline: true },
   );
 
   const thresholdCutoff = monthsAgo(now, thresholdMonths);
