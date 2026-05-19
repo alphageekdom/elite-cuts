@@ -18,6 +18,7 @@ import {
   type SavedAddress,
 } from '@/context/CheckoutContext';
 import { getSessionUser } from '@/utils/getSessionUser';
+import { isDemoCardTileEnabled } from '@/lib/features';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,6 +29,7 @@ export const metadata: Metadata = {
 
 export default async function CheckoutPage() {
   const sessionUser = await getSessionUser();
+  const demoCardEnabled = isDemoCardTileEnabled();
 
   // Prefill + empty-cart guard only run for signed-in users. Guests have no
   // server cart (theirs lives in localStorage) so the server can't make the
@@ -90,6 +92,7 @@ export default async function CheckoutPage() {
           <CheckoutProvider
             initialContact={initialContact}
             savedAddresses={savedAddresses}
+            demoCardEnabled={demoCardEnabled}
           >
           <div className='grid grid-cols-1 items-start gap-6 lg:grid-cols-[1.5fr_1fr] lg:gap-12'>
             {/* Left: form cards */}
@@ -104,7 +107,10 @@ export default async function CheckoutPage() {
               <CheckoutOrderNotes />
 
               {/* Card 04: Payment */}
-              <PaymentMethodSelector isLoggedIn={Boolean(sessionUser?.userId)} />
+              <PaymentMethodSelector
+                isLoggedIn={Boolean(sessionUser?.userId)}
+                demoCardEnabled={demoCardEnabled}
+              />
 
               {/* Place order */}
               <PlaceOrderButton />

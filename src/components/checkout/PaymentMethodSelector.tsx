@@ -21,7 +21,7 @@ const LockIcon = () => (
   </svg>
 );
 
-const PAY_METHODS: { id: PayMethod; label: string }[] = [
+const ALL_PAY_METHODS: { id: PayMethod; label: string }[] = [
   { id: 'card', label: 'Card' },
   { id: 'stripe', label: 'Stripe' },
 ];
@@ -65,6 +65,10 @@ type Props = {
   // checkbox under the Stripe tile only appears for logged-in shoppers — guests
   // have no user record for a card to attach to.
   isLoggedIn?: boolean;
+  // Resolved by the server component from the ENABLE_DEMO_CARD_TILE env var.
+  // When false, the no-charge Card tile is hidden and the in-app saved-cards
+  // strip stays empty — Stripe's hosted page is the only payment surface.
+  demoCardEnabled?: boolean;
 };
 
 type SavedCardSummary = {
@@ -87,7 +91,17 @@ const isCardExpired = (month: number, year: number): boolean => {
   return year * 12 + (month - 1) < now.getFullYear() * 12 + now.getMonth();
 };
 
-const PaymentMethodSelector = ({ isLoggedIn = false }: Props) => {
+const PaymentMethodSelector = ({
+  isLoggedIn = false,
+  demoCardEnabled = false,
+}: Props) => {
+  // When the demo Card tile is gated off, only the Stripe tile shows. The
+  // server-side check in /api/checkout/session is the actual lock — this just
+  // keeps the UI honest so a shopper can't pick a tile that the API will
+  // refuse.
+  const PAY_METHODS = demoCardEnabled
+    ? ALL_PAY_METHODS
+    : ALL_PAY_METHODS.filter((m) => m.id !== 'card');
   const [cardName, setCardName] = useState('');
   const [cardNumber, setCardNumber] = useState('');
   const [month, setMonth] = useState('');
@@ -126,9 +140,13 @@ const PaymentMethodSelector = ({ isLoggedIn = false }: Props) => {
 
   // Fetch the customer's saved cards once they're logged in so they show up
   // as one-click tiles above the manual Card/Stripe selector. Silently
-  // tolerates a failed fetch (the manual form still works).
+  // tolerates a failed fetch (the manual form still works). Skipped entirely
+  // when the demo Card tile is off — picking a saved card routes through the
+  // demo path, and with that gated, Stripe's hosted page is the canonical
+  // surface for saved-card pay.
   useEffect(() => {
     if (!isLoggedIn) return;
+    if (!demoCardEnabled) return;
     let cancelled = false;
     (async () => {
       try {
@@ -143,7 +161,7 @@ const PaymentMethodSelector = ({ isLoggedIn = false }: Props) => {
     return () => {
       cancelled = true;
     };
-  }, [isLoggedIn]);
+  }, [isLoggedIn, demoCardEnabled]);
 
   // Switching tile clears any saved-card selection. The Stripe tile gets its
   // saved cards on Stripe's hosted page (via the customer link wired in the
@@ -253,7 +271,7 @@ const PaymentMethodSelector = ({ isLoggedIn = false }: Props) => {
         </div>
       )}
 
-      <div className='mb-6 grid grid-cols-2 gap-2'>
+      <div className={`mb-6 grid gap-2 ${PAY_METHODS.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
         {PAY_METHODS.map(({ id, label }) => {
           // aria-pressed tracks the actual payment method (saved-card pay
           // routes through the Card path, so the Card tile is genuinely
