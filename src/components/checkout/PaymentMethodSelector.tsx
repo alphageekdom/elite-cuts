@@ -10,8 +10,8 @@ import {
   formatBrand,
   formatCardNumber,
   isCardExpired,
-  type SavedCardSummary,
 } from '@/lib/payments/card-display';
+import { useSavedCards } from '@/hooks/useSavedCards';
 
 const LockIcon = () => (
   <svg
@@ -87,7 +87,12 @@ const PaymentMethodSelector = ({
   const [month, setMonth] = useState('');
   const [year, setYear] = useState('');
   const [cvc, setCvc] = useState('');
-  const [savedCards, setSavedCards] = useState<SavedCardSummary[]>([]);
+  // Skip the fetch when the demo Card tile is gated off — picking a saved
+  // card routes through that path, and without it the strip should stay
+  // empty (Stripe's hosted page handles saved-card pay).
+  const { cards: savedCards } = useSavedCards({
+    enabled: isLoggedIn && demoCardEnabled,
+  });
 
   const yearRef = useRef<HTMLInputElement>(null);
 
@@ -115,31 +120,6 @@ const PaymentMethodSelector = ({
             isCvcValid)));
     dispatch({ type: 'SET_PAYMENT_READY', payload: ready });
   }, [method, state.selectedSavedCardId, isNameValid, isCardNumberValid, isExpiryValid, isCvcValid, dispatch]);
-
-  // Fetch the customer's saved cards once they're logged in so they show up
-  // as one-click tiles above the manual Card/Stripe selector. Silently
-  // tolerates a failed fetch (the manual form still works). Skipped entirely
-  // when the demo Card tile is off — picking a saved card routes through the
-  // demo path, and with that gated, Stripe's hosted page is the canonical
-  // surface for saved-card pay.
-  useEffect(() => {
-    if (!isLoggedIn) return;
-    if (!demoCardEnabled) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch('/api/me/payment-methods');
-        if (!res.ok) return;
-        const data = (await res.json()) as { cards: SavedCardSummary[] };
-        if (!cancelled) setSavedCards(data.cards);
-      } catch (err) {
-        console.error('[PaymentMethodSelector] saved cards load failed', err);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [isLoggedIn, demoCardEnabled]);
 
   // Switching tile clears any saved-card selection. The Stripe tile gets its
   // saved cards on Stripe's hosted page (via the customer link wired in the

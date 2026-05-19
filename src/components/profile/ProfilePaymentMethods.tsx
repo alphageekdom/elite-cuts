@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { toast } from 'sonner';
 
 import { brandFromBin } from '@/lib/payments/brand';
@@ -9,12 +9,11 @@ import {
   formatExpiry,
   isCardExpired,
   maskedNumber,
-  type SavedCardSummary,
 } from '@/lib/payments/card-display';
+import { useSavedCards } from '@/hooks/useSavedCards';
 
 export default function ProfilePaymentMethods() {
-  const [cards, setCards] = useState<SavedCardSummary[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { cards, loaded, error, add, remove, updateExpiry } = useSavedCards();
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -22,44 +21,16 @@ export default function ProfilePaymentMethods() {
   const [adding, setAdding] = useState(false);
   const [creating, setCreating] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch('/api/me/payment-methods');
-        if (!res.ok) throw new Error('load failed');
-        const data = (await res.json()) as { cards: SavedCardSummary[] };
-        if (!cancelled) setCards(data.cards);
-      } catch (err) {
-        console.error('[ProfilePaymentMethods] load failed', err);
-        if (!cancelled) setError('Could not load saved cards.');
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   async function handleDelete(id: string) {
     setDeletingId(id);
-    try {
-      const res = await fetch(`/api/me/payment-methods/${encodeURIComponent(id)}`, {
-        method: 'DELETE',
-      });
-      if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { message?: string };
-        toast.error(data.message ?? 'Could not remove card');
-        return;
-      }
-      setCards((prev) => prev?.filter((c) => c.id !== id) ?? null);
-      setConfirmingId(null);
-      toast.success('Card removed');
-    } catch (err) {
-      console.error('[ProfilePaymentMethods] delete failed', err);
-      toast.error('Could not remove card');
-    } finally {
-      setDeletingId(null);
+    const result = await remove(id);
+    setDeletingId(null);
+    if (!result.ok) {
+      toast.error(result.message);
+      return;
     }
+    setConfirmingId(null);
+    toast.success('Card removed');
   }
 
   async function handleAddCard(details: {
@@ -70,32 +41,14 @@ export default function ProfilePaymentMethods() {
     expYear: number;
   }) {
     setCreating(true);
-    try {
-      const res = await fetch('/api/me/payment-methods', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(details),
-      });
-      if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { message?: string };
-        toast.error(data.message ?? 'Could not add card');
-        return;
-      }
-      // Refetch so the newly-added card surfaces with whatever id the server
-      // minted — easier than constructing a synthetic row from the response.
-      const listRes = await fetch('/api/me/payment-methods');
-      if (listRes.ok) {
-        const listData = (await listRes.json()) as { cards: SavedCardSummary[] };
-        setCards(listData.cards);
-      }
-      setAdding(false);
-      toast.success('Card added');
-    } catch (err) {
-      console.error('[ProfilePaymentMethods] add failed', err);
-      toast.error('Could not add card');
-    } finally {
-      setCreating(false);
+    const result = await add(details);
+    setCreating(false);
+    if (!result.ok) {
+      toast.error(result.message);
+      return;
     }
+    setAdding(false);
+    toast.success('Card added');
   }
 
   async function handleUpdateExpiry(
@@ -104,28 +57,14 @@ export default function ProfilePaymentMethods() {
     expYear: number,
   ) {
     setSavingId(id);
-    try {
-      const res = await fetch(`/api/me/payment-methods/${encodeURIComponent(id)}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ expMonth, expYear }),
-      });
-      if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { message?: string };
-        toast.error(data.message ?? 'Could not update card');
-        return;
-      }
-      setCards((prev) =>
-        prev?.map((c) => (c.id === id ? { ...c, expMonth, expYear } : c)) ?? null,
-      );
-      setEditingId(null);
-      toast.success('Expiry updated');
-    } catch (err) {
-      console.error('[ProfilePaymentMethods] update failed', err);
-      toast.error('Could not update card');
-    } finally {
-      setSavingId(null);
+    const result = await updateExpiry(id, expMonth, expYear);
+    setSavingId(null);
+    if (!result.ok) {
+      toast.error(result.message);
+      return;
     }
+    setEditingId(null);
+    toast.success('Expiry updated');
   }
 
   if (error) {
@@ -136,7 +75,7 @@ export default function ProfilePaymentMethods() {
     );
   }
 
-  if (cards === null) {
+  if (!loaded) {
     return (
       <div className='bg-paper border border-line-soft rounded p-6 text-[14px] text-muted'>
         Loading…
