@@ -16,8 +16,14 @@ import CustomersFilterPanel, {
   activeFilterCount,
   type CustomerFilters,
 } from './CustomersFilterPanel';
-import { getTier } from './customerUtils';
 import { matchesStatFilter, type StatFilter } from '@/lib/customer-status';
+import {
+  matchesAdvancedFilters,
+  matchesSearch,
+  sortCustomers,
+  countForStat,
+  type CustomerSortMode,
+} from '@/lib/admin-customers';
 
 export type { CustomerTableRow, CustomerCounts };
 
@@ -28,9 +34,7 @@ type Props = {
   newThisWeek: number;
 };
 
-type SortBy = 'top-spenders' | 'newest' | 'most-orders' | 'recently-active' | 'name-asc';
-
-const SORT_OPTIONS: { value: SortBy; label: string }[] = [
+const SORT_OPTIONS: { value: CustomerSortMode; label: string }[] = [
   { value: 'top-spenders',    label: 'Top spenders' },
   { value: 'newest',          label: 'Newest' },
   { value: 'most-orders',     label: 'Most orders' },
@@ -48,41 +52,12 @@ const STAT_CELLS = [
 
 const PAGE_SIZES = [8, 20, 50];
 
-function countForStat(key: StatFilter, counts: CustomerCounts): number {
-  if (key === 'all') return counts.all;
-  if (key === 'new') return counts.new;
-  if (key === 'active') return counts.active;
-  if (key === 'dormant') return counts.dormant ?? 0;
-  return counts.connoisseurPlus;
-}
-
-function matchesAdvancedFilters(row: CustomerTableRow, f: CustomerFilters): boolean {
-  if (f.createdFrom) {
-    const start = new Date(`${f.createdFrom}T00:00:00`).getTime();
-    if (!Number.isNaN(start) && new Date(row.createdAt).getTime() < start) return false;
-  }
-  if (f.createdTo) {
-    const end = new Date(`${f.createdTo}T23:59:59.999`).getTime();
-    if (!Number.isNaN(end) && new Date(row.createdAt).getTime() > end) return false;
-  }
-  if (f.hasOrders === 'yes' && row.orderCount === 0) return false;
-  if (f.hasOrders === 'no' && row.orderCount > 0) return false;
-  if (f.hasSavedCuts === 'yes' && row.savedCutsCount === 0) return false;
-  if (f.hasSavedCuts === 'no' && row.savedCutsCount > 0) return false;
-  if (f.tiers.length > 0 && !f.tiers.includes(getTier(row.orderCount))) return false;
-  const note = f.noteSearch.trim().toLowerCase();
-  if (note) {
-    if (!(row.adminNote ?? '').toLowerCase().includes(note)) return false;
-  }
-  return true;
-}
-
 export default function CustomersClient({ customers, counts, total, newThisWeek }: Props) {
   const [localCustomers, setLocalCustomers] = useState(customers);
   const [page, setPage] = useState(1);
   const { activeKey: activeStatFilter, selectKey: _selectStatFilter } = useStatFilter<string>('all', () => setPage(1));
   const [search, setSearch] = useState('');
-  const [sortBy, setSortBy] = useState<SortBy>('top-spenders');
+  const [sortBy, setSortBy] = useState<CustomerSortMode>('top-spenders');
   const [filters, setFilters] = useState<CustomerFilters>(EMPTY_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -263,27 +238,11 @@ export default function CustomersClient({ customers, counts, total, newThisWeek 
   }
 
   const filtered = useMemo(() => {
-    let rows = localCustomers;
-    rows = rows.filter((r) => matchesStatFilter(r, activeStatFilter as StatFilter));
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      rows = rows.filter(
-        (r) => r.name.toLowerCase().includes(q) || r.email.toLowerCase().includes(q),
-      );
-    }
-    rows = rows.filter((r) => matchesAdvancedFilters(r, filters));
-    const sorted = [...rows];
-    if (sortBy === 'top-spenders') sorted.sort((a, b) => b.totalSpend - a.totalSpend);
-    else if (sortBy === 'newest') sorted.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
-    else if (sortBy === 'most-orders') sorted.sort((a, b) => b.orderCount - a.orderCount);
-    else if (sortBy === 'recently-active') {
-      sorted.sort((a, b) => {
-        const av = a.lastOrderAt ? new Date(a.lastOrderAt).getTime() : 0;
-        const bv = b.lastOrderAt ? new Date(b.lastOrderAt).getTime() : 0;
-        return bv - av;
-      });
-    } else if (sortBy === 'name-asc') sorted.sort((a, b) => a.name.localeCompare(b.name));
-    return sorted;
+    const rows = localCustomers
+      .filter((r) => matchesStatFilter(r, activeStatFilter as StatFilter))
+      .filter((r) => matchesSearch(r, search))
+      .filter((r) => matchesAdvancedFilters(r, filters));
+    return sortCustomers(rows, sortBy);
   }, [localCustomers, activeStatFilter, search, sortBy, filters]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
@@ -457,7 +416,7 @@ export default function CustomersClient({ customers, counts, total, newThisWeek 
             </span>
             <select
               value={sortBy}
-              onChange={(e) => { setSortBy(e.target.value as SortBy); setPage(1); }}
+              onChange={(e) => { setSortBy(e.target.value as CustomerSortMode); setPage(1); }}
               className="appearance-none bg-transparent border-none outline-none text-[13px] text-ink-soft pr-7 pl-1 py-2 cursor-pointer"
             >
               {SORT_OPTIONS.map((o) => (
