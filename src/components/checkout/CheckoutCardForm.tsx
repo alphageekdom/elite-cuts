@@ -70,6 +70,19 @@ export default function CheckoutCardForm({ isLoggedIn, onValidityChange }: Props
     }
   }, [cardName, cardNumber, month, year, isNameValid, isCardNumberValid, isExpiryValid, dispatch]);
 
+  // On unmount — when the shopper switches to the Stripe tile or picks a
+  // saved card — clear the card-details snapshot AND signal invalidity to
+  // the parent so neither context nor lifted state can carry stale fields
+  // from a tile the shopper is no longer using. Matches the pre-refactor
+  // behavior where a single in-component effect cleared this whenever
+  // `method !== 'card'`.
+  useEffect(() => {
+    return () => {
+      dispatch({ type: 'SET_CARD_DETAILS', payload: null });
+      onValidityChange(false);
+    };
+  }, [dispatch, onValidityChange]);
+
   const onCardNumber = (e: ChangeEvent<HTMLInputElement>) =>
     setCardNumber(formatCardNumber(e.target.value));
 
