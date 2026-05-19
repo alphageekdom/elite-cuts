@@ -4,7 +4,7 @@ import mongoose from 'mongoose';
 
 import connectDB from '@/config/database';
 import User from '@/models/User';
-import { getSessionUser } from '@/utils/getSessionUser';
+import { getSessionUser } from '@/lib/getSessionUser';
 import { withAdmin } from '@/lib/api-handler';
 import { EMAIL_RE } from '@/lib/validation';
 import { clientIpFromHeaders, rateLimit } from '@/lib/rateLimit';

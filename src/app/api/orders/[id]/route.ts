@@ -4,7 +4,7 @@ import mongoose from 'mongoose';
 import connectDB from '@/config/database';
 import Order, { ORDER_STATUSES, CANCELLATION_REASONS } from '@/models/Order';
 import Product from '@/models/Product';
-import { getSessionUser } from '@/utils/getSessionUser';
+import { getSessionUser } from '@/lib/getSessionUser';
 import { withAdmin } from '@/lib/api-handler';
 import { isIn } from '@/lib/validation';
 import { refundSummary, paymentStatusFor } from '@/lib/order-refunds';

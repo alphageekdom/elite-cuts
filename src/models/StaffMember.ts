@@ -31,7 +31,12 @@ export type StaffMember = {
 
 const StaffMemberSchema = new Schema<StaffMember>(
   {
-    name:    { type: String, required: true, trim: true },
+    name: { type: String, required: true, trim: true },
+    // Display label paired with `roleKey`. Free-text on purpose so the admin
+    // can customise the user-facing wording per shop ("Head Butcher" /
+    // "Master Cutter" / "Charcuterie Lead" all map to the same roleKey).
+    // The canonical category lives in `roleKey` — UI grouping, color
+    // mapping, and shift-form selects all read roleKey, never this field.
     role:    { type: String, default: '', trim: true },
     roleKey: { type: String, enum: [...STAFF_ROLE_KEYS], default: 'other' },
     station: { type: String, default: '', trim: true },

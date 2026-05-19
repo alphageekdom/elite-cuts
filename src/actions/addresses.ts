@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import connectDB from '@/config/database';
 import UserModel from '@/models/User';
-import { getSessionUser } from '@/utils/getSessionUser';
+import { getSessionUser } from '@/lib/getSessionUser';
 import type { Address, AddressFormData } from '@/types/address';
 
 type ActionResult = { success: boolean; error?: string };

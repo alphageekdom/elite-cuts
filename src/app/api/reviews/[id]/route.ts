@@ -4,7 +4,7 @@ import mongoose, { type Types } from 'mongoose';
 import connectDB from '@/config/database';
 import Review from '@/models/Review';
 import Product from '@/models/Product';
-import { getSessionUser } from '@/utils/getSessionUser';
+import { getSessionUser } from '@/lib/getSessionUser';
 
 type RouteContext = { params: Promise<{ id: string }> };
 

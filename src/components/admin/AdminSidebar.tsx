@@ -1,4 +1,4 @@
-import { getSessionUser } from '@/utils/getSessionUser';
+import { getSessionUser } from '@/lib/getSessionUser';
 import { fetchNavBadges } from '@/lib/nav-data';
 import AdminSidebarClient from './AdminSidebarClient';
 

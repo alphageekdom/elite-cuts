@@ -3,11 +3,11 @@ import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 import connectDB from '@/config/database';
-import { getSessionUser } from '@/utils/getSessionUser';
+import { getSessionUser } from '@/lib/getSessionUser';
 import User, { type PointsHistoryEntry, type TierValue } from '@/models/User';
 import Product from '@/models/Product';
 import Order from '@/models/Order';
-import { convertToSerializableObject } from '@/utils/convertToObject';
+import { convertToSerializableObject } from '@/lib/convertToObject';
 import { getShopSettings } from '@/lib/shopSettings';
 import {
   getEffectiveBalance,

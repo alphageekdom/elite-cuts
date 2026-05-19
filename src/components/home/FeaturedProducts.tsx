@@ -4,7 +4,7 @@ import ArrowIcon from '@/components/uielements/ArrowIcon';
 import connectDB from '@/config/database';
 import Reveal from '@/components/uielements/Reveal';
 import Product, { type SerializedProduct } from '@/models/Product';
-import { convertToSerializableObject } from '@/utils/convertToObject';
+import { convertToSerializableObject } from '@/lib/convertToObject';
 
 import ProductCard from '@/components/product/ProductCard';
 

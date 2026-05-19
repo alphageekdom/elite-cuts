@@ -5,7 +5,7 @@ import connectDB from '@/config/database';
 import Product from '@/models/Product';
 import Review from '@/models/Review';
 import User from '@/models/User';
-import { getSessionUser } from '@/utils/getSessionUser';
+import { getSessionUser } from '@/lib/getSessionUser';
 import { productRecordFromFormData, validateProductInput } from '@/lib/product-validate';
 import { withAdmin } from '@/lib/api-handler';
 

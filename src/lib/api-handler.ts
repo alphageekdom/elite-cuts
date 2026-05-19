@@ -1,7 +1,7 @@
 import { timingSafeEqual } from 'crypto';
 import { NextResponse, type NextRequest } from 'next/server';
 import connectDB from '@/config/database';
-import { getSessionUser } from '@/utils/getSessionUser';
+import { getSessionUser } from '@/lib/getSessionUser';
 
 type RouteHandler = (req: NextRequest, ctx?: unknown) => Promise<NextResponse>;
 // Handler receives (req, ctx, userId) — ctx is the Next.js route context (params, etc.).

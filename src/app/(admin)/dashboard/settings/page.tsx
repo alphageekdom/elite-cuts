@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { getSessionUser } from '@/utils/getSessionUser';
+import { getSessionUser } from '@/lib/getSessionUser';
 import SettingsClient from '@/components/admin/settings/SettingsClient';
 
 export const dynamic = 'force-dynamic';

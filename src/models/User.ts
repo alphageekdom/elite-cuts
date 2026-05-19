@@ -7,16 +7,11 @@ import {
   type Types,
 } from 'mongoose';
 
-export type Address = {
-  _id: Types.ObjectId;
-  label: string;
-  address1: string;
-  address2?: string;
-  city: string;
-  state: string;
-  zip: string;
-  isDefault: boolean;
-};
+import type { Address } from '@/types/address';
+
+// Re-exported for legacy callers that import `Address` from this module.
+// New code should import from `@/types/address` directly.
+export type { Address };
 
 export const POINTS_HISTORY_REASONS = [
   'order_fulfilled',

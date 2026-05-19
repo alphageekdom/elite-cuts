@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect, notFound } from 'next/navigation';
-import { getSessionUser } from '@/utils/getSessionUser';
+import { getSessionUser } from '@/lib/getSessionUser';
 import connectDB from '@/config/database';
 import Order from '@/models/Order';
 import { formatMoney } from '@/lib/format';
