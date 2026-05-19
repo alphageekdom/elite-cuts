@@ -4,11 +4,18 @@ import connectDB from '@/config/database';
 import User from '@/models/User';
 import AccountDeletionAudit from '@/models/AccountDeletionAudit';
 import bcrypt from 'bcryptjs';
+import { clientIpFromHeaders, rateLimit } from '@/lib/rateLimit';
 
 const MAX_PASSWORD_LENGTH = 128;
 const MAX_FAILED_ATTEMPTS = 3;
 const LOCKOUT_DURATION_MS = 60 * 60 * 1000;
 const DELETION_RECHECK_MS = 60_000;
+// IP-keyed throttle on the credentials callback. The per-account lockout
+// below only fires once a valid email is found, so without this an attacker
+// scanning a list of unknown emails would hit zero throttle. 10/minute is
+// loose enough that a real user fat-fingering their password through the
+// 3-attempt account lockout won't trip it.
+const SIGNIN_IP_MAX_PER_MIN = 10;
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -18,7 +25,21 @@ export const authOptions: NextAuthOptions = {
         email: { label: 'Email', type: 'email', placeholder: 'example@example.com' },
         password: { label: 'Password', type: 'password', placeholder: 'Password' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
+        // IP-level throttle backstop — the per-account lockout below only
+        // fires once a valid email is found, so without this an attacker
+        // scanning a list of unknown emails would face zero throttle.
+        // Throwing surfaces the message back to the sign-in UI as `res.error`.
+        const ip = clientIpFromHeaders(req?.headers ?? {});
+        const ipLimit = rateLimit({
+          key: `signin:${ip}`,
+          max: SIGNIN_IP_MAX_PER_MIN,
+          windowMs: 60_000,
+        });
+        if (!ipLimit.ok) {
+          throw new Error('Too many sign-in attempts. Please try again in a minute.');
+        }
+
         if (!credentials?.password || credentials.password.length > MAX_PASSWORD_LENGTH) {
           throw new Error('Invalid credentials');
         }

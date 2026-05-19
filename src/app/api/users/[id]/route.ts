@@ -7,12 +7,18 @@ import User from '@/models/User';
 import { getSessionUser } from '@/utils/getSessionUser';
 import { withAdmin } from '@/lib/api-handler';
 import { EMAIL_RE } from '@/lib/validation';
+import { clientIpFromHeaders, rateLimit } from '@/lib/rateLimit';
 import { clearDormancyWarning, hardDeleteUser, restoreUser, softDeleteUser } from '@/lib/accountDeletion';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 const MIN_PASSWORD_LENGTH = 8;
 const MAX_PASSWORD_LENGTH = 128;
+// IP-keyed throttle on the password-change branch below. The credentials
+// `authorize()` per-account lockout doesn't cover this path, so an
+// authenticated attacker who lost their password (or stole a session) could
+// otherwise brute-force currentPassword against the bcrypt compare unlimited.
+const PASSWORD_CHANGE_IP_MAX_PER_MIN = 5;
 
 // GET /api/users/:id — self or admin only
 export const GET = async (_request: NextRequest, { params }: RouteContext) => {
@@ -126,6 +132,19 @@ export const PUT = async (request: NextRequest, { params }: RouteContext) => {
     // Password update — self only, not allowed via admin path
     if (isAdmin && sessionUser.userId !== id) {
       return NextResponse.json({ message: 'Admins cannot change another user\'s password' }, { status: 403 });
+    }
+
+    const ip = clientIpFromHeaders(request.headers);
+    const limit = rateLimit({
+      key: `passwd-change:${ip}`,
+      max: PASSWORD_CHANGE_IP_MAX_PER_MIN,
+      windowMs: 60_000,
+    });
+    if (!limit.ok) {
+      return NextResponse.json(
+        { message: 'Too many requests, please try again shortly' },
+        { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } },
+      );
     }
 
     if (!newPassword) {
