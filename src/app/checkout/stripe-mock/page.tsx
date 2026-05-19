@@ -4,7 +4,7 @@ import mongoose from 'mongoose';
 
 import connectDB from '@/config/database';
 import Order from '@/models/Order';
-import { getSessionUser } from '@/utils/getSessionUser';
+import { getSessionUser } from '@/lib/getSessionUser';
 
 export const dynamic = 'force-dynamic';
 

@@ -3,7 +3,7 @@ import type { SortOrder } from 'mongoose';
 
 import connectDB from '@/config/database';
 import Product, { type SerializedProduct } from '@/models/Product';
-import { convertToSerializableObject } from '@/utils/convertToObject';
+import { convertToSerializableObject } from '@/lib/convertToObject';
 
 import CatalogFilterBar from '@/components/product/CatalogFilterBar';
 import CatalogHero from '@/components/product/CatalogHero';

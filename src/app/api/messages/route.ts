@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import connectDB from '@/config/database';
 import MessageModel from '@/models/Message';
 import User from '@/models/User';
-import { getSessionUser } from '@/utils/getSessionUser';
+import { getSessionUser } from '@/lib/getSessionUser';
 import { unauthorized, withAuth } from '@/lib/api-handler';
 import mongoose, { type Types } from 'mongoose';
 

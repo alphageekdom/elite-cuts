@@ -5,7 +5,7 @@ import { Types } from 'mongoose';
 
 import connectDB from '@/config/database';
 import Promo from '@/models/Promo';
-import { getSessionUser } from '@/utils/getSessionUser';
+import { getSessionUser } from '@/lib/getSessionUser';
 import { validatePromoInput } from '@/lib/promos/input-validate';
 
 type ActionResult = { success: boolean; error?: string };

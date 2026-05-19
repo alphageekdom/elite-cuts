@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminNavData from '@/components/admin/AdminNavData';
 import AdminTopbar from '@/components/admin/AdminTopbar';
-import { getSessionUser } from '@/utils/getSessionUser';
+import { getSessionUser } from '@/lib/getSessionUser';
 import { fetchNavBadges } from '@/lib/nav-data';
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {

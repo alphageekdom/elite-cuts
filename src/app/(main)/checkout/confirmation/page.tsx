@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 
 import connectDB from '@/config/database';
 import OrderModel from '@/models/Order';
-import { getSessionUser } from '@/utils/getSessionUser';
+import { getSessionUser } from '@/lib/getSessionUser';
 import { formatMoney, productImageSrc } from '@/lib/format';
 import { DELIVERY_FEE } from '@/lib/pricing';
 import { getShopSettings, formatShopAddress } from '@/lib/shopSettings';

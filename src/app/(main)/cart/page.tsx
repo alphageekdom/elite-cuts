@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 import connectDB from '@/config/database';
 import Product, { type SerializedProduct } from '@/models/Product';
-import { convertToSerializableObject } from '@/utils/convertToObject';
+import { convertToSerializableObject } from '@/lib/convertToObject';
 import { getActiveHoliday } from '@/lib/holidays';
 
 import CartItemsPanel from '@/components/cart/CartItemsPanel';

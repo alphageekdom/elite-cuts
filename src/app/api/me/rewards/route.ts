@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 import connectDB from '@/config/database';
 import User from '@/models/User';
-import { getSessionUser } from '@/utils/getSessionUser';
+import { getSessionUser } from '@/lib/getSessionUser';
 import { getShopSettings } from '@/lib/shopSettings';
 import { getEffectiveBalance } from '@/lib/rewards';
 

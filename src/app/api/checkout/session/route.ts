@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 import connectDB from '@/config/database';
 import Order, { type DeliveryAddressData } from '@/models/Order';
 import User from '@/models/User';
-import { getSessionUser } from '@/utils/getSessionUser';
+import { getSessionUser } from '@/lib/getSessionUser';
 import { EMAIL_RE } from '@/lib/validation';
 import { validatePromo } from '@/lib/promos/validate';
 import { MAX_PER_LINE } from '@/lib/shopConfig';

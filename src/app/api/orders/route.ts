@@ -7,7 +7,7 @@ import connectDB from '@/config/database';
 import Order, { PAYMENT_METHODS, type PaymentMethod, type DeliveryAddressData } from '@/models/Order';
 import Product from '@/models/Product';
 import User from '@/models/User';
-import { getSessionUser } from '@/utils/getSessionUser';
+import { getSessionUser } from '@/lib/getSessionUser';
 import { unauthorized, parsePagination, withAdmin } from '@/lib/api-handler';
 import { isIn } from '@/lib/validation';
 import { MAX_PER_LINE } from '@/lib/shopConfig';
