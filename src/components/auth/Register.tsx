@@ -151,38 +151,31 @@ export default function Register() {
       }
 
       if (res.status === 409) {
-        // Soft-deleted restore: the server returns `accountState:
-        // 'soft_deleted'` only when the supplied password matches the
-        // stored hash, so we can sign the customer in directly using the
-        // password they just typed. authorize() clears `deletedAt` on a
-        // successful credentials match, restoring the account in place.
-        // Active duplicates (or wrong-password attempts against a
-        // soft-deleted account) get the same generic 409 message either
-        // way — the response shape doesn't leak which case we hit.
-        const data = (await res.json().catch(() => ({}))) as {
-          accountState?: string;
-        };
-        if (data?.accountState === 'soft_deleted') {
-          const signInResult = await signIn('credentials', {
-            email: formData.email,
-            password: formData.password,
-            redirect: false,
-          });
-          if (signInResult?.error) {
-            const wasLockout = registerRestoreLockout(signInResult.error);
-            toast.error(
-              wasLockout
-                ? signInResult.error
-                : 'Could not restore the account — try signing in.',
-            );
-            return;
-          }
+        // The server returns the same generic 409 for every email collision
+        // (active OR soft-deleted) so it can't be used as a password oracle.
+        // Try a blind sign-in with the credentials the customer just typed:
+        // if it's their real account they get signed straight in (and a
+        // soft-deleted account is restored in place by authorize()); any
+        // other case falls through to the generic toast. authorize()'s
+        // per-account lockout still protects soft-deleted hashes from
+        // brute-force, and the new IP-level throttle covers everything else.
+        const signInResult = await signIn('credentials', {
+          email: formData.email,
+          password: formData.password,
+          redirect: false,
+        });
+        if (!signInResult?.error) {
           toast.success('Welcome back — your account has been restored.');
           router.replace('/');
           router.refresh();
           return;
         }
-        toast.error('An account with that email already exists');
+        const wasLockout = registerRestoreLockout(signInResult.error);
+        toast.error(
+          wasLockout
+            ? signInResult.error
+            : 'An account with that email already exists',
+        );
         return;
       }
 

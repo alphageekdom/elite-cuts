@@ -73,13 +73,24 @@ export function rateLimit({ key, max, windowMs }: RateLimitOptions): RateLimitRe
 // `x-forwarded-for` as a comma-separated list with the originating IP first;
 // `x-real-ip` is a common fallback. When neither is present (local dev,
 // direct curl), bucket under a single literal so the limit still applies.
-export function clientIpFromHeaders(headers: Headers): string {
-  const xff = headers.get('x-forwarded-for');
+//
+// Accepts either a `Headers` instance (Web API request handlers) or a plain
+// object (NextAuth v4 hands authorize() a plain header map, not a Headers).
+type PlainHeaders = Record<string, string | string[] | undefined>;
+
+export function clientIpFromHeaders(headers: Headers | PlainHeaders): string {
+  const read = (name: string): string | undefined => {
+    if (headers instanceof Headers) return headers.get(name) ?? undefined;
+    const raw = headers[name];
+    return Array.isArray(raw) ? raw[0] : raw;
+  };
+
+  const xff = read('x-forwarded-for');
   if (xff) {
     const first = xff.split(',')[0]?.trim();
     if (first) return first;
   }
-  const real = headers.get('x-real-ip');
+  const real = read('x-real-ip');
   if (real) return real.trim();
   return 'unknown';
 }
