@@ -21,6 +21,7 @@ import {
 } from '@/lib/orderBuilder';
 import { getStripe, dollarsToCents, isStubMode } from '@/lib/payments/stripe';
 import { completeSessionForOrder } from '@/lib/payments/completeSession';
+import { isDemoCardTileEnabled } from '@/lib/features';
 import {
   getOrCreateStripeCustomer,
   getSavedCard,
@@ -105,6 +106,19 @@ export const POST = async (request: NextRequest) => {
     // with paymentMethod 'Credit Card', no Stripe round trip. 'stripe' (the
     // default) goes through Stripe Checkout and stamps 'Stripe'.
     const isCardDemo = body.paymentMethod === 'card';
+
+    // The demo Card path lands a paid order without ever charging a card,
+    // so any deploy with a live processor behind it needs to refuse this
+    // route — even when the UI tile is hidden, a tampered POST could still
+    // send `paymentMethod: 'card'`. The flag also covers the saved-card
+    // shortcut above, which routes through the same demo path. UI gate is
+    // cosmetic; this server check is the actual lock.
+    if (isCardDemo && !isDemoCardTileEnabled()) {
+      return NextResponse.json(
+        { message: 'Card demo is disabled' },
+        { status: 400 },
+      );
+    }
 
     if (!body.pickupLocation?.trim()) {
       return NextResponse.json({ message: 'Pickup location is required' }, { status: 400 });

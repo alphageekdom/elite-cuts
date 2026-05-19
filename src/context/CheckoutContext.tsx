@@ -111,7 +111,9 @@ export type CheckoutAction =
 
 const EMPTY_INITIAL_STATE: CheckoutState = {
   isPaymentReady: false,
-  paymentMethod: 'card',
+  // Placeholder — the actual default is set per-provider in buildInitialState
+  // based on the `demoCardEnabled` prop the server component resolves.
+  paymentMethod: 'stripe',
   fulfillment: 'pickup',
   promoCode: '',
   promoDiscount: 0,
@@ -149,11 +151,17 @@ const toDeliveryAddress = (sa: SavedAddress): DeliveryAddress => ({
 const buildInitialState = (
   initialContact?: CheckoutInitialContact,
   savedAddresses?: SavedAddress[],
+  demoCardEnabled = false,
 ): CheckoutState => {
   const list = savedAddresses ?? [];
   const seed = list.find((a) => a.isDefault) ?? list[0];
   return {
     ...EMPTY_INITIAL_STATE,
+    // Default to the Card demo path when it's available so the portfolio demo
+    // just works on first load. With the flag off (production posture), fall
+    // back to Stripe — which matches what the selector actually shows since
+    // the Card tile is hidden.
+    paymentMethod: demoCardEnabled ? 'card' : 'stripe',
     contactName: initialContact?.name ?? '',
     contactEmail: initialContact?.email ?? '',
     contactPhone: initialContact?.phone ?? '',
@@ -264,16 +272,21 @@ type CheckoutProviderProps = {
   children: ReactNode;
   initialContact?: CheckoutInitialContact;
   savedAddresses?: SavedAddress[];
+  // Resolved by the checkout server component from ENABLE_DEMO_CARD_TILE.
+  // Drives the initial paymentMethod default so a guest landing on /checkout
+  // with the flag off doesn't start with the hidden Card tile pre-selected.
+  demoCardEnabled?: boolean;
 };
 
 export const CheckoutProvider = ({
   children,
   initialContact,
   savedAddresses,
+  demoCardEnabled = false,
 }: CheckoutProviderProps) => {
   const [state, dispatch] = useReducer(
     checkoutReducer,
-    buildInitialState(initialContact, savedAddresses),
+    buildInitialState(initialContact, savedAddresses, demoCardEnabled),
   );
 
   // When the server-rendered prefill props change after first mount (e.g. a
