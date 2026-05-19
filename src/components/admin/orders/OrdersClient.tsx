@@ -1,16 +1,14 @@
 'use client';
-import { useState, useMemo, useEffect, useLayoutEffect, useRef } from 'react';
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { refundSummary } from '@/lib/order-refunds';
 import { useStatFilter } from '@/hooks/useStatFilter';
-import { useAdminDrawer } from '@/hooks/useAdminDrawer';
+import { useOrdersTable } from '@/hooks/useOrdersTable';
+import { useOrderColumns, ORDER_COLUMN_OPTIONS, type OrderColumnVisibility } from '@/hooks/useOrderColumns';
 import OrderTableRowComponent from './OrderTableRow';
 import OrdersPageHeader from './OrdersPageHeader';
-import OrdersFilterPanel, {
-  type PaymentFilter,
-  type FulfillmentFilter,
-} from './OrdersFilterPanel';
+import OrdersFilterPanel from './OrdersFilterPanel';
+import OrdersColumnsPopover from './OrdersColumnsPopover';
 import OrderCreateDrawer, {
   type AdminOrderCustomer,
   type AdminOrderProduct,
@@ -21,6 +19,17 @@ import AdminPagination from '@/components/admin/AdminPagination';
 import RangeToggle, { type RangeKey } from '@/components/admin/analytics/RangeToggle';
 import { AVATAR_COLORS } from '@/lib/admin-constants';
 import type { OrderTableRow, StatusCounts } from '@/types/admin';
+import {
+  applyOrdersFilter,
+  buildOrderExportParams,
+  countForOrderStat,
+  ORDER_RANGE_META_LABEL,
+  ORDER_SORT_OPTIONS,
+  ORDER_STAT_CELLS,
+  type OrderSortMode,
+  type PaymentFilter,
+  type FulfillmentFilter,
+} from '@/lib/admin-orders';
 import OrderDetailDrawer from './OrderDetailDrawer';
 
 export type { OrderTableRow, StatusCounts, AdminOrderCustomer, AdminOrderProduct };
@@ -35,105 +44,19 @@ type Props = {
   defaultPickupLocation: string;
 };
 
-const RANGE_META_LABEL: Record<RangeKey, string> = {
-  '7D': 'LAST 7 DAYS',
-  '30D': 'LAST 30 DAYS',
-  '90D': 'LAST 90 DAYS',
-  '1Y':  'LAST YEAR',
-};
-
-type SortBy = 'newest' | 'oldest' | 'total-desc' | 'total-asc' | 'customer-asc';
-
-const SORT_OPTIONS: { value: SortBy; label: string }[] = [
-  { value: 'newest', label: 'Newest first' },
-  { value: 'oldest', label: 'Oldest first' },
-  { value: 'total-desc', label: 'Total: High → Low' },
-  { value: 'total-asc', label: 'Total: Low → High' },
-  { value: 'customer-asc', label: 'Customer: A → Z' },
-];
-
-type ColumnKey = 'customer' | 'status' | 'items' | 'total' | 'pickup' | 'created';
-
-export type OrderColumnVisibility = Record<ColumnKey, boolean>;
-
-const COLUMN_OPTIONS: { key: ColumnKey; label: string }[] = [
-  { key: 'customer', label: 'Customer' },
-  { key: 'status',   label: 'Status' },
-  { key: 'items',    label: 'Items' },
-  { key: 'total',    label: 'Total' },
-  { key: 'pickup',   label: 'Pickup' },
-  { key: 'created',  label: 'Created' },
-];
-
-const DEFAULT_COLUMNS: OrderColumnVisibility = {
-  customer: true,
-  status: true,
-  items: true,
-  total: true,
-  pickup: true,
-  created: true,
-};
-
-const COLUMNS_STORAGE_KEY = 'admin.orders.columns';
-
-// useLayoutEffect runs synchronously after DOM mutation but before paint, which
-// lets us apply the persisted column preference without a visible flash.
-// Fall back to useEffect on the server so React doesn't emit a no-op warning.
-const useIsomorphicLayoutEffect =
-  typeof window !== 'undefined' ? useLayoutEffect : useEffect;
-
-const STAT_CELLS = [
-  { key: 'all',               label: 'All',        metaLabel: '',                dotClass: '' },
-  { key: 'Order Placed',      label: 'New',         metaLabel: 'ORDER PLACED',    dotClass: '' },
-  { key: 'Preparing',         label: 'Preparing',   metaLabel: 'IN PROGRESS',     dotClass: 'bg-camel' },
-  { key: 'Ready for Pickup',  label: 'Ready',       metaLabel: 'AWAITING PICKUP', dotClass: 'bg-camel' },
-  { key: 'Out for Delivery',  label: 'Delivering',  metaLabel: 'OUT FOR DELIVERY',dotClass: 'bg-camel' },
-  { key: 'Completed',         label: 'Completed',   metaLabel: 'COMPLETED',       dotClass: 'bg-green' },
-  { key: 'Cancelled',         label: 'Cancelled',   metaLabel: 'CANCELLED',       dotClass: 'bg-oxblood' },
-] as const;
-
-type StatKey = (typeof STAT_CELLS)[number]['key'];
-
-
-function countForKey(key: StatKey, counts: StatusCounts): number {
-  if (key === 'all')               return counts.all;
-  if (key === 'Order Placed')      return counts.orderPlaced;
-  if (key === 'Preparing')         return counts.preparing;
-  if (key === 'Ready for Pickup')  return counts.readyForPickup;
-  if (key === 'Out for Delivery')  return counts.outForDelivery;
-  if (key === 'Completed')         return counts.completed;
-  if (key === 'Cancelled')         return counts.cancelled;
-  return 0;
-}
-
 const PAGE_SIZES = [8, 20, 50];
 
 export default function OrdersClient({ orders, counts, monthOrdersCount, range, customers, products, defaultPickupLocation }: Props) {
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const openOrderId = searchParams.get('openOrder');
-  const [localOrders, setLocalOrders] = useState(orders);
-  // Range navigation re-renders the page server-side with a new `orders` prop.
-  // Adjusting state during render (React's recommended pattern over a mirroring
-  // useEffect) avoids the extra paint and the "state derived from props" smell.
-  const [prevOrdersProp, setPrevOrdersProp] = useState(orders);
-  if (orders !== prevOrdersProp) {
-    setPrevOrdersProp(orders);
-    setLocalOrders(orders);
-  }
+  const table = useOrdersTable(orders);
 
   const [page, setPage] = useState(1);
   const { activeKey: activeStatus, selectKey: _selectStatus } = useStatFilter<string>('all', () => setPage(1));
   const [search, setSearch] = useState('');
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const { item: drawerOrder, isOpen: isDrawerOpen, open: _openDrawer, close: closeDrawer, setItem: setDrawerOrder } = useAdminDrawer<OrderTableRow>();
   const [perPage, setPerPage] = useState(PAGE_SIZES[0]);
-  const [statusUpdate, setStatusUpdate] = useState<string>('');
-  const [sortBy, setSortBy] = useState<SortBy>('newest');
+  const [sortBy, setSortBy] = useState<OrderSortMode>('newest');
   const [exporting, setExporting] = useState(false);
-  const [columnsOpen, setColumnsOpen] = useState(false);
-  const [visibleColumns, setVisibleColumns] = useState<OrderColumnVisibility>(DEFAULT_COLUMNS);
+  const { columns: visibleColumns, toggle: toggleColumn } = useOrderColumns();
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>('any');
   const [fulfillmentFilter, setFulfillmentFilter] = useState<FulfillmentFilter>('any');
@@ -142,76 +65,31 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
   const activeFilterCount =
     (paymentFilter === 'any' ? 0 : 1) + (fulfillmentFilter === 'any' ? 0 : 1);
 
-  // Hydrate column visibility from localStorage before first paint. Unknown /
-  // stale keys are ignored so a schema change can't lock a column off invisibly.
-  useIsomorphicLayoutEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(COLUMNS_STORAGE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as Partial<OrderColumnVisibility>;
-      const next: OrderColumnVisibility = { ...DEFAULT_COLUMNS };
-      for (const { key } of COLUMN_OPTIONS) {
-        if (typeof parsed[key] === 'boolean') next[key] = parsed[key]!;
-      }
-      setVisibleColumns(next);
-    } catch {
-      // Bad JSON — fall back to defaults silently.
-    }
-  }, []);
-
-  function toggleColumn(key: ColumnKey) {
-    setVisibleColumns((prev) => {
-      const next = { ...prev, [key]: !prev[key] };
-      // Never let the admin hide every toggleable column — would leave an empty grid.
-      const anyVisible = COLUMN_OPTIONS.some((c) => next[c.key]);
-      if (!anyVisible) return prev;
-      try {
-        window.localStorage.setItem(COLUMNS_STORAGE_KEY, JSON.stringify(next));
-      } catch {
-        // Ignore quota/privacy-mode failures — visibility still applies in memory.
-      }
-      return next;
-    });
-  }
-
-  const filtered = useMemo(() => {
-    let rows = localOrders;
-    if (activeStatus !== 'all') {
-      rows = rows.filter((o) => o.status === activeStatus);
-    }
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      rows = rows.filter(
-        (o) =>
-          o.orderRef.toLowerCase().includes(q) ||
-          o.customerName.toLowerCase().includes(q) ||
-          o.customerEmail.toLowerCase().includes(q),
-      );
-    }
-    if (paymentFilter !== 'any') {
-      rows = rows.filter((o) => o.paymentStatus === paymentFilter);
-    }
-    if (fulfillmentFilter !== 'any') {
-      rows = rows.filter((o) => (o.fulfillmentType ?? 'pickup') === fulfillmentFilter);
-    }
-    const sorted = [...rows];
-    if (sortBy === 'newest')         sorted.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
-    else if (sortBy === 'oldest')    sorted.sort((a, b) => (a.createdAt > b.createdAt ? 1 : -1));
-    else if (sortBy === 'total-desc') sorted.sort((a, b) => b.total - a.total);
-    else if (sortBy === 'total-asc')  sorted.sort((a, b) => a.total - b.total);
-    else if (sortBy === 'customer-asc') sorted.sort((a, b) => a.customerName.localeCompare(b.customerName));
-    return sorted;
-  }, [localOrders, activeStatus, search, sortBy, paymentFilter, fulfillmentFilter]);
+  const filtered = useMemo(
+    () =>
+      applyOrdersFilter(
+        table.orders,
+        {
+          status: activeStatus,
+          search,
+          payment: paymentFilter,
+          fulfillment: fulfillmentFilter,
+        },
+        sortBy,
+      ),
+    [table.orders, activeStatus, search, sortBy, paymentFilter, fulfillmentFilter],
+  );
 
   async function handleExport() {
     setExporting(true);
     try {
-      const params = new URLSearchParams();
-      params.set('range', range);
-      if (activeStatus !== 'all') params.set('status', String(activeStatus));
-      if (search.trim()) params.set('search', search.trim());
-      if (paymentFilter !== 'any') params.set('payment', paymentFilter);
-      if (fulfillmentFilter !== 'any') params.set('fulfillment', fulfillmentFilter);
+      const params = buildOrderExportParams({
+        range,
+        status: activeStatus,
+        search,
+        payment: paymentFilter,
+        fulfillment: fulfillmentFilter,
+      });
       const url = `/api/orders/export?${params.toString()}`;
       const res = await fetch(url);
       if (!res.ok) {
@@ -238,216 +116,19 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
     }
   }
 
-  async function updateOrder(newStatus: string, cancellationReason?: string) {
-    if (!drawerOrder) return;
-    try {
-      const body: Record<string, string> = { orderStatus: newStatus };
-      if (cancellationReason) body.cancellationReason = cancellationReason;
-      const res = await fetch(`/api/orders/${drawerOrder.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        const { message } = await res.json();
-        toast.error(message ?? 'Failed to update order');
-        return;
-      }
-      // Cancellation refunds every remaining line — reflect optimistically.
-      const isCancelTransition = newStatus === 'Cancelled' && drawerOrder.status !== 'Cancelled';
-      setLocalOrders((prev) =>
-        prev.map((o) => {
-          if (o.id !== drawerOrder.id) return o;
-          const items = isCancelTransition
-            ? o.items.map((it) => (it.refunded ? it : { ...it, refunded: true }))
-            : o.items;
-          const summary = refundSummary(items, { subtotal: o.subtotal, tax: o.tax, totalCost: o.total });
-          // Note: this is the cancel-transition branch — using o.total
-          // (totalCost) caps the displayed refund at what the customer paid.
-          return {
-            ...o,
-            status: newStatus,
-            cancellationReason,
-            items,
-            refundedAmount: summary.refundedAmount,
-            paymentStatus: isCancelTransition ? 'Refunded' : o.paymentStatus,
-          };
-        }),
-      );
-      setDrawerOrder((prev) => {
-        if (!prev) return prev;
-        const items = isCancelTransition
-          ? prev.items.map((it) => (it.refunded ? it : { ...it, refunded: true }))
-          : prev.items;
-        const summary = refundSummary(items, { subtotal: prev.subtotal, tax: prev.tax, totalCost: prev.total });
-        return {
-          ...prev,
-          status: newStatus,
-          cancellationReason,
-          items,
-          refundedAmount: summary.refundedAmount,
-          paymentStatus: isCancelTransition ? 'Refunded' : prev.paymentStatus,
-        };
-      });
-      router.refresh();
-      toast.success(isCancelTransition ? 'Order cancelled and refunded' : 'Order status updated');
-    } catch {
-      toast.error('Failed to update order');
-    }
-  }
-
-  async function refundItem(itemIndex: number) {
-    if (!drawerOrder) return;
-    try {
-      const res = await fetch(`/api/orders/${drawerOrder.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refundItemIndices: [itemIndex] }),
-      });
-      if (!res.ok) {
-        const { message } = await res.json();
-        toast.error(message ?? 'Failed to refund item');
-        return;
-      }
-      const apply = (o: OrderTableRow): OrderTableRow => {
-        const items = o.items.map((it, idx) => (idx === itemIndex ? { ...it, refunded: true } : it));
-        const summary = refundSummary(items, { subtotal: o.subtotal, tax: o.tax, totalCost: o.total });
-        const allRefunded = summary.refundedCount >= items.length;
-        const cascadeCancel = allRefunded && o.status !== 'Cancelled';
-        return {
-          ...o,
-          items,
-          refundedAmount: summary.refundedAmount,
-          paymentStatus: allRefunded ? 'Refunded' : 'Partially Refunded',
-          status: cascadeCancel ? 'Cancelled' : o.status,
-          cancellationReason: cascadeCancel ? undefined : o.cancellationReason,
-        };
-      };
-      setLocalOrders((prev) => prev.map((o) => (o.id === drawerOrder.id ? apply(o) : o)));
-      setDrawerOrder((prev) => (prev ? apply(prev) : prev));
-      router.refresh();
-      toast.success('Item refunded');
-    } catch {
-      toast.error('Failed to refund item');
-    }
-  }
-
-  async function unrefundItem(itemIndex: number) {
-    if (!drawerOrder) return;
-    try {
-      const res = await fetch(`/api/orders/${drawerOrder.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ unrefundItemIndices: [itemIndex] }),
-      });
-      if (!res.ok) {
-        const { message } = await res.json();
-        toast.error(message ?? 'Failed to undo refund');
-        return;
-      }
-      const apply = (o: OrderTableRow): OrderTableRow => {
-        const items = o.items.map((it, idx) => (idx === itemIndex ? { ...it, refunded: false } : it));
-        const summary = refundSummary(items, { subtotal: o.subtotal, tax: o.tax, totalCost: o.total });
-        const noneRefunded = summary.refundedCount === 0;
-        const allRefunded = !noneRefunded && summary.refundedCount >= items.length;
-        return {
-          ...o,
-          items,
-          refundedAmount: summary.refundedAmount,
-          paymentStatus: noneRefunded ? 'Completed' : allRefunded ? 'Refunded' : 'Partially Refunded',
-        };
-      };
-      setLocalOrders((prev) => prev.map((o) => (o.id === drawerOrder.id ? apply(o) : o)));
-      setDrawerOrder((prev) => (prev ? apply(prev) : prev));
-      router.refresh();
-      toast.success('Refund undone — item restored');
-    } catch {
-      toast.error('Failed to undo refund');
-    }
-  }
-
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
   const pageRows = filtered.slice((page - 1) * perPage, page * perPage);
-
-  function toggleSelect(id: string) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
+  const { selectedIds } = table.selection;
+  const allPageSelected = pageRows.length > 0 && pageRows.every((r) => selectedIds.has(r.id));
+  const someSelected = selectedIds.size > 0;
 
   function toggleAll(checked: boolean) {
-    if (checked) setSelectedIds(new Set(pageRows.map((r) => r.id)));
-    else setSelectedIds(new Set());
+    table.selection.setSelection(checked ? pageRows.map((r) => r.id) : []);
   }
-
-  function openDrawer(order: OrderTableRow) {
-    _openDrawer(order);
-    setStatusUpdate(order.status);
-  }
-
-  // Deep-link support: when arriving with ?openOrder=<id>, open that order's
-  // drawer once and strip the param so a refresh doesn't reopen it. The ref
-  // guard makes this idempotent under React strict-mode double-invocation
-  // and any incidental re-fires from order-list mutations.
-  const handledDeepLinkRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (!openOrderId || handledDeepLinkRef.current === openOrderId) return;
-    handledDeepLinkRef.current = openOrderId;
-    const target = localOrders.find((o) => o.id === openOrderId);
-    if (target) {
-      _openDrawer(target);
-      setStatusUpdate(target.status);
-    }
-    router.replace(pathname);
-  }, [openOrderId, localOrders, _openDrawer, pathname, router]);
 
   function handleStatusFilter(key: string) {
     _selectStatus(key);
-    setSelectedIds(new Set());
-  }
-
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-
-  async function deleteOrder(id: string) {
-    try {
-      const res = await fetch(`/api/orders/${id}`, { method: 'DELETE' });
-      if (!res.ok) { const { message } = await res.json(); toast.error(message ?? 'Failed to delete order'); return; }
-      setLocalOrders((prev) => prev.filter((o) => o.id !== id));
-      setOpenMenuId(null);
-      toast.success('Order deleted');
-    } catch { toast.error('Failed to delete order'); }
-  }
-
-  const allPageSelected = pageRows.length > 0 && pageRows.every((r) => selectedIds.has(r.id));
-  const someSelected = selectedIds.size > 0;
-  const [bulkLoading, setBulkLoading] = useState('');
-
-  async function bulkUpdateStatus(newStatus: string) {
-    const ids = [...selectedIds];
-    setBulkLoading(newStatus);
-    try {
-      await Promise.all(
-        ids.map((id) =>
-          fetch(`/api/orders/${id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderStatus: newStatus }),
-          }),
-        ),
-      );
-      setLocalOrders((prev) =>
-        prev.map((o) => (selectedIds.has(o.id) ? { ...o, status: newStatus } : o)),
-      );
-      setSelectedIds(new Set());
-      toast.success(`${ids.length} order${ids.length !== 1 ? 's' : ''} updated to ${newStatus}`);
-    } catch {
-      toast.error('Failed to update some orders');
-    } finally {
-      setBulkLoading('');
-    }
+    table.selection.clearSelection();
   }
 
   return (
@@ -461,13 +142,13 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
       />
 
       <AdminStatStrip
-        cells={STAT_CELLS.map((cell) => {
-          const count = countForKey(cell.key, counts);
+        cells={ORDER_STAT_CELLS.map((cell) => {
+          const count = countForOrderStat(cell.key, counts);
           return {
             key: String(cell.key),
             label: cell.label,
             value: count,
-            meta: cell.key === 'all' ? RANGE_META_LABEL[range] : cell.metaLabel,
+            meta: cell.key === 'all' ? ORDER_RANGE_META_LABEL[range] : cell.metaLabel,
             dotClass: cell.dotClass || undefined,
             badge: cell.key === 'Order Placed' && count > 0 ? 'new' : undefined,
           };
@@ -526,10 +207,10 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
               </span>
               <select
                 value={sortBy}
-                onChange={(e) => { setSortBy(e.target.value as SortBy); setPage(1); }}
+                onChange={(e) => { setSortBy(e.target.value as OrderSortMode); setPage(1); }}
                 className="appearance-none bg-transparent border-none outline-none text-[13px] text-ink-soft pr-7 pl-1 py-2 cursor-pointer"
               >
-                {SORT_OPTIONS.map((o) => (
+                {ORDER_SORT_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
               </select>
@@ -537,39 +218,7 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
                 <polyline points="6 9 12 15 18 9" />
               </svg>
             </div>
-            <div className="relative">
-              <button
-                onClick={() => setColumnsOpen((v) => !v)}
-                className="inline-flex items-center gap-1.5 bg-paper border border-line rounded-full px-3.5 py-2 text-[13px] text-ink-soft hover:border-ink hover:text-ink transition-colors"
-              >
-                Columns
-                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-              </button>
-              {columnsOpen && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setColumnsOpen(false)} />
-                  <div className="absolute right-0 top-full mt-2 z-20 w-52 bg-paper border border-line rounded-lg shadow-xl py-1.5">
-                    <div className="px-3.5 py-1.5 text-[11px] font-medium tracking-[0.16em] uppercase text-muted">
-                      Show columns
-                    </div>
-                    {COLUMN_OPTIONS.map((col) => (
-                      <label
-                        key={col.key}
-                        className="flex items-center gap-2.5 px-3.5 py-1.5 text-[13px] text-ink-soft hover:bg-cream cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={visibleColumns[col.key]}
-                          onChange={() => toggleColumn(col.key)}
-                          className="w-3.5 h-3.5 rounded-sm border border-line bg-cream cursor-pointer accent-oxblood"
-                        />
-                        {col.label}
-                      </label>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
+            <OrdersColumnsPopover visibleColumns={visibleColumns} onToggle={toggleColumn} />
           </div>
         </div>
       </div>
@@ -586,25 +235,25 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
             </div>
             <div className="flex gap-1.5">
               <button
-                onClick={() => bulkUpdateStatus('Preparing')}
-                disabled={!!bulkLoading}
+                onClick={() => table.bulk.updateStatus('Preparing')}
+                disabled={!!table.bulk.loading}
                 className="bg-cream/10 text-cream border border-cream/20 rounded-full px-3 py-1.5 text-[12px] hover:bg-cream/20 hover:border-cream/40 transition-colors disabled:opacity-50"
               >
-                {bulkLoading === 'Preparing' ? 'Updating…' : 'Mark preparing'}
+                {table.bulk.loading === 'Preparing' ? 'Updating…' : 'Mark preparing'}
               </button>
               <button
-                onClick={() => bulkUpdateStatus('Ready for Pickup')}
-                disabled={!!bulkLoading}
+                onClick={() => table.bulk.updateStatus('Ready for Pickup')}
+                disabled={!!table.bulk.loading}
                 className="bg-cream/10 text-cream border border-cream/20 rounded-full px-3 py-1.5 text-[12px] hover:bg-cream/20 hover:border-cream/40 transition-colors disabled:opacity-50"
               >
-                {bulkLoading === 'Ready for Pickup' ? 'Updating…' : 'Mark ready'}
+                {table.bulk.loading === 'Ready for Pickup' ? 'Updating…' : 'Mark ready'}
               </button>
               <button
-                onClick={() => bulkUpdateStatus('Cancelled')}
-                disabled={!!bulkLoading}
+                onClick={() => table.bulk.updateStatus('Cancelled')}
+                disabled={!!table.bulk.loading}
                 className="bg-cream/10 text-cream border border-cream/20 rounded-full px-3 py-1.5 text-[12px] hover:bg-cream/20 hover:border-cream/40 transition-colors disabled:opacity-50"
               >
-                {bulkLoading === 'Cancelled' ? 'Updating…' : 'Cancel orders'}
+                {table.bulk.loading === 'Cancelled' ? 'Updating…' : 'Cancel orders'}
               </button>
             </div>
           </div>
@@ -636,7 +285,7 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
               <tbody>
                 {pageRows.length === 0 ? (
                   <tr>
-                    <td colSpan={3 + COLUMN_OPTIONS.filter((c) => visibleColumns[c.key]).length} className="text-center py-16 text-muted text-sm">
+                    <td colSpan={3 + ORDER_COLUMN_OPTIONS.filter((c) => visibleColumns[c.key]).length} className="text-center py-16 text-muted text-sm">
                       No orders found.
                     </td>
                   </tr>
@@ -647,12 +296,12 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
                       order={order}
                       avatarColor={AVATAR_COLORS[i % AVATAR_COLORS.length]}
                       isSelected={selectedIds.has(order.id)}
-                      openMenuId={openMenuId}
+                      openMenuId={table.menu.openId}
                       visibleColumns={visibleColumns}
-                      onView={openDrawer}
-                      onToggleSelect={toggleSelect}
-                      onMenuToggle={setOpenMenuId}
-                      onDelete={deleteOrder}
+                      onView={table.drawer.open}
+                      onToggleSelect={table.selection.toggleSelect}
+                      onMenuToggle={table.menu.setOpenId}
+                      onDelete={table.actions.deleteOrder}
                     />
                   ))
                 )}
@@ -674,34 +323,34 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
         />
       </div>
 
-      {openMenuId && (
-        <div className="fixed inset-0 z-10" onClick={() => setOpenMenuId(null)} />
+      {table.menu.openId && (
+        <div className="fixed inset-0 z-10" onClick={() => table.menu.setOpenId(null)} />
       )}
 
       {/* Drawer backdrop */}
-      {isDrawerOpen && (
+      {table.drawer.isOpen && (
         <div
           className="fixed inset-0 bg-ink/40 backdrop-blur-sm z-50"
-          onClick={closeDrawer}
+          onClick={table.drawer.close}
         />
       )}
 
       {/* Order detail drawer */}
       <aside
         className={`fixed top-0 right-0 w-full max-w-135 h-screen bg-cream z-51 flex flex-col shadow-2xl transition-transform duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
-          isDrawerOpen ? 'translate-x-0' : 'translate-x-full'
+          table.drawer.isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        {drawerOrder && (
+        {table.drawer.item && (
           <OrderDetailDrawer
-            key={drawerOrder.id}
-            order={drawerOrder}
-            statusUpdate={statusUpdate}
-            setStatusUpdate={setStatusUpdate}
-            onClose={closeDrawer}
-            onUpdate={updateOrder}
-            onRefundItem={refundItem}
-            onUnrefundItem={unrefundItem}
+            key={table.drawer.item.id}
+            order={table.drawer.item}
+            statusUpdate={table.statusUpdate}
+            setStatusUpdate={table.setStatusUpdate}
+            onClose={table.drawer.close}
+            onUpdate={table.actions.updateOrder}
+            onRefundItem={table.actions.refundItem}
+            onUnrefundItem={table.actions.unrefundItem}
           />
         )}
       </aside>

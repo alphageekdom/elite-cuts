@@ -2,7 +2,7 @@
 import { getInitials, formatDateTime } from '@/lib/format';
 import { printReceipt } from '@/lib/print-receipt';
 import type { OrderTableRow } from '@/types/admin';
-import type { OrderColumnVisibility } from './OrdersClient';
+import type { OrderColumnVisibility } from '@/hooks/useOrderColumns';
 
 const STATUS_PILL: Record<string, { bg: string; text: string; label: string; camel?: boolean }> = {
   'Order Placed':     { bg: 'bg-line-soft',  text: 'text-muted',    label: 'Order Placed' },
