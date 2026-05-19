@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import type { AnalyticsData } from '../AnalyticsClient';
 
 // The customer funnel half of this section was removed because it relied on
@@ -5,23 +7,47 @@ import type { AnalyticsData } from '../AnalyticsClient';
 // the event-tracking subsystem ships (separate spec). The insights card stays
 // — every bullet is computed from real numbers.
 
+type Insight = { tag: 'up' | 'alert'; body: ReactNode };
+
 export default function AnalyticsFunnelSection({ data }: { data: AnalyticsData }) {
-  const insights = [
+  // Bodies render as JSX so React escapes interpolated values — product
+  // names in particular are admin-controlled free text and must never reach
+  // the DOM as raw HTML.
+  const insights: Insight[] = [
     {
-      tag: 'up' as const,
-      body: data.bestSellers[0]
-        ? `<strong>${data.bestSellers[0].name}</strong> is your top earner this period — consider featuring it.`
-        : '<strong>Beef cuts</strong> are driving the majority of this period\'s revenue.',
+      tag: 'up',
+      body: data.bestSellers[0] ? (
+        <>
+          <strong>{data.bestSellers[0].name}</strong> is your top earner this period — consider featuring it.
+        </>
+      ) : (
+        <>
+          <strong>Beef cuts</strong> are driving the majority of this period&apos;s revenue.
+        </>
+      ),
     },
     {
-      tag: 'alert' as const,
-      body: data.cancelRate > 5
-        ? `<strong>Cancellation rate is ${data.cancelRate.toFixed(1)}%</strong> — higher than usual. Worth investigating.`
-        : '<strong>Cancellation rate is healthy</strong> — below 5%. Keep it up.',
+      tag: 'alert',
+      body: data.cancelRate > 5 ? (
+        <>
+          <strong>Cancellation rate is {data.cancelRate.toFixed(1)}%</strong> — higher than usual. Worth investigating.
+        </>
+      ) : (
+        <>
+          <strong>Cancellation rate is healthy</strong> — below 5%. Keep it up.
+        </>
+      ),
     },
     {
-      tag: 'up' as const,
-      body: `<strong>${data.newCustomers} new customers this period</strong>${data.newCustomersChange > 0 ? `, +${data.newCustomersChange.toFixed(0)}%` : ''} — track repeat orders over the next 30 days.`,
+      tag: 'up',
+      body: (
+        <>
+          <strong>
+            {data.newCustomers} new customers this period{data.newCustomersChange > 0 ? `, +${data.newCustomersChange.toFixed(0)}%` : ''}
+          </strong>{' '}
+          — track repeat orders over the next 30 days.
+        </>
+      ),
     },
   ];
 
@@ -51,10 +77,9 @@ export default function AnalyticsFunnelSection({ data }: { data: AnalyticsData }
               >
                 {ins.tag === 'up' ? 'Up' : 'Alert'}
               </span>
-              <p
-                className="text-[13px] text-ink-soft leading-[1.55] flex-1 [&_strong]:text-ink [&_strong]:font-medium"
-                dangerouslySetInnerHTML={{ __html: ins.body }}
-              />
+              <p className="text-[13px] text-ink-soft leading-[1.55] flex-1 [&_strong]:text-ink [&_strong]:font-medium">
+                {ins.body}
+              </p>
             </div>
           ))}
         </div>
