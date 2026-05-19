@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+
 import { getInitials } from '@/lib/format';
 import {
   AVATAR_BG,
@@ -17,6 +19,11 @@ type Props = {
 };
 
 export default function StaffTable({ rows, onOpenProfile, onEdit }: Props) {
+  // The parent tracks which row's menu is open so the matching `<tr>` can
+  // pick up the active-row ring. One id at a time — opening another menu
+  // implicitly closes whichever was previously open.
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
   return (
     <div className="bg-paper border border-line-soft rounded-sm overflow-hidden hidden md:block">
       <table className="w-full border-collapse text-[14px]">
@@ -43,12 +50,14 @@ export default function StaffTable({ rows, onOpenProfile, onEdit }: Props) {
           </tr>
         </thead>
         <tbody>
-          {rows.map((s, i) => (
+          {rows.map((s, i) => {
+            const isMenuOpen = openMenuId === s.id;
+            return (
             <tr
               key={s.id}
               className={`group hover:bg-cream/40 transition-colors ${
                 i < rows.length - 1 ? 'border-b border-line-soft' : ''
-              }`}
+              } ${isMenuOpen ? 'ring-1 ring-inset ring-ink' : ''}`}
             >
               <td className="px-6 py-4">
                 <div className="flex items-center gap-3">
@@ -105,12 +114,15 @@ export default function StaffTable({ rows, onOpenProfile, onEdit }: Props) {
               <td className="px-6 py-4 text-right">
                 <StaffActionsMenu
                   staffName={s.name}
+                  open={isMenuOpen}
+                  onOpenChange={(next) => setOpenMenuId(next ? s.id : null)}
                   onViewProfile={() => onOpenProfile(s)}
                   onEdit={() => onEdit(s)}
                 />
               </td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
     </div>

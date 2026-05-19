@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { getInitials, formatMoney, formatDate, relativeTime, avatarColorForId } from '@/lib/format';
 import { AVATAR_COLORS } from '@/lib/admin-constants';
+import { computeFloatingMenuPos } from '@/lib/floatingMenu';
 import { getTier, getActivity, deriveTags, TIER_CONFIG, ACTIVITY_CONFIG } from './customerUtils';
 import type { CustomerTableRow } from '@/types/admin';
 
@@ -53,11 +54,15 @@ export default function CustomerTableRowComponent({
     function update() {
       const btn = moreBtnRef.current;
       if (!btn) return;
-      const rect = btn.getBoundingClientRect();
-      setMenuPos({
-        top: rect.bottom + 4,
-        left: Math.max(8, rect.right - MENU_WIDTH),
-      });
+      // Estimated height: 3 items × ~44px + 1 divider ≈ 140px. The shared
+      // helper flips the menu above the trigger when there's not enough
+      // room below, so a tight viewport doesn't clip it off-screen.
+      setMenuPos(
+        computeFloatingMenuPos(btn.getBoundingClientRect(), {
+          menuWidth: MENU_WIDTH,
+          estimatedMenuHeight: 150,
+        }),
+      );
     }
     update();
     window.addEventListener('scroll', update, true);
@@ -83,7 +88,7 @@ export default function CustomerTableRowComponent({
       onClick={() => onView(cust)}
       className={`group border-b border-line-soft last:border-b-0 cursor-pointer transition-colors ${
         isSelected ? 'bg-camel/6' : 'hover:bg-cream'
-      }`}
+      } ${isOpen ? 'ring-1 ring-inset ring-ink' : ''}`}
     >
       <td className="pl-6 pr-0 py-4" onClick={(e) => e.stopPropagation()}>
         <input
