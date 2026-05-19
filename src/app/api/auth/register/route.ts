@@ -59,9 +59,33 @@ export const POST = async (request: NextRequest) => {
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    const existingUser = await User.findOne({ email: normalizedEmail });
+    // Pull the password hash + deletion fields so we can detect a
+    // soft-deleted-account-restore-attempt below. The unauthenticated
+    // /api/auth/check-email endpoint used to surface deletion state on a
+    // bare email lookup, which leaked who's mid-deletion to any caller —
+    // here we only reveal the soft-deleted signal when the caller proves
+    // they know the password, i.e. they're almost certainly the real owner.
+    const existingUser = await User.findOne({ email: normalizedEmail })
+      .select('+password deletedAt deletionScheduledFor');
 
     if (existingUser) {
+      if (existingUser.deletedAt && existingUser.password) {
+        const passwordMatches = await bcrypt.compare(
+          password,
+          existingUser.password as string,
+        );
+        if (passwordMatches) {
+          return NextResponse.json(
+            {
+              message: 'This account is scheduled for deletion. Sign in to restore it.',
+              accountState: 'soft_deleted',
+              deletionScheduledFor:
+                existingUser.deletionScheduledFor?.toISOString() ?? null,
+            },
+            { status: 409 },
+          );
+        }
+      }
       return NextResponse.json(
         { message: 'User already exists' },
         { status: 409 },
