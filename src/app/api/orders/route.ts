@@ -86,7 +86,7 @@ export const GET = async (request: NextRequest) => {
       ? {}
       : { user: sessionUser.userId };
 
-    const [total, orders] = await Promise.all([
+    const [total, items] = await Promise.all([
       Order.countDocuments(filter),
       Order.find(filter)
         .sort({ createdAt: -1 })
@@ -95,7 +95,7 @@ export const GET = async (request: NextRequest) => {
         .populate('user', 'name email'),
     ]);
 
-    return NextResponse.json({ total, orders });
+    return NextResponse.json({ items, total });
   } catch (error) {
     console.error('[orders GET]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });

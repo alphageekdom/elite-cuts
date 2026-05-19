@@ -23,7 +23,7 @@ export const GET = async () => {
     await connectDB();
 
     if (sessionUser.user?.isAdmin) {
-      const messages = await MessageModel.find({})
+      const items = await MessageModel.find({})
         .sort({ createdAt: -1 })
         .limit(200)
         .populate<{ user: PopulatedUser }>('user', 'name email')
@@ -31,14 +31,14 @@ export const GET = async () => {
 
       const openCount = await MessageModel.countDocuments({ status: 'open' });
 
-      return NextResponse.json({ messages, openCount });
+      return NextResponse.json({ items, openCount });
     }
 
-    const messages = await MessageModel.find({ user: sessionUser.userId })
+    const items = await MessageModel.find({ user: sessionUser.userId })
       .sort({ createdAt: -1 })
       .lean();
 
-    return NextResponse.json({ messages });
+    return NextResponse.json({ items });
   } catch (error) {
     console.error('[messages GET]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
@@ -77,7 +77,7 @@ export const POST = withAuth(async (request: NextRequest, _ctx, userId) => {
 
     const author = await User.findById(userId).select('name').lean<{ name?: string }>();
 
-    const message = await MessageModel.create({
+    const created = await MessageModel.create({
       user: userId,
       authorNameSnapshot: author?.name?.trim() || '',
       subject: subject.trim(),
@@ -86,7 +86,7 @@ export const POST = withAuth(async (request: NextRequest, _ctx, userId) => {
       ...(orderRef ? { orderRef: orderRef.trim() } : {}),
     });
 
-    return NextResponse.json({ message }, { status: 201 });
+    return NextResponse.json({ data: created }, { status: 201 });
   } catch (error) {
     console.error('[messages POST]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
