@@ -5,12 +5,32 @@ import connectDB from '@/config/database';
 import User from '@/models/User';
 import { EMAIL_RE } from '@/lib/validation';
 import { claimGuestOrdersForUser } from '@/lib/claimGuestOrders';
+import { clientIpFromHeaders, rateLimit } from '@/lib/rateLimit';
 
 const MIN_PASSWORD_LENGTH = 8;
 const MAX_PASSWORD_LENGTH = 128;
 
+// Per-IP cap. Register is high-value abuse surface (mass account creation,
+// bcrypt-compare CPU drain, password-spray against the soft-delete restore
+// signal Phase B2 gated on a password match), so we keep this tight.
+const REGISTER_MAX = 5;
+const REGISTER_WINDOW_MS = 60_000;
+
 export const POST = async (request: NextRequest) => {
   try {
+    const ip = clientIpFromHeaders(request.headers);
+    const limit = rateLimit({
+      key: `register:${ip}`,
+      max: REGISTER_MAX,
+      windowMs: REGISTER_WINDOW_MS,
+    });
+    if (!limit.ok) {
+      return NextResponse.json(
+        { message: 'Too many requests, please try again shortly' },
+        { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } },
+      );
+    }
+
     await connectDB();
 
     const { name, email, password, confirmPassword } = (await request.json()) as {
