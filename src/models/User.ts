@@ -192,6 +192,11 @@ const UserSchema = new Schema<User>(
   }
 );
 
+// Admin customers dashboard sorts by createdAt desc for "newest first".
+// Without this index the sort triggers an in-memory scan once the users
+// collection passes a few thousand rows.
+UserSchema.index({ createdAt: -1 });
+
 // See the matching note in models/Order.ts — Next.js dev hot-reload caches
 // the registered model on the Mongoose singleton, so schema additions
 // (e.g. lifetimePoints, pointsHistory) get silently dropped on writes
