@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import mongoose, { type ClientSession } from 'mongoose';
 
 import StocktakeModel, { type StocktakeEntry } from '@/models/Stocktake';

@@ -1,4 +1,6 @@
 import Image from 'next/image';
+import Link from 'next/link';
+
 import Reveal from '@/components/uielements/Reveal';
 
 const ICON_PIN = (
@@ -101,7 +103,7 @@ export default function OurStoryVisit({ street, cityStateZip, phone }: Props) {
               </div>
 
               <div className='flex flex-wrap gap-3'>
-                <a
+                <Link
                   href='/products'
                   className='bg-ink text-cream hover:bg-oxblood inline-flex items-center gap-2.5 rounded-full px-6 py-3.5 text-sm font-medium tracking-[0.02em] transition-colors'
                 >
@@ -116,7 +118,7 @@ export default function OurStoryVisit({ street, cityStateZip, phone }: Props) {
                   >
                     <path d='M5 12h14M13 5l7 7-7 7' />
                   </svg>
-                </a>
+                </Link>
                 <a
                   href='#'
                   className='border-line text-ink-soft hover:border-ink hover:bg-cream hover:text-ink inline-flex items-center gap-2.5 rounded-full border px-6 py-3.5 text-sm font-medium tracking-[0.02em] transition-colors'

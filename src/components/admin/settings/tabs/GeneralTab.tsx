@@ -130,7 +130,7 @@ export default function GeneralTab({ values, onChange, onSave, onDiscard, saving
 
       <section>
         <h2 className={sectionTitleCls}>Customer <em className="italic text-oxblood font-normal">privacy</em></h2>
-        <p className={sectionSubCls}>Controls automatic cleanup of customers who haven't returned in a long time.</p>
+        <p className={sectionSubCls}>Controls automatic cleanup of customers who haven&apos;t returned in a long time.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div>
             <label className={labelCls}>Dormancy threshold</label>

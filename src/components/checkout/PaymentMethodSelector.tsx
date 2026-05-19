@@ -113,8 +113,6 @@ const PaymentMethodSelector = ({
 
   const { state, dispatch } = useCheckoutContext();
   const method = state.paymentMethod;
-  const setMethod = (m: PayMethod) => dispatch({ type: 'SET_PAYMENT_METHOD', payload: m });
-  // (setMethodAndClearSavedCard wraps setMethod; defined below in the fetch effect block)
 
   const isNameValid = cardName.trim().length >= 5;
   const isCardNumberValid = cardNumber.replace(/\s/g, '').length === 16;

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 
 import { useCartContext } from '@/context/CartContext';
 import CartItemRow from './CartItemRow';
@@ -31,12 +32,12 @@ const EmptyState = () => (
       Browse the counter and add a few cuts — we&apos;ll have them ready when
       you&apos;re ready to pick up.
     </p>
-    <a
+    <Link
       href='/products'
       className='inline-flex items-center gap-2.5 rounded-full bg-ink px-6 py-3 text-[13px] font-medium tracking-[0.04em] text-cream transition-[background-color,transform] duration-300 hover:-translate-y-px hover:bg-oxblood motion-reduce:transition-none motion-reduce:hover:translate-y-0'
     >
       Shop the counter
-    </a>
+    </Link>
   </div>
 );
 

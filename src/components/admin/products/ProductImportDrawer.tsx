@@ -189,7 +189,7 @@ export default function ProductImportDrawer({ onClose, onCommitted }: Props) {
             <div>
               <div className="text-[13px] text-ink-soft mb-2">
                 Upload a CSV with this column order: <span className="font-mono text-[12px]">slug, name, description, category, price, unit, stock, isFeatured, isActive, supplier</span>.
-                Existing products are matched by <strong>slug</strong>; leave slug blank on new rows and it's derived from the name. Updating the name of an existing slug renames the product.
+                Existing products are matched by <strong>slug</strong>; leave slug blank on new rows and it&apos;s derived from the name. Updating the name of an existing slug renames the product.
               </div>
               <button
                 onClick={downloadTemplate}
@@ -303,7 +303,7 @@ export default function ProductImportDrawer({ onClose, onCommitted }: Props) {
 
             {errorCount > 0 && (
               <div className="text-[12px] text-oxblood bg-red-soft border border-[rgba(107,31,31,0.2)] rounded-md px-3 py-2">
-                Fix the error rows and re-upload — the commit will refuse to apply until they're resolved.
+                Fix the error rows and re-upload — the commit will refuse to apply until they&apos;re resolved.
               </div>
             )}
           </div>

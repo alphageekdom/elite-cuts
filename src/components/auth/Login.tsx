@@ -165,8 +165,8 @@ export default function Login() {
               Welcome back
             </div>
             <blockquote className="font-display text-[clamp(28px,2.6vw,38px)] font-normal leading-[1.15] tracking-[-0.02em] mb-7">
-              "There is no love sincerer than the love of{' '}
-              <em className="italic text-camel-soft">good food.</em>"
+              &ldquo;There is no love sincerer than the love of{' '}
+              <em className="italic text-camel-soft">good food.</em>&rdquo;
             </blockquote>
             <p className="font-display italic text-[13px] tracking-[0.04em] opacity-75">
               — George Bernard Shaw

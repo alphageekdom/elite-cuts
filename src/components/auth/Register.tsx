@@ -259,7 +259,7 @@ export default function Register() {
               Welcome to the <em className="italic text-oxblood">counter.</em>
             </h1>
             <p className="auth-reveal text-ink-soft mb-11 text-[15px] leading-relaxed max-w-[40ch] [animation-delay:300ms]">
-              Takes about 30 seconds. We'll never share your details, and you
+              Takes about 30 seconds. We&apos;ll never share your details, and you
               can opt out of emails any time.
             </p>
 
@@ -402,7 +402,7 @@ export default function Register() {
                   <Link href="#" className="text-oxblood border-b border-oxblood">
                     Privacy Policy
                   </Link>
-                  , and I'm at least 18 years old.
+                  , and I&apos;m at least 18 years old.
                 </span>
               </label>
 

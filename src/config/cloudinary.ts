@@ -17,7 +17,6 @@ type CloudinaryCache = { configured: boolean };
 
 // Cache on globalThis so the configured flag survives Next.js dev hot reload — module-scoped state would re-run config() per save.
 declare global {
-  // eslint-disable-next-line no-var -- `var` is required syntactically inside `declare global`.
   var cloudinaryCache: CloudinaryCache | undefined;
 }
 

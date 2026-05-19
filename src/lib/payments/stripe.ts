@@ -3,7 +3,6 @@ import 'server-only';
 import Stripe from 'stripe';
 
 declare global {
-  // eslint-disable-next-line no-var -- `var` is required syntactically inside `declare global`.
   var stripeClient: Stripe | undefined;
 }
 
