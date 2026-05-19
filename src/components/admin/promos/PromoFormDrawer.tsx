@@ -350,7 +350,7 @@ export default function PromoFormDrawer({ promo, onClose, onSaved }: Props) {
               onChange={(e) => setExcludesPoints(e.target.checked)}
               className="h-4 w-4 cursor-pointer accent-oxblood"
             />
-            Excludes points — customer can't redeem points on the same order
+            Excludes points — customer can&apos;t redeem points on the same order
           </label>
           <label className="flex items-center gap-2 text-[13px] text-ink-soft">
             <input
@@ -359,7 +359,7 @@ export default function PromoFormDrawer({ promo, onClose, onSaved }: Props) {
               onChange={(e) => setExcludesMember(e.target.checked)}
               className="h-4 w-4 cursor-pointer accent-oxblood"
             />
-            Excludes member discount — the 5% won't stack with this code
+            Excludes member discount — the 5% won&apos;t stack with this code
           </label>
           <label className="flex items-center gap-2 text-[13px] text-ink-soft">
             <input

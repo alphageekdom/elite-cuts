@@ -92,7 +92,6 @@ const ReviewModel =
 //
 // and the next request will rebuild the partial-filter version via autoIndex.
 declare global {
-  // eslint-disable-next-line no-var
   var __reviewIndexesSyncRequested: boolean | undefined;
 }
 

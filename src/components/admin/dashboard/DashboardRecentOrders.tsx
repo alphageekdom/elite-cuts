@@ -69,7 +69,7 @@ export default function DashboardRecentOrders({ orders }: Props) {
               </tr>
             </thead>
             <tbody>
-              {orders.map((order, i) => {
+              {orders.map((order) => {
                 const avatarColor = avatarColorForId(order.id, AVATAR_COLORS);
                 const initials = getInitials(order.customerName);
                 const statusStyle = STATUS_STYLES[order.status] ?? 'bg-line-soft text-ink-soft';

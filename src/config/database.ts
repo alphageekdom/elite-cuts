@@ -16,7 +16,6 @@ type MongooseCache = {
 
 // Cache on globalThis so the connection survives Next.js dev hot reload — module-scoped state would leak a connection per save.
 declare global {
-  // eslint-disable-next-line no-var -- `var` is required syntactically inside `declare global`.
   var mongooseCache: MongooseCache | undefined;
 }
 
