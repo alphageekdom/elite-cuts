@@ -28,12 +28,12 @@ export const GET = async (request: NextRequest) => {
     const sort: Record<string, SortOrder> = { [sortField]: sortOrder };
 
     const activeFilter = { isActive: { $ne: false } };
-    const [total, products] = await Promise.all([
+    const [total, items] = await Promise.all([
       Product.countDocuments(activeFilter),
       Product.find(activeFilter).sort(sort).skip(skip).limit(pageSize),
     ]);
 
-    return NextResponse.json({ total, products });
+    return NextResponse.json({ items, total });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
