@@ -45,7 +45,7 @@ export default async function TermsPage() {
           private. If you sign in through the demo accounts on the{' '}
           <Link
             href='/demo'
-            className='text-oxblood underline-offset-2 hover:underline'
+            className='text-oxblood underline underline-offset-4 decoration-oxblood/40 hover:decoration-oxblood'
           >
             demo landing page
           </Link>
@@ -86,7 +86,7 @@ export default async function TermsPage() {
           Questions about this page can go to the address on the{' '}
           <Link
             href='/contact'
-            className='text-oxblood underline-offset-2 hover:underline'
+            className='text-oxblood underline underline-offset-4 decoration-oxblood/40 hover:decoration-oxblood'
           >
             contact page
           </Link>
