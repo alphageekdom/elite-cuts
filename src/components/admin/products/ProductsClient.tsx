@@ -62,10 +62,10 @@ export default function ProductsClient({ products, counts, categoryCounts, heade
     setExporting(true);
     try {
       const params = new URLSearchParams();
-      if (activeFilter !== 'all') params.set('status', String(activeFilter));
+      if (activeFilter !== 'all') params.set('status', activeFilter);
       if (activeCategory) params.set('category', activeCategory);
       if (search.trim()) params.set('search', search.trim());
-      if (sortBy) params.set('sort', sortBy);
+      params.set('sort', sortBy);
       const url = `/api/products/export${params.size ? `?${params.toString()}` : ''}`;
       const res = await fetch(url);
       if (!res.ok) {

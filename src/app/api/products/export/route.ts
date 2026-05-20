@@ -8,6 +8,7 @@ import {
   matchesProductStatus,
   parseProductSortMode,
   parseProductStatus,
+  type ProductSortMode,
 } from '@/lib/admin-products';
 import { slugify } from '@/lib/slugify';
 
@@ -66,7 +67,7 @@ export const GET = withAdmin(async (req) => {
 
     // Map the shared sort union onto Mongo sort. Every member of
     // ProductSortMode has an entry, so this never falls through to {}.
-    const sortMap: Record<typeof sortMode, Record<string, 1 | -1>> = {
+    const sortMap: Record<ProductSortMode, Record<string, 1 | -1>> = {
       newest:       { createdAt: -1 },
       oldest:       { createdAt: 1 },
       'price-asc':  { price: 1 },
