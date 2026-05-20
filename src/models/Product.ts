@@ -176,11 +176,6 @@ ProductSchema.pre('validate', function () {
   }
 });
 
-// Customer catalog and admin products listing both filter by isActive and
-// sort by createdAt desc. Compound index covers both halves so the products
-// dashboard stays fast as the catalog grows.
-ProductSchema.index({ isActive: 1, createdAt: -1 });
-
 // Reuse the cached model in dev — Next.js hot-reload re-evaluates this file
 // on every change, and `model()` throws if the same name registers twice.
 const ProductModel =

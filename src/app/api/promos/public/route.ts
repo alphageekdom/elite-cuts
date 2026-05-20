@@ -50,6 +50,11 @@ export async function GET() {
     return NextResponse.json({ items });
   } catch (error) {
     console.error('[promos/public GET]', error);
-    return NextResponse.json({ items: [] });
+    // Return a 5xx so Next's full-route cache (revalidate = 60) skips this
+    // response — a transient DB blip would otherwise memoize an empty chip
+    // strip for the next 60 seconds for every visitor. The client falls
+    // back to an empty list on a non-2xx, same visible outcome as the old
+    // 200-with-empty-items but without poisoning the cache.
+    return NextResponse.json({ items: [] }, { status: 500 });
   }
 }

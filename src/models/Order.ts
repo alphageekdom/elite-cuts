@@ -355,11 +355,12 @@ OrderSchema.index(
 // page scans the collection as orders accumulate.
 OrderSchema.index({ user: 1, createdAt: -1 });
 
-// Admin orders dashboard status-pill filtering: combinations of isPaid +
-// orderStatus + sort by createdAt desc. The pill UI is the most-clicked
-// admin surface, so this index pays for itself once the orders collection
-// passes a few thousand rows.
-OrderSchema.index({ isPaid: 1, orderStatus: 1, createdAt: -1 });
+// Admin orders dashboard + admin GET /api/orders both filter on a createdAt
+// range and sort by createdAt desc. The (user, createdAt) compound above
+// can't serve unfiltered admin reads. Pill filtering on isPaid/orderStatus
+// is applied client-side over the 200-row prefetch, so a leading-isPaid
+// compound earns nothing here.
+OrderSchema.index({ createdAt: -1 });
 
 // In dev, Next.js hot-reload keeps `mongoose.models.Order` cached on the
 // global Mongoose singleton even after this file is re-evaluated. That

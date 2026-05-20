@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 };
 
 type OrderAggResult = {
-  _id: Types.ObjectId | null;
+  _id: Types.ObjectId;
   count: number;
   totalSpend: number;
   lastOrderAt: Date;
@@ -34,29 +34,31 @@ export default async function AdminCustomersPage() {
 
   await connectDB();
 
-  const [rawUsers, orderAgg] = await Promise.all([
-    UserModel.find({ isAdmin: { $ne: true } })
-      .sort({ createdAt: -1 })
-      .limit(200)
-      .lean()
-      .exec(),
-    OrderModel.aggregate<OrderAggResult>([
-      {
-        $group: {
-          _id: '$user',
-          count: { $sum: 1 },
-          totalSpend: { $sum: '$totalCost' },
-          lastOrderAt: { $max: '$createdAt' },
-        },
+  const rawUsers = await UserModel.find({ isAdmin: { $ne: true } })
+    .sort({ createdAt: -1 })
+    .limit(200)
+    .lean()
+    .exec();
+
+  // Scope the per-customer stats aggregation to the 200 users actually being
+  // rendered. The previous shape grouped every order in the database on every
+  // page load — a full-collection scan that grows linearly with orders, not
+  // with customers, even though the table only shows 200 rows.
+  const userIds = rawUsers.map((u) => u._id);
+  const orderAgg = await OrderModel.aggregate<OrderAggResult>([
+    { $match: { user: { $in: userIds } } },
+    {
+      $group: {
+        _id: '$user',
+        count: { $sum: 1 },
+        totalSpend: { $sum: '$totalCost' },
+        lastOrderAt: { $max: '$createdAt' },
       },
-    ]),
+    },
   ]);
 
   const orderMap = new Map<string, OrderStats>();
   for (const entry of orderAgg) {
-    // Guest orders have `user: null` and group into a null bucket — skip them
-    // so the orderMap only covers signed-in customers.
-    if (entry._id == null) continue;
     orderMap.set(entry._id.toString(), {
       count: entry.count,
       totalSpend: entry.totalSpend,
