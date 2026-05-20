@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { EMAIL_RE } from '@/lib/validation';
 import { inputCls } from '@/components/admin/settings/SettingsUI';
+import AdminEyebrow from '@/components/admin/AdminEyebrow';
 import type { CustomerTableRow } from '@/types/admin';
 
 type Props = {
@@ -101,7 +102,7 @@ export default function CustomerCreateDrawer({ onClose, onCreated }: Props) {
         <div className="absolute -top-30 -right-30 w-64 h-64 rounded-full pointer-events-none bg-[radial-gradient(circle,rgba(184,137,90,0.18)_0%,transparent_60%)]" />
         <div className="relative z-10 flex items-start justify-between">
           <div>
-            <div className="font-display italic text-[13px] text-camel mb-1">✦ New customer</div>
+            <AdminEyebrow size="drawer" className="mb-1">New customer</AdminEyebrow>
             <div className="font-display text-[26px] font-medium tracking-tight leading-tight">
               Add a customer
             </div>

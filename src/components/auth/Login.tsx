@@ -25,6 +25,7 @@ interface TouchedState {
 import { EMAIL_RE } from '@/lib/validation';
 
 import { FieldValidationIcon as FieldIcon } from '@/components/auth/FieldValidationIcon';
+import EditorialEyebrow from '@/components/ui/EditorialEyebrow';
 import {
   useSignInLockout,
   formatLockoutCountdown,
@@ -207,9 +208,9 @@ export default function Login() {
 
         <div className="flex-1 flex items-center justify-center py-10">
           <div className="w-full max-w-105">
-            <span className="auth-reveal block font-display italic text-sm text-camel mb-4 tracking-[0.02em] [animation-delay:100ms]">
+            <EditorialEyebrow className="auth-reveal mb-4 [animation-delay:100ms]">
               ↗ Sign in
-            </span>
+            </EditorialEyebrow>
             <h1 className="auth-reveal font-display font-normal text-[clamp(40px,4.5vw,56px)] leading-[1.05] tracking-tight mb-4 [animation-delay:200ms]">
               Good to see you <em className="italic text-oxblood">again.</em>
             </h1>

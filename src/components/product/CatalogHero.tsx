@@ -1,3 +1,5 @@
+import SectionEyebrow from '@/components/home/SectionEyebrow';
+
 type Stat = { value: string; label: string };
 
 type CatalogHeroProps = {
@@ -7,12 +9,7 @@ type CatalogHeroProps = {
 const CatalogHero = ({ stats }: CatalogHeroProps) => (
   <section className='bg-cream pt-36 pb-20 md:pt-40 md:pb-24'>
     <div className='mx-auto w-full max-w-7xl px-6 md:px-8'>
-      <div className='mb-12 flex items-baseline gap-6'>
-        <span className='text-xs font-medium tracking-[0.22em] uppercase text-muted'>
-          The Shop
-        </span>
-        <span aria-hidden='true' className='h-px flex-1 bg-line' />
-      </div>
+      <SectionEyebrow label='The Shop' className='mb-12' />
 
       <div className='mb-12 grid items-end gap-8 lg:grid-cols-[1.4fr_1fr] lg:gap-16'>
         <h1 className='max-w-[10ch] font-display text-[clamp(56px,8vw,120px)] leading-[0.95] tracking-[-0.035em] font-normal'>

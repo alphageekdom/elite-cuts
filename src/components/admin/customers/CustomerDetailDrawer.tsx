@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { formatMoney, formatDate, relativeTime, getInitials } from '@/lib/format';
 import { useDrawerForm } from '@/hooks/useDrawerForm';
 import { inputCls } from '@/components/admin/settings/SettingsUI';
+import AdminEyebrow from '@/components/admin/AdminEyebrow';
 import type { CustomerTableRow } from '@/types/admin';
 import { getTier, getActivity, TIER_CONFIG, ACTIVITY_CONFIG, deriveTags } from './customerUtils';
 export type { Tier, ActivityStatus } from './customerUtils';
@@ -132,7 +133,7 @@ export default function CustomerDetailDrawer({
         <div className="relative z-10">
           <div className="flex items-start justify-between mb-6">
             <div>
-              <div className="font-display italic text-[13px] text-camel mb-1">✦ Customer profile</div>
+              <AdminEyebrow size="drawer" className="mb-1">Customer profile</AdminEyebrow>
               <div className="font-mono text-[11px] text-cream/50 tracking-[0.04em]">
                 {custId} · MEMBER SINCE {formatDate(customer.createdAt).toUpperCase()}
               </div>

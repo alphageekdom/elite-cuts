@@ -101,7 +101,7 @@ export default function StaffPageClient({ rows, headerSubtitle }: Props) {
   return (
     <>
       <AdminPageHeader
-        eyebrow="✦ Roster"
+        eyebrow="Roster"
         breadcrumb="Staff"
         title="Shop"
         titleAccent="staff"

@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 import { FOCUS_RING } from '@/lib/styles';
 import { startDemoSession, type DemoType } from '@/lib/auth/demo-signin';
+import EditorialEyebrow from '@/components/ui/EditorialEyebrow';
 
 const DemoCards = () => {
   const [pending, setPending] = useState<DemoType | null>(null);
@@ -20,9 +21,9 @@ const DemoCards = () => {
   return (
     <div className='grid items-stretch gap-6 md:grid-cols-2'>
       <article className='flex h-full flex-col rounded-sm border border-line-soft bg-paper px-7 py-8 sm:px-8 sm:py-10'>
-        <span className='font-display italic text-sm text-camel mb-3 tracking-[0.02em]'>
+        <EditorialEyebrow className='mb-3'>
           ↗ Shop the catalog
-        </span>
+        </EditorialEyebrow>
         <h2 className='font-display text-[clamp(28px,3vw,36px)] font-normal leading-tight tracking-tight mb-4'>
           At the <em className='italic text-oxblood'>counter</em>
         </h2>
@@ -56,9 +57,9 @@ const DemoCards = () => {
       </article>
 
       <article className='flex h-full flex-col rounded-sm border border-line-soft bg-paper px-7 py-8 sm:px-8 sm:py-10'>
-        <span className='font-display italic text-sm text-camel mb-3 tracking-[0.02em]'>
+        <EditorialEyebrow className='mb-3'>
           ↗ Run the shop
-        </span>
+        </EditorialEyebrow>
         <h2 className='font-display text-[clamp(28px,3vw,36px)] font-normal leading-tight tracking-tight mb-4'>
           Behind the <em className='italic text-oxblood'>counter</em>
         </h2>

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { SaveToast } from './SettingsToast';
+import AdminEyebrow from '@/components/admin/AdminEyebrow';
 import GeneralTab from './tabs/GeneralTab';
 import NotificationsTab from './tabs/NotificationsTab';
 import RewardsTab from './tabs/RewardsTab';
@@ -83,7 +84,7 @@ export default function SettingsClient() {
   return (
     <>
       <div className="mb-9">
-        <div className="font-display italic text-sm text-camel mb-1.5">Configuration</div>
+        <AdminEyebrow size="page" className="mb-1.5">Configuration</AdminEyebrow>
         <h1 className="font-display font-normal text-[clamp(36px,4vw,52px)] leading-none tracking-tight mb-1">
           Shop <em className="italic text-oxblood">settings</em>
         </h1>
