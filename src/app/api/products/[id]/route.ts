@@ -6,8 +6,12 @@ import Product from '@/models/Product';
 import Review from '@/models/Review';
 import User from '@/models/User';
 import { getSessionUser } from '@/lib/getSessionUser';
-import { productRecordFromFormData, validateProductInput } from '@/lib/product-validate';
 import { withAdmin } from '@/lib/api-handler';
+import {
+  coerceProductInput,
+  productRecordFromFormData,
+} from '@/lib/products/parse-form-input';
+import { productInputSchema } from '@/lib/products/schema';
 
 // Next 15+ params are async — must be awaited inside the handler.
 type RouteContext = { params: Promise<{ id: string }> };
@@ -35,7 +39,12 @@ export const GET = async (_request: NextRequest, { params }: RouteContext) => {
   }
 };
 
-// PATCH /api/products/:id — admin-only partial update (isActive, isFeatured, price).
+// PATCH /api/products/:id — admin-only partial update for isActive and
+// isFeatured toggles only. Price-edits used to ride this endpoint, but the
+// `price` field is now stamped by the model's pre-validate hook from the
+// canonical pricing fields — a direct PATCH would persist briefly and then
+// get clobbered on the next full save. Admins edit price through the full
+// PUT form going forward.
 export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
   try {
     const { id } = await (ctx as RouteContext).params;
@@ -45,18 +54,11 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
     const body = (await request.json()) as {
       isActive?: boolean;
       isFeatured?: boolean;
-      price?: number;
     };
 
     const update: Record<string, unknown> = {};
     if (body.isActive !== undefined) update.isActive = body.isActive;
     if (body.isFeatured !== undefined) update.isFeatured = body.isFeatured;
-    if (body.price !== undefined) {
-      if (typeof body.price !== 'number' || body.price < 0) {
-        return NextResponse.json({ message: 'price must be a non-negative number' }, { status: 400 });
-      }
-      update.price = body.price;
-    }
 
     if (Object.keys(update).length === 0) {
       return NextResponse.json({ message: 'No valid fields to update' }, { status: 400 });
@@ -94,7 +96,10 @@ export const DELETE = withAdmin(async (_request: NextRequest, ctx: unknown) => {
   }
 });
 
-// PUT /api/products/:id — admin-only update from the dashboard form.
+// PUT /api/products/:id — admin-only update from the dashboard form. Runs
+// through the same Zod schema as POST, then preserves rating + images from
+// the persisted doc (those aren't form-editable) and falls back to existing
+// boolean toggle values when the form doesn't submit them.
 export const PUT = withAdmin(async (request: NextRequest, ctx: unknown) => {
   try {
     const { id } = await (ctx as RouteContext).params;
@@ -108,39 +113,33 @@ export const PUT = withAdmin(async (request: NextRequest, ctx: unknown) => {
       return NextResponse.json({ message: 'Product not found' }, { status: 404 });
     }
 
-    // rating + images preserved from the existing doc — not editable via the
-    // admin form (rating is review-derived; images upload via a separate
-    // surface). Slug stays stable across edits so external references hold.
     const record = productRecordFromFormData(formData);
-    // The form doesn't surface a slug input, so an empty slug here means
-    // "keep the existing slug" rather than "derive a new one from name".
-    if (!record.slug.trim()) record.slug = existingProduct.slug ?? '';
-    // The form also doesn't submit `isFeatured` or `isActive` (those live
-    // on separate toggles). When they're absent, fall back to the persisted
-    // value so editing any other field doesn't quietly clear them.
-    if (!formData.has('isFeatured')) record.isFeatured = existingProduct.isFeatured ? 'true' : 'false';
-    if (!formData.has('isActive'))   record.isActive   = existingProduct.isActive   ? 'true' : 'false';
-    const v = validateProductInput(record);
-    if (!v.ok) {
-      return NextResponse.json({ message: v.error }, { status: 400 });
+    // Empty slug on an edit means "keep the existing slug", not "derive a
+    // new one from name". The coercer would otherwise re-derive on every
+    // rename and break external references.
+    if (!record.slug?.trim()) record.slug = existingProduct.slug;
+
+    const parsed = productInputSchema.safeParse(coerceProductInput(record));
+    if (!parsed.success) {
+      const first = parsed.error.issues[0];
+      return NextResponse.json({ message: first?.message ?? 'Invalid input' }, { status: 400 });
     }
+
+    // Preserve existing toggle values when the form didn't submit them
+    // (separate toggles, not part of the main form payload).
+    const { stock, ...rest } = parsed.data;
+    const update: Record<string, unknown> = {
+      ...rest,
+      stockCount: stock,
+      rating: existingProduct.rating,
+      images: existingProduct.images,
+    };
+    if (!formData.has('isFeatured')) update.isFeatured = existingProduct.isFeatured;
+    if (!formData.has('isActive'))   update.isActive   = existingProduct.isActive;
 
     const updatedProduct = await Product.findByIdAndUpdate(
       id,
-      {
-        slug: v.data.slug,
-        name: v.data.name,
-        description: v.data.description,
-        category: v.data.category,
-        price: v.data.price,
-        unit: v.data.unit,
-        stockCount: v.data.stock,
-        isFeatured: v.data.isFeatured,
-        isActive: v.data.isActive,
-        supplier: v.data.supplier,
-        rating: existingProduct.rating,
-        images: existingProduct.images,
-      },
+      update,
       { returnDocument: 'after', runValidators: true },
     );
     return NextResponse.json(updatedProduct);

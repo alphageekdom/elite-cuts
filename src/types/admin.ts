@@ -1,19 +1,48 @@
 import type { ProductCategory } from '@/lib/admin-constants';
+import type { MeatQualityTier, PricingType } from '@/lib/products/constants';
 
 export type ProductTableRow = {
   id: string;
   name: string;
+  description?: string;
   category: ProductCategory;
+  // Backcompat — stamped from canonical pricing fields on save. The catalog
+  // and cart still read this in Phase 1; Phase 2 swaps them to
+  // displayPriceLabel.
   price: number;
   rating: number;
   images: string[];
   stockCount: number;
   isFeatured: boolean;
+  isActive: boolean;
   isAged: boolean;
   isNewArrival: boolean;
   sku?: string;
   gradeBreed?: string;
   supplier?: string;
+  parLevel?: number;
+  reorderPoint?: number;
+
+  // — Realistic pricing model. Optional on the row so legacy products that
+  // pre-date Phase 1 can still serialize cleanly; the admin form treats a
+  // missing pricingType on edit as "admin must pick one before saving".
+  pricingType?: PricingType;
+  cutType?: string;
+  qualityTier?: MeatQualityTier;
+  packagePrice?: number;
+  packageWeightLb?: number;
+  pricePerLb?: number;
+  estimatedWeightLb?: number;
+  averageWeightLb?: number;
+  minWeightLb?: number;
+  maxWeightLb?: number;
+  unitPrice?: number;
+  bundlePrice?: number;
+  includedItems?: string[];
+  displayPriceLabel?: string;
+  displayWeightLabel?: string;
+  isEstimatedPrice?: boolean;
+
   createdAt: string;
   updatedAt: string;
 };

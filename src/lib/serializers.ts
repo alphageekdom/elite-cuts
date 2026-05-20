@@ -1,22 +1,43 @@
 import type { ProductTableRow, OrderTableRow, CustomerTableRow } from '@/types/admin';
 import type { ProductCategory } from '@/lib/admin-constants';
+import type { MeatQualityTier, PricingType } from '@/lib/products/constants';
 import { refundSummary } from '@/lib/order-refunds';
 
 // Minimal shape of a lean Product document returned from ProductModel.find().lean()
 type RawProduct = {
   _id: { toString(): string };
   name: string;
+  description?: string;
   category: ProductCategory;
   price: number;
   rating: number;
   images: string[];
   stockCount: number;
   isFeatured: boolean;
+  isActive?: boolean;
   isAged?: boolean;
   isNewArrival?: boolean;
   sku?: string;
   gradeBreed?: string;
   supplier?: string;
+  parLevel?: number;
+  reorderPoint?: number;
+  pricingType?: PricingType;
+  cutType?: string;
+  qualityTier?: MeatQualityTier;
+  packagePrice?: number;
+  packageWeightLb?: number;
+  pricePerLb?: number;
+  estimatedWeightLb?: number;
+  averageWeightLb?: number;
+  minWeightLb?: number;
+  maxWeightLb?: number;
+  unitPrice?: number;
+  bundlePrice?: number;
+  includedItems?: string[];
+  displayPriceLabel?: string;
+  displayWeightLabel?: string;
+  isEstimatedPrice?: boolean;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -60,17 +81,37 @@ export function serializeProductRow(p: RawProduct): ProductTableRow {
   return {
     id: p._id.toString(),
     name: p.name,
+    description: p.description ?? '',
     category: p.category,
     price: p.price,
     rating: p.rating,
     images: p.images,
     stockCount: p.stockCount,
     isFeatured: p.isFeatured,
+    isActive: p.isActive ?? true,
     isAged: p.isAged ?? false,
     isNewArrival: p.isNewArrival ?? false,
     sku: p.sku ?? '',
     gradeBreed: p.gradeBreed ?? '',
     supplier: p.supplier ?? '',
+    parLevel: p.parLevel,
+    reorderPoint: p.reorderPoint,
+    pricingType: p.pricingType,
+    cutType: p.cutType ?? '',
+    qualityTier: p.qualityTier,
+    packagePrice: p.packagePrice,
+    packageWeightLb: p.packageWeightLb,
+    pricePerLb: p.pricePerLb,
+    estimatedWeightLb: p.estimatedWeightLb,
+    averageWeightLb: p.averageWeightLb,
+    minWeightLb: p.minWeightLb,
+    maxWeightLb: p.maxWeightLb,
+    unitPrice: p.unitPrice,
+    bundlePrice: p.bundlePrice,
+    includedItems: p.includedItems,
+    displayPriceLabel: p.displayPriceLabel,
+    displayWeightLabel: p.displayWeightLabel,
+    isEstimatedPrice: p.isEstimatedPrice,
     createdAt: p.createdAt.toISOString(),
     updatedAt: p.updatedAt.toISOString(),
   };
