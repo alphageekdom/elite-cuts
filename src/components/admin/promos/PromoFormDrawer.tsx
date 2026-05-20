@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 
 import { createPromo, updatePromo, deletePromo } from '@/actions/promos';
 import { btnPrimary, btnGhost, btnDanger } from '@/components/admin/settings/SettingsUI';
+import { flattenPromoIssues, promoInputSchema } from '@/lib/promos/schema';
 import type { PromoType } from '@/models/Promo';
 
 export type PromoFormRow = {
@@ -52,6 +53,7 @@ const fieldLabel =
   'block text-[11px] font-medium tracking-[0.14em] uppercase text-muted mb-1.5';
 const textInput =
   'w-full rounded-sm border border-line bg-cream px-3 py-2 text-[14px] text-ink outline-none transition-colors focus:border-ink disabled:opacity-50';
+const fieldError = 'mt-1 text-[11px] text-oxblood';
 
 export default function PromoFormDrawer({ promo, onClose, onSaved }: Props) {
   const isEdit = promo != null;
@@ -76,6 +78,7 @@ export default function PromoFormDrawer({ promo, onClose, onSaved }: Props) {
   const [isPublic, setIsPublic] = useState(promo?.isPublic ?? false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Live preview on two sample order sizes. Matches validatePromo's math
   // minus the member-discount step so admins see the headline savings
@@ -124,9 +127,17 @@ export default function PromoFormDrawer({ promo, onClose, onSaved }: Props) {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const payload = buildPayload();
+    // Same schema the server action runs — admins get inline field
+    // errors without a round trip when something's malformed.
+    const parsed = promoInputSchema.safeParse(payload);
+    if (!parsed.success) {
+      setErrors(flattenPromoIssues(parsed.error.issues));
+      return;
+    }
+    setErrors({});
     setSaving(true);
     try {
-      const payload = buildPayload();
       const result = isEdit
         ? await updatePromo(promo!.id, payload)
         : await createPromo(payload);
@@ -186,7 +197,9 @@ export default function PromoFormDrawer({ promo, onClose, onSaved }: Props) {
               placeholder="GRILLSEASON25"
               required
               className={`${textInput} font-mono tracking-[0.04em]`}
+              aria-invalid={errors.code ? true : undefined}
             />
+            {errors.code && <p className={fieldError}>{errors.code}</p>}
           </div>
           <div className="flex items-end">
             <label className="flex items-center gap-2 text-[13px] text-ink-soft">
@@ -210,7 +223,9 @@ export default function PromoFormDrawer({ promo, onClose, onSaved }: Props) {
             maxLength={280}
             placeholder="Summer grill kickoff — promotes weekend foot traffic"
             className={textInput}
+            aria-invalid={errors.description ? true : undefined}
           />
+          {errors.description && <p className={fieldError}>{errors.description}</p>}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -239,7 +254,9 @@ export default function PromoFormDrawer({ promo, onClose, onSaved }: Props) {
               onChange={(e) => setValueStr(e.target.value)}
               required
               className={textInput}
+              aria-invalid={errors.value ? true : undefined}
             />
+            {errors.value && <p className={fieldError}>{errors.value}</p>}
           </div>
         </div>
 
@@ -255,7 +272,9 @@ export default function PromoFormDrawer({ promo, onClose, onSaved }: Props) {
               onChange={(e) => setMinSubtotalStr(e.target.value)}
               placeholder="No minimum"
               className={textInput}
+              aria-invalid={errors.minSubtotal ? true : undefined}
             />
+            {errors.minSubtotal && <p className={fieldError}>{errors.minSubtotal}</p>}
           </div>
           {type === 'percent' && (
             <div>
@@ -269,7 +288,9 @@ export default function PromoFormDrawer({ promo, onClose, onSaved }: Props) {
                 onChange={(e) => setMaxDiscountStr(e.target.value)}
                 placeholder="No cap"
                 className={textInput}
+                aria-invalid={errors.maxDiscount ? true : undefined}
               />
+              {errors.maxDiscount && <p className={fieldError}>{errors.maxDiscount}</p>}
             </div>
           )}
         </div>
@@ -292,7 +313,9 @@ export default function PromoFormDrawer({ promo, onClose, onSaved }: Props) {
                 value={endsAt}
                 onChange={(e) => setEndsAt(e.target.value)}
                 className={textInput}
+                aria-invalid={errors.endsAt ? true : undefined}
               />
+              {errors.endsAt && <p className={fieldError}>{errors.endsAt}</p>}
             </div>
           </div>
           <p className="mt-1.5 text-[11px] text-muted">
@@ -312,8 +335,10 @@ export default function PromoFormDrawer({ promo, onClose, onSaved }: Props) {
               onChange={(e) => setUsageLimitStr(e.target.value)}
               placeholder="Unlimited"
               className={textInput}
+              aria-invalid={errors.usageLimit ? true : undefined}
             />
-            {isEdit && (
+            {errors.usageLimit && <p className={fieldError}>{errors.usageLimit}</p>}
+            {isEdit && !errors.usageLimit && (
               <p className="mt-1 text-[11px] text-muted">
                 Used {promo!.usageCount} time{promo!.usageCount === 1 ? '' : 's'}
               </p>
@@ -329,7 +354,9 @@ export default function PromoFormDrawer({ promo, onClose, onSaved }: Props) {
               value={perCustomerStr}
               onChange={(e) => setPerCustomerStr(e.target.value)}
               className={textInput}
+              aria-invalid={errors.perCustomerLimit ? true : undefined}
             />
+            {errors.perCustomerLimit && <p className={fieldError}>{errors.perCustomerLimit}</p>}
           </div>
         </div>
 
