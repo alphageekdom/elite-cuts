@@ -27,46 +27,47 @@ export default async function TermsPage() {
       eyebrow='Terms of Service'
       title='The fine print,'
       titleAccent='kept short.'
-      intro={`How using ${shopName} works — what you can do, what we ask, and what we cannot promise.`}
+      intro={`Plain-English ground rules for the ${shopName} project — what you can do, what to expect, and what we cannot promise.`}
       updatedAt={LAST_UPDATED}
     >
       <LegalSection heading='Acceptable use'>
         <LegalParagraph>
-          You are welcome to browse the catalog, create an account, place demo
-          orders, and explore every feature. Please do not attempt to break the
-          site, scrape it at volume, abuse the auth flows, or use it to host or
-          distribute content that is not yours.
+          Browse the catalog, create an account, place orders, and explore
+          every feature — that&apos;s exactly what the site is here for.
+          Don&apos;t try to break it, scrape it at volume, abuse the sign-in
+          flows, or use it to host content that isn&apos;t yours.
         </LegalParagraph>
       </LegalSection>
 
       <LegalSection heading='Your account'>
         <LegalParagraph>
-          When you register, you are responsible for keeping your password
-          private. If you sign in through the demo accounts on the{' '}
+          Your password is yours to keep private. If you sign in through one
+          of the shared accounts on the{' '}
           <Link
             href='/demo'
             className='text-oxblood underline underline-offset-4 decoration-oxblood/40 hover:decoration-oxblood'
           >
             demo landing page
           </Link>
-          , bear in mind those accounts are shared and their data resets every
-          night.
+          , remember those accounts reset every night — anything you save
+          under them goes with the reset.
         </LegalParagraph>
       </LegalSection>
 
       <LegalSection heading='Orders and payment'>
         <LegalParagraph>
-          No real transactions happen on {shopName}. The checkout flow either
-          completes a no-charge demo order or hands off to a Stripe test page —
-          neither will charge a card. Prices, stock, pickup slots, and order
-          history are all illustrative.
+          No real money changes hands on {shopName}. Checkout either records a
+          no-charge order on the spot or hands you off to a Stripe test page;
+          neither one will touch a real card. Prices, stock, pickup slots,
+          and order history are here to show how the shop would work, not to
+          sell you a steak.
         </LegalParagraph>
       </LegalSection>
 
       <LegalSection heading='What we cannot promise'>
         <LegalList
           items={[
-            'The site may go down, change, or be retired without warning — it is a personal project, not a service.',
+            "The site may go down, change, or retire without warning — it's a personal project, not a service.",
             'Demo data resets nightly, so anything you create as a demo customer will be gone the next morning.',
             'We make no warranty that the site is fit for any particular purpose, and we are not liable for any loss that arises from using it.',
           ]}
@@ -75,15 +76,15 @@ export default async function TermsPage() {
 
       <LegalSection heading='Changes to these terms'>
         <LegalParagraph>
-          We may update this page at any time. The date at the top reflects the
-          most recent change. Continued use of the site after a change means
-          you accept the updated terms.
+          If this page changes, the date at the top moves with it. The site
+          is a portfolio project, so don&apos;t expect surprise updates — but
+          standard legal pages say to flag this, and so does this one.
         </LegalParagraph>
       </LegalSection>
 
       <LegalSection heading='Contact'>
         <LegalParagraph>
-          Questions about this page can go to the address on the{' '}
+          Questions? Reach out through the{' '}
           <Link
             href='/contact'
             className='text-oxblood underline underline-offset-4 decoration-oxblood/40 hover:decoration-oxblood'
