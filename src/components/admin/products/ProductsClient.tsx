@@ -11,6 +11,13 @@ import AdminSearchInput from '@/components/admin/AdminSearchInput';
 import AdminPagination from '@/components/admin/AdminPagination';
 import AdminStatStrip from '@/components/admin/AdminStatStrip';
 import { PRODUCT_CATEGORIES } from '@/lib/admin-constants';
+import {
+  PRODUCT_SORT_OPTIONS,
+  applyProductsFilter,
+  parseProductStatus,
+  sortProducts,
+  type ProductSortMode,
+} from '@/lib/admin-products';
 import { formatMoney } from '@/lib/format';
 import type { ProductCategory } from '@/lib/admin-constants';
 import type { ProductTableRow, ProductCounts } from '@/types/admin';
@@ -25,19 +32,6 @@ type Props = {
   headerCounts: { total: number; inStock: number; outOfStock: number };
 };
 
-type SortBy = 'newest' | 'oldest' | 'price-asc' | 'price-desc' | 'name-asc' | 'top-rated';
-
-const SORT_OPTIONS: { value: SortBy; label: string }[] = [
-  { value: 'newest', label: 'Newest first' },
-  { value: 'oldest', label: 'Oldest first' },
-  { value: 'price-asc', label: 'Price: Low → High' },
-  { value: 'price-desc', label: 'Price: High → Low' },
-  { value: 'name-asc', label: 'Name: A → Z' },
-  { value: 'top-rated', label: 'Top rated' },
-];
-
-
-
 const PAGE_SIZES = [8, 20, 50];
 
 export default function ProductsClient({ products, counts, categoryCounts, headerCounts }: Props) {
@@ -49,7 +43,7 @@ export default function ProductsClient({ products, counts, categoryCounts, heade
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const { item: drawerProduct, isOpen: drawerOpen, open: _openDrawer, close: closeDrawer } = useAdminDrawer<ProductTableRow>();
-  const [sortBy, setSortBy] = useState<SortBy>('newest');
+  const [sortBy, setSortBy] = useState<ProductSortMode>('newest');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [perPage, setPerPage] = useState(8);
   const [exporting, setExporting] = useState(false);
@@ -196,27 +190,12 @@ export default function ProductsClient({ products, counts, categoryCounts, heade
   }
 
   const filtered = useMemo(() => {
-    let rows = localProducts;
-
-    if (activeFilter === 'inStock') rows = rows.filter((p) => p.stockCount > 0);
-    else if (activeFilter === 'outOfStock') rows = rows.filter((p) => p.stockCount === 0);
-    else if (activeFilter === 'featured') rows = rows.filter((p) => p.isFeatured);
-
-    if (activeCategory) rows = rows.filter((p) => p.category === activeCategory);
-
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      rows = rows.filter((p) => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q));
-    }
-
-    const sorted = [...rows];
-    if (sortBy === 'newest') sorted.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
-    else if (sortBy === 'oldest') sorted.sort((a, b) => (a.createdAt > b.createdAt ? 1 : -1));
-    else if (sortBy === 'price-asc') sorted.sort((a, b) => a.price - b.price);
-    else if (sortBy === 'price-desc') sorted.sort((a, b) => b.price - a.price);
-    else if (sortBy === 'name-asc') sorted.sort((a, b) => a.name.localeCompare(b.name));
-    else if (sortBy === 'top-rated') sorted.sort((a, b) => b.rating - a.rating);
-    return sorted;
+    const filteredRows = applyProductsFilter(localProducts, {
+      search,
+      category: activeCategory,
+      status: parseProductStatus(activeFilter),
+    });
+    return sortProducts(filteredRows, sortBy);
   }, [localProducts, activeFilter, activeCategory, search, sortBy]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
@@ -386,10 +365,10 @@ export default function ProductsClient({ products, counts, categoryCounts, heade
               </span>
               <select
                 value={sortBy}
-                onChange={(e) => { setSortBy(e.target.value as SortBy); setPage(1); }}
+                onChange={(e) => { setSortBy(e.target.value as ProductSortMode); setPage(1); }}
                 className="appearance-none bg-transparent border-none outline-none text-[13px] text-ink-soft pr-7 pl-1 py-2 cursor-pointer"
               >
-                {SORT_OPTIONS.map((o) => (
+                {PRODUCT_SORT_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
               </select>
