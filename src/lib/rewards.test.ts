@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import type { PointsHistoryEntry } from '@/models/User';
 import {
   addMonths,
   applyRedemption,
@@ -239,47 +240,42 @@ describe('getQualifyingPoints', () => {
   const now = new Date('2026-12-31T00:00:00.000Z');
 
   it('sums positive order_fulfilled entries inside the window', () => {
-    const history = [
+    const history: PointsHistoryEntry[] = [
       { delta: 100, reason: 'order_fulfilled', createdAt: new Date('2026-03-01') },
       { delta: 200, reason: 'order_fulfilled', createdAt: new Date('2026-06-01') },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ] as any;
+    ];
     expect(getQualifyingPoints(history, start, now)).toBe(300);
   });
 
   it('excludes entries outside the window', () => {
-    const history = [
+    const history: PointsHistoryEntry[] = [
       { delta: 100, reason: 'order_fulfilled', createdAt: new Date('2025-12-01') },
       { delta: 200, reason: 'order_fulfilled', createdAt: new Date('2026-06-01') },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ] as any;
+    ];
     expect(getQualifyingPoints(history, start, now)).toBe(200);
   });
 
   it('subtracts cancel/refund reversals inside the window', () => {
-    const history = [
+    const history: PointsHistoryEntry[] = [
       { delta: 500, reason: 'order_fulfilled', createdAt: new Date('2026-03-01') },
       { delta: -200, reason: 'refund_reverse', createdAt: new Date('2026-04-01') },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ] as any;
+    ];
     expect(getQualifyingPoints(history, start, now)).toBe(300);
   });
 
   it('ignores redemption entries', () => {
-    const history = [
+    const history: PointsHistoryEntry[] = [
       { delta: 500, reason: 'order_fulfilled', createdAt: new Date('2026-03-01') },
-      { delta: -200, reason: 'redeem', createdAt: new Date('2026-04-01') },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ] as any;
+      { delta: -200, reason: 'redemption', createdAt: new Date('2026-04-01') },
+    ];
     expect(getQualifyingPoints(history, start, now)).toBe(500);
   });
 
   it('floors at 0 (never returns negative)', () => {
-    const history = [
+    const history: PointsHistoryEntry[] = [
       { delta: 100, reason: 'order_fulfilled', createdAt: new Date('2026-03-01') },
       { delta: -500, reason: 'cancel_reverse', createdAt: new Date('2026-04-01') },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ] as any;
+    ];
     expect(getQualifyingPoints(history, start, now)).toBe(0);
   });
 });
@@ -298,15 +294,15 @@ describe('getTierView (rolling window)', () => {
 
   it('mid-period: surfaces the higher of cached tier and currently-earned tier', () => {
     // Cached as connoisseur but only 100 pts this period → still connoisseur
+    const pointsHistory: PointsHistoryEntry[] = [
+      { delta: 100, reason: 'order_fulfilled', createdAt: new Date('2026-03-01') },
+    ];
     const view = getTierView(
       {
         createdAt: new Date('2026-01-01'),
         tierAnniversaryAt: new Date('2026-01-01'),
         currentTier: 'connoisseur',
-        pointsHistory: [
-          { delta: 100, reason: 'order_fulfilled', createdAt: new Date('2026-03-01') },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ] as any,
+        pointsHistory,
       },
       settings({ tierWindowMonths: 12 }),
       new Date('2026-06-01'),
@@ -319,16 +315,16 @@ describe('getTierView (rolling window)', () => {
   it('reassesses on the anniversary using the just-ended period', () => {
     const anniversary = new Date('2026-01-01T00:00:00.000Z');
     const now = new Date('2027-02-01T00:00:00.000Z'); // past the 12mo window
+    // 1500 pts earned during the closed period → should drop to connoisseur
+    const pointsHistory: PointsHistoryEntry[] = [
+      { delta: 1500, reason: 'order_fulfilled', createdAt: new Date('2026-06-01') },
+    ];
     const view = getTierView(
       {
         createdAt: anniversary,
         tierAnniversaryAt: anniversary,
         currentTier: 'masterCut', // cached high
-        // 1500 pts earned during the closed period → should drop to connoisseur
-        pointsHistory: [
-          { delta: 1500, reason: 'order_fulfilled', createdAt: new Date('2026-06-01') },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ] as any,
+        pointsHistory,
       },
       settings({ tierWindowMonths: 12, connoisseurThreshold: 1000, masterCutThreshold: 5000 }),
       now,
