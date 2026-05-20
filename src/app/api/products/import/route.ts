@@ -4,7 +4,7 @@ import mongoose from 'mongoose';
 import ProductModel from '@/models/Product';
 import { withAdmin } from '@/lib/api-handler';
 import { parseCsv, csvRowsToRecords } from '@/lib/csv-parse';
-import { productInputSchema, flattenProductIssues } from '@/lib/products/schema';
+import { productInputSchema, flattenProductIssues, type ProductInput } from '@/lib/products/schema';
 import { coerceProductInput } from '@/lib/products/parse-form-input';
 import {
   CSV_COLUMNS,
@@ -79,7 +79,7 @@ export const POST = withAdmin(async (req) => {
 
     // Validate every row up front. Errored rows surface in the per-row
     // results; valid rows continue through dedup + diff.
-    type Validated = { index: number; data: import('@/lib/products/schema').ProductInput };
+    type Validated = { index: number; data: ProductInput };
     const validated: Validated[] = [];
     const results: RowResult[] = [];
     records.forEach((rec, i) => {
