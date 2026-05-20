@@ -3,6 +3,7 @@ import Link from 'next/link';
 
 import LegalPage from '@/components/legal/LegalPage';
 import {
+  LEGAL_LINK_CLASS,
   LegalList,
   LegalParagraph,
   LegalSection,
@@ -45,7 +46,7 @@ export default async function TermsPage() {
           of the shared accounts on the{' '}
           <Link
             href='/demo'
-            className='text-oxblood underline underline-offset-4 decoration-oxblood/40 hover:decoration-oxblood'
+            className={LEGAL_LINK_CLASS}
           >
             demo landing page
           </Link>
@@ -87,7 +88,7 @@ export default async function TermsPage() {
           Questions? Reach out through the{' '}
           <Link
             href='/contact'
-            className='text-oxblood underline underline-offset-4 decoration-oxblood/40 hover:decoration-oxblood'
+            className={LEGAL_LINK_CLASS}
           >
             contact page
           </Link>

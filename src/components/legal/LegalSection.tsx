@@ -1,5 +1,8 @@
 import type { ReactNode } from 'react';
 
+export const LEGAL_LINK_CLASS =
+  'text-oxblood underline underline-offset-4 decoration-oxblood/40 hover:decoration-oxblood';
+
 type SectionProps = {
   heading: string;
   children: ReactNode;
