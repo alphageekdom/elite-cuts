@@ -7,7 +7,7 @@ type SectionProps = {
 
 export function LegalSection({ heading, children }: SectionProps) {
   return (
-    <section className='flex flex-col gap-4'>
+    <section className='flex flex-col gap-5'>
       <h2 className='font-display text-[26px] font-normal leading-tight tracking-tight text-ink'>
         {heading}
       </h2>
@@ -28,9 +28,9 @@ type ListProps = { items: ReactNode[] };
 
 export function LegalList({ items }: ListProps) {
   return (
-    <ul className='ml-5 flex list-disc flex-col gap-2 text-[15px] leading-[1.7] text-ink-soft marker:text-camel'>
+    <ul className='ml-5 flex list-disc flex-col gap-2.5 text-[15px] leading-[1.7] text-ink-soft marker:text-camel'>
       {items.map((item, i) => (
-        <li key={i}>{item}</li>
+        <li key={i} className='pl-1'>{item}</li>
       ))}
     </ul>
   );

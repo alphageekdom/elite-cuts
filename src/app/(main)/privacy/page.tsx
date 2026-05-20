@@ -87,7 +87,7 @@ export default async function PrivacyPage() {
           account at any time from your{' '}
           <Link
             href='/profile'
-            className='text-oxblood underline-offset-2 hover:underline'
+            className='text-oxblood underline underline-offset-4 decoration-oxblood/40 hover:decoration-oxblood'
           >
             profile page
           </Link>
@@ -101,7 +101,7 @@ export default async function PrivacyPage() {
           For anything privacy-related, email{' '}
           <a
             href={`mailto:${email}`}
-            className='text-oxblood underline-offset-2 hover:underline'
+            className='text-oxblood underline underline-offset-4 decoration-oxblood/40 hover:decoration-oxblood'
           >
             {email}
           </a>
