@@ -7,12 +7,16 @@ declare module 'next-auth' {
       userId?: string;
       isAdmin?: boolean;
       rewardPoints?: number;
+      isDemo?: boolean;
+      demoType?: 'customer' | 'admin';
     } & DefaultSession['user'];
   }
 
   interface User {
     isAdmin?: boolean;
     rewardPoints?: number;
+    isDemo?: boolean;
+    demoType?: 'customer' | 'admin';
   }
 }
 
@@ -21,6 +25,8 @@ declare module 'next-auth/jwt' {
     userId?: string;
     isAdmin?: boolean;
     rewardPoints?: number;
+    isDemo?: boolean;
+    demoType?: 'customer' | 'admin';
     // Last unix-ms timestamp the token was revalidated against the User doc's
     // `deletedAt`. The jwt callback re-checks the DB roughly once a minute so
     // an admin soft-delete kicks a still-signed-in customer within the same

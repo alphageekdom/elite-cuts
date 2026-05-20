@@ -117,7 +117,14 @@ export const POST = async (request: NextRequest) => {
     // send `paymentMethod: 'card'`. The flag also covers the saved-card
     // shortcut above, which routes through the same demo path. UI gate is
     // cosmetic; this server check is the actual lock.
-    if (isCardDemo && !isDemoCardTileEnabled()) {
+    //
+    // The seeded demo customer is the exception: their entire checkout
+    // experience is built around the no-charge Card tile, so a production
+    // deploy with the env flag off still has to let them through.
+    const allowCardDemo = isDemoCardTileEnabled({
+      isDemoUser: sessionUser?.user?.isDemo === true,
+    });
+    if (isCardDemo && !allowCardDemo) {
       return NextResponse.json(
         { message: 'Card demo is disabled' },
         { status: 400 },

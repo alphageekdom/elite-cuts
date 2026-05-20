@@ -1,10 +1,11 @@
 import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import connectDB from '@/config/database';
-import User from '@/models/User';
+import User, { type DemoType } from '@/models/User';
 import AccountDeletionAudit from '@/models/AccountDeletionAudit';
 import bcrypt from 'bcryptjs';
 import { clientIpFromHeaders, rateLimit } from '@/lib/rateLimit';
+import { demoLoginInputSchema } from '@/lib/auth/demo-login-schema';
 
 const MAX_PASSWORD_LENGTH = 128;
 const MAX_FAILED_ATTEMPTS = 3;
@@ -136,6 +137,51 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           isAdmin: user.isAdmin,
           rewardPoints: (user.rewardPoints as number) ?? 0,
+          isDemo: Boolean(user.isDemo),
+          demoType: user.demoType as DemoType | undefined,
+        };
+      },
+    }),
+    // Portfolio demo sign-in. The client posts `{ demoType: 'customer' | 'admin' }`
+    // via `signIn('demo', ...)` — no password is shipped. The provider looks up
+    // the matching seeded account (created by scripts/seed.mjs and the
+    // standalone scripts/seed-demo.mjs) and issues a session. A real account
+    // missing the `isDemo: true` flag cannot sign in through this path even
+    // if its document carries a stray `demoType` value, and a soft-deleted
+    // demo account is refused the same way real accounts are.
+    CredentialsProvider({
+      id: 'demo',
+      name: 'Demo',
+      credentials: {
+        demoType: { label: 'Demo type', type: 'text' },
+      },
+      async authorize(credentials) {
+        const parsed = demoLoginInputSchema.safeParse(credentials);
+        if (!parsed.success) {
+          throw new Error(parsed.error.issues[0]?.message ?? 'Invalid demo input');
+        }
+        const { demoType } = parsed.data;
+
+        await connectDB();
+
+        const user = await User.findOne({
+          isDemo: true,
+          demoType,
+          deletedAt: null,
+        });
+
+        if (!user) {
+          throw new Error('Demo account is not available');
+        }
+
+        return {
+          id: (user._id as { toString(): string }).toString(),
+          name: user.name,
+          email: user.email,
+          isAdmin: user.isAdmin,
+          rewardPoints: (user.rewardPoints as number) ?? 0,
+          isDemo: true,
+          demoType: user.demoType as DemoType | undefined,
         };
       },
     }),
@@ -150,6 +196,8 @@ export const authOptions: NextAuthOptions = {
         token.userId = user.id;
         token.isAdmin = Boolean(user.isAdmin);
         token.rewardPoints = (user.rewardPoints as number) ?? 0;
+        token.isDemo = Boolean(user.isDemo);
+        token.demoType = user.demoType;
         // Fresh sign-in just validated the user; skip the re-check until the
         // window expires.
         token.lastDeletionCheckAt = Date.now();
@@ -163,10 +211,11 @@ export const authOptions: NextAuthOptions = {
       // admin soft-delete (or a hard-purge from the cron) needs to invalidate
       // the customer's stale JWT cookie within a bounded window rather than
       // waiting for the cookie itself to expire. Cached for a minute to keep
-      // the per-request DB cost negligible. Admin accounts skip the check —
-      // they can never be soft-deleted (the routes refuse), so the per-minute
-      // DB hit would be pure overhead.
-      if (token.userId && !token.isAdmin) {
+      // the per-request DB cost negligible. Admin and demo accounts skip the
+      // check — admins can never be soft-deleted (the routes refuse) and demo
+      // accounts are guarded the same way (Phase B), so the per-minute DB hit
+      // would be pure overhead.
+      if (token.userId && !token.isAdmin && !token.isDemo) {
         const last = token.lastDeletionCheckAt ?? 0;
         if (Date.now() - last > DELETION_RECHECK_MS) {
           try {
@@ -207,6 +256,8 @@ export const authOptions: NextAuthOptions = {
         session.user.userId = token.userId;
         session.user.isAdmin = Boolean(token.isAdmin);
         session.user.rewardPoints = token.rewardPoints ?? 0;
+        session.user.isDemo = Boolean(token.isDemo);
+        session.user.demoType = token.demoType;
       }
       return session;
     },

@@ -16,6 +16,13 @@ const AuthLinks = ({ scrolled = false }: AuthLinksProps) => {
   return (
     <div className='flex items-center gap-6'>
       <Link
+        href='/demo'
+        aria-current={pathname === '/demo' ? 'page' : undefined}
+        className={`text-sm font-medium tracking-wide opacity-85 transition-opacity duration-300 hover:opacity-100 motion-reduce:transition-none ${FOCUS_RING} ${loginTone}`}
+      >
+        Demo
+      </Link>
+      <Link
         href='/login'
         aria-current={pathname === '/login' ? 'page' : undefined}
         className={`text-sm font-medium tracking-wide opacity-85 transition-opacity duration-300 hover:opacity-100 motion-reduce:transition-none ${FOCUS_RING} ${loginTone}`}
