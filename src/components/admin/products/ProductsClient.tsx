@@ -1,12 +1,13 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import ProductTableRowComponent from './ProductTableRow';
 import ProductsPageHeader from './ProductsPageHeader';
 import ProductImportDrawer from './ProductImportDrawer';
+import ProductsBulkBar from './ProductsBulkBar';
 import { useStatFilter } from '@/hooks/useStatFilter';
-import { useAdminDrawer } from '@/hooks/useAdminDrawer';
+import { useProductsTable } from '@/hooks/useProductsTable';
 import AdminSearchInput from '@/components/admin/AdminSearchInput';
 import AdminPagination from '@/components/admin/AdminPagination';
 import AdminStatStrip from '@/components/admin/AdminStatStrip';
@@ -19,7 +20,6 @@ import {
   type ProductSortMode,
 } from '@/lib/admin-products';
 import { formatMoney } from '@/lib/format';
-import type { ProductCategory } from '@/lib/admin-constants';
 import type { ProductTableRow, ProductCounts } from '@/types/admin';
 import ProductFormDrawer from './ProductFormDrawer';
 
@@ -36,15 +36,24 @@ const PAGE_SIZES = [8, 20, 50];
 
 export default function ProductsClient({ products, counts, categoryCounts, headerCounts }: Props) {
   const router = useRouter();
-  const [localProducts, setLocalProducts] = useState(products);
+  const table = useProductsTable(products);
+  const {
+    products: localProducts,
+    drawer,
+    selectedIds,
+    openMenuId,
+    setOpenMenuId,
+    toggleSelect,
+    selectAll,
+    clearSelection,
+    bulk,
+  } = table;
+
   const [page, setPage] = useState(1);
   const { activeKey: activeFilter, selectKey: _selectFilter } = useStatFilter<string>('all', () => setPage(1));
   const [activeCategory, setActiveCategory] = useState<string>('');
   const [search, setSearch] = useState('');
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const { item: drawerProduct, isOpen: drawerOpen, open: _openDrawer, close: closeDrawer } = useAdminDrawer<ProductTableRow>();
   const [sortBy, setSortBy] = useState<ProductSortMode>('newest');
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [perPage, setPerPage] = useState(8);
   const [exporting, setExporting] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -84,109 +93,8 @@ export default function ProductsClient({ products, counts, categoryCounts, heade
   }
 
   async function handleSave(fd: FormData, id?: string) {
-    try {
-      const res = await fetch(id ? `/api/products/${id}` : '/api/products', {
-        method: id ? 'PUT' : 'POST',
-        body: fd,
-      });
-      if (!res.ok) {
-        const { message } = await res.json();
-        toast.error(message ?? 'Failed to save product');
-        return;
-      }
-      const data = await res.json();
-      const now = new Date().toISOString();
-      const cat = fd.get('category') as ProductCategory;
-      if (id) {
-        setLocalProducts((prev) =>
-          prev.map((p) =>
-            p.id === id
-              ? {
-                  ...p,
-                  name: fd.get('name') as string,
-                  category: cat,
-                  price: Number(fd.get('price')),
-                  stockCount: Number(fd.get('stockCount')),
-                  updatedAt: now,
-                }
-              : p,
-          ),
-        );
-        toast.success('Product updated');
-      } else {
-        setLocalProducts((prev) => [
-          {
-            id: data.id as string,
-            name: fd.get('name') as string,
-            category: cat,
-            price: Number(fd.get('price')),
-            stockCount: Number(fd.get('stockCount')),
-            images: [],
-            isFeatured: false,
-            isAged: false,
-            isNewArrival: true,
-            rating: 0,
-            createdAt: now,
-            updatedAt: now,
-          },
-          ...prev,
-        ]);
-        toast.success('Product created');
-      }
-      closeDrawer();
-    } catch {
-      toast.error('Failed to save product');
-    }
-  }
-
-  async function handleArchive(id: string) {
-    try {
-      const res = await fetch(`/api/products/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isActive: false }),
-      });
-      if (!res.ok) { const { message } = await res.json(); toast.error(message ?? 'Failed to archive product'); return; }
-      setOpenMenuId(null);
-      toast.success('Product archived');
-    } catch { toast.error('Failed to archive product'); }
-  }
-
-  async function handleDuplicate(product: ProductTableRow) {
-    try {
-      const fd = new FormData();
-      fd.append('name', `${product.name} (Copy)`);
-      fd.append('category', product.category);
-      fd.append('description', '');
-      fd.append('price', String(product.price));
-      fd.append('stockCount', '0');
-      const res = await fetch('/api/products', { method: 'POST', body: fd });
-      if (!res.ok) { const { message } = await res.json(); toast.error(message ?? 'Failed to duplicate product'); return; }
-      const data = await res.json();
-      const now = new Date().toISOString();
-      setLocalProducts((prev) => [
-        { ...product, id: data.id as string, name: `${product.name} (Copy)`, stockCount: 0, images: [], createdAt: now, updatedAt: now },
-        ...prev,
-      ]);
-      setOpenMenuId(null);
-      toast.success('Product duplicated');
-    } catch { toast.error('Failed to duplicate product'); }
-  }
-
-  async function handleDelete(id: string) {
-    try {
-      const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
-      if (!res.ok) {
-        const { message } = await res.json();
-        toast.error(message ?? 'Failed to delete product');
-        return;
-      }
-      setLocalProducts((prev) => prev.filter((p) => p.id !== id));
-      setOpenMenuId(null);
-      toast.success('Product deleted');
-    } catch {
-      toast.error('Failed to delete product');
-    }
+    const ok = await table.save(fd, id);
+    if (ok) drawer.close();
   }
 
   const filtered = useMemo(() => {
@@ -201,88 +109,29 @@ export default function ProductsClient({ products, counts, categoryCounts, heade
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
   const pageRows = filtered.slice((page - 1) * perPage, page * perPage);
 
-  function toggleSelect(id: string) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
   function toggleAll(checked: boolean) {
-    if (checked) setSelectedIds(new Set(pageRows.map((r) => r.id)));
-    else setSelectedIds(new Set());
+    if (checked) selectAll(pageRows);
+    else clearSelection();
   }
 
   function openDrawer(product?: ProductTableRow) {
-    _openDrawer(product ?? null);
+    drawer.open(product ?? null);
   }
 
   function handleStatFilter(key: string) {
     if (key === 'avgPrice') return;
     _selectFilter(key);
-    setSelectedIds(new Set());
+    clearSelection();
   }
 
   function handleCategoryFilter(cat: string) {
     setActiveCategory((prev) => (prev === cat ? '' : cat));
     setPage(1);
-    setSelectedIds(new Set());
+    clearSelection();
   }
 
   const allPageSelected = pageRows.length > 0 && pageRows.every((r) => selectedIds.has(r.id));
   const someSelected = selectedIds.size > 0;
-  const [bulkLoading, setBulkLoading] = useState('');
-  const [editPriceMode, setEditPriceMode] = useState(false);
-  const [bulkPrice, setBulkPrice] = useState('');
-
-  async function bulkPatch(body: Record<string, unknown>, label: string) {
-    const ids = [...selectedIds];
-    setBulkLoading(label);
-    try {
-      await Promise.all(
-        ids.map((id) =>
-          fetch(`/api/products/${id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body),
-          }),
-        ),
-      );
-      if (body.isActive !== undefined) {
-        setLocalProducts((prev) => prev.map((p) => (selectedIds.has(p.id) ? { ...p } : p)));
-      }
-      if (body.price !== undefined) {
-        const price = body.price as number;
-        setLocalProducts((prev) =>
-          prev.map((p) => (selectedIds.has(p.id) ? { ...p, price } : p)),
-        );
-      }
-      setSelectedIds(new Set());
-      setEditPriceMode(false);
-      toast.success(`${ids.length} product${ids.length !== 1 ? 's' : ''} updated`);
-    } catch {
-      toast.error('Failed to update some products');
-    } finally {
-      setBulkLoading('');
-    }
-  }
-
-  async function bulkDelete() {
-    const ids = [...selectedIds];
-    setBulkLoading('delete');
-    try {
-      await Promise.all(ids.map((id) => fetch(`/api/products/${id}`, { method: 'DELETE' })));
-      setLocalProducts((prev) => prev.filter((p) => !selectedIds.has(p.id)));
-      setSelectedIds(new Set());
-      toast.success(`${ids.length} product${ids.length !== 1 ? 's' : ''} deleted`);
-    } catch {
-      toast.error('Failed to delete some products');
-    } finally {
-      setBulkLoading('');
-    }
-  }
 
   return (
     <>
@@ -392,78 +241,7 @@ export default function ProductsClient({ products, counts, categoryCounts, heade
       {/* Table wrapper */}
       <div className="bg-paper border border-line-soft rounded-sm overflow-hidden">
 
-        {/* Bulk bar */}
-        {someSelected && (
-          <div className="flex items-center justify-between px-6 py-3 bg-ink text-cream">
-            <div className="flex items-center gap-3 text-[13px]">
-              <span className="bg-camel text-ink text-[12px] font-medium px-2 py-0.5 rounded-full">
-                {selectedIds.size}
-              </span>
-              selected
-            </div>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <button
-                onClick={() => bulkPatch({ isActive: true }, 'publish')}
-                disabled={!!bulkLoading}
-                className="bg-cream/10 text-cream border border-cream/20 rounded-full px-3 py-1.5 text-[12px] hover:bg-cream/20 hover:border-cream/40 transition-colors disabled:opacity-50"
-              >
-                {bulkLoading === 'publish' ? 'Updating…' : 'Publish'}
-              </button>
-              <button
-                onClick={() => bulkPatch({ isActive: false }, 'unpublish')}
-                disabled={!!bulkLoading}
-                className="bg-cream/10 text-cream border border-cream/20 rounded-full px-3 py-1.5 text-[12px] hover:bg-cream/20 hover:border-cream/40 transition-colors disabled:opacity-50"
-              >
-                {bulkLoading === 'unpublish' ? 'Updating…' : 'Unpublish'}
-              </button>
-              {editPriceMode ? (
-                <div className="flex items-center gap-1">
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={bulkPrice}
-                    onChange={(e) => setBulkPrice(e.target.value)}
-                    placeholder="New price"
-                    autoFocus
-                    className="w-24 bg-cream/10 border border-cream/30 rounded-full px-3 py-1 text-[12px] text-cream outline-none placeholder:text-cream/40"
-                  />
-                  <button
-                    onClick={() => {
-                      const p = parseFloat(bulkPrice);
-                      if (!isNaN(p) && p >= 0) bulkPatch({ price: p }, 'price');
-                    }}
-                    disabled={!!bulkLoading || !bulkPrice}
-                    className="bg-camel text-ink rounded-full px-3 py-1.5 text-[12px] font-medium disabled:opacity-50"
-                  >
-                    {bulkLoading === 'price' ? '…' : 'Set'}
-                  </button>
-                  <button
-                    onClick={() => setEditPriceMode(false)}
-                    className="text-cream/60 text-[12px] px-2 hover:text-cream"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setEditPriceMode(true)}
-                  disabled={!!bulkLoading}
-                  className="bg-cream/10 text-cream border border-cream/20 rounded-full px-3 py-1.5 text-[12px] hover:bg-cream/20 hover:border-cream/40 transition-colors disabled:opacity-50"
-                >
-                  Edit price
-                </button>
-              )}
-              <button
-                onClick={bulkDelete}
-                disabled={!!bulkLoading}
-                className="bg-oxblood/70 text-cream border border-oxblood rounded-full px-3 py-1.5 text-[12px] hover:bg-oxblood transition-colors disabled:opacity-50"
-              >
-                {bulkLoading === 'delete' ? 'Deleting…' : 'Delete'}
-              </button>
-            </div>
-          </div>
-        )}
+        {someSelected && <ProductsBulkBar count={selectedIds.size} bulk={bulk} />}
 
         <div className="relative">
           <div className="overflow-x-auto">
@@ -506,9 +284,9 @@ export default function ProductsClient({ products, counts, categoryCounts, heade
                       onEdit={openDrawer}
                       onToggleSelect={toggleSelect}
                       onMenuToggle={setOpenMenuId}
-                      onDuplicate={handleDuplicate}
-                      onArchive={handleArchive}
-                      onDelete={handleDelete}
+                      onDuplicate={table.duplicate}
+                      onArchive={table.archive}
+                      onDelete={table.remove}
                     />
                   ))
                 )}
@@ -538,23 +316,23 @@ export default function ProductsClient({ products, counts, categoryCounts, heade
       )}
 
       {/* Drawer backdrop */}
-      {drawerOpen && (
+      {drawer.isOpen && (
         <div
           className="fixed inset-0 bg-ink/40 backdrop-blur-sm z-50"
-          onClick={closeDrawer}
+          onClick={drawer.close}
         />
       )}
 
       {/* Add / Edit product drawer */}
       <aside
         className={`fixed top-0 right-0 w-full max-w-150 h-screen bg-cream z-51 flex flex-col shadow-2xl transition-transform duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
-          drawerOpen ? 'translate-x-0' : 'translate-x-full'
+          drawer.isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         <ProductFormDrawer
-          key={drawerProduct?.id ?? 'new'}
-          product={drawerProduct}
-          onClose={closeDrawer}
+          key={drawer.item?.id ?? 'new'}
+          product={drawer.item}
+          onClose={drawer.close}
           onSave={handleSave}
         />
       </aside>
