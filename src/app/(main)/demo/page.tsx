@@ -4,6 +4,7 @@ import Link from 'next/link';
 
 import { getSessionUser } from '@/lib/getSessionUser';
 import DemoCards from '@/components/demo/DemoCards';
+import EditorialEyebrow from '@/components/ui/EditorialEyebrow';
 
 export const metadata: Metadata = {
   title: 'Demo · EliteCuts',
@@ -27,9 +28,9 @@ export default async function DemoPage() {
     <div className='flex min-h-[calc(100vh-5rem)] items-center bg-cream'>
       <section className='mx-auto w-full max-w-5xl px-4 py-20 sm:px-6 sm:py-24 lg:px-8'>
         <header className='mb-12 text-center sm:mb-16'>
-          <span className='font-display italic text-sm text-camel mb-4 inline-block tracking-[0.02em]'>
+          <EditorialEyebrow as='inline-block' className='mb-4'>
             ↗ Take it for a spin
-          </span>
+          </EditorialEyebrow>
           <h1 className='font-display font-normal text-[clamp(40px,5vw,60px)] leading-[1.05] tracking-tight mb-5'>
             At the counter, <em className='italic text-oxblood'>or behind it.</em>
           </h1>

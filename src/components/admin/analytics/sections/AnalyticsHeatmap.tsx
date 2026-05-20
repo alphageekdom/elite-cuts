@@ -1,6 +1,7 @@
 'use client';
 import { Fragment, useState } from 'react';
 import { HEAT_BG, DAY_LABELS, HOUR_LABELS } from './analytics-utils';
+import AdminEyebrow from '@/components/admin/AdminEyebrow';
 
 export default function AnalyticsHeatmap({
   heatmap,
@@ -16,9 +17,7 @@ export default function AnalyticsHeatmap({
     <div className='bg-paper border-line-soft mb-4 rounded-sm border p-7'>
       <div className='mb-6 flex items-end justify-between gap-5'>
         <div>
-          <div className='font-display text-camel mb-1 text-[12px] italic'>
-            ✦ 04
-          </div>
+          <AdminEyebrow size="card" className="mb-1">04</AdminEyebrow>
           <div className='font-display text-[22px] leading-snug font-medium tracking-[-0.015em]'>
             When orders{' '}
             <em className='text-oxblood font-normal italic'>happen</em>

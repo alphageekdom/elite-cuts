@@ -12,6 +12,7 @@ import {
   realizedOrderTotal,
 } from '@/lib/order-line';
 import { DELIVERY_FEE } from '@/lib/pricing';
+import AdminEyebrow from '@/components/admin/AdminEyebrow';
 import type { OrderTableRow } from '@/types/admin';
 
 type TimelineStep = {
@@ -157,7 +158,7 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
       {/* Head */}
       <div className="flex items-center justify-between gap-4 px-8 py-6 border-b border-line-soft bg-paper shrink-0">
         <div>
-          <div className="font-display italic text-[13px] text-camel mb-1">✦ Order detail</div>
+          <AdminEyebrow size="drawer" className="mb-1">Order detail</AdminEyebrow>
           <div className="font-mono text-[18px] font-medium tracking-[0.02em] text-ink">{order.orderRef}</div>
         </div>
         <button

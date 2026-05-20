@@ -1,6 +1,7 @@
 import { fmtDollarShort } from './analytics-utils';
 import type { AnalyticsData } from '../AnalyticsClient';
 import RevenueCard from '../RevenueCard';
+import AdminEyebrow from '@/components/admin/AdminEyebrow';
 
 export default function AnalyticsRevenueChart({ data }: { data: AnalyticsData }) {
   return (
@@ -12,13 +13,13 @@ export default function AnalyticsRevenueChart({ data }: { data: AnalyticsData })
         revenueTotal={data.revenueTotal}
         revenuePrevTotal={data.revenuePrevTotal}
         basePath="/dashboard/analytics"
-        eyebrow="✦ 01"
+        eyebrow="01"
       />
 
       {/* Category breakdown */}
       <div className="bg-paper border border-line-soft rounded-sm p-7">
         <div className="mb-6">
-          <div className="font-display italic text-[12px] text-camel mb-1">✦ 02</div>
+          <AdminEyebrow size="card" className="mb-1">02</AdminEyebrow>
           <div className="font-display font-medium text-[22px] tracking-[-0.015em] leading-snug">
             By <em className="italic text-oxblood font-normal">category</em>
           </div>

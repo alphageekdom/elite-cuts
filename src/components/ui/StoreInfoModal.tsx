@@ -12,6 +12,7 @@ import {
   formatShopAddress,
   formatShopCityStateZip,
 } from '@/lib/shopSettingsFormat';
+import SectionLabel from '@/components/ui/SectionLabel';
 
 // dayIndex: 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
 type HoursRow = {
@@ -187,9 +188,9 @@ export default function StoreInfoModal({
             {/* Header */}
             <div className='flex items-start justify-between border-b border-line-soft px-6 pb-5 pt-6'>
               <div>
-                <p className='mb-1.5 text-[11px] font-medium uppercase tracking-[0.22em] text-muted'>
+                <SectionLabel className='mb-1.5 block'>
                   {greeting}
-                </p>
+                </SectionLabel>
                 <h2 className='font-display text-[22px] font-normal tracking-tight'>
                   The counter&apos;s{' '}
                   <em className='italic text-oxblood'>open.</em>
@@ -293,9 +294,9 @@ export default function StoreInfoModal({
 
               {/* Hours */}
               <div className='border-t border-line-soft pt-4'>
-                <p className='mb-3 text-[11px] font-medium uppercase tracking-[0.22em] text-muted'>
+                <SectionLabel className='mb-3 block'>
                   Hours
-                </p>
+                </SectionLabel>
                 <div className='space-y-1 text-sm'>
                   {HOURS.map((row) => {
                     const isToday = todayRow === row;

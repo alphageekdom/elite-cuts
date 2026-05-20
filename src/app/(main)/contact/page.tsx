@@ -7,6 +7,7 @@ import {
   formatShopCityStateZip,
   getShopSettings,
 } from '@/lib/shopSettings';
+import SectionLabel from '@/components/ui/SectionLabel';
 
 export async function generateMetadata(): Promise<Metadata> {
   const { shopName } = await getShopSettings();
@@ -44,9 +45,9 @@ export default async function ContactPage() {
     <div className='min-h-screen bg-cream'>
       {/* Hero */}
       <div className='border-b border-line-soft px-6 pb-16 pt-32 text-center sm:px-8'>
-        <p className='mb-3 text-[11px] font-medium uppercase tracking-[0.22em] text-muted'>
+        <SectionLabel className='mb-3 block'>
           Get in touch
-        </p>
+        </SectionLabel>
         <h1 className='font-display text-[clamp(40px,5vw,64px)] font-normal leading-none tracking-tight text-ink'>
           We&apos;re here to <em className='text-oxblood'>help.</em>
         </h1>

@@ -1,11 +1,12 @@
 import Link from 'next/link';
+import SectionLabel from '@/components/ui/SectionLabel';
 
 const NotFoundPage = () => {
   return (
     <div className='flex min-h-screen flex-col items-center justify-center bg-cream px-6 text-center'>
-      <p className='mb-3 text-[11px] font-medium uppercase tracking-[0.22em] text-muted'>
+      <SectionLabel className='mb-3 block'>
         404
-      </p>
+      </SectionLabel>
       <h1 className='font-display text-[clamp(40px,6vw,72px)] font-normal leading-none tracking-tight text-ink'>
         Page not <em className='text-oxblood'>found.</em>
       </h1>

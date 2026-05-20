@@ -41,6 +41,7 @@ const STRENGTH_LABELS = ['', 'Weak', 'Fair', 'Strong'];
 import { EMAIL_RE } from '@/lib/validation';
 
 import { FieldValidationIcon as FieldIcon } from '@/components/auth/FieldValidationIcon';
+import EditorialEyebrow from '@/components/ui/EditorialEyebrow';
 import { useSignInLockout } from '@/hooks/useSignInLockout';
 
 const INPUT_CLASS =
@@ -252,9 +253,9 @@ export default function Register() {
 
         <div className="flex-1 flex items-center justify-center py-10">
           <div className="w-full max-w-110">
-            <span className="auth-reveal block font-display italic text-sm text-camel mb-4 tracking-[0.02em] [animation-delay:100ms]">
+            <EditorialEyebrow className="auth-reveal mb-4 [animation-delay:100ms]">
               ↗ Create account
-            </span>
+            </EditorialEyebrow>
             <h1 className="auth-reveal font-display font-normal text-[clamp(40px,4.5vw,56px)] leading-[1.05] tracking-tight mb-4 [animation-delay:200ms]">
               Welcome to the <em className="italic text-oxblood">counter.</em>
             </h1>

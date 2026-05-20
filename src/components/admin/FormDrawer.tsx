@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type ReactNode } from 'react';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
+import AdminEyebrow from '@/components/admin/AdminEyebrow';
 
 type Props = {
   eyebrow: string;       // e.g. "Edit shift" / "New staff"
@@ -51,9 +52,9 @@ export default function FormDrawer({
       >
         <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-line-soft shrink-0">
           <div className="pr-4">
-            <div className="text-[11px] tracking-widest uppercase text-muted mb-1.5">
+            <AdminEyebrow size="drawer" className="mb-1.5">
               {eyebrow}
-            </div>
+            </AdminEyebrow>
             <h2
               id={titleId}
               className="font-display text-[20px] font-normal tracking-tight leading-snug"

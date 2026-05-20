@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
+import AdminEyebrow from './AdminEyebrow';
 
 type Props = {
   eyebrow: string;
@@ -31,7 +32,7 @@ export default function AdminPageHeader({
       </div>
 
       <div>
-        <div className="font-display italic text-sm text-camel mb-1.5">{eyebrow}</div>
+        <AdminEyebrow size="page" className="mb-1.5">{eyebrow}</AdminEyebrow>
         <h1 className="font-display font-normal text-[clamp(36px,4vw,52px)] leading-none tracking-tight mb-1">
           {title} <em className="italic text-oxblood">{titleAccent}</em>
         </h1>

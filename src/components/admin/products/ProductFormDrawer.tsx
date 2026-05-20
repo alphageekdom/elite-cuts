@@ -18,6 +18,7 @@ import {
 import { coerceProductInput } from '@/lib/products/parse-form-input';
 import { checkPriceBand, PRICE_BAND_FIELD } from '@/lib/products/price-bands';
 import { inputCls, Toggle, DrawerSection, DrawerField } from '@/components/admin/settings/SettingsUI';
+import AdminEyebrow from '@/components/admin/AdminEyebrow';
 import type { ProductTableRow } from '@/types/admin';
 
 type Props = {
@@ -233,9 +234,9 @@ export default function ProductFormDrawer({ product, onClose, onSave }: Props) {
       {/* Head */}
       <div className="flex items-center justify-between gap-4 px-8 py-6 border-b border-line-soft bg-paper shrink-0">
         <div>
-          <div className="font-display italic text-[13px] text-camel mb-1">
-            {isEdit ? '✦ Edit product' : '✦ Add new'}
-          </div>
+          <AdminEyebrow size="drawer" className="mb-1">
+            {isEdit ? 'Edit product' : 'Add new'}
+          </AdminEyebrow>
           <div className="font-display text-[22px] font-medium tracking-[-0.015em]">
             {isEdit ? (
               <><em className="italic text-oxblood font-normal">{product.name}</em></>

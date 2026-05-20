@@ -1,5 +1,6 @@
 import { fmtDollarShort, toSvgPath, toSvgArea, dotPositions } from './sections/analytics-utils';
 import RangeToggle, { type RangeKey } from './RangeToggle';
+import AdminEyebrow from '@/components/admin/AdminEyebrow';
 
 export type RevenueBucket = { label: string; value: number; prevValue: number };
 export type BucketUnit = 'Day' | 'Week' | 'Biweekly' | 'Monthly';
@@ -14,7 +15,7 @@ type Props = {
   // their own base path so the same component works on both pages.
   basePath: string;
   // Eyebrow ornament — left as a prop so the dashboard can drop it while
-  // analytics keeps its ✦ 01 / ✦ 02 numbering.
+  // analytics keeps its 01 / 02 numbering.
   eyebrow?: string;
 };
 
@@ -54,7 +55,7 @@ export default function RevenueCard({
       <div className="flex items-end justify-between mb-6 gap-5">
         <div>
           {eyebrow && (
-            <div className="font-display italic text-[12px] text-camel mb-1">{eyebrow}</div>
+            <AdminEyebrow size="card" className="mb-1">{eyebrow}</AdminEyebrow>
           )}
           <div className="font-display font-medium text-[22px] tracking-[-0.015em] leading-snug">
             Revenue <em className="italic text-oxblood font-normal">over time</em>
