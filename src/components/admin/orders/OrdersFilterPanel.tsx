@@ -24,8 +24,10 @@ const FULFILLMENT_OPTIONS: { value: FulfillmentFilter; label: string }[] = [
 type Props = {
   payment: PaymentFilter;
   fulfillment: FulfillmentFilter;
+  includeDemo: boolean;
   onPaymentChange: (v: PaymentFilter) => void;
   onFulfillmentChange: (v: FulfillmentFilter) => void;
+  onIncludeDemoChange: (v: boolean) => void;
   onClear: () => void;
   onClose: () => void;
 };
@@ -33,12 +35,14 @@ type Props = {
 export default function OrdersFilterPanel({
   payment,
   fulfillment,
+  includeDemo,
   onPaymentChange,
   onFulfillmentChange,
+  onIncludeDemoChange,
   onClear,
   onClose,
 }: Props) {
-  const hasActive = payment !== 'any' || fulfillment !== 'any';
+  const hasActive = payment !== 'any' || fulfillment !== 'any' || includeDemo;
 
   return (
     <>
@@ -88,6 +92,24 @@ export default function OrdersFilterPanel({
               {opt.label}
             </label>
           ))}
+        </div>
+
+        <div className="px-3.5 pt-3 mt-2 border-t border-line">
+          <div className="text-[11px] font-medium tracking-[0.12em] uppercase text-ink-soft mt-2 mb-1.5">Demo activity</div>
+          <label className="flex items-start gap-2.5 py-1 text-[13px] text-ink-soft cursor-pointer">
+            <input
+              type="checkbox"
+              checked={includeDemo}
+              onChange={(e) => onIncludeDemoChange(e.target.checked)}
+              className="mt-0.5 w-3.5 h-3.5 cursor-pointer accent-oxblood"
+            />
+            <span>
+              Include demo activity
+              <span className="block text-[11px] text-muted mt-0.5">
+                Shows the demo customer&apos;s orders. Cleared every night by the reset cron.
+              </span>
+            </span>
+          </label>
         </div>
       </div>
     </>

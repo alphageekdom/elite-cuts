@@ -45,7 +45,7 @@ type RawProduct = {
 // Minimal shape of a lean Order document with user populated
 type RawOrder = {
   _id: { toString(): string };
-  user: { _id: { toString(): string }; name: string; email: string } | null;
+  user: { _id: { toString(): string }; name: string; email: string; isDemo?: boolean } | null;
   orderItems: Array<{
     name: string;
     image: string;
@@ -165,6 +165,7 @@ export function serializeOrderRow(order: RawOrder): OrderTableRow {
     orderRef: `#EC-${idStr.slice(-4).toUpperCase()}`,
     customerName: order.user?.name ?? 'Unknown',
     customerEmail: order.user?.email ?? '',
+    isDemo: Boolean(order.user?.isDemo),
     items,
     subtotal: order.subtotal,
     tax: order.tax,

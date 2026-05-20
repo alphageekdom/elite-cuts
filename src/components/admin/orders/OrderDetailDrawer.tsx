@@ -173,6 +173,13 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
       {/* Body */}
       <div className="flex-1 overflow-y-auto px-8 py-7">
 
+        {order.isDemo && (
+          <div className="mb-6 -mt-2 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-[12px] leading-snug text-amber-900">
+            <span className="mt-0.5 inline-block w-1.5 h-1.5 rounded-full bg-amber-600 shrink-0" aria-hidden="true" />
+            <span>This order belongs to the demo customer and will be cleared by the next nightly reset.</span>
+          </div>
+        )}
+
         {/* Status timeline */}
         <div className="pb-6 mb-6 border-b border-line-soft">
           <div className="text-[10px] font-medium tracking-[0.22em] uppercase text-muted mb-4">Status timeline</div>

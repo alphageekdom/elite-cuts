@@ -7,6 +7,7 @@ import User from '@/models/User';
 import type { Metadata } from 'next';
 import AnalyticsClient, { type AnalyticsData, type AnalyticsRange } from '@/components/admin/analytics/AnalyticsClient';
 import { MONTH_ABBR } from '@/lib/format';
+import { excludeDemoOrders } from '@/lib/demo/exclude';
 
 export const dynamic = 'force-dynamic';
 
@@ -72,11 +73,27 @@ export default async function AdminAnalyticsPage({ searchParams }: Props) {
   const windowStart = new Date(now.getTime() - days * DAY_MS);
   const prevWindowStart = new Date(now.getTime() - 2 * days * DAY_MS);
 
+  // Phase D — exclude the demo customer's orders + both demo accounts
+  // from every analytics aggregate so the recruiter's clicks don't
+  // skew real metrics.
+  const excludeDemo = await excludeDemoOrders();
+
   const [currentOrders, previousOrders, newCustomers, prevNewCustomers] = await Promise.all([
-    OrderModel.find({ createdAt: { $gte: windowStart } }).lean().exec(),
-    OrderModel.find({ createdAt: { $gte: prevWindowStart, $lt: windowStart } }).lean().exec(),
-    User.countDocuments({ createdAt: { $gte: windowStart }, isAdmin: { $ne: true } }),
-    User.countDocuments({ createdAt: { $gte: prevWindowStart, $lt: windowStart }, isAdmin: { $ne: true } }),
+    OrderModel.find({ ...excludeDemo, createdAt: { $gte: windowStart } }).lean().exec(),
+    OrderModel.find({
+      ...excludeDemo,
+      createdAt: { $gte: prevWindowStart, $lt: windowStart },
+    }).lean().exec(),
+    User.countDocuments({
+      createdAt: { $gte: windowStart },
+      isAdmin: { $ne: true },
+      isDemo: { $ne: true },
+    }),
+    User.countDocuments({
+      createdAt: { $gte: prevWindowStart, $lt: windowStart },
+      isAdmin: { $ne: true },
+      isDemo: { $ne: true },
+    }),
   ]);
 
   // Revenue

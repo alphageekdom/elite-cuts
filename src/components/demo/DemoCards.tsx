@@ -18,8 +18,8 @@ const DemoCards = () => {
   };
 
   return (
-    <div className='grid gap-6 md:grid-cols-2'>
-      <article className='flex flex-col rounded-sm border border-line-soft bg-paper px-7 py-8 sm:px-8 sm:py-10'>
+    <div className='grid items-stretch gap-6 md:grid-cols-2'>
+      <article className='flex h-full flex-col rounded-sm border border-line-soft bg-paper px-7 py-8 sm:px-8 sm:py-10'>
         <span className='font-display italic text-sm text-camel mb-3 tracking-[0.02em]'>
           ↗ Shop the catalog
         </span>
@@ -56,20 +56,17 @@ const DemoCards = () => {
         </button>
       </article>
 
-      <article className='flex flex-col rounded-sm border border-line-soft bg-paper px-7 py-8 sm:px-8 sm:py-10'>
+      <article className='flex h-full flex-col rounded-sm border border-line-soft bg-paper px-7 py-8 sm:px-8 sm:py-10'>
         <span className='font-display italic text-sm text-camel mb-3 tracking-[0.02em]'>
           ↗ Run the shop
         </span>
         <h2 className='font-display text-[clamp(28px,3vw,36px)] font-normal leading-tight tracking-tight mb-4'>
           Admin dashboard <em className='italic text-oxblood'>preview</em>
         </h2>
-        <p className='text-ink-soft text-[15px] leading-relaxed mb-3'>
+        <p className='text-ink-soft text-[15px] leading-relaxed mb-8'>
           Manage products, orders, promos, staff, and analytics with real admin
-          permissions on a shared demo dataset.
-        </p>
-        <p className='text-muted text-[12px] leading-relaxed mb-8'>
-          Catalog and settings reset every night, so it&apos;s safe to make
-          changes.
+          permissions on a shared demo dataset. Catalog and settings reset
+          every night.
         </p>
         <button
           type='button'

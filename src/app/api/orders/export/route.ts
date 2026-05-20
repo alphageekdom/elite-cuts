@@ -6,6 +6,7 @@ import { ORDER_STATUSES } from '@/lib/order-constants';
 import { withAdmin } from '@/lib/api-handler';
 import { toCsv, csvFilename } from '@/lib/csv';
 import { refundSummary } from '@/lib/order-refunds';
+import { excludeDemoOrders } from '@/lib/demo/exclude';
 import type { RangeKey } from '@/components/admin/analytics/RangeToggle';
 
 export const dynamic = 'force-dynamic';
@@ -67,8 +68,16 @@ export const GET = withAdmin(async (req) => {
     const range = parseRange(url.searchParams.get('range'));
     const paymentParam = url.searchParams.get('payment')?.trim() ?? '';
     const fulfillmentParam = url.searchParams.get('fulfillment')?.trim() ?? '';
+    // Phase D — `?includeDemo=true` opts the demo customer back into the
+    // CSV. Off by default so a downstream analysis on the file doesn't
+    // pick up the recruiter's clicks. Mirrors the orders dashboard
+    // "Include demo activity" toggle.
+    const includeDemo = url.searchParams.get('includeDemo') === 'true';
 
     const query: Record<string, unknown> = {};
+    if (!includeDemo) {
+      Object.assign(query, await excludeDemoOrders());
+    }
 
     if (range) {
       query.createdAt = { $gte: new Date(Date.now() - RANGE_DAYS[range] * DAY_MS) };

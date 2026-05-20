@@ -38,8 +38,8 @@ export default function DemoModeChip() {
 
   const tooltip =
     demoType === 'admin'
-      ? "You're exploring as a demo admin. Some account actions are disabled."
-      : "You're exploring as a demo customer. Some account actions are disabled.";
+      ? "You're exploring as a demo admin. Catalog and settings reset nightly."
+      : "You're exploring as a demo customer. Your cart and orders clear nightly.";
 
   return (
     <div ref={containerRef} className="relative">

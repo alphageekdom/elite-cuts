@@ -60,7 +60,12 @@ export const GET = withAdmin(async (req) => {
     const rawTiers = (url.searchParams.get('tier') ?? '').split(',').map((t) => t.trim());
     const tierFilter = rawTiers.filter((t): t is Tier => (ALLOWED_TIERS as readonly string[]).includes(t));
 
-    const userQuery: Record<string, unknown> = { isAdmin: { $ne: true } };
+    // Phase D — exclude the demo customer from the CSV by default so a
+    // downstream analysis doesn't pick up the recruiter's clicks.
+    const userQuery: Record<string, unknown> = {
+      isAdmin: { $ne: true },
+      isDemo: { $ne: true },
+    };
     if (from || to) {
       const range: Record<string, Date> = {};
       if (from) range.$gte = from;
