@@ -14,6 +14,7 @@ import InventoryClient, {
 import type { AgingCutRow } from '@/components/admin/inventory/InventoryAgingRoom';
 import type { DeliveryRow, ReceivedDeliveryRow } from '@/components/admin/inventory/InventoryUpcomingDeliveries';
 import { CATEGORY_PAR, DEFAULT_PAR } from '@/lib/inventory';
+import { productCategoryCounts } from '@/lib/admin-products';
 
 export const dynamic = 'force-dynamic';
 
@@ -77,10 +78,7 @@ export default async function AdminInventoryPage() {
     agingRoom: rawAgingCuts.length,
   };
 
-  const categoryCounts: Record<string, number> = {};
-  for (const p of rawProducts) {
-    categoryCounts[p.category] = (categoryCounts[p.category] ?? 0) + 1;
-  }
+  const categoryCounts = productCategoryCounts(rawProducts);
 
   // productId → earliest upcoming delivery status
   const deliveryStatusMap = new Map<string, string>();
