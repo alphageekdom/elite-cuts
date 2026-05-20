@@ -245,7 +245,7 @@ ProductSchema.pre('validate', function () {
   }
 
   if (this.pricingType) {
-    const view: pricing.PricingView = {
+    const stamped = pricing.stampPricingDerivedFields({
       pricingType: this.pricingType,
       packagePrice: this.packagePrice,
       packageWeightLb: this.packageWeightLb,
@@ -257,12 +257,12 @@ ProductSchema.pre('validate', function () {
       unitPrice: this.unitPrice,
       bundlePrice: this.bundlePrice,
       includedItems: this.includedItems,
-    };
-    this.price = pricing.backcompatPrice(view);
-    this.unit = pricing.backcompatUnit(view);
-    this.displayPriceLabel = pricing.getDisplayPrice(view);
-    this.displayWeightLabel = pricing.getDisplayWeight(view);
-    this.isEstimatedPrice = pricing.isEstimatedPrice(view);
+    });
+    this.price = stamped.price;
+    this.unit = stamped.unit;
+    this.displayPriceLabel = stamped.displayPriceLabel;
+    this.displayWeightLabel = stamped.displayWeightLabel;
+    this.isEstimatedPrice = stamped.isEstimatedPrice;
   }
 });
 

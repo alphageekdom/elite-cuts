@@ -167,3 +167,26 @@ export function backcompatPrice(p: PricingView): number {
 export function backcompatUnit(p: PricingView): 'lb' | 'each' {
   return p.pricingType === 'each' || p.pricingType === 'bundle' ? 'each' : 'lb';
 }
+
+// One bag of derived fields a Product carries alongside the canonical
+// per-pricingType ones. The Product model's pre-validate hook stamps these
+// before save so callers don't recompute them on every paint; the CSV
+// importer also calls this directly because `ProductModel.bulkWrite`
+// bypasses hooks on inserts.
+export type StampedPricingFields = {
+  price: number;
+  unit: 'lb' | 'each';
+  displayPriceLabel: string;
+  displayWeightLabel: string;
+  isEstimatedPrice: boolean;
+};
+
+export function stampPricingDerivedFields(view: PricingView): StampedPricingFields {
+  return {
+    price: backcompatPrice(view),
+    unit: backcompatUnit(view),
+    displayPriceLabel: getDisplayPrice(view),
+    displayWeightLabel: getDisplayWeight(view),
+    isEstimatedPrice: isEstimatedPrice(view),
+  };
+}
