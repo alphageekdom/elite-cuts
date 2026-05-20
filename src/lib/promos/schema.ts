@@ -15,12 +15,18 @@ import { PROMO_TYPES } from '@/lib/promos/constants';
 
 const CODE_RE = /^[A-Z0-9_-]{3,30}$/;
 
-// description: trim, undefined if empty after trim, cap at 280.
+// description: trim, undefined if empty after trim, cap at 280 of the
+// trimmed value. Trimming before .max() matches the old validator's
+// behavior — leading or trailing whitespace doesn't count against the cap.
 const descriptionField = z
   .string()
-  .max(280, 'Description must be 280 characters or fewer')
   .transform((s) => s.trim())
-  .transform((s) => (s.length === 0 ? undefined : s))
+  .pipe(
+    z
+      .string()
+      .max(280, 'Description must be 280 characters or fewer')
+      .transform((s) => (s.length === 0 ? undefined : s)),
+  )
   .optional();
 
 // Non-negative integer cents — used by minSubtotal, maxDiscount. The form
