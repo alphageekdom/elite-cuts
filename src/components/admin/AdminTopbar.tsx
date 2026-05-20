@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { toast } from 'sonner';
 import { relativeTime } from '@/lib/format';
+import DemoModeChip from '@/components/demo/DemoModeChip';
 
 const PAGE_TITLES: Record<string, string> = {
   dashboard: 'Dashboard',
@@ -220,6 +221,8 @@ export default function AdminTopbar({ openMessageCount = 0 }: AdminTopbarProps) 
             </div>
           )}
         </div>
+
+        <DemoModeChip />
 
         {/* Messages */}
         <div className="relative">

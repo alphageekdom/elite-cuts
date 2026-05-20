@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import { EMAIL_RE } from '@/lib/validation';
+import DemoDisabledHint from '@/components/demo/DemoDisabledHint';
 
 type Props = {
   initialName: string;
@@ -28,6 +29,7 @@ export default function ProfileInfoForm({ initialName, initialEmail, initialPhon
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [updatedFields, setUpdatedFields] = useState<Set<keyof Info>>(new Set());
+  const isDemo = Boolean(session?.user?.isDemo);
 
   function handleEdit() {
     setDraft(current);
@@ -126,10 +128,14 @@ export default function ProfileInfoForm({ initialName, initialEmail, initialPhon
           <button
             type="button"
             onClick={handleEdit}
-            className="inline-flex items-center gap-2 bg-ink text-cream text-[13px] font-medium tracking-[0.04em] px-6 py-3 rounded-full hover:bg-oxblood transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2"
+            disabled={isDemo}
+            title={isDemo ? 'Disabled in demo mode' : undefined}
+            aria-disabled={isDemo}
+            className="inline-flex items-center gap-2 bg-ink text-cream text-[13px] font-medium tracking-[0.04em] px-6 py-3 rounded-full hover:bg-oxblood transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-ink"
           >
             Edit info
           </button>
+          <DemoDisabledHint show={isDemo} />
         </div>
       </div>
     );

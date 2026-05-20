@@ -16,6 +16,9 @@ export type CustomerStatusInput = {
   orderCount: number;
   dormancyWarnedAt?: string | Date | null;
   deletedAt?: string | Date | null;
+  // Phase B — `countByStat` skips demo accounts so they don't inflate the
+  // stat-chip counts; the row still renders in the table with a "Demo" pill.
+  isDemo?: boolean;
 };
 
 function toMs(value: string | Date | null | undefined): number | null {
@@ -51,14 +54,19 @@ export function countByStat<T extends CustomerStatusInput>(
   customers: readonly T[],
   now: number = Date.now(),
 ): CustomerCounts {
+  // Demo accounts are excluded from every count — they're visible in the
+  // table but shouldn't inflate the chips since they're seeded fixtures, not
+  // real customers. Phase D will broaden this same exclusion across other
+  // analytics surfaces; for now it only applies here.
+  const real = customers.filter((c) => !c.isDemo);
   const counts: CustomerCounts = {
-    all: customers.length,
+    all: real.length,
     new: 0,
     active: 0,
     connoisseurPlus: 0,
     dormant: 0,
   };
-  for (const c of customers) {
+  for (const c of real) {
     if (matchesStatFilter(c, 'new', now)) counts.new++;
     if (matchesStatFilter(c, 'active', now)) counts.active++;
     if (matchesStatFilter(c, 'connoisseurPlus', now)) counts.connoisseurPlus++;

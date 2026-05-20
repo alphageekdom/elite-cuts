@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 
 import {
@@ -14,6 +15,8 @@ import ProfileAddCardForm from './ProfileAddCardForm';
 import ProfileExpiryEditForm from './ProfileExpiryEditForm';
 
 export default function ProfilePaymentMethods() {
+  const { data: session } = useSession();
+  const isDemo = Boolean(session?.user?.isDemo);
   const { cards, loaded, error, add, remove, updateExpiry } = useSavedCards();
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -197,8 +200,11 @@ export default function ProfilePaymentMethods() {
                 <button
                   type='button'
                   onClick={() => setConfirmingId(card.id)}
+                  disabled={isDemo}
+                  title={isDemo ? 'Disabled in demo mode' : undefined}
+                  aria-disabled={isDemo}
                   aria-label={`Remove ${formatBrand(card.brand)} ending ${card.last4}`}
-                  className='text-[12px] tracking-[0.08em] uppercase text-muted hover:text-oxblood transition-colors min-h-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oxblood focus-visible:rounded-sm'
+                  className='text-[12px] tracking-[0.08em] uppercase text-muted hover:text-oxblood transition-colors min-h-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oxblood focus-visible:rounded-sm disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:text-muted'
                 >
                   Remove
                 </button>

@@ -90,6 +90,7 @@ export async function runDormancyScan(now: Date = new Date()): Promise<DormancyS
   // posture in `accountDeletion.ts` — append-only audit, cosmetic dupes.
   const toWarn = await User.find({
     isAdmin: { $ne: true },
+    isDemo: { $ne: true },
     deletedAt: null,
     dormancyWarnedAt: null,
     lastActiveAt: { $lte: thresholdCutoff },
@@ -122,6 +123,7 @@ export async function runDormancyScan(now: Date = new Date()): Promise<DormancyS
   // back to browse but the warning didn't clear" edge case.
   const toSoftDelete = await User.find({
     isAdmin: { $ne: true },
+    isDemo: { $ne: true },
     deletedAt: null,
     dormancyWarnedAt: { $lte: followupCutoff },
     lastActiveAt: { $lte: thresholdCutoff },

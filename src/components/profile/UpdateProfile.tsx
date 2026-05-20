@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
+import DemoDisabledHint from '@/components/demo/DemoDisabledHint';
 
 const empty = { currentPassword: '', newPassword: '', confirmNewPassword: '' };
 
@@ -11,6 +12,7 @@ export default function UpdateProfile() {
   const [formData, setFormData] = useState(empty);
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const isDemo = Boolean(session?.user?.isDemo);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSaved(false);
@@ -125,8 +127,10 @@ export default function UpdateProfile() {
       <div className="pt-2 flex items-center gap-4">
         <button
           type="submit"
-          disabled={loading}
-          className="inline-flex items-center gap-2 bg-ink text-cream text-[13px] font-medium tracking-[0.04em] px-6 py-3 rounded-full transition-all hover:bg-oxblood disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2"
+          disabled={loading || isDemo}
+          title={isDemo ? 'Disabled in demo mode' : undefined}
+          aria-disabled={isDemo}
+          className="inline-flex items-center gap-2 bg-ink text-cream text-[13px] font-medium tracking-[0.04em] px-6 py-3 rounded-full transition-all hover:bg-oxblood disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2"
         >
           {loading ? 'Saving…' : 'Update password'}
         </button>
@@ -140,6 +144,8 @@ export default function UpdateProfile() {
           </span>
         )}
       </div>
+
+      <DemoDisabledHint show={isDemo} className="" />
     </form>
   );
 }

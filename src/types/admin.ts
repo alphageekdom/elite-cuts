@@ -76,6 +76,9 @@ export type CustomerTableRow = {
   // is the most recent sign-in or order timestamp.
   dormancyWarnedAt?: string;
   lastActiveAt?: string;
+  // Phase B — true for the seeded demo customer, surfaced in the row so the
+  // dashboard can render a "Demo" pill and grey out destructive actions.
+  isDemo?: boolean;
 };
 
 export type CustomerCounts = {

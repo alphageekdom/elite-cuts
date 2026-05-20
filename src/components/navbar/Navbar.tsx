@@ -13,6 +13,7 @@ import DesktopMenu from './DesktopMenu';
 import AnnouncementBell from './AnnouncementBell';
 import CartButton from '../cart/CartButton';
 import CartExpiryBanner from '../cart/CartExpiryBanner';
+import DemoModeChip from '../demo/DemoModeChip';
 import Logo from './Logo';
 import { FOCUS_RING } from '@/lib/styles';
 import type { Announcement } from '@/lib/announcements';
@@ -133,6 +134,7 @@ const Navbar = ({ announcements = [] }: NavbarProps) => {
         </div>
 
         <div className='flex items-center gap-4'>
+          <DemoModeChip />
           <CartButton scrolled={scrolled} />
           <AnnouncementBell
             announcements={announcements}
