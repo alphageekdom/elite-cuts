@@ -512,7 +512,7 @@ export default async function ProductPage({ params }: PageProps) {
                             {review.userName}
                             {TIER_PILL[review.userTier] && (
                               <span
-                                className={`rounded-full px-2 py-0.5 font-mono text-[9px] tracking-[0.1em] uppercase ${TIER_PILL[review.userTier]?.cls}`}
+                                className={`rounded-full px-2 py-0.5 font-mono text-[9px] tracking-widest uppercase ${TIER_PILL[review.userTier]?.cls}`}
                               >
                                 {TIER_PILL[review.userTier]?.label}
                               </span>
