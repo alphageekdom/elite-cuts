@@ -60,6 +60,7 @@ const PlaceOrderButton = () => {
     saveCard,
     cardDetails,
     selectedSavedCardId,
+    autoSettleAtPickup,
   } = state;
 
   const [isLoading, setIsLoading] = useState(false);
@@ -139,6 +140,17 @@ const PlaceOrderButton = () => {
                   ? { saveCard: true, cardDetails }
                   : {}),
               }),
+          // Phase 4 — only send the opt-in flag when the saved-card path is
+          // also engaged. The server re-validates eligibility (variable-
+          // weight line on the cart, Stripe path, signed-in user) before
+          // honoring it, but the UI shouldn't send a request that's
+          // obviously going to be ignored.
+          ...(autoSettleAtPickup &&
+          isLoggedIn &&
+          paymentMethod === 'stripe' &&
+          (saveCard || selectedSavedCardId)
+            ? { autoSettleAtPickup: true }
+            : {}),
         }),
       });
 

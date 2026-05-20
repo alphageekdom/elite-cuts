@@ -133,6 +133,18 @@ export type OrderTableRow = {
   promoDiscount: number;
   promoCode?: string;
   createdAt: string;
+  // Phase 4 — auto-settle envelope. `settlementStatus` is undefined when
+  // the order didn't opt in (most orders); 'pending' while waiting for
+  // realized weights + completion; 'settled' / 'failed' afterward.
+  autoSettleAtPickup?: boolean;
+  settlementStatus?: 'pending' | 'settled' | 'failed';
+  settlementError?: string;
+  settlementPaymentIntents?: Array<{
+    id: string;
+    amount: number;
+    kind: 'capture' | 'auto_refund';
+    createdAt: string;
+  }>;
 };
 
 export type StatusCounts = {

@@ -30,6 +30,26 @@ export const PAYMENT_STATUSES = [
 
 export const PAYMENT_PROVIDERS = ['stripe', 'demo'] as const;
 
+// Phase 4 — settlement (auto-charge / auto-refund) lifecycle. `pending` is
+// the initial state on an opted-in order; the settlement helper flips it
+// to `settled` on success, `failed` on a Stripe error or missing card.
+export const SETTLEMENT_STATUSES = ['pending', 'settled', 'failed'] as const;
+export type SettlementStatus = (typeof SETTLEMENT_STATUSES)[number];
+
+// One settlement transaction — either a new off-session charge for the
+// realized-over-estimate delta (`capture`) or a refund for the
+// realized-under-estimate overage (`auto_refund`). Stored as a list so
+// retries land alongside the failed attempt for a clean audit trail.
+export const SETTLEMENT_KINDS = ['capture', 'auto_refund'] as const;
+export type SettlementKind = (typeof SETTLEMENT_KINDS)[number];
+
+export type SettlementTransaction = {
+  id: string;
+  amount: number; // dollars, positive
+  kind: SettlementKind;
+  createdAt: Date;
+};
+
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 export type CancellationReason = (typeof CANCELLATION_REASONS)[number];
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
@@ -93,6 +113,22 @@ export type PaymentResult = {
   // External refunds don't carry line-item context, so the schema can't mark
   // specific items refunded — this flag tells the audit trail apart.
   refundedExternally?: boolean;
+
+  // — Phase 4 auto-settle envelope. Only set on orders that opted in to
+  // `autoSettleAtPickup` at checkout and reached the `Completed` status
+  // with every variable-weight line weighed. `pending` is the initial
+  // state on an opted-in order; `settled` is the success terminal;
+  // `failed` flags the order for in-store settlement.
+  settlementStatus?: SettlementStatus;
+  // Audit trail of every settlement attempt — successful or retried. The
+  // last entry on a `settled` order is the one that succeeded; a `failed`
+  // order may have zero entries (Stripe call threw before id was assigned)
+  // or one entry from a prior attempt.
+  settlementPaymentIntents?: SettlementTransaction[];
+  // Last error message from Stripe when settlement failed — surfaced in
+  // the admin order drawer so the admin knows whether the card declined,
+  // expired, or something else went wrong.
+  settlementError?: string;
 };
 
 export type DeliveryAddressData = {
@@ -155,6 +191,14 @@ export type Order = {
   // can answer "which card paid for this order" without needing to re-read
   // the card store at the time of the query.
   savedCardIdAtPurchase?: string;
+  // Phase 4 — customer opted in to "auto-settle at pickup" at checkout.
+  // When true and the order reaches Completed with every variable-weight
+  // line weighed, the completion handler fires the settlement step
+  // (off-session capture for realized>estimate, partial refund for
+  // realized<estimate). Requires either `saveCardIntent` or
+  // `savedCardIdAtPurchase` so a payment method is on file. Off for
+  // guests and Card-tile demo orders.
+  autoSettleAtPickup?: boolean;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -259,6 +303,30 @@ const PaymentResultSchema = new Schema<PaymentResult>(
     },
     refundedExternally: {
       type: Boolean,
+    },
+
+    // — Phase 4 auto-settle envelope.
+    settlementStatus: {
+      type: String,
+      enum: [...SETTLEMENT_STATUSES],
+    },
+    settlementPaymentIntents: {
+      type: [
+        new Schema<SettlementTransaction>(
+          {
+            id: { type: String, required: true, trim: true },
+            amount: { type: Number, required: true, min: 0 },
+            kind: { type: String, required: true, enum: [...SETTLEMENT_KINDS] },
+            createdAt: { type: Date, required: true, default: Date.now },
+          },
+          { _id: false },
+        ),
+      ],
+      default: undefined,
+    },
+    settlementError: {
+      type: String,
+      trim: true,
     },
   },
   {
@@ -369,6 +437,7 @@ const OrderSchema = new Schema<Order>(
     promoId: { type: Schema.Types.ObjectId, ref: 'Promo' },
     saveCardIntent: { type: Boolean },
     savedCardIdAtPurchase: { type: String, trim: true },
+    autoSettleAtPickup: { type: Boolean },
   },
   {
     timestamps: true,

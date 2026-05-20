@@ -233,6 +233,62 @@ export function useOrdersTable(initialOrders: OrderTableRow[]) {
     }
   }
 
+  async function retrySettlement() {
+    const target = drawer.item;
+    if (!target) return;
+    try {
+      const res = await fetch(`/api/orders/${target.id}/settle`, { method: 'POST' });
+      const body = (await res.json()) as {
+        data?: {
+          status: 'settled' | 'failed' | 'skipped';
+          kind?: 'capture' | 'auto_refund' | 'no_op';
+          amount?: number;
+          transactionId?: string;
+          error?: string;
+          reason?: string;
+        };
+        message?: string;
+      };
+      if (!res.ok) {
+        toast.error(body.message ?? 'Settlement retry failed');
+        return;
+      }
+      const result = body.data!;
+      if (result.status === 'failed') {
+        toast.error(`Settlement still failing — ${result.error ?? 'see admin notification'}`);
+        patchRow(target.id, (o) => ({
+          ...o,
+          settlementStatus: 'failed',
+          settlementError: result.error ?? o.settlementError,
+        }));
+      } else if (result.status === 'settled') {
+        toast.success(
+          result.kind === 'no_op'
+            ? 'Settlement marked complete — realized matched estimate'
+            : `Settlement ${result.kind === 'capture' ? 'charged' : 'refunded'} $${result.amount?.toFixed(2)}`,
+        );
+        patchRow(target.id, (o) => {
+          const next = { ...o, settlementStatus: 'settled' as const, settlementError: undefined };
+          if (result.transactionId && result.amount && result.kind && result.kind !== 'no_op') {
+            const txs = [...(o.settlementPaymentIntents ?? []), {
+              id: result.transactionId,
+              amount: result.amount,
+              kind: result.kind,
+              createdAt: new Date().toISOString(),
+            }];
+            next.settlementPaymentIntents = txs;
+          }
+          return next;
+        });
+      } else {
+        toast.info(`Settlement skipped (${result.reason})`);
+      }
+      router.refresh();
+    } catch {
+      toast.error('Settlement retry failed');
+    }
+  }
+
   async function deleteOrder(id: string) {
     try {
       const res = await fetch(`/api/orders/${id}`, { method: 'DELETE' });
@@ -303,6 +359,7 @@ export function useOrdersTable(initialOrders: OrderTableRow[]) {
       refundItem,
       unrefundItem,
       setRealizedWeight,
+      retrySettlement,
       deleteOrder,
     },
   };

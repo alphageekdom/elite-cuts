@@ -312,7 +312,13 @@ export default async function ReceiptPage({ params }: Props) {
             </div>
             {showRealizedAtPickup && (
               <div className="mt-2 flex justify-between items-baseline text-[13px] text-camel">
-                <span className="italic">Final at pickup (after weighing your cuts)</span>
+                <span className="italic">
+                  {order.paymentResult?.settlementStatus === 'settled'
+                    ? 'Settled at pickup (after weighing your cuts)'
+                    : order.paymentResult?.settlementStatus === 'failed'
+                    ? 'Final at pickup (settle in-store)'
+                    : 'Final at pickup (after weighing your cuts)'}
+                </span>
                 <span className="font-mono text-[12px]">{formatMoney(realizedTotalAtPickup)}</span>
               </div>
             )}
