@@ -6,7 +6,7 @@ import { Types } from 'mongoose';
 import connectDB from '@/config/database';
 import Promo from '@/models/Promo';
 import { getSessionUser } from '@/lib/getSessionUser';
-import { validatePromoInput } from '@/lib/promos/input-validate';
+import { promoInputSchema } from '@/lib/promos/schema';
 
 type ActionResult = { success: boolean; error?: string };
 
@@ -25,8 +25,13 @@ export async function createPromo(
   const auth = await requireAdmin();
   if (!auth.ok) return { success: false, error: auth.error };
 
-  const result = validatePromoInput(input);
-  if (!result.ok) return { success: false, error: result.error };
+  const result = promoInputSchema.safeParse(input);
+  if (!result.success) {
+    return {
+      success: false,
+      error: result.error.issues[0]?.message ?? 'Invalid promo input',
+    };
+  }
   const data = result.data;
 
   try {
@@ -70,8 +75,13 @@ export async function updatePromo(
     return { success: false, error: 'Invalid promo id' };
   }
 
-  const result = validatePromoInput(input);
-  if (!result.ok) return { success: false, error: result.error };
+  const result = promoInputSchema.safeParse(input);
+  if (!result.success) {
+    return {
+      success: false,
+      error: result.error.issues[0]?.message ?? 'Invalid promo input',
+    };
+  }
   const data = result.data;
 
   try {
