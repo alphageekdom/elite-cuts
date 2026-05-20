@@ -29,7 +29,9 @@ export const metadata: Metadata = {
 
 export default async function CheckoutPage() {
   const sessionUser = await getSessionUser();
-  const demoCardEnabled = isDemoCardTileEnabled();
+  const demoCardEnabled = isDemoCardTileEnabled({
+    isDemoUser: sessionUser?.user?.isDemo === true,
+  });
 
   // Prefill + empty-cart guard only run for signed-in users. Guests have no
   // server cart (theirs lives in localStorage) so the server can't make the

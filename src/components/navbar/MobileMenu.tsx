@@ -75,6 +75,14 @@ const MobileMenu = ({
         ) : (
           <>
             <Link
+              href='/demo'
+              onClick={closeMobileMenu}
+              aria-current={isActive(pathname, '/demo') ? 'page' : undefined}
+              className={linkClass('/demo')}
+            >
+              Demo
+            </Link>
+            <Link
               href='/login'
               onClick={closeMobileMenu}
               aria-current={isActive(pathname, '/login') ? 'page' : undefined}

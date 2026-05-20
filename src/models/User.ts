@@ -35,6 +35,9 @@ export type PointsHistoryEntry = {
 export const TIER_VALUES = ['regular', 'connoisseur', 'masterCut'] as const;
 export type TierValue = (typeof TIER_VALUES)[number];
 
+export const DEMO_TYPES = ['customer', 'admin'] as const;
+export type DemoType = (typeof DEMO_TYPES)[number];
+
 export type User = {
   name: string;
   email: string;
@@ -61,6 +64,13 @@ export type User = {
   // Lazily created on the user's first checkout (real Stripe mode only); stays
   // undefined for stub-mode customers and for users who have never checked out.
   stripeCustomerId?: string;
+  // Demo accounts seeded for the portfolio demo experience. Both flags are
+  // immutable after creation so a tampered admin call can't promote a real
+  // account into the demo block-list. `demoType` discriminates the demo path
+  // for routing (customer → /products, admin → /admin) and is unrelated to
+  // `isAdmin`, which still gates real admin permissions.
+  isDemo: boolean;
+  demoType?: DemoType;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -180,6 +190,16 @@ const UserSchema = new Schema<User>(
     stripeCustomerId: {
       type: String,
       trim: true,
+    },
+    isDemo: {
+      type: Boolean,
+      default: false,
+      immutable: true,
+    },
+    demoType: {
+      type: String,
+      enum: [...DEMO_TYPES],
+      immutable: true,
     },
   },
   {

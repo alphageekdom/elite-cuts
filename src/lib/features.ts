@@ -12,7 +12,18 @@
 //   - dev / test:  on unless explicitly set to 'false'
 // so the portfolio demo works locally without anyone editing .env, and a real
 // deploy needs an explicit opt-in to expose the tile.
-export function isDemoCardTileEnabled(): boolean {
+//
+// Additionally, the seeded demo customer (`session.user.isDemo === true`) always
+// gets the tile — that's the only payment surface their experience is built
+// around, so a production deploy with the env flag off would otherwise leave
+// the demo customer with nothing but Stripe's hosted page (which a portfolio
+// without sandbox credentials can't satisfy).
+type FeatureContext = {
+  isDemoUser?: boolean;
+};
+
+export function isDemoCardTileEnabled(ctx?: FeatureContext): boolean {
+  if (ctx?.isDemoUser) return true;
   const explicit = process.env.ENABLE_DEMO_CARD_TILE;
   if (explicit === 'true') return true;
   if (explicit === 'false') return false;

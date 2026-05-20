@@ -29,9 +29,13 @@ import {
   useSignInLockout,
   formatLockoutCountdown,
 } from '@/hooks/useSignInLockout';
+import { startDemoSession, type DemoType } from '@/lib/auth/demo-signin';
 
 const INPUT_CLASS =
   'w-full border-0 border-b border-line bg-transparent text-ink text-base py-2 pb-3.5 pr-6 outline-none placeholder:text-muted/60 focus:border-oxblood transition-colors duration-300';
+
+const DEMO_BUTTON_CLASS =
+  'inline-flex w-full items-center justify-center rounded-full border border-line px-4 py-3 text-[13px] font-medium tracking-[0.04em] text-ink-soft transition-colors duration-300 hover:border-ink hover:text-ink disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-line disabled:hover:text-ink-soft motion-reduce:transition-none';
 
 export default function Login() {
   const router = useRouter();
@@ -49,6 +53,16 @@ export default function Login() {
     password: false,
   });
   const [loading, setLoading] = useState(false);
+  const [demoPending, setDemoPending] = useState<DemoType | null>(null);
+
+  const handleDemoSignIn = async (demoType: DemoType) => {
+    if (demoPending || loading || isLocked) return;
+    setDemoPending(demoType);
+    const ok = await startDemoSession(demoType);
+    if (!ok) setDemoPending(null);
+    // On success the helper hard-navigates away, so the pending state stays
+    // set until this page is replaced — no need to reset it.
+  };
 
   // Tracks the rate-limit lockout countdown. The backend is the source of
   // truth for the actual block; this hook just drives the UI countdown.
@@ -286,6 +300,41 @@ export default function Login() {
               </button>
 
             </form>
+
+            <div className="auth-reveal mt-8 [animation-delay:700ms]">
+              <div className="relative mb-5 flex items-center">
+                <span aria-hidden="true" className="flex-1 border-t border-line" />
+                <span className="px-3 text-[11px] font-medium tracking-[0.22em] uppercase text-muted">
+                  or explore as a guest
+                </span>
+                <span aria-hidden="true" className="flex-1 border-t border-line" />
+              </div>
+              <div className="grid gap-2.5 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => handleDemoSignIn('customer')}
+                  disabled={Boolean(demoPending) || loading || isLocked}
+                  className={DEMO_BUTTON_CLASS}
+                >
+                  {demoPending === 'customer'
+                    ? 'Starting…'
+                    : 'Continue as Demo Customer'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDemoSignIn('admin')}
+                  disabled={Boolean(demoPending) || loading || isLocked}
+                  className={DEMO_BUTTON_CLASS}
+                >
+                  {demoPending === 'admin'
+                    ? 'Starting…'
+                    : 'Preview Admin Dashboard'}
+                </button>
+              </div>
+              <p className="mt-3 text-center text-[11px] text-muted">
+                Demo accounts let you explore the project without creating one.
+              </p>
+            </div>
 
             <p className="auth-reveal text-center mt-10 text-sm text-ink-soft [animation-delay:750ms]">
               By signing in, you agree to our{' '}
