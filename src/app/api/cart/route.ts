@@ -4,6 +4,7 @@ import Cart from '@/models/Cart';
 import Product from '@/models/Product';
 import { withAuth } from '@/lib/api-handler';
 import { MAX_PER_LINE } from '@/lib/shopConfig';
+import { unitPrice } from '@/lib/products/pricing';
 
 // Lean line-item wire shape. CartItemSchema has `_id: false` so each line is
 // uniquely keyed by its product reference — that's the identifier callers use
@@ -106,7 +107,11 @@ export const POST = withAuth(async (request: NextRequest, _ctx, userId) => {
       cart.items.push({
         product: product._id,
         quantity: addBy,
-        price: product.price,
+        // Per-unit estimated price — for per-lb / whole-item cuts this is
+        // pricePerLb × estimatedWeightLb (or averageWeightLb), so
+        // `line.price × line.quantity` gives the correct line estimate.
+        // See src/lib/products/pricing.ts → unitPrice for details.
+        price: unitPrice(product, product.price),
       });
     }
 
@@ -151,7 +156,7 @@ export const PATCH = withAuth(async (request: NextRequest, _ctx, userId) => {
       if (idx !== -1) {
         cart.items[idx].quantity = quantity;
       } else {
-        cart.items.push({ product: product._id, quantity, price: product.price });
+        cart.items.push({ product: product._id, quantity, price: unitPrice(product, product.price) });
       }
     }
 

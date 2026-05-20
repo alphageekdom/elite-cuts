@@ -57,7 +57,7 @@ const SuggestionCard = ({ product }: SuggestProps) => {
           {product.name}
         </Link>
         <div className='font-mono text-[11px] text-muted'>
-          ${fmtPrice(product.price)}/lb
+          {product.displayPriceLabel ?? `$${fmtPrice(product.price)}/lb`}
         </div>
       </div>
 

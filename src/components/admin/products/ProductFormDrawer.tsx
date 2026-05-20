@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
+import { useMemo, useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 
 import { PRODUCT_CATEGORIES } from '@/lib/admin-constants';
@@ -16,6 +16,7 @@ import {
   productInputSchema,
 } from '@/lib/products/schema';
 import { coerceProductInput } from '@/lib/products/parse-form-input';
+import { checkPriceBand, PRICE_BAND_FIELD } from '@/lib/products/price-bands';
 import { inputCls, Toggle, DrawerSection, DrawerField } from '@/components/admin/settings/SettingsUI';
 import type { ProductTableRow } from '@/types/admin';
 
@@ -203,6 +204,22 @@ export default function ProductFormDrawer({ product, onClose, onSave }: Props) {
   }
 
   const pricingType = state.pricingType as PricingType | '';
+
+  // Soft price-band warning — non-blocking; the admin can still save a
+  // genuinely-low promo price. Reads the canonical pricing field for the
+  // active type (packagePrice / pricePerLb / unitPrice / bundlePrice) and
+  // compares against the realistic band for the category.
+  const priceBandWarning = useMemo(() => {
+    if (!pricingType) return null;
+    const fieldName = PRICE_BAND_FIELD[pricingType];
+    const raw = state.pricing[fieldName];
+    const parsed = raw ? Number(raw) : NaN;
+    return checkPriceBand({
+      category: state.category,
+      pricingType,
+      value: Number.isFinite(parsed) ? parsed : undefined,
+    });
+  }, [pricingType, state.category, state.pricing]);
 
   return (
     <>
@@ -428,6 +445,13 @@ export default function ProductFormDrawer({ product, onClose, onSave }: Props) {
                 <FieldError message={errors.includedItems} />
               </DrawerField>
             </>
+          )}
+
+          {priceBandWarning && (
+            <div className="flex items-start gap-2 rounded-md bg-camel/10 px-3 py-2 text-[12px] text-camel">
+              <span aria-hidden className="mt-0.5">⚠</span>
+              <span>{priceBandWarning}</span>
+            </div>
           )}
         </DrawerSection>
 

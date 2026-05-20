@@ -60,6 +60,10 @@ const CheckoutOrderSummary = () => {
     [cartItems, isLoggedIn, promoExcludesMember, isDelivery, promoDiscount, pointsDiscount],
   );
 
+  // Any variable-weight line (per_lb / whole_item_by_weight) flips the
+  // total to "Estimated total" with the matching disclaimer below.
+  const anyEstimated = cartItems.some((l) => l.product.isEstimatedPrice);
+
   // Shared apply path. Both the form submit and a chip tap route through
   // here so a chip-applied code goes through the exact same validate +
   // dispatch + UI states as a manually-typed one.
@@ -199,7 +203,7 @@ const CheckoutOrderSummary = () => {
                   </p>
                   {!isEditing && (
                     <p className='font-mono text-[11px] tracking-[0.02em] text-muted'>
-                      {line.quantity} × ${fmtPrice(line.price)}
+                      {line.quantity} × {line.product.displayPriceLabel ?? `$${fmtPrice(line.price)}`}
                     </p>
                   )}
                   {isEditing && (
@@ -360,7 +364,7 @@ const CheckoutOrderSummary = () => {
 
         <div className='mt-3 flex items-baseline justify-between border-t border-line pt-3.5'>
           <span className='font-display text-[18px] font-medium tracking-tight'>
-            Total
+            {anyEstimated ? 'Estimated total' : 'Total'}
           </span>
           <span className='font-display text-[28px] font-medium tracking-tight'>
             ${fmtPrice(totals.total)}
@@ -369,6 +373,11 @@ const CheckoutOrderSummary = () => {
             </em>
           </span>
         </div>
+        {anyEstimated && (
+          <p className='mt-2 text-[12px] leading-relaxed text-muted'>
+            Some items are priced by weight. Final price may vary slightly based on actual weight.
+          </p>
+        )}
       </div>
 
       <CheckoutTrustStrip />
