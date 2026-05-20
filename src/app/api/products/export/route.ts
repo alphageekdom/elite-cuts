@@ -4,30 +4,15 @@ import ProductModel, { type Product } from '@/models/Product';
 import { withAdmin } from '@/lib/api-handler';
 import { toCsv, csvFilename } from '@/lib/csv';
 import { PRODUCT_CATEGORIES } from '@/lib/admin-constants';
+import {
+  matchesProductStatus,
+  parseProductSortMode,
+  parseProductStatus,
+  type ProductSortMode,
+} from '@/lib/admin-products';
 import { slugify } from '@/lib/slugify';
 
 export const dynamic = 'force-dynamic';
-
-type StatusFilter = 'all' | 'inStock' | 'outOfStock' | 'featured';
-
-function parseStatus(raw: string | null): StatusFilter {
-  switch (raw) {
-    case 'inStock':
-    case 'outOfStock':
-    case 'featured':
-      return raw;
-    default:
-      return 'all';
-  }
-}
-
-function matchesStatus(p: Pick<Product, 'stockCount' | 'isFeatured'>, status: StatusFilter): boolean {
-  if (status === 'all') return true;
-  if (status === 'inStock') return p.stockCount > 0;
-  if (status === 'outOfStock') return p.stockCount === 0;
-  if (status === 'featured') return p.isFeatured;
-  return true;
-}
 
 // Fixed column order — the import endpoint expects the same headers in the
 // same positions. Update both files together if columns change. Legacy docs
@@ -66,10 +51,10 @@ export const GET = withAdmin(async (req) => {
       });
     }
 
-    const status = parseStatus(url.searchParams.get('status'));
+    const status = parseProductStatus(url.searchParams.get('status'));
     const category = url.searchParams.get('category')?.trim() ?? '';
     const search = url.searchParams.get('search')?.trim() ?? '';
-    const sort = url.searchParams.get('sort')?.trim() ?? '';
+    const sortMode = parseProductSortMode(url.searchParams.get('sort'));
 
     const query: Record<string, unknown> = {};
     if (category && (PRODUCT_CATEGORIES as readonly string[]).includes(category)) {
@@ -80,24 +65,24 @@ export const GET = withAdmin(async (req) => {
       query.$or = [{ name: new RegExp(safe, 'i') }, { category: new RegExp(safe, 'i') }];
     }
 
-    // Map the listing's sort keys onto Mongo sort. Falls through to newest-first.
-    const sortMap: Record<string, Record<string, 1 | -1>> = {
-      newest:      { createdAt: -1 },
-      oldest:      { createdAt: 1 },
+    // Map the shared sort union onto Mongo sort. Every member of
+    // ProductSortMode has an entry, so this never falls through to {}.
+    const sortMap: Record<ProductSortMode, Record<string, 1 | -1>> = {
+      newest:       { createdAt: -1 },
+      oldest:       { createdAt: 1 },
       'price-asc':  { price: 1 },
       'price-desc': { price: -1 },
       'name-asc':   { name: 1 },
       'top-rated':  { rating: -1 },
     };
-    const sortSpec = sortMap[sort] ?? sortMap.newest;
 
     const rawProducts = (await ProductModel.find(query)
-      .sort(sortSpec)
+      .sort(sortMap[sortMode])
       .limit(10000)
       .lean()
       .exec()) as unknown as Product[];
 
-    const filtered = rawProducts.filter((p) => matchesStatus(p, status));
+    const filtered = rawProducts.filter((p) => matchesProductStatus(p, status));
 
     const csv = toCsv(filtered, EXPORT_COLUMNS);
 

@@ -4,6 +4,7 @@ import { getSessionUser } from '@/lib/getSessionUser';
 import connectDB from '@/config/database';
 import ProductModel from '@/models/Product';
 
+import { productCategoryCounts } from '@/lib/admin-products';
 import { serializeProductRow } from '@/lib/serializers';
 import ProductsClient, { type ProductTableRow, type ProductCounts } from '@/components/admin/products/ProductsClient';
 
@@ -43,10 +44,7 @@ export default async function AdminProductsPage() {
     avgPrice,
   };
 
-  const categoryCounts: Record<string, number> = {};
-  for (const p of rawProducts) {
-    categoryCounts[p.category] = (categoryCounts[p.category] ?? 0) + 1;
-  }
+  const categoryCounts = productCategoryCounts(rawProducts);
 
   const products: ProductTableRow[] = rawProducts.map(serializeProductRow);
 
