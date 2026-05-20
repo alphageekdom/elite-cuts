@@ -4,9 +4,13 @@ import {
   isDemoAdmin,
   isDemoCustomer,
   isDemoUser,
+} from './demo-permissions';
+import {
+  DEMO_ACTOR_MESSAGE,
+  DEMO_TARGET_MESSAGE,
   refuseDemoActor,
   refuseDemoTarget,
-} from './demo-permissions';
+} from './demo-responses';
 
 describe('isDemoUser', () => {
   it('returns true when isDemo is true', () => {
@@ -76,9 +80,7 @@ describe('refuseDemoActor', () => {
     expect(res).not.toBeNull();
     expect(res!.status).toBe(403);
     const body = await res!.json();
-    expect(body).toEqual({
-      message: 'This action is disabled for demo accounts.',
-    });
+    expect(body).toEqual({ message: DEMO_ACTOR_MESSAGE });
   });
 
   it('refuses a demo admin too (broader policy than spec — demo fixtures stay immutable)', () => {
@@ -100,8 +102,6 @@ describe('refuseDemoTarget', () => {
     expect(res).not.toBeNull();
     expect(res!.status).toBe(403);
     const body = await res!.json();
-    expect(body).toEqual({
-      message: 'Demo accounts are managed by the system and cannot be modified.',
-    });
+    expect(body).toEqual({ message: DEMO_TARGET_MESSAGE });
   });
 });

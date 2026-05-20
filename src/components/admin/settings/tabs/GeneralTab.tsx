@@ -1,4 +1,5 @@
 import { SelectField, inputCls, labelCls, sectionTitleCls, sectionSubCls, btnPrimary, btnGhost } from '../SettingsUI';
+import DemoResetCard from '../DemoResetCard';
 import type { ShopSettings, DormancyThreshold } from '@/models/ShopSettings';
 
 type Props = {
@@ -151,6 +152,8 @@ export default function GeneralTab({ values, onChange, onSave, onDiscard, saving
           </div>
         </div>
       </section>
+
+      <DemoResetCard />
 
       <div className="flex gap-2 pt-2">
         <button type="button" className={btnPrimary} onClick={onSave} disabled={saving}>
