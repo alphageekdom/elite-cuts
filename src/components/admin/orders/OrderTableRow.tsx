@@ -70,7 +70,14 @@ export default function OrderTableRowComponent({
               {initials}
             </div>
             <div>
-              <div className="font-medium text-[14px] leading-snug">{order.customerName}</div>
+              <div className="font-medium text-[14px] leading-snug inline-flex items-center gap-1.5">
+                {order.customerName}
+                {order.isDemo && (
+                  <span className="inline-flex items-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-medium tracking-widest uppercase text-amber-900 border border-amber-200">
+                    Demo
+                  </span>
+                )}
+              </div>
               <div className="text-[11px] text-muted">{order.customerEmail}</div>
             </div>
           </div>

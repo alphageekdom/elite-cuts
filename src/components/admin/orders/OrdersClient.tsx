@@ -39,6 +39,7 @@ type Props = {
   counts: StatusCounts;
   monthOrdersCount: number;
   range: RangeKey;
+  includeDemo: boolean;
   customers: AdminOrderCustomer[];
   products: AdminOrderProduct[];
   defaultPickupLocation: string;
@@ -46,7 +47,7 @@ type Props = {
 
 const PAGE_SIZES = [8, 20, 50];
 
-export default function OrdersClient({ orders, counts, monthOrdersCount, range, customers, products, defaultPickupLocation }: Props) {
+export default function OrdersClient({ orders, counts, monthOrdersCount, range, includeDemo, customers, products, defaultPickupLocation }: Props) {
   const router = useRouter();
   const table = useOrdersTable(orders);
 
@@ -63,7 +64,19 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
   const [createOpen, setCreateOpen] = useState(false);
 
   const activeFilterCount =
-    (paymentFilter === 'any' ? 0 : 1) + (fulfillmentFilter === 'any' ? 0 : 1);
+    (paymentFilter === 'any' ? 0 : 1) +
+    (fulfillmentFilter === 'any' ? 0 : 1) +
+    (includeDemo ? 1 : 0);
+
+  // Toggling demo activity changes what the server fetches (otherwise
+  // demo orders could push real orders past the 200-doc limit), so it
+  // lives in URL state. Range is already a URL param — we merge.
+  function setIncludeDemo(next: boolean): void {
+    const params = new URLSearchParams();
+    params.set('range', range);
+    if (next) params.set('includeDemo', 'true');
+    router.replace(`/dashboard/orders?${params.toString()}`);
+  }
 
   const filtered = useMemo(
     () =>
@@ -89,6 +102,7 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
         search,
         payment: paymentFilter,
         fulfillment: fulfillmentFilter,
+        includeDemo,
       });
       const url = `/api/orders/export?${params.toString()}`;
       const res = await fetch(url);
@@ -169,7 +183,12 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
 
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2 flex-wrap">
-            <RangeToggle active={range} basePath="/dashboard/orders" variant="standalone" />
+            <RangeToggle
+              active={range}
+              basePath="/dashboard/orders"
+              variant="standalone"
+              extraParams={includeDemo ? { includeDemo: 'true' } : undefined}
+            />
             <div className="relative">
               <button
                 onClick={() => setFiltersOpen((v) => !v)}
@@ -187,11 +206,14 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
                 <OrdersFilterPanel
                   payment={paymentFilter}
                   fulfillment={fulfillmentFilter}
+                  includeDemo={includeDemo}
                   onPaymentChange={(v) => { setPaymentFilter(v); setPage(1); }}
                   onFulfillmentChange={(v) => { setFulfillmentFilter(v); setPage(1); }}
+                  onIncludeDemoChange={(v) => { setIncludeDemo(v); setPage(1); }}
                   onClear={() => {
                     setPaymentFilter('any');
                     setFulfillmentFilter('any');
+                    if (includeDemo) setIncludeDemo(false);
                     setPage(1);
                   }}
                   onClose={() => setFiltersOpen(false)}

@@ -16,12 +16,14 @@ import OrdersClient, {
   type AdminOrderCustomer,
   type AdminOrderProduct,
 } from '@/components/admin/orders/OrdersClient';
+import { excludeDemoOrders } from '@/lib/demo/exclude';
 import type { RangeKey } from '@/components/admin/analytics/RangeToggle';
 
 type PopulatedUser = {
   _id: Types.ObjectId;
   name: string;
   email: string;
+  isDemo?: boolean;
 };
 
 export const dynamic = 'force-dynamic';
@@ -42,7 +44,7 @@ const parseRange = (raw: string | undefined): RangeKey => {
 };
 
 type Props = {
-  searchParams: Promise<{ range?: string }>;
+  searchParams: Promise<{ range?: string; includeDemo?: string }>;
 };
 
 export default async function AdminOrdersPage({ searchParams }: Props) {
@@ -54,7 +56,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
 
   await connectDB();
 
-  const { range: rangeParam } = await searchParams;
+  const { range: rangeParam, includeDemo: includeDemoParam } = await searchParams;
   const range = parseRange(rangeParam);
   // Server component — renders once per request, Date.now() is safe here.
   // eslint-disable-next-line react-hooks/purity
@@ -63,19 +65,28 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
+  // Phase D — "Include demo activity" toggle in the More-filters popover
+  // (default off). When off, the demo customer's orders are filtered out
+  // of the listing, the per-status counts, the month subtitle, and the
+  // CSV alike. Threading through searchParams (rather than client-side
+  // in-memory filtering) so the 200-doc limit on the fetch can't drop
+  // real orders to make room for demo ones.
+  const includeDemo = includeDemoParam === 'true';
+  const demoFilter = includeDemo ? {} : await excludeDemoOrders();
+
   const [statusAgg, monthOrdersCount, rawOrders, rawCustomers, rawProducts, shopSettings] = await Promise.all([
     OrderModel.aggregate<{ _id: string; count: number }>([
-      { $match: { createdAt: { $gte: windowStart } } },
+      { $match: { ...demoFilter, createdAt: { $gte: windowStart } } },
       { $group: { _id: '$orderStatus', count: { $sum: 1 } } },
     ]),
-    OrderModel.countDocuments({ createdAt: { $gte: startOfMonth } }),
-    OrderModel.find({ createdAt: { $gte: windowStart } })
+    OrderModel.countDocuments({ ...demoFilter, createdAt: { $gte: startOfMonth } }),
+    OrderModel.find({ ...demoFilter, createdAt: { $gte: windowStart } })
       .sort({ createdAt: -1 })
       .limit(200)
-      .populate<{ user: PopulatedUser }>('user', 'name email')
+      .populate<{ user: PopulatedUser }>('user', 'name email isDemo')
       .lean()
       .exec(),
-    UserModel.find({ isAdmin: { $ne: true } }, 'name email')
+    UserModel.find({ isAdmin: { $ne: true }, isDemo: { $ne: true } }, 'name email')
       .sort({ name: 1 })
       .limit(500)
       .lean()
@@ -133,6 +144,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
       counts={counts}
       monthOrdersCount={monthOrdersCount}
       range={range}
+      includeDemo={includeDemo}
       customers={customers}
       products={products}
       defaultPickupLocation={`${shopSettings.shopName} — In Store`}

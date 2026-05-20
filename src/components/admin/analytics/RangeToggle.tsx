@@ -14,21 +14,39 @@ type Props = {
   // `bg-cream-deep` for the pill background; standalone uses `bg-paper` with
   // a border for use in page headers or open backgrounds.
   variant?: 'chart-card' | 'standalone';
+  // Extra query params to preserve when navigating between ranges. Used by
+  // the orders dashboard to keep `?includeDemo=true` alive when the admin
+  // toggles range while demo activity is included; other surfaces don't
+  // need it and pass nothing.
+  extraParams?: Record<string, string>;
   className?: string;
 };
 
-export default function RangeToggle({ active, basePath, variant = 'chart-card', className = '' }: Props) {
+export default function RangeToggle({
+  active,
+  basePath,
+  variant = 'chart-card',
+  extraParams,
+  className = '',
+}: Props) {
   const wrapClasses =
     variant === 'chart-card'
       ? 'inline-flex bg-cream-deep rounded-full p-0.75'
       : 'inline-flex bg-paper border border-line rounded-full p-[3px]';
+
+  const buildHref = (p: RangeKey): string => {
+    const params = new URLSearchParams(extraParams);
+    if (p !== '30D') params.set('range', p);
+    const qs = params.toString();
+    return qs ? `${basePath}?${qs}` : basePath;
+  };
 
   return (
     <div className={`${wrapClasses} ${className}`.trim()}>
       {OPTIONS.map((p) => (
         <Link
           key={p}
-          href={p === '30D' ? basePath : `${basePath}?range=${p}`}
+          href={buildHref(p)}
           scroll={false}
           className={`px-3.5 py-1.5 rounded-full text-[12px] font-medium transition-colors ${
             active === p ? 'bg-ink text-cream' : 'text-ink-soft hover:text-ink'

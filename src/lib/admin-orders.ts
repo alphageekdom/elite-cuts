@@ -172,6 +172,7 @@ export function buildOrderExportParams(opts: {
   search: string;
   payment: PaymentFilter;
   fulfillment: FulfillmentFilter;
+  includeDemo: boolean;
 }): URLSearchParams {
   const params = new URLSearchParams();
   params.set('range', opts.range);
@@ -179,5 +180,6 @@ export function buildOrderExportParams(opts: {
   if (opts.search.trim()) params.set('search', opts.search.trim());
   if (opts.payment !== 'any') params.set('payment', opts.payment);
   if (opts.fulfillment !== 'any') params.set('fulfillment', opts.fulfillment);
+  if (opts.includeDemo) params.set('includeDemo', 'true');
   return params;
 }

@@ -94,6 +94,12 @@ export type OrderTableRow = {
   orderRef: string;
   customerName: string;
   customerEmail: string;
+  // Phase D — true when the order belongs to the seeded demo customer.
+  // Drives the amber "Demo" pill in the customer column and the
+  // single-line banner at the top of the order detail drawer when the
+  // "Include demo activity" toggle is on. Excluded by default from the
+  // listing + CSV via the server-side `excludeDemoOrders` filter.
+  isDemo?: boolean;
   items: Array<{
     name: string;
     image: string;

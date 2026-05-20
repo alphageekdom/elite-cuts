@@ -14,6 +14,7 @@ import type { OrderRow } from '@/components/admin/dashboard/DashboardRecentOrder
 import RevenueCard, { type RevenueBucket } from '@/components/admin/analytics/RevenueCard';
 import type { RangeKey } from '@/components/admin/analytics/RangeToggle';
 import { MONTH_ABBR } from '@/lib/format';
+import { excludeDemoOrders } from '@/lib/demo/exclude';
 
 type PopulatedUser = {
   _id: Types.ObjectId;
@@ -71,17 +72,26 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
   const chartWindowStart = new Date(now.getTime() - rangeDays * DAY_MS);
   const chartPrevWindowStart = new Date(now.getTime() - 2 * rangeDays * DAY_MS);
 
+  // Phase D — exclude the demo customer's orders + both demo accounts
+  // from every admin aggregate so demo activity doesn't move the real
+  // metrics. `excludeDemo` resolves to `{}` when no demo customer
+  // exists; the user filter is a flat `{ isDemo: { $ne: true } }` so
+  // both demo customer and demo admin drop out of user counts.
+  const excludeDemo = await excludeDemoOrders();
+  const excludeDemoUser = { isDemo: { $ne: true } };
+
   const [
     usersCount, ordersCount, revenueResult, rawOrders, topCutsRaw,
     chartOrders, chartPrevOrders,
     currentPeriodAgg, prevPeriodAgg, currentCustomers, prevCustomers,
   ] = await Promise.all([
-      User.countDocuments({}),
-      Order.countDocuments({}),
+      User.countDocuments(excludeDemoUser),
+      Order.countDocuments(excludeDemo),
       Order.aggregate<{ total: number }>([
+        { $match: excludeDemo },
         { $group: { _id: null, total: { $sum: '$totalCost' } } },
       ]),
-      Order.find({})
+      Order.find(excludeDemo)
         .sort({ createdAt: -1 })
         .limit(5)
         .populate<{ user: PopulatedUser }>('user', 'name email')
@@ -89,7 +99,7 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
         .exec(),
       // Top 5 cuts by revenue in last 30 days
       Order.aggregate<{ _id: string; revenue: number; sold: number }>([
-        { $match: { createdAt: { $gte: thirtyDaysAgo } } },
+        { $match: { ...excludeDemo, createdAt: { $gte: thirtyDaysAgo } } },
         { $unwind: '$orderItems' },
         {
           $group: {
@@ -103,26 +113,32 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
       ]),
       // Orders inside the active chart range — bucketed in JS so bucket size
       // (daily / weekly / biweekly / monthly) varies with the selected range.
-      Order.find({ createdAt: { $gte: chartWindowStart } }, 'createdAt totalCost').lean().exec(),
+      Order.find(
+        { ...excludeDemo, createdAt: { $gte: chartWindowStart } },
+        'createdAt totalCost',
+      ).lean().exec(),
       // Same shape, previous comparable period.
       Order.find(
-        { createdAt: { $gte: chartPrevWindowStart, $lt: chartWindowStart } },
+        { ...excludeDemo, createdAt: { $gte: chartPrevWindowStart, $lt: chartWindowStart } },
         'createdAt totalCost',
       ).lean().exec(),
       // Current 30-day period: revenue + order count
       Order.aggregate<{ total: number; count: number }>([
-        { $match: { createdAt: { $gte: thirtyDaysAgo } } },
+        { $match: { ...excludeDemo, createdAt: { $gte: thirtyDaysAgo } } },
         { $group: { _id: null, total: { $sum: '$totalCost' }, count: { $sum: 1 } } },
       ]),
       // Prior 30-day period: revenue + order count
       Order.aggregate<{ total: number; count: number }>([
-        { $match: { createdAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo } } },
+        { $match: { ...excludeDemo, createdAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo } } },
         { $group: { _id: null, total: { $sum: '$totalCost' }, count: { $sum: 1 } } },
       ]),
       // New customers: current 30 days
-      User.countDocuments({ createdAt: { $gte: thirtyDaysAgo } }),
+      User.countDocuments({ ...excludeDemoUser, createdAt: { $gte: thirtyDaysAgo } }),
       // New customers: prior 30 days
-      User.countDocuments({ createdAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo } }),
+      User.countDocuments({
+        ...excludeDemoUser,
+        createdAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo },
+      }),
     ]);
 
   const revenue = revenueResult[0]?.total ?? 0;
