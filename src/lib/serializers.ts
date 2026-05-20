@@ -54,6 +54,14 @@ type RawOrder = {
     productType: string;
     refunded?: boolean;
     refundedAt?: Date | null;
+    pricingType?: PricingType;
+    pricePerLb?: number;
+    estimatedWeightLb?: number;
+    minWeightLb?: number;
+    maxWeightLb?: number;
+    displayPriceLabel?: string;
+    displayWeightLabel?: string;
+    realizedWeightLb?: number;
   }>;
   subtotal: number;
   tax: number;
@@ -127,6 +135,14 @@ export function serializeOrderRow(order: RawOrder): OrderTableRow {
     productType: item.productType,
     refunded: item.refunded ?? false,
     refundedAt: item.refundedAt ? item.refundedAt.toISOString() : undefined,
+    pricingType: item.pricingType,
+    pricePerLb: item.pricePerLb,
+    estimatedWeightLb: item.estimatedWeightLb,
+    minWeightLb: item.minWeightLb,
+    maxWeightLb: item.maxWeightLb,
+    displayPriceLabel: item.displayPriceLabel,
+    displayWeightLabel: item.displayWeightLabel,
+    realizedWeightLb: item.realizedWeightLb,
   }));
   const summary = refundSummary(items, {
     subtotal: order.subtotal,

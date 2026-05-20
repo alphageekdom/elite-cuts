@@ -3,6 +3,15 @@ import { useState } from 'react';
 import { formatMoney, getInitials, formatDateTime } from '@/lib/format';
 import { printReceipt } from '@/lib/print-receipt';
 import { CANCELLATION_REASONS } from '@/lib/order-constants';
+import {
+  estimatedLineTotal,
+  hasRealizedWeight,
+  isVariableWeightLine,
+  orderHasRealizedDifference,
+  realizedLineTotal,
+  realizedOrderTotal,
+} from '@/lib/order-line';
+import { DELIVERY_FEE } from '@/lib/pricing';
 import type { OrderTableRow } from '@/types/admin';
 
 type TimelineStep = {
@@ -50,13 +59,22 @@ type Props = {
   onUpdate: (newStatus: string, cancellationReason?: string) => Promise<void>;
   onRefundItem: (itemIndex: number) => Promise<void>;
   onUnrefundItem: (itemIndex: number) => Promise<void>;
+  onSetRealizedWeight: (itemIndex: number, weightLb: number | null) => Promise<void>;
 };
 
-export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate, onClose, onUpdate, onRefundItem, onUnrefundItem }: Props) {
+export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate, onClose, onUpdate, onRefundItem, onUnrefundItem, onSetRealizedWeight }: Props) {
   const [updating, setUpdating] = useState(false);
   const [pendingItemIndex, setPendingItemIndex] = useState<number | null>(null);
-  const [pendingAction, setPendingAction] = useState<'refund' | 'unrefund' | null>(null);
+  const [pendingAction, setPendingAction] = useState<'refund' | 'unrefund' | 'realized' | null>(null);
   const [cancellationReason, setCancellationReason] = useState(order.cancellationReason ?? '');
+  // Per-line draft of the realized-weight input. Indexed by line, holds the
+  // raw typed string so empty / non-numeric input doesn't crash the math
+  // before the admin tabs out of the field.
+  const [realizedDraft, setRealizedDraft] = useState<Record<number, string>>({});
+  // Realized weights are editable only at or past fulfillment. Pre-pickup,
+  // the cuts haven't been weighed yet — the input renders disabled.
+  const canEditRealizedWeight =
+    order.status === 'Ready for Pickup' || order.status === 'Completed';
   const initials = getInitials(order.customerName);
   const timeline = buildTimeline(order);
 
@@ -84,8 +102,42 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
     }
   }
 
+  async function handleRealizedWeightSubmit(itemIndex: number, raw: string) {
+    if (pendingItemIndex !== null) return;
+    const trimmed = raw.trim();
+    const next = trimmed === '' ? null : Number(trimmed);
+    if (next !== null && (!Number.isFinite(next) || next <= 0)) return;
+    setPendingItemIndex(itemIndex);
+    setPendingAction('realized');
+    try {
+      await onSetRealizedWeight(itemIndex, next);
+      setRealizedDraft((prev) => {
+        const copy = { ...prev };
+        delete copy[itemIndex];
+        return copy;
+      });
+    } finally {
+      setPendingItemIndex(null);
+      setPendingAction(null);
+    }
+  }
+
   const refundedAmount = order.refundedAmount ?? 0;
   const netPaid = Math.max(0, Math.round((order.total - refundedAmount) * 100) / 100);
+
+  // "Final at pickup" total — what the customer actually owes once
+  // every variable-weight line has been weighed. Stripe charge stays
+  // the original estimate; this is informational copy.
+  const orderHasRealized = orderHasRealizedDifference(order.items);
+  const realizedTotalAtPickup = realizedOrderTotal({
+    lines: order.items,
+    subtotal: order.subtotal,
+    tax: order.tax,
+    memberDiscount: order.memberDiscount,
+    promoDiscount: order.promoDiscount,
+    pointsRedemptionValueCents: order.pointsRedemptionValueCents,
+    deliveryFee: order.fulfillmentType === 'delivery' ? DELIVERY_FEE : 0,
+  });
 
   async function handleUpdate() {
     setUpdating(true);
@@ -225,6 +277,10 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
             {order.items.map((item, i) => {
               const isRefunded = item.refunded;
               const isPending = pendingItemIndex === i;
+              const variableWeight = isVariableWeightLine(item);
+              const realized = hasRealizedWeight(item);
+              const estimated = estimatedLineTotal(item);
+              const effective = realizedLineTotal(item);
               return (
                 <div
                   key={i}
@@ -246,11 +302,67 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
                     <div className="font-mono text-[11px] text-muted tracking-[0.04em] uppercase">
                       {item.qty}x · {formatMoney(item.price)}/ea · {item.productType}
                     </div>
+                    {variableWeight && !isRefunded && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <label className="text-[10px] font-medium tracking-[0.14em] uppercase text-muted">
+                          Weighed
+                        </label>
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          step="0.01"
+                          min="0"
+                          placeholder={item.estimatedWeightLb ? String(item.estimatedWeightLb) : '0.00'}
+                          value={
+                            realizedDraft[i] ??
+                            (typeof item.realizedWeightLb === 'number' ? String(item.realizedWeightLb) : '')
+                          }
+                          onChange={(e) =>
+                            setRealizedDraft((prev) => ({ ...prev, [i]: e.target.value }))
+                          }
+                          onBlur={(e) => {
+                            if (!canEditRealizedWeight) return;
+                            const draft = realizedDraft[i];
+                            if (draft === undefined) return;
+                            const current =
+                              typeof item.realizedWeightLb === 'number'
+                                ? String(item.realizedWeightLb)
+                                : '';
+                            if (draft.trim() === current.trim()) {
+                              setRealizedDraft((prev) => {
+                                const copy = { ...prev };
+                                delete copy[i];
+                                return copy;
+                              });
+                              return;
+                            }
+                            handleRealizedWeightSubmit(i, e.target.value);
+                          }}
+                          disabled={!canEditRealizedWeight || pendingItemIndex !== null}
+                          aria-label={`Realized weight for ${item.name}`}
+                          className="w-16 font-mono text-[12px] bg-paper border border-line rounded px-2 py-1 outline-none focus:border-ink disabled:opacity-50 disabled:cursor-not-allowed"
+                        />
+                        <span className="font-mono text-[11px] text-muted tracking-[0.04em] uppercase">lb</span>
+                        {!canEditRealizedWeight && (
+                          <span className="text-[10px] text-muted italic">
+                            Mark ready for pickup to enter
+                          </span>
+                        )}
+                        {isPending && pendingAction === 'realized' && (
+                          <span className="text-[10px] text-muted italic">Saving…</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="flex flex-col items-end gap-1.5">
                     <div className={`font-display text-[15px] font-medium text-right ${isRefunded ? 'line-through' : ''}`}>
-                      {formatMoney(item.price * item.qty)}
+                      {formatMoney(effective)}
                     </div>
+                    {realized && effective !== estimated && (
+                      <div className="font-mono text-[10px] text-muted tracking-[0.04em]">
+                        est. {formatMoney(estimated)}
+                      </div>
+                    )}
                     {!isRefunded && (
                       <button
                         type="button"
@@ -323,6 +435,12 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
               <span className="font-display text-[17px] font-medium text-ink">Total</span>
               <span className="font-display text-[22px] font-medium tracking-[-0.01em] text-ink">{formatMoney(order.total)}</span>
             </div>
+            {orderHasRealized && (
+              <div className="flex justify-between items-baseline text-[12px] text-camel">
+                <span>↻ Final at pickup (after weighing)</span>
+                <span className="font-mono text-[11px]">{formatMoney(realizedTotalAtPickup)}</span>
+              </div>
+            )}
             {order.pointsAwarded > 0 && (
               <div className="flex justify-between items-baseline text-[12px] text-muted mt-1">
                 <span>

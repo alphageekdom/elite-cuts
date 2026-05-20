@@ -1,7 +1,8 @@
 import type { OrderItem, PaymentStatus } from '@/models/Order';
+import { realizedLineTotal } from '@/lib/order-line';
 
 export type RefundSummary = {
-  /** Sum of refunded line totals (qty × price), pre-tax. */
+  /** Sum of refunded line totals (realized when weighed, else estimate). */
   refundedSubtotal: number;
   /** Share of the original order tax attributable to the refunded subtotal. */
   refundedTax: number;
@@ -30,14 +31,21 @@ export type RefundContext = {
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
 export function refundSummary(
-  items: Pick<OrderItem, 'qty' | 'price' | 'refunded'>[],
+  items: Pick<
+    OrderItem,
+    'qty' | 'price' | 'refunded' | 'pricingType' | 'pricePerLb' | 'realizedWeightLb'
+  >[],
   context: RefundContext,
 ): RefundSummary {
   let refundedLines = 0;
   let refundedCount = 0;
   for (const item of items) {
     if (item.refunded) {
-      refundedLines += item.qty * item.price;
+      // For variable-weight lines that were weighed at pickup, refund the
+      // realized total — what the customer actually paid for that line —
+      // rather than the at-checkout estimate. `realizedLineTotal` falls
+      // back to `qty × price` for fixed lines and unfulfilled orders.
+      refundedLines += realizedLineTotal(item);
       refundedCount += 1;
     }
   }
