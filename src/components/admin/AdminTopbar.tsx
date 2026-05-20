@@ -179,8 +179,8 @@ export default function AdminTopbar({ openMessageCount = 0 }: AdminTopbarProps) 
                     return (
                       <div
                         key={n._id}
-                        className={`flex gap-3 px-4 py-3 border-b border-cream/[0.06] last:border-0 transition-colors ${
-                          isUnread ? 'bg-cream/[0.04]' : ''
+                        className={`flex gap-3 px-4 py-3 border-b border-cream/6 last:border-0 transition-colors ${
+                          isUnread ? 'bg-cream/4' : ''
                         }`}
                       >
                         {/* Type icon */}

@@ -39,7 +39,7 @@ export default function ScheduleShopHours({ hours }: Props) {
             <div
               key={h.dayOfWeek}
               className={`flex justify-between items-baseline py-2 text-[13px] ${
-                isToday ? 'bg-oxblood/[4%] -mx-3.5 px-3.5 rounded' : ''
+                isToday ? 'bg-oxblood/4 -mx-3.5 px-3.5 rounded' : ''
               } ${i < sorted.length - 1 ? 'border-b border-line-soft' : ''}`}
             >
               <span className={isToday ? 'text-ink font-medium' : 'text-ink-soft'}>{label}</span>
