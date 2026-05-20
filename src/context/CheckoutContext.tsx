@@ -77,6 +77,11 @@ export type CheckoutState = {
   // pay routes through the demo path on EliteCuts; real Stripe-attached
   // cards are surfaced on Stripe's hosted page via the customer link).
   selectedSavedCardId: string | null;
+  // Phase 4 — opt-in to auto-charging the realized-vs-estimate difference
+  // at pickup. UI gates the checkbox behind a saved-card path (either
+  // saveCard or a selectedSavedCardId) AND the cart containing at least
+  // one variable-weight cut. Off for guests and Card-tile demo orders.
+  autoSettleAtPickup: boolean;
 };
 
 export type CheckoutAction =
@@ -99,6 +104,7 @@ export type CheckoutAction =
   | { type: 'SET_DELIVERY_ADDRESS'; payload: DeliveryAddress }
   | { type: 'SET_ORDER_NOTES'; payload: string }
   | { type: 'SET_SAVE_CARD'; payload: boolean }
+  | { type: 'SET_AUTO_SETTLE_AT_PICKUP'; payload: boolean }
   | { type: 'SET_CARD_DETAILS'; payload: CheckoutState['cardDetails'] }
   | { type: 'SET_SELECTED_SAVED_CARD'; payload: string | null }
   | {
@@ -130,6 +136,7 @@ const EMPTY_INITIAL_STATE: CheckoutState = {
   savedAddresses: [],
   orderNotes: '',
   saveCard: false,
+  autoSettleAtPickup: false,
   cardDetails: null,
   selectedSavedCardId: null,
 };
@@ -207,7 +214,15 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
     case 'SET_ORDER_NOTES':
       return { ...state, orderNotes: action.payload };
     case 'SET_SAVE_CARD':
-      return { ...state, saveCard: action.payload };
+      // Unsetting "Save this card" also clears auto-settle since the
+      // settlement step needs a saved card to charge against.
+      return {
+        ...state,
+        saveCard: action.payload,
+        ...(action.payload ? {} : { autoSettleAtPickup: false }),
+      };
+    case 'SET_AUTO_SETTLE_AT_PICKUP':
+      return { ...state, autoSettleAtPickup: action.payload };
     case 'SET_CARD_DETAILS':
       return { ...state, cardDetails: action.payload };
     case 'SET_SELECTED_SAVED_CARD':

@@ -70,7 +70,18 @@ type RawOrder = {
   isPaid: boolean;
   paidAt?: Date | null;
   paymentMethod: string;
-  paymentResult?: { status?: string };
+  paymentResult?: {
+    status?: string;
+    settlementStatus?: 'pending' | 'settled' | 'failed';
+    settlementError?: string;
+    settlementPaymentIntents?: Array<{
+      id: string;
+      amount: number;
+      kind: 'capture' | 'auto_refund';
+      createdAt: Date;
+    }>;
+  };
+  autoSettleAtPickup?: boolean;
   pickupLocation: string;
   pickedUp: boolean;
   fulfillmentType?: 'pickup' | 'delivery';
@@ -176,6 +187,15 @@ export function serializeOrderRow(order: RawOrder): OrderTableRow {
     promoDiscount: order.promoDiscount ?? 0,
     promoCode: order.promoCode,
     createdAt: order.createdAt.toISOString(),
+    autoSettleAtPickup: order.autoSettleAtPickup,
+    settlementStatus: order.paymentResult?.settlementStatus,
+    settlementError: order.paymentResult?.settlementError,
+    settlementPaymentIntents: order.paymentResult?.settlementPaymentIntents?.map((tx) => ({
+      id: tx.id,
+      amount: tx.amount,
+      kind: tx.kind,
+      createdAt: tx.createdAt.toISOString(),
+    })),
   };
 }
 

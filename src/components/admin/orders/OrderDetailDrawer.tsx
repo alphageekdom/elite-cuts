@@ -60,13 +60,15 @@ type Props = {
   onRefundItem: (itemIndex: number) => Promise<void>;
   onUnrefundItem: (itemIndex: number) => Promise<void>;
   onSetRealizedWeight: (itemIndex: number, weightLb: number | null) => Promise<void>;
+  onRetrySettlement: () => Promise<void>;
 };
 
-export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate, onClose, onUpdate, onRefundItem, onUnrefundItem, onSetRealizedWeight }: Props) {
+export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate, onClose, onUpdate, onRefundItem, onUnrefundItem, onSetRealizedWeight, onRetrySettlement }: Props) {
   const [updating, setUpdating] = useState(false);
   const [pendingItemIndex, setPendingItemIndex] = useState<number | null>(null);
   const [pendingAction, setPendingAction] = useState<'refund' | 'unrefund' | 'realized' | null>(null);
   const [cancellationReason, setCancellationReason] = useState(order.cancellationReason ?? '');
+  const [retryingSettlement, setRetryingSettlement] = useState(false);
   // Per-line draft of the realized-weight input. Indexed by line, holds the
   // raw typed string so empty / non-numeric input doesn't crash the math
   // before the admin tabs out of the field.
@@ -439,6 +441,61 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
               <div className="flex justify-between items-baseline text-[12px] text-camel">
                 <span>↻ Final at pickup (after weighing)</span>
                 <span className="font-mono text-[11px]">{formatMoney(realizedTotalAtPickup)}</span>
+              </div>
+            )}
+            {order.autoSettleAtPickup && order.settlementStatus && (
+              <div className="mt-2 pt-2 border-t border-line-soft flex flex-col gap-1.5">
+                <div className="flex justify-between items-baseline text-[12px]">
+                  <span className="text-ink-soft">Auto-settle</span>
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-mono text-[10px] tracking-[0.04em] uppercase ${
+                      order.settlementStatus === 'settled'
+                        ? 'bg-green/10 text-green'
+                        : order.settlementStatus === 'failed'
+                        ? 'bg-oxblood/10 text-oxblood'
+                        : 'bg-camel/15 text-camel'
+                    }`}
+                  >
+                    {order.settlementStatus}
+                  </span>
+                </div>
+                {(order.settlementPaymentIntents ?? []).map((tx) => (
+                  <div key={tx.id} className="flex justify-between items-baseline text-[12px] text-camel">
+                    <span>
+                      {tx.kind === 'capture' ? '+' : '−'}
+                      {formatMoney(tx.amount)}{' '}
+                      {tx.kind === 'capture' ? 'charged' : 'refunded'} at pickup
+                    </span>
+                    <span className="font-mono text-[10px] text-muted">
+                      {tx.id.slice(0, 14)}…
+                    </span>
+                  </div>
+                ))}
+                {order.settlementStatus === 'failed' && (
+                  <>
+                    {order.settlementError && (
+                      <p className="text-[11px] text-oxblood italic">
+                        {order.settlementError}
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (retryingSettlement) return;
+                        setRetryingSettlement(true);
+                        try {
+                          await onRetrySettlement();
+                        } finally {
+                          setRetryingSettlement(false);
+                        }
+                      }}
+                      disabled={retryingSettlement}
+                      className="self-start text-[11px] text-muted hover:text-ink border border-line hover:border-ink/30 px-2.5 py-1 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {retryingSettlement ? 'Retrying…' : 'Retry settlement'}
+                    </button>
+                  </>
+                )}
               </div>
             )}
             {order.pointsAwarded > 0 && (

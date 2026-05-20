@@ -352,6 +352,7 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
             onRefundItem={table.actions.refundItem}
             onUnrefundItem={table.actions.unrefundItem}
             onSetRealizedWeight={table.actions.setRealizedWeight}
+            onRetrySettlement={table.actions.retrySettlement}
           />
         )}
       </aside>

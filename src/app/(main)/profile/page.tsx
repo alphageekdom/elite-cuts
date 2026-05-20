@@ -60,6 +60,10 @@ export type ProfileOrder = {
   paymentMethod: PaymentMethod;
   pickupLocation: string;
   pickedUp: boolean;
+  // Phase 4 — auto-settle status surfaced on the profile order card so
+  // the customer can tell at a glance whether the settlement charge has
+  // been applied to their card.
+  settlementStatus?: 'pending' | 'settled' | 'failed';
   createdAt: string;
   updatedAt: string;
 };
@@ -217,6 +221,7 @@ export default async function ProfilePage({ searchParams }: Props) {
     paymentMethod: o.paymentMethod,
     pickupLocation: o.pickupLocation,
     pickedUp: o.pickedUp,
+    settlementStatus: o.paymentResult?.settlementStatus,
     createdAt: (o.createdAt as Date).toISOString(),
     updatedAt: (o.updatedAt as Date).toISOString(),
   }));

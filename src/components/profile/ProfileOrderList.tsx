@@ -145,6 +145,8 @@ export default function ProfileOrderList({ orders, showAll = false }: Props) {
                 <p className="font-mono text-[10px] tracking-[0.04em] text-camel italic">
                   {realizedTotalShift >= 0 ? '+' : '−'}
                   {formatMoney(Math.abs(realizedTotalShift))} at pickup
+                  {order.settlementStatus === 'settled' && ' · settled'}
+                  {order.settlementStatus === 'failed' && ' · settle in-store'}
                 </p>
               )}
               <OrderHelpButton orderId={order._id} orderRef={order._id.slice(-4).toUpperCase()} />

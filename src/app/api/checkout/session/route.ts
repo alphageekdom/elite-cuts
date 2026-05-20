@@ -19,6 +19,7 @@ import {
   computeMemberDiscount,
   computeOrderTotals,
 } from '@/lib/orderBuilder';
+import { isVariableWeightLine } from '@/lib/order-line';
 import { getStripe, dollarsToCents, isStubMode } from '@/lib/payments/stripe';
 import { completeSessionForOrder } from '@/lib/payments/completeSession';
 import { isDemoCardTileEnabled } from '@/lib/features';
@@ -57,6 +58,9 @@ export const POST = async (request: NextRequest) => {
       saveCard?: boolean;
       cardDetails?: unknown;
       savedCardId?: string;
+      // Phase 4 — opt-in to auto-charging the realized-vs-estimate
+      // difference at pickup against the saved card.
+      autoSettleAtPickup?: boolean;
     };
 
     // Saved-card shortcut: shopper picked a card from the strip above the
@@ -190,6 +194,18 @@ export const POST = async (request: NextRequest) => {
       );
     }
 
+    // Phase 4 — auto-settle eligibility. Stripe path only: the settlement
+    // step needs a real PaymentIntent to charge off-session against, which
+    // means the customer ticked "Save this card" under the Stripe tile.
+    // Picking a saved card from the strip routes through the demo Card
+    // tile (no real PaymentIntent), so that path doesn't qualify even
+    // though it carries a saved-card id. `saveCardIntent` already excludes
+    // the Card-tile path via its own check.
+    const autoSettleEligible =
+      Boolean(body.autoSettleAtPickup) &&
+      saveCardIntent &&
+      orderItems.some((line) => isVariableWeightLine(line));
+
     const subtotal = computeSubtotal(orderItems);
 
     // Promo validation is read-only here. Seat reservation moves to the
@@ -320,7 +336,19 @@ export const POST = async (request: NextRequest) => {
       }),
       ...(saveCardIntent && { saveCardIntent: true }),
       ...(resolvedSavedCard && { savedCardIdAtPurchase: resolvedSavedCard.id }),
+      ...(autoSettleEligible && { autoSettleAtPickup: true }),
     });
+
+    // Stamp the initial settlement status onto the just-created order
+    // when it qualifies. Done as a follow-up update because the literal
+    // above already sets `paymentResult.status: 'Pending'` and Mongoose
+    // would otherwise replace the whole subdoc.
+    if (autoSettleEligible) {
+      await Order.updateOne(
+        { _id: order._id },
+        { $set: { 'paymentResult.settlementStatus': 'pending' } },
+      );
+    }
 
     const orderRef = `EC-${String(order._id).slice(-4).toUpperCase()}`;
     const origin = request.nextUrl.origin;

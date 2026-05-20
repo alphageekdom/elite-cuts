@@ -11,6 +11,8 @@ import { refundSummary, paymentStatusFor } from '@/lib/order-refunds';
 import { awardOrderCompletion, reverseOrderAward, reverseOrderRedemption } from '@/lib/order-completion';
 import { releasePromoSeat } from '@/lib/promos/apply';
 import { getStripe, isStubMode, dollarsToCents } from '@/lib/payments/stripe';
+import { runOrderSettlement } from '@/lib/payments/orderSettlement';
+import { notifyAdminsOfSettlementFailure } from '@/lib/order-notifications';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -410,6 +412,19 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
           customerUserId: existing.user,
           subtotal: existing.subtotal,
           productIds: existing.orderItems.map((i) => i.product),
+        });
+      }
+
+      // Phase 4 — auto-settle at pickup. Fires after points so a Stripe
+      // failure here doesn't block the customer earning their points.
+      // Skipped silently when the order didn't opt in or doesn't qualify;
+      // failures land in the admin's notification feed but never block
+      // fulfillment.
+      const settlement = await runOrderSettlement(id);
+      if (settlement.status === 'failed') {
+        await notifyAdminsOfSettlementFailure({
+          orderId: id,
+          error: settlement.error,
         });
       }
     }

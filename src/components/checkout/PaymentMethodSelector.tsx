@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 
 import { useCheckoutContext, type PayMethod } from '@/context/CheckoutContext';
+import { useCartContext } from '@/context/CartContext';
 import { formatBrand, isCardExpired } from '@/lib/payments/card-display';
 import { useSavedCards } from '@/hooks/useSavedCards';
 import CheckoutCardForm from './CheckoutCardForm';
@@ -69,6 +70,15 @@ const PaymentMethodSelector = ({
   isLoggedIn = false,
   demoCardEnabled = false,
 }: Props) => {
+  // Phase 4 — the auto-settle checkbox only renders when the cart has at
+  // least one cut priced by weight, since fixed-price orders never have a
+  // realized total that could differ from the estimate.
+  const { cartItems } = useCartContext();
+  const cartHasVariableWeight = cartItems.some(
+    (line) =>
+      line.product.pricingType === 'per_lb' ||
+      line.product.pricingType === 'whole_item_by_weight',
+  );
   // When the demo Card tile is gated off, only the Stripe tile shows. The
   // server-side check in /api/checkout/session is the actual lock — this just
   // keeps the UI honest so a shopper can't pick a tile that the API will
@@ -264,6 +274,34 @@ const PaymentMethodSelector = ({
                 Save this card for next time
                 <span className='mt-0.5 block text-[11px] text-muted'>
                   Available in your profile under Payment methods.
+                </span>
+              </span>
+            </label>
+          )}
+          {isLoggedIn && cartHasVariableWeight && (
+            <label
+              className={`mt-3 flex cursor-pointer items-start gap-2.5 text-[13px] text-ink-soft ${
+                state.saveCard ? '' : 'opacity-50 cursor-not-allowed'
+              }`}
+            >
+              <input
+                type='checkbox'
+                checked={state.autoSettleAtPickup && state.saveCard}
+                disabled={!state.saveCard}
+                onChange={(e) =>
+                  dispatch({
+                    type: 'SET_AUTO_SETTLE_AT_PICKUP',
+                    payload: e.target.checked,
+                  })
+                }
+                className='mt-0.5 h-3.5 w-3.5 cursor-pointer accent-ink disabled:cursor-not-allowed'
+              />
+              <span>
+                Auto-settle at pickup
+                <span className='mt-0.5 block text-[11px] text-muted'>
+                  {state.saveCard
+                    ? "We'll charge the difference (or refund the overage) to this card when your cuts are weighed. Capped at each cut's max weight."
+                    : 'Save this card above to enable auto-settle.'}
                 </span>
               </span>
             </label>

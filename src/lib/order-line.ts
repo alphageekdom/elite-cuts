@@ -69,6 +69,15 @@ export function estimatedSubtotal(lines: Pick<OrderItem, 'qty' | 'price'>[]): nu
   return round2(lines.reduce((sum, line) => sum + estimatedLineTotal(line), 0));
 }
 
+// True when every variable-weight line on the order carries a positive
+// `realizedWeightLb`. Phase 4's auto-settle step refuses to fire until
+// this returns true — partial weighing would settle against an
+// incomplete realized total. Fixed-price orders pass trivially because
+// there are no variable lines to wait for.
+export function allVariableWeightLinesWeighed(lines: LineTotalInput[]): boolean {
+  return lines.every((line) => !isVariableWeightLine(line) || hasRealizedWeight(line));
+}
+
 // True when at least one line on the order has been weighed and its
 // realized total differs from its estimate. Drives the
 // "Final total: $X.XX (estimated: $Y.YY)" copy on customer-facing
