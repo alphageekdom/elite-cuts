@@ -9,6 +9,7 @@ import { withAdmin } from '@/lib/api-handler';
 import { EMAIL_RE } from '@/lib/validation';
 import { clientIpFromHeaders, rateLimit } from '@/lib/rateLimit';
 import { clearDormancyWarning, hardDeleteUser, restoreUser, softDeleteUser } from '@/lib/accountDeletion';
+import { refuseDemoActor, refuseDemoTarget } from '@/lib/auth/demo-permissions';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -71,7 +72,22 @@ export const PUT = async (request: NextRequest, { params }: RouteContext) => {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
 
+    // Demo customer: refuse identity-bearing self-edits (email, password,
+    // profile-info). The whole profile-info branch goes since the existing UI
+    // submits name/email/phone together — splitting per-field would give a
+    // confusing partial-success on the demo. Phase B's spec.
+    const actorBlocked = refuseDemoActor(sessionUser.user);
+    if (actorBlocked && sessionUser.userId === id) return actorBlocked;
+
     await connectDB();
+
+    // Refuse any admin-driven mutation of a demo account (regardless of who's
+    // calling). Looking the target up here lets every branch below reuse it.
+    if (isAdmin && sessionUser.userId !== id) {
+      const target = await User.findById(id).select('isDemo isAdmin');
+      const targetBlocked = refuseDemoTarget(target);
+      if (targetBlocked) return targetBlocked;
+    }
 
     const body = (await request.json()) as {
       name?: string;
@@ -215,10 +231,12 @@ export const DELETE = withAdmin(async (request: NextRequest, ctx: unknown, perfo
     const immediate = Boolean(body?.immediate);
     const reason = typeof body?.reason === 'string' ? body.reason.trim() : undefined;
 
-    const target = await User.findById(id).select('isAdmin');
+    const target = await User.findById(id).select('isAdmin isDemo');
     if (!target) {
       return NextResponse.json({ message: 'User not found' }, { status: 404 });
     }
+    const targetBlocked = refuseDemoTarget(target);
+    if (targetBlocked) return targetBlocked;
     if (target.isAdmin) {
       return NextResponse.json({ message: 'Admin accounts cannot be deleted' }, { status: 403 });
     }
@@ -264,6 +282,14 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown, perfor
       action?: string;
       value?: unknown;
     };
+
+    // Refuse either lifecycle action against a demo target — demo accounts
+    // can't be soft-deleted or dormancy-warned in the first place (Phase B
+    // guards + dormancy-scan exclusion), so any cancel-* against them is
+    // either stale state or a tampered call. Either way, refuse.
+    const target = await User.findById(id).select('isDemo');
+    const targetBlocked = refuseDemoTarget(target);
+    if (targetBlocked) return targetBlocked;
 
     if (body?.action === 'cancel_deletion') {
       await restoreUser(id, { actor: 'admin', performedBy });

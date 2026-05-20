@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { signOut } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 import { toast } from 'sonner';
+import DemoDisabledHint from '@/components/demo/DemoDisabledHint';
 
 const CONFIRMATION_PHRASE = 'DELETE';
 
@@ -10,6 +11,8 @@ const CONFIRMATION_PHRASE = 'DELETE';
 // 30-day soft delete; the customer can recover by signing back in within
 // the window.
 export default function DeleteAccountSection() {
+  const { data: session } = useSession();
+  const isDemo = Boolean(session?.user?.isDemo);
   const [modalOpen, setModalOpen] = useState(false);
   const [phrase, setPhrase] = useState('');
   const [confirmed, setConfirmed] = useState(false);
@@ -69,10 +72,14 @@ export default function DeleteAccountSection() {
         <button
           type="button"
           onClick={() => setModalOpen(true)}
-          className="inline-flex items-center gap-2 border border-oxblood text-oxblood text-[13px] font-medium tracking-[0.04em] px-5 py-2.5 rounded-full transition-all hover:bg-oxblood hover:text-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oxblood focus-visible:ring-offset-2"
+          disabled={isDemo}
+          title={isDemo ? 'Disabled in demo mode' : undefined}
+          aria-disabled={isDemo}
+          className="inline-flex items-center gap-2 border border-oxblood text-oxblood text-[13px] font-medium tracking-[0.04em] px-5 py-2.5 rounded-full transition-all hover:bg-oxblood hover:text-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oxblood focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-oxblood"
         >
           Delete my account
         </button>
+        <DemoDisabledHint show={isDemo} className="mt-3" />
       </div>
 
       {modalOpen && (

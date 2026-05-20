@@ -105,7 +105,17 @@ export default function CustomerTableRowComponent({
             {initials}
           </div>
           <div>
-            <div className="font-medium text-[14px] leading-snug">{cust.name}</div>
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-[14px] leading-snug">{cust.name}</span>
+              {cust.isDemo && (
+                <span
+                  className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium tracking-[0.08em] uppercase bg-amber-100 text-amber-800 border border-amber-200"
+                  title="Seeded demo account — protected from destructive admin actions."
+                >
+                  Demo
+                </span>
+              )}
+            </div>
             <div className="font-mono text-[11px] text-muted tracking-[0.02em]">{cust.email}</div>
           </div>
         </div>
@@ -202,7 +212,14 @@ export default function CustomerTableRowComponent({
               Email
             </button>
             <div className="border-t border-cream/25" />
-            <button role="menuitem" onClick={() => { onDelete(cust.id); onMenuToggle(null); }} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left text-red-400 hover:bg-cream/10 transition-colors">
+            <button
+              role="menuitem"
+              onClick={() => { onDelete(cust.id); onMenuToggle(null); }}
+              disabled={cust.isDemo}
+              aria-disabled={cust.isDemo}
+              title={cust.isDemo ? 'Demo accounts cannot be deleted' : undefined}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left text-red-400 hover:bg-cream/10 transition-colors disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
+            >
               <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
               Delete
             </button>

@@ -5,6 +5,7 @@ import {
   deleteSavedCard,
   updateSavedCardExpiry,
 } from '@/lib/payments/savedCards';
+import { refuseDemoActor } from '@/lib/auth/demo-permissions';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +20,8 @@ export const DELETE = async (_request: Request, ctx: RouteContext) => {
   if (!sessionUser?.userId) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
+  const demoBlocked = refuseDemoActor(sessionUser.user);
+  if (demoBlocked) return demoBlocked;
 
   const { id } = await ctx.params;
   if (!id) {
