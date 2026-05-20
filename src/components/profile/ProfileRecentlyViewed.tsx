@@ -40,7 +40,7 @@ function RecentItem({ product }: { product: SerializedProduct }) {
           </p>
         </Link>
         <p className="text-xs text-muted">
-          {formatMoney(product.price)}/lb · {product.category}
+          {product.displayPriceLabel ?? `${formatMoney(product.price)}/lb`} · {product.category}
         </p>
       </div>
       <button

@@ -6,13 +6,33 @@ import { useSession } from 'next-auth/react';
 import useHandleAddToCart from '@/hooks/useHandleAddToCart';
 import useHandleBookmark from '@/hooks/useHandleBookmark';
 import { formatMoney } from '@/lib/format';
+import { unitPrice } from '@/lib/products/pricing';
 import { MAX_PER_LINE } from '@/lib/shopConfig';
 import type { SerializedProduct } from '@/models/Product';
 
 type Props = {
   product: Pick<
     SerializedProduct,
-    '_id' | 'price' | 'stockCount' | 'name' | 'images' | 'category'
+    | '_id'
+    | 'price'
+    | 'stockCount'
+    | 'name'
+    | 'images'
+    | 'category'
+    | 'pricingType'
+    | 'displayPriceLabel'
+    | 'displayWeightLabel'
+    | 'isEstimatedPrice'
+    | 'packagePrice'
+    | 'packageWeightLb'
+    | 'pricePerLb'
+    | 'estimatedWeightLb'
+    | 'averageWeightLb'
+    | 'minWeightLb'
+    | 'maxWeightLb'
+    | 'unitPrice'
+    | 'bundlePrice'
+    | 'includedItems'
   >;
 };
 
@@ -67,7 +87,10 @@ export default function BuyBlock({ product }: Props) {
   const outOfStock = product.stockCount <= 0;
   const [qty, setQty] = useState(1);
 
-  const total = formatMoney(qty * product.price);
+  // Per-unit estimate × qty — handles per-lb / whole-item cuts correctly
+  // (line estimate = pricePerLb × estimatedWeightLb × qty). Falls back to
+  // `qty * product.price` for any pre-Phase-1 product without pricingType.
+  const total = formatMoney(qty * unitPrice(product, product.price));
 
   const {
     isBookmarked,
@@ -108,11 +131,24 @@ export default function BuyBlock({ product }: Props) {
     <div className='rounded-sm border border-line-soft bg-paper p-6 md:p-7'>
       {/* Price + stock */}
       <div className='mb-6 flex items-baseline justify-between gap-4 border-b border-line-soft pb-6'>
-        <div className='font-display text-[40px] font-medium leading-none tracking-[-0.02em]'>
-          {formatMoney(product.price)}
-          <em className='ml-1.5 text-base font-normal not-italic text-muted'>
-            /lb
-          </em>
+        <div>
+          <div className='font-display text-[40px] font-medium leading-none tracking-[-0.02em]'>
+            {product.displayPriceLabel ? (
+              product.displayPriceLabel
+            ) : (
+              <>
+                {formatMoney(product.price)}
+                <em className='ml-1.5 text-base font-normal not-italic text-muted'>
+                  /lb
+                </em>
+              </>
+            )}
+          </div>
+          {product.displayWeightLabel && (
+            <div className='mt-1 text-[13px] text-muted'>
+              {product.displayWeightLabel}
+            </div>
+          )}
         </div>
 
         {outOfStock ? (
@@ -145,7 +181,6 @@ export default function BuyBlock({ product }: Props) {
           <span className='w-10 text-center font-display text-base font-medium'>
             {qty}
           </span>
-          <span className='pr-3 text-[13px] text-muted'>lb</span>
           <button
             type='button'
             onClick={increment}

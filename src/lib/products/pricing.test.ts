@@ -8,6 +8,7 @@ import {
   getDisplayPrice,
   getDisplayWeight,
   isEstimatedPrice,
+  unitPrice,
   type PricingView,
 } from './pricing';
 
@@ -217,6 +218,43 @@ describe('calculateProductEstimateRange', () => {
         1,
       ),
     ).toBeNull();
+  });
+});
+
+describe('unitPrice', () => {
+  it('returns packagePrice for fixed_package', () => {
+    expect(unitPrice(fixedPackage)).toBe(8.99);
+  });
+
+  it('returns pricePerLb × estimatedWeightLb for per_lb', () => {
+    // 24.99 × 1 = 24.99
+    expect(unitPrice(perLb)).toBeCloseTo(24.99, 5);
+  });
+
+  it('returns pricePerLb × averageWeightLb for whole_item_by_weight', () => {
+    // 2.99 × 3.75 = 11.2125
+    expect(unitPrice(wholeItem)).toBeCloseTo(11.2125, 5);
+  });
+
+  it('returns unitPrice for each', () => {
+    expect(unitPrice(each)).toBe(9.99);
+  });
+
+  it('returns bundlePrice for bundle', () => {
+    expect(unitPrice(bundle)).toBe(89.99);
+  });
+
+  it('falls back to legacyPrice when pricingType is missing', () => {
+    expect(unitPrice({ pricingType: undefined as never }, 42)).toBe(42);
+  });
+
+  it('falls back to 0 when pricingType is missing and no legacyPrice given', () => {
+    expect(unitPrice({ pricingType: undefined as never })).toBe(0);
+  });
+
+  it('does NOT use legacyPrice when pricingType is set', () => {
+    // Even with a legacyPrice argument, a set pricingType wins.
+    expect(unitPrice(perLb, 99999)).toBeCloseTo(24.99, 5);
   });
 });
 

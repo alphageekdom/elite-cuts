@@ -168,7 +168,6 @@ const CartItemRow = ({ line }: Props) => {
               aria-label='Quantity'
               className='w-9 appearance-none border-0 bg-transparent text-center font-display text-sm font-medium text-ink outline-none [-moz-appearance:textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none'
             />
-            <span className='pr-3 text-[12px] text-muted'>lb</span>
             <button
               type='button'
               onClick={increment}
@@ -226,7 +225,14 @@ const CartItemRow = ({ line }: Props) => {
       </div>
 
       <div className='col-span-2 flex items-baseline gap-3 sm:col-span-1 sm:block sm:min-w-30 sm:text-right'>
-        <div className='text-[12px] text-muted'>${fmtPrice(line.price)} / lb</div>
+        <div className='text-[12px] text-muted'>
+          {line.product.displayPriceLabel ?? `$${fmtPrice(line.price)}/lb`}
+        </div>
+        {line.product.displayWeightLabel && (
+          <div className='text-[11px] text-muted/80 sm:mt-0.5'>
+            {line.product.displayWeightLabel}
+          </div>
+        )}
         <div className='font-display text-xl font-medium tracking-tight sm:mt-1.5 sm:text-2xl'>
           ${lineTotal}
         </div>

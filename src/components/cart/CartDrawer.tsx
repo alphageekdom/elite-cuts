@@ -106,7 +106,7 @@ const DrawerLine = ({ line }: { line: CartLine }) => {
           ${fmtPrice(line.price * line.quantity)}
         </div>
         <div className='font-mono text-[11px] text-muted'>
-          {line.quantity}lb
+          × {line.quantity}
         </div>
       </div>
     </article>

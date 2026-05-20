@@ -118,6 +118,32 @@ export function calculateProductEstimateRange(
   };
 }
 
+// Per-unit price snapshot for cart lines and order line items. Returns the
+// expected cost of buying ONE of the product — for fixed_package / each /
+// bundle this is the literal price, for per_lb / whole_item_by_weight it's
+// `pricePerLb × estimatedWeightLb` (or averageWeightLb), the best-guess
+// total before the cut is actually weighed at pickup.
+//
+// `line.price × line.quantity` against this snapshot gives the correct
+// line estimate for variable-weight cuts. Use this when snapshotting prices
+// onto carts / orders; use calculateProductEstimate for the per-line total
+// at any quantity.
+//
+// Legacy fallback: products created before Phase 1 don't carry pricingType
+// or per-type fields. For those, fall back to the supplied `legacyPrice`
+// (typically the doc's pre-Phase-1 `price` field) so the cart math doesn't
+// zero out when a stale product loads. The fallback is removed once Phase 2
+// has been in the field long enough to migrate any pre-Phase-1 docs.
+//
+// The input type accepts a missing pricingType (PricingView requires it) so
+// callers like `/api/cart` can pass a raw Product/Mongoose doc directly.
+type MaybePricingView = Omit<PricingView, 'pricingType'> & { pricingType?: PricingType };
+
+export function unitPrice(p: MaybePricingView, legacyPrice?: number): number {
+  if (!p.pricingType) return legacyPrice ?? 0;
+  return calculateProductEstimate(p as PricingView, 1);
+}
+
 // Backcompat: collapse the canonical per-type fields into the single
 // `price: number` the existing customer UI still reads. Per-lb cuts return
 // the per-lb rate — Phase 2 lands proper display labels on catalog + cart

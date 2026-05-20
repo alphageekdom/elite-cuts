@@ -15,13 +15,36 @@ import { toast } from 'sonner';
 
 import type { SerializedProduct } from '@/models/Product';
 import { MAX_PER_LINE } from '@/lib/shopConfig';
+import { unitPrice } from '@/lib/products/pricing';
 
-// Minimum product fields a cart line needs to render: id keys the line;
-// name + price + images drive the card UI; category drives the eyebrow meta
-// in cart rows. Anything wider (stockCount, description, …) is not stored.
+// Minimum product fields a cart line needs to render. `_id` keys the line,
+// name + images + category drive the card UI; the Phase 1 display labels
+// + `isEstimatedPrice` flag let cart rows render proper "/lb" / "1 lb pack"
+// copy and let the cart switch its total label to "Estimated Total" when
+// any line is variable-weight. The canonical per-type pricing fields tag
+// along so `unitPrice` can recompute the snapshot if a line is restored
+// from localStorage without one (legacy guest carts).
 export type CartLineProduct = Pick<
   SerializedProduct,
-  '_id' | 'name' | 'price' | 'images' | 'category'
+  | '_id'
+  | 'name'
+  | 'price'
+  | 'images'
+  | 'category'
+  | 'pricingType'
+  | 'displayPriceLabel'
+  | 'displayWeightLabel'
+  | 'isEstimatedPrice'
+  | 'packagePrice'
+  | 'packageWeightLb'
+  | 'pricePerLb'
+  | 'estimatedWeightLb'
+  | 'averageWeightLb'
+  | 'minWeightLb'
+  | 'maxWeightLb'
+  | 'unitPrice'
+  | 'bundlePrice'
+  | 'includedItems'
 >;
 
 // Wire / state shape for a cart line. Identical for guest (localStorage) and
@@ -97,8 +120,10 @@ const clearGuestCart = (): void => {
 };
 
 // Apply an incremental "add N of this product" to a guest cart array. New
-// line snapshots the product's current price so totals are stable even if
-// the catalog price changes after-the-fact.
+// line snapshots the product's per-unit estimated price so totals stay
+// stable even if the catalog price changes mid-session — and so per-lb
+// cuts compute the right line estimate (pricePerLb × estimatedWeightLb)
+// rather than the bare per-lb rate.
 const applyAddToLines = (
   lines: CartLine[],
   product: CartLineProduct,
@@ -106,7 +131,7 @@ const applyAddToLines = (
 ): CartLine[] => {
   const idx = lines.findIndex((l) => l.product._id === product._id);
   if (idx === -1) {
-    return [...lines, { product, quantity: addBy, price: product.price }];
+    return [...lines, { product, quantity: addBy, price: unitPrice(product, product.price) }];
   }
   const next = [...lines];
   next[idx] = { ...next[idx], quantity: next[idx].quantity + addBy };

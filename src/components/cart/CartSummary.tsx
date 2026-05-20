@@ -43,6 +43,10 @@ const CartSummary = ({ activeHoliday }: Props) => {
   );
 
   const isEmpty = lineCount === 0;
+  // Any variable-weight line (per_lb / whole_item_by_weight) makes the
+  // total a best-guess until the cut is actually weighed at pickup. The
+  // disclaimer copy matches the spec's wording (section "UI Display Rules").
+  const anyEstimated = cartItems.some((l) => l.product.isEstimatedPrice);
 
   return (
     <div>
@@ -78,7 +82,7 @@ const CartSummary = ({ activeHoliday }: Props) => {
 
         <div className='mt-4 flex items-baseline justify-between border-t border-line pt-4'>
           <span className='font-display text-xl font-medium tracking-tight'>
-            Total
+            {anyEstimated ? 'Estimated total' : 'Total'}
           </span>
           <span className='font-display text-3xl font-medium tracking-tight'>
             ${fmtPrice(totals.total)}
@@ -87,6 +91,11 @@ const CartSummary = ({ activeHoliday }: Props) => {
             </em>
           </span>
         </div>
+        {anyEstimated && (
+          <p className='mt-2 text-[12px] leading-relaxed text-muted'>
+            Some items are priced by weight. Final price may vary slightly based on actual weight.
+          </p>
+        )}
 
         {isEmpty ? (
           <>
