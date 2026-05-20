@@ -3,6 +3,7 @@ import Link from 'next/link';
 
 import LegalPage from '@/components/legal/LegalPage';
 import {
+  LEGAL_LINK_CLASS,
   LegalList,
   LegalParagraph,
   LegalSection,
@@ -87,7 +88,7 @@ export default async function PrivacyPage() {
           account at any time from your{' '}
           <Link
             href='/profile'
-            className='text-oxblood underline underline-offset-4 decoration-oxblood/40 hover:decoration-oxblood'
+            className={LEGAL_LINK_CLASS}
           >
             profile page
           </Link>
@@ -101,7 +102,7 @@ export default async function PrivacyPage() {
           Privacy questions? Email{' '}
           <a
             href={`mailto:${email}`}
-            className='text-oxblood underline underline-offset-4 decoration-oxblood/40 hover:decoration-oxblood'
+            className={LEGAL_LINK_CLASS}
           >
             {email}
           </a>
