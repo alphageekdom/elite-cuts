@@ -53,6 +53,18 @@ export function useProductsTable(initialProducts: ProductTableRow[]) {
       const data = await res.json();
       const now = new Date().toISOString();
       const cat = fd.get('category') as ProductCategory;
+      // Backcompat optimistic price — the model's pre-validate hook stamps
+      // this server-side from the canonical pricing field. Mirror the pick
+      // here so the row doesn't flash $0.00 before the next refresh.
+      const optimisticPrice = (() => {
+        const t = fd.get('pricingType');
+        const n = (key: string) => Number(fd.get(key)) || 0;
+        if (t === 'fixed_package') return n('packagePrice');
+        if (t === 'per_lb' || t === 'whole_item_by_weight') return n('pricePerLb');
+        if (t === 'each') return n('unitPrice');
+        if (t === 'bundle') return n('bundlePrice');
+        return 0;
+      })();
       if (id) {
         setProducts((prev) =>
           prev.map((p) =>
@@ -61,8 +73,8 @@ export function useProductsTable(initialProducts: ProductTableRow[]) {
                   ...p,
                   name: fd.get('name') as string,
                   category: cat,
-                  price: Number(fd.get('price')),
-                  stockCount: Number(fd.get('stockCount')),
+                  price: optimisticPrice,
+                  stockCount: Number(fd.get('stock') ?? fd.get('stockCount')),
                   updatedAt: now,
                 }
               : p,
@@ -75,10 +87,11 @@ export function useProductsTable(initialProducts: ProductTableRow[]) {
             id: data.id as string,
             name: fd.get('name') as string,
             category: cat,
-            price: Number(fd.get('price')),
-            stockCount: Number(fd.get('stockCount')),
+            price: optimisticPrice,
+            stockCount: Number(fd.get('stock') ?? fd.get('stockCount')),
             images: [],
             isFeatured: false,
+            isActive: true,
             isAged: false,
             isNewArrival: true,
             rating: 0,

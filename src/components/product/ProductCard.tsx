@@ -258,10 +258,16 @@ const ProductCard = ({ product }: ProductCardProps) => {
 
         <div className='mt-auto flex items-baseline justify-between gap-3 border-t border-line-soft pt-4.5'>
           <div className='font-display text-xl font-medium tracking-[-0.01em] text-ink md:text-2xl'>
-            {formatMoney(product.price)}
-            <em className='ml-1 text-[13px] font-normal not-italic text-muted'>
-              /lb
-            </em>
+            {product.displayPriceLabel ? (
+              product.displayPriceLabel
+            ) : (
+              <>
+                {formatMoney(product.price)}
+                <em className='ml-1 text-[13px] font-normal not-italic text-muted'>
+                  /lb
+                </em>
+              </>
+            )}
           </div>
           <span className='inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.04em] text-muted'>
             <span

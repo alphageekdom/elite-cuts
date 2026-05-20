@@ -18,14 +18,15 @@ export const MEMBER_AVATAR_COLORS = [
   'bg-linear-to-br from-camel-soft to-[#c4a381] text-ink',
 ] as const;
 
-export const PRODUCT_CATEGORIES = ['Beef', 'Pork', 'Poultry', 'Lamb', 'Charcuterie', 'Other'] as const;
+export const PRODUCT_CATEGORIES = ['Beef', 'Chicken', 'Pork', 'Lamb', 'Sausage', 'Prepared', 'Bundles'] as const;
 export type ProductCategory = (typeof PRODUCT_CATEGORIES)[number];
 
 export const CATEGORY_COLORS: Record<string, string> = {
   Beef: 'bg-red-soft text-oxblood',
+  Chicken: 'bg-green-soft text-green',
   Pork: 'bg-[rgba(184,137,90,0.18)] text-camel',
   Lamb: 'bg-[rgba(28,24,20,0.08)] text-ink-soft',
-  Poultry: 'bg-green-soft text-green',
-  Charcuterie: 'bg-[rgba(184,137,90,0.12)] text-camel',
-  Other: 'bg-[rgba(28,24,20,0.06)] text-muted',
+  Sausage: 'bg-[rgba(184,137,90,0.12)] text-camel',
+  Prepared: 'bg-[rgba(28,24,20,0.06)] text-muted',
+  Bundles: 'bg-[rgba(74,107,58,0.12)] text-green',
 };

@@ -4,11 +4,12 @@ import type { SortOrder } from 'mongoose';
 import cloudinary from '@/config/cloudinary';
 import connectDB from '@/config/database';
 import Product from '@/models/Product';
+import { validateProductImages } from '@/lib/product-validate';
 import {
+  coerceProductInput,
   productRecordFromFormData,
-  validateProductImages,
-  validateProductInput,
-} from '@/lib/product-validate';
+} from '@/lib/products/parse-form-input';
+import { productInputSchema } from '@/lib/products/schema';
 import { withAdmin, parsePagination } from '@/lib/api-handler';
 
 const ALLOWED_PRODUCT_SORT_FIELDS = new Set(['_id', 'name', 'price', 'createdAt', 'stockCount']);
@@ -42,17 +43,19 @@ export const GET = async (request: NextRequest) => {
 
 // POST /api/products — admin-only product create. Form-encoded so the admin
 // dashboard can include image files; uploads go to Cloudinary first, then
-// the Mongo doc references the secure URLs.
+// the Mongo doc references the secure URLs. Validation runs through the
+// Zod schema at src/lib/products/schema.ts (same schema the admin form
+// uses pre-submit for inline errors).
 export const POST = withAdmin(async (request: NextRequest) => {
   try {
     const formData = await request.formData();
 
-    // Validate every field the admin form submits through the same rules the
-    // CSV import uses. Image uploads ride separately — they're file blobs,
-    // not validator-shaped strings.
-    const v = validateProductInput(productRecordFromFormData(formData));
-    if (!v.ok) {
-      return NextResponse.json({ message: v.error }, { status: 400 });
+    const parsed = productInputSchema.safeParse(
+      coerceProductInput(productRecordFromFormData(formData)),
+    );
+    if (!parsed.success) {
+      const first = parsed.error.issues[0];
+      return NextResponse.json({ message: first?.message ?? 'Invalid input' }, { status: 400 });
     }
 
     // FormData entries are `string | File`; narrow to File and skip the
@@ -73,38 +76,23 @@ export const POST = withAdmin(async (request: NextRequest) => {
       images.map(async (image) => {
         const imageBuffer = await image.arrayBuffer();
         const imageBase64 = Buffer.from(imageBuffer).toString('base64');
-
-        // Use the real MIME type — validateProductImages above guarantees
-        // it's one of the safe raster types, so interpolation is safe.
         const result = await cloudinary.uploader.upload(
           `data:${image.type};base64,${imageBase64}`,
           { folder: 'elitecuts' },
         );
-
         return result.secure_url;
       }),
     );
 
-    // rating + isAged + isNewArrival fall through to schema defaults; the
-    // form doesn't collect those. isFeatured and isActive also fall through
-    // when the form doesn't submit them (it currently doesn't), so the
-    // schema stays the single source of truth for their defaults — the
-    // validator's parsed values get used only when the admin explicitly
-    // sets the field.
-    const productData: Record<string, unknown> = {
-      slug: v.data.slug,
-      name: v.data.name,
-      description: v.data.description,
-      category: v.data.category,
-      price: v.data.price,
-      unit: v.data.unit,
-      stockCount: v.data.stock,
-      supplier: v.data.supplier,
+    // The model's pre-validate hook stamps backcompat `price` / `unit` and
+    // the display labels from the canonical pricingType + per-type fields,
+    // so the route just hands over the parsed input verbatim plus images.
+    const { stock, ...rest } = parsed.data;
+    const newProduct = new Product({
+      ...rest,
+      stockCount: stock,
       images: uploadedImages,
-    };
-    if (formData.has('isFeatured')) productData.isFeatured = v.data.isFeatured;
-    if (formData.has('isActive'))   productData.isActive   = v.data.isActive;
-    const newProduct = new Product(productData);
+    });
     await newProduct.save();
 
     return NextResponse.json(
