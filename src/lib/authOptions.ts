@@ -155,7 +155,21 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         demoType: { label: 'Demo type', type: 'text' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
+        // Same IP throttle the real credentials path uses — without it a bot
+        // could spin up unlimited demo sessions and use the endpoint for load
+        // or spam purposes. The demo account itself holds nothing sensitive,
+        // but unthrottled session-token generation is its own abuse vector.
+        const ip = clientIpFromHeaders(req?.headers ?? {});
+        const ipLimit = rateLimit({
+          key: `demo-signin:${ip}`,
+          max: SIGNIN_IP_MAX_PER_MIN,
+          windowMs: 60_000,
+        });
+        if (!ipLimit.ok) {
+          throw new Error('Too many sign-in attempts. Please try again in a minute.');
+        }
+
         const parsed = demoLoginInputSchema.safeParse(credentials);
         if (!parsed.success) {
           throw new Error(parsed.error.issues[0]?.message ?? 'Invalid demo input');

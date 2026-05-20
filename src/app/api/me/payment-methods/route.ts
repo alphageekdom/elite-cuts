@@ -6,6 +6,7 @@ import {
   recordTypedCardSave,
   validateTypedCardDetails,
 } from '@/lib/payments/savedCards';
+import { refuseDemoActor } from '@/lib/auth/demo-responses';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,6 +45,8 @@ export const POST = async (request: NextRequest) => {
   if (!sessionUser?.userId) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
+  const demoBlocked = refuseDemoActor(sessionUser.user);
+  if (demoBlocked) return demoBlocked;
 
   let body: unknown;
   try {

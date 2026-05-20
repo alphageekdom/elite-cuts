@@ -12,10 +12,12 @@ import User from '@/models/User';
 // so callers can `{ ...await excludeDemoOrders() }` safely on a fresh
 // DB without changing their query).
 //
-// One result is cached per request to avoid a per-aggregation lookup
-// when a single page fires several queries; reset between requests
-// because Next.js spawns a fresh module scope per request boundary
-// in production and dev hot-reload re-evaluates this file anyway.
+// One result is cached at module scope so a single page that fires
+// several admin aggregations only does the User lookup once. On a warm
+// serverless lambda the cache persists across requests on the same
+// instance, which is intentional — the demo customer's `_id` is
+// immutable once seeded, so a long-lived cache is strictly better than
+// re-querying. Cold starts and dev hot-reload reset it naturally.
 export type DemoExclusionFilter =
   | Record<string, never>
   | { user: { $ne: Types.ObjectId } };
