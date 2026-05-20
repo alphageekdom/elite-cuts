@@ -31,11 +31,11 @@ export default async function DemoPage() {
             ↗ Take it for a spin
           </span>
           <h1 className='font-display font-normal text-[clamp(40px,5vw,60px)] leading-[1.05] tracking-tight mb-5'>
-            Choose a demo <em className='italic text-oxblood'>experience.</em>
+            At the counter, <em className='italic text-oxblood'>or behind it.</em>
           </h1>
           <p className='mx-auto max-w-[52ch] text-ink-soft text-[16px] leading-relaxed'>
-            Explore the butcher shop as a customer or preview the admin
-            dashboard. No account, no card, no commitment.
+            Browse the catalog as a customer, or run the shop as an admin.
+            No account, no card, no signup.
           </p>
         </header>
 

@@ -24,12 +24,11 @@ const DemoCards = () => {
           ↗ Shop the catalog
         </span>
         <h2 className='font-display text-[clamp(28px,3vw,36px)] font-normal leading-tight tracking-tight mb-4'>
-          Customer <em className='italic text-oxblood'>experience</em>
+          At the <em className='italic text-oxblood'>counter</em>
         </h2>
         <p className='text-ink-soft text-[15px] leading-relaxed mb-8'>
-          Browse the full catalog, build a cart, save favorites, and walk
-          through checkout without entering a card. Your activity clears
-          nightly.
+          Browse the full catalog, build a cart, save cuts, and walk
+          through checkout without a card. Your activity clears overnight.
         </p>
         <button
           type='button'
@@ -39,7 +38,7 @@ const DemoCards = () => {
         >
           {pending === 'customer'
             ? 'Starting demo…'
-            : 'Continue as Demo Customer'}
+            : 'Shop as a customer'}
           {pending !== 'customer' && (
             <svg
               width='14'
@@ -61,12 +60,12 @@ const DemoCards = () => {
           ↗ Run the shop
         </span>
         <h2 className='font-display text-[clamp(28px,3vw,36px)] font-normal leading-tight tracking-tight mb-4'>
-          Admin dashboard <em className='italic text-oxblood'>preview</em>
+          Behind the <em className='italic text-oxblood'>counter</em>
         </h2>
         <p className='text-ink-soft text-[15px] leading-relaxed mb-8'>
-          Manage products, orders, promos, staff, and analytics with real admin
-          permissions on a shared demo dataset. Catalog and settings reset
-          every night.
+          Manage products, orders, promos, staff, and analytics with full
+          admin permissions on a shared dataset. Catalog and settings reset
+          overnight.
         </p>
         <button
           type='button'
@@ -76,7 +75,7 @@ const DemoCards = () => {
         >
           {pending === 'admin'
             ? 'Starting demo…'
-            : 'Preview Admin Dashboard'}
+            : 'Preview the dashboard'}
           {pending !== 'admin' && (
             <svg
               width='14'
