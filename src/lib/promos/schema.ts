@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { PROMO_TYPES } from '@/models/Promo';
+import { PROMO_TYPES } from '@/lib/promos/constants';
 
 // Single source of truth for the admin promo form input shape. Consumed by:
 //   - `src/actions/promos.ts` (createPromo, updatePromo) — server-side

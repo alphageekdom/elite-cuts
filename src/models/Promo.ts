@@ -7,20 +7,15 @@ import {
   type Types,
 } from 'mongoose';
 
-export const PROMO_TYPES = ['percent', 'fixed'] as const;
-export type PromoType = (typeof PROMO_TYPES)[number];
+import {
+  PROMO_FAILURE_REASONS,
+  PROMO_TYPES,
+  type PromoFailureReason,
+  type PromoType,
+} from '@/lib/promos/constants';
 
-export const PROMO_FAILURE_REASONS = [
-  'not_found',
-  'disabled',
-  'not_started',
-  'expired',
-  'exhausted',
-  'customer_limit',
-  'min_subtotal',
-  'first_order_only',
-] as const;
-export type PromoFailureReason = (typeof PROMO_FAILURE_REASONS)[number];
+export { PROMO_FAILURE_REASONS, PROMO_TYPES };
+export type { PromoFailureReason, PromoType };
 
 export type Promo = {
   code: string;
