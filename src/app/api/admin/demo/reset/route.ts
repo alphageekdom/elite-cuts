@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { withAdmin } from '@/lib/api-handler';
 import { getSessionUser } from '@/lib/getSessionUser';
 import { isDemoAdmin } from '@/lib/auth/demo-permissions';
-import { resetDemoCustomerState } from '@/lib/demo/reset';
+import { resetDemoData } from '@/lib/demo/reset';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,10 +25,10 @@ const handler = withAdmin(async (_req: NextRequest) => {
   }
 
   try {
-    const counts = await resetDemoCustomerState();
+    const counts = await resetDemoData();
     return NextResponse.json({
       data: counts,
-      message: 'Demo customer state reset',
+      message: 'Demo data reset',
     });
   } catch (error) {
     console.error('[admin/demo/reset POST]', error);

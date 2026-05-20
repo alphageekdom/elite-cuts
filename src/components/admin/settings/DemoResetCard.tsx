@@ -28,19 +28,28 @@ export default function DemoResetCard() {
       const res = await fetch('/api/admin/demo/reset', { method: 'POST' });
       const body = (await res.json().catch(() => ({}))) as {
         message?: string;
-        data?: { ordersDeleted: number; userReset: boolean };
+        data?: {
+          ordersDeleted: number;
+          userReset: boolean;
+          productsRestored: number;
+          promosRestored: number;
+          staffRestored: number;
+          shiftsRestored: number;
+        };
       };
       if (!res.ok) {
         toast.error(body.message || 'Could not reset demo data');
         return;
       }
       const counts = body.data;
-      if (counts && !counts.userReset) {
-        toast.info('No demo customer found — nothing to reset.');
+      if (!counts) {
+        toast.success('Demo data reset.');
       } else {
-        toast.success(
-          `Demo data reset · ${counts?.ordersDeleted ?? 0} order${counts?.ordersDeleted === 1 ? '' : 's'} cleared.`,
-        );
+        const customerPart = counts.userReset
+          ? `${counts.ordersDeleted} order${counts.ordersDeleted === 1 ? '' : 's'} cleared`
+          : 'no demo customer found';
+        const catalogPart = `${counts.productsRestored} products · ${counts.promosRestored} promos · ${counts.staffRestored} staff · ${counts.shiftsRestored} shifts restored`;
+        toast.success(`Demo data reset · ${customerPart} · ${catalogPart}.`);
       }
       setConfirming(false);
     } catch (error) {
@@ -58,9 +67,10 @@ export default function DemoResetCard() {
       </h2>
       <p className={sectionSubCls}>
         Wipes the demo customer&apos;s orders, cart, bookmarks, addresses,
-        saved cards, notifications, and rewards balance. Runs automatically
-        every night at 3am ET — this button lets you re-prep the demo on
-        demand.
+        saved cards, notifications, and rewards balance — and restores
+        products, promos, staff, shifts, and shop settings from the seed
+        snapshot. Runs automatically every night at 3am ET; this button
+        lets you re-prep the demo on demand.
       </p>
       {!confirming ? (
         <button
