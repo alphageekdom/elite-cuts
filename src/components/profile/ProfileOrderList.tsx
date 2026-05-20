@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { formatMoney } from '@/lib/format';
 import type { ProfileOrder } from '@/app/(main)/profile/page';
 import type { OrderStatus } from '@/models/Order';
+import { hasRealizedWeight, realizedLineTotal, estimatedLineTotal } from '@/lib/order-line';
 import OrderHelpButton from './OrderHelpButton';
 
 type Props = {
@@ -67,6 +68,21 @@ export default function ProfileOrderList({ orders, showAll = false }: Props) {
         const refundedCount = order.orderItems.filter((i) => i.refunded).length;
         const isFullyRefunded = refundedCount > 0 && refundedCount >= order.orderItems.length;
         const isPartiallyRefunded = refundedCount > 0 && !isFullyRefunded;
+        // Once cuts are weighed at pickup, surface a small "final at pickup"
+        // delta under the order total so the customer knows the exact figure
+        // settled in-store. Stays hidden for unfulfilled orders.
+        const orderHasRealizedDifference = order.orderItems.some(
+          (item) =>
+            hasRealizedWeight(item) && realizedLineTotal(item) !== estimatedLineTotal(item),
+        );
+        const realizedTotalShift = orderHasRealizedDifference
+          ? Math.round(
+              order.orderItems.reduce(
+                (sum, item) => sum + (realizedLineTotal(item) - estimatedLineTotal(item)),
+                0,
+              ) * 100,
+            ) / 100
+          : 0;
 
         return (
           <div
@@ -125,6 +141,12 @@ export default function ProfileOrderList({ orders, showAll = false }: Props) {
               <p className="font-display font-medium text-[20px] tabular-nums">
                 {formatMoney(order.totalCost)}
               </p>
+              {orderHasRealizedDifference && (
+                <p className="font-mono text-[10px] tracking-[0.04em] text-camel italic">
+                  {realizedTotalShift >= 0 ? '+' : '−'}
+                  {formatMoney(Math.abs(realizedTotalShift))} at pickup
+                </p>
+              )}
               <OrderHelpButton orderId={order._id} orderRef={order._id.slice(-4).toUpperCase()} />
             </div>
           </div>

@@ -8,7 +8,10 @@ import {
 } from 'mongoose';
 
 import { ORDER_STATUSES, CANCELLATION_REASONS } from '@/lib/order-constants';
+import { PRICING_TYPES, type PricingType } from '@/lib/products/constants';
 export { ORDER_STATUSES, CANCELLATION_REASONS };
+export { PRICING_TYPES };
+export type { PricingType };
 
 // The shop's two payment surfaces — `'Credit Card'` for the demo card-form
 // path and admin walk-out orders, `'Stripe'` for everything that flowed
@@ -38,10 +41,43 @@ export type OrderItem = {
   name: string;
   qty: number;
   image: string;
+  // Per-unit estimated cost at purchase time. For fixed_package / each /
+  // bundle this is the literal product price; for per_lb /
+  // whole_item_by_weight it's `pricePerLb × estimatedWeightLb` (the
+  // best-guess weight at checkout). `line.price × line.qty` is always the
+  // line's estimated total, which is what Stripe charged the customer at
+  // the redirect.
   price: number;
   productType: string;
   refunded: boolean;
   refundedAt?: Date;
+
+  // — Phase 3 pricing snapshot. All optional; pre-Phase-3 orders land here
+  // with undefined values and every read falls back to `price × qty`.
+  // `pricingType` is the discriminator the receipt + admin drawer key off
+  // to decide whether to show the realized-weight UI and the
+  // "Estimated / Final" copy.
+  pricingType?: PricingType;
+  // Snapshotted per-lb rate for variable-weight cuts. Drives the
+  // realized-total math when `realizedWeightLb` is set:
+  // `realizedTotal = pricePerLb × realizedWeightLb`.
+  pricePerLb?: number;
+  // Snapshotted best-guess weight at purchase. For per_lb it's the
+  // product's `estimatedWeightLb`; for whole_item_by_weight it's the
+  // `averageWeightLb`. Either way it's "the weight we charged you for at
+  // checkout" — the receipt uses it to render the estimated weight range.
+  estimatedWeightLb?: number;
+  minWeightLb?: number;
+  maxWeightLb?: number;
+  // Pre-rendered display labels from the product at purchase. Snapshotted
+  // so the receipt doesn't have to reach back to a (possibly renamed or
+  // deleted) product to render the customer's purchase honestly.
+  displayPriceLabel?: string;
+  displayWeightLabel?: string;
+  // Admin-entered weight at fulfillment, one combined weight per line
+  // regardless of qty. When present (and pricingType is variable-weight),
+  // the line's realized total replaces the estimate everywhere.
+  realizedWeightLb?: number;
 };
 
 export type PaymentResult = {
@@ -164,6 +200,21 @@ const OrderItemSchema = new Schema<OrderItem>(
     refundedAt: {
       type: Date,
     },
+
+    // — Phase 3 pricing snapshot + realized weight. All optional; pre-Phase-3
+    // orders read with these undefined and fall back to `price × qty`.
+    pricingType: {
+      type: String,
+      enum: [...PRICING_TYPES],
+      trim: true,
+    },
+    pricePerLb:        { type: Number, min: 0 },
+    estimatedWeightLb: { type: Number, min: 0 },
+    minWeightLb:       { type: Number, min: 0 },
+    maxWeightLb:       { type: Number, min: 0 },
+    displayPriceLabel:  { type: String, trim: true },
+    displayWeightLabel: { type: String, trim: true },
+    realizedWeightLb:   { type: Number, min: 0 },
   },
   {
     _id: false,

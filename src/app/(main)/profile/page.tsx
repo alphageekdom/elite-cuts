@@ -17,6 +17,7 @@ import {
 } from '@/lib/rewards';
 import type { SerializedProduct } from '@/models/Product';
 import type { OrderStatus, PaymentMethod } from '@/models/Order';
+import type { PricingType } from '@/lib/products/constants';
 import type { Types } from 'mongoose';
 import ProfileHero from '@/components/profile/ProfileHero';
 import ProfileStats from '@/components/profile/ProfileStats';
@@ -47,6 +48,9 @@ export type ProfileOrder = {
     price: number;
     productType: string;
     refunded: boolean;
+    pricingType?: PricingType;
+    pricePerLb?: number;
+    realizedWeightLb?: number;
   }[];
   subtotal: number;
   tax: number;
@@ -201,6 +205,9 @@ export default async function ProfilePage({ searchParams }: Props) {
       price: item.price,
       productType: item.productType,
       refunded: item.refunded ?? false,
+      pricingType: item.pricingType,
+      pricePerLb: item.pricePerLb,
+      realizedWeightLb: item.realizedWeightLb,
     })),
     subtotal: o.subtotal,
     tax: o.tax,

@@ -99,6 +99,18 @@ export type OrderTableRow = {
     productType: string;
     refunded: boolean;
     refundedAt?: string;
+    // Phase 3 pricing snapshot. Variable-weight lines (pricingType:
+    // 'per_lb' | 'whole_item_by_weight') carry pricePerLb +
+    // estimatedWeightLb so the admin drawer can show the realized-weight
+    // input and the receipt can render the "estimated vs final" copy.
+    pricingType?: PricingType;
+    pricePerLb?: number;
+    estimatedWeightLb?: number;
+    minWeightLb?: number;
+    maxWeightLb?: number;
+    displayPriceLabel?: string;
+    displayWeightLabel?: string;
+    realizedWeightLb?: number;
   }>;
   subtotal: number;
   tax: number;

@@ -9,6 +9,10 @@ import { getSessionUser } from '@/lib/getSessionUser';
 import { formatMoney, productImageSrc } from '@/lib/format';
 import { DELIVERY_FEE } from '@/lib/pricing';
 import { getShopSettings, formatShopAddress } from '@/lib/shopSettings';
+import {
+  orderHasRealizedDifference,
+  realizedOrderTotal,
+} from '@/lib/order-line';
 import CheckoutStepRail from '@/components/checkout/CheckoutStepRail';
 import ConfirmationCartReset from '@/components/checkout/ConfirmationCartReset';
 
@@ -50,6 +54,20 @@ export default async function ConfirmationPage({ searchParams }: Props) {
 
   const shortId = String(order._id).slice(-8).toUpperCase();
   const isPickup = order.fulfillmentType !== 'delivery';
+
+  // "Final at pickup" copy — only renders once an admin has weighed at
+  // least one variable-weight line and its realized total differs from
+  // the estimate. Fresh orders read identically to pre-Phase-3.
+  const showRealizedAtPickup = orderHasRealizedDifference(order.orderItems);
+  const realizedTotalAtPickup = realizedOrderTotal({
+    lines: order.orderItems,
+    subtotal: order.subtotal,
+    tax: order.tax,
+    memberDiscount: order.memberDiscount,
+    promoDiscount: order.promoDiscount,
+    pointsRedemptionValueCents: order.pointsRedemptionValueCents,
+    deliveryFee: isPickup ? 0 : DELIVERY_FEE,
+  });
 
   return (
     <div className='min-h-screen bg-cream'>
@@ -244,6 +262,12 @@ export default async function ConfirmationPage({ searchParams }: Props) {
                 <span>Total</span>
                 <span>{formatMoney(order.totalCost)}</span>
               </div>
+              {showRealizedAtPickup && (
+                <div className='flex justify-between text-[12px] text-camel'>
+                  <span className='italic'>Final at pickup (after weighing)</span>
+                  <span className='font-mono'>{formatMoney(realizedTotalAtPickup)}</span>
+                </div>
+              )}
             </div>
           </div>
 

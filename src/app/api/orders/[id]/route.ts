@@ -76,16 +76,25 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
     if (!mongoose.isValidObjectId(id)) {
       return NextResponse.json({ message: 'Not found' }, { status: 404 });
     }
-    const { orderStatus, cancellationReason, refundItemIndices, unrefundItemIndices } = (await request.json()) as {
+    const {
+      orderStatus,
+      cancellationReason,
+      refundItemIndices,
+      unrefundItemIndices,
+      realizedWeights,
+    } = (await request.json()) as {
       orderStatus?: string;
       cancellationReason?: string;
       refundItemIndices?: number[];
       unrefundItemIndices?: number[];
+      // Per-line weighed-at-pickup values. `weightLb: null` clears a prior
+      // entry (e.g. admin scaled the wrong cut and needs to redo).
+      realizedWeights?: Array<{ index: number; weightLb: number | null }>;
     };
 
-    if (!orderStatus && !refundItemIndices && !unrefundItemIndices) {
+    if (!orderStatus && !refundItemIndices && !unrefundItemIndices && !realizedWeights) {
       return NextResponse.json(
-        { message: 'Provide orderStatus, refundItemIndices, or unrefundItemIndices' },
+        { message: 'Provide orderStatus, refundItemIndices, unrefundItemIndices, or realizedWeights' },
         { status: 400 },
       );
     }
@@ -270,6 +279,72 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
           updateFields.cancelledAt = refundedAt;
         }
       }
+    }
+
+    // Realized-weight updates. Independent of refund/unrefund — admin
+    // weighs the cuts at pickup, types the values in, and the order's
+    // effective line totals (used by the refund math and the customer-
+    // facing receipt) flip from estimate to realized. Order must be at
+    // or past fulfillment, lines must be variable-weight, and a line
+    // that's already refunded refuses the change so a late weight edit
+    // can't desync the refund already issued against it.
+    if (Array.isArray(realizedWeights) && realizedWeights.length > 0) {
+      if (
+        existing.orderStatus !== 'Ready for Pickup' &&
+        existing.orderStatus !== 'Completed'
+      ) {
+        return NextResponse.json(
+          {
+            message:
+              'Realized weight can only be entered once the order is ready for pickup or completed',
+          },
+          { status: 400 },
+        );
+      }
+
+      const baseItemsForWeights =
+        (updateFields.orderItems as typeof existing.orderItems | undefined) ?? existing.orderItems;
+      const nextItems = baseItemsForWeights.map((item) => ({ ...item }));
+
+      for (const entry of realizedWeights) {
+        const idx = entry.index;
+        if (!Number.isInteger(idx) || idx < 0 || idx >= nextItems.length) {
+          return NextResponse.json(
+            { message: 'Invalid realizedWeights index' },
+            { status: 400 },
+          );
+        }
+        const line = nextItems[idx];
+        if (line.pricingType !== 'per_lb' && line.pricingType !== 'whole_item_by_weight') {
+          return NextResponse.json(
+            { message: 'Realized weight only applies to variable-weight cuts' },
+            { status: 400 },
+          );
+        }
+        if (line.refunded) {
+          return NextResponse.json(
+            { message: 'Cannot change realized weight on a refunded line' },
+            { status: 400 },
+          );
+        }
+        if (entry.weightLb === null) {
+          delete (line as Partial<typeof line>).realizedWeightLb;
+          continue;
+        }
+        if (
+          typeof entry.weightLb !== 'number' ||
+          !Number.isFinite(entry.weightLb) ||
+          entry.weightLb <= 0
+        ) {
+          return NextResponse.json(
+            { message: 'Realized weight must be a positive number' },
+            { status: 400 },
+          );
+        }
+        line.realizedWeightLb = Math.round(entry.weightLb * 100) / 100;
+      }
+
+      updateFields.orderItems = nextItems;
     }
 
     if (indicesToUnrefund.size > 0) {

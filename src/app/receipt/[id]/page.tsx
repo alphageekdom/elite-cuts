@@ -6,6 +6,10 @@ import Order from '@/models/Order';
 import { formatMoney } from '@/lib/format';
 import { refundSummary } from '@/lib/order-refunds';
 import {
+  orderHasRealizedDifference,
+  realizedOrderTotal,
+} from '@/lib/order-line';
+import {
   formatPhoneHref,
   formatShopCityStateZip,
   formatWebsiteDisplay,
@@ -89,6 +93,18 @@ export default async function ReceiptPage({ params }: Props) {
   const isPartiallyRefunded =
     refund.refundedCount > 0 && refund.refundedCount < order.orderItems.length;
   const netPaid = Math.max(0, Math.round((order.totalCost - refund.refundedAmount) * 100) / 100);
+
+  // "Final at pickup" total — surfaces alongside the (unchanged) Stripe-
+  // charged Total when any variable-weight line was weighed.
+  const showRealizedAtPickup = orderHasRealizedDifference(order.orderItems);
+  const realizedTotalAtPickup = realizedOrderTotal({
+    lines: order.orderItems,
+    subtotal: order.subtotal,
+    tax: order.tax,
+    memberDiscount: order.memberDiscount,
+    promoDiscount: order.promoDiscount,
+    pointsRedemptionValueCents: order.pointsRedemptionValueCents,
+  });
 
   const displayName  = order.contactName  || user?.name  || 'Customer';
   const displayEmail = order.contactEmail || user?.email || '';
@@ -294,6 +310,12 @@ export default async function ReceiptPage({ params }: Props) {
                 <em className="not-italic font-sans text-[14px] text-muted font-normal ml-1">USD</em>
               </span>
             </div>
+            {showRealizedAtPickup && (
+              <div className="mt-2 flex justify-between items-baseline text-[13px] text-camel">
+                <span className="italic">Final at pickup (after weighing your cuts)</span>
+                <span className="font-mono text-[12px]">{formatMoney(realizedTotalAtPickup)}</span>
+              </div>
+            )}
             {refund.refundedAmount > 0 && (
               <div className="mt-3 pt-3 border-t border-line-soft space-y-2">
                 <div className="flex justify-between items-baseline text-[14px] text-oxblood">

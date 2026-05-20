@@ -193,6 +193,46 @@ export function useOrdersTable(initialOrders: OrderTableRow[]) {
     }
   }
 
+  async function setRealizedWeight(itemIndex: number, weightLb: number | null) {
+    const target = drawer.item;
+    if (!target) return;
+    try {
+      const res = await fetch(`/api/orders/${target.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ realizedWeights: [{ index: itemIndex, weightLb }] }),
+      });
+      if (!res.ok) {
+        const { message } = await res.json();
+        toast.error(message ?? 'Failed to update realized weight');
+        return;
+      }
+      patchRow(target.id, (o) => {
+        const items = o.items.map((it, idx) =>
+          idx === itemIndex
+            ? {
+                ...it,
+                realizedWeightLb: weightLb === null ? undefined : weightLb,
+              }
+            : it,
+        );
+        // Recompute refundedAmount in case a previously-refunded line's
+        // realized total moved. The server already did this; mirror it
+        // locally so the drawer's net-paid line stays in sync.
+        const summary = refundSummary(items, {
+          subtotal: o.subtotal,
+          tax: o.tax,
+          totalCost: o.total,
+        });
+        return { ...o, items, refundedAmount: summary.refundedAmount };
+      });
+      router.refresh();
+      toast.success(weightLb === null ? 'Realized weight cleared' : 'Realized weight saved');
+    } catch {
+      toast.error('Failed to update realized weight');
+    }
+  }
+
   async function deleteOrder(id: string) {
     try {
       const res = await fetch(`/api/orders/${id}`, { method: 'DELETE' });
@@ -262,6 +302,7 @@ export function useOrdersTable(initialOrders: OrderTableRow[]) {
       updateOrder,
       refundItem,
       unrefundItem,
+      setRealizedWeight,
       deleteOrder,
     },
   };

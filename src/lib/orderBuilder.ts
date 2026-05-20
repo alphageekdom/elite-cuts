@@ -3,12 +3,18 @@ import type { Types } from 'mongoose';
 import Cart from '@/models/Cart';
 import Product from '@/models/Product';
 import { MEMBER_DISCOUNT_RATE, DELIVERY_FEE, TAX_RATE } from '@/lib/pricing';
+import { unitPrice } from '@/lib/products/pricing';
+import type { PricingType } from '@/lib/products/constants';
 import { MAX_PER_LINE } from '@/lib/shopConfig';
 
 // Shared shape returned by `.lean<>()` from Product when the orders route
 // only needs the customer-facing fields. Matches the Product schema:
 // `images` is a string[] of URLs, not an object array — three near-identical
 // inline copies previously diverged on that detail.
+//
+// Phase 3 expanded this projection to cover the per-pricingType fields the
+// order line snapshots. `price` stays on for the legacy fallback that
+// `unitPrice` uses when `pricingType` is missing on a pre-Phase-1 product.
 export type OrderProductLean = {
   _id: Types.ObjectId;
   name: string;
@@ -16,10 +22,28 @@ export type OrderProductLean = {
   images?: string[];
   category?: string;
   stockCount: number;
+  pricingType?: PricingType;
+  packagePrice?: number;
+  pricePerLb?: number;
+  estimatedWeightLb?: number;
+  averageWeightLb?: number;
+  minWeightLb?: number;
+  maxWeightLb?: number;
+  unitPrice?: number;
+  bundlePrice?: number;
+  displayPriceLabel?: string;
+  displayWeightLabel?: string;
 };
 
 // Per-line shape persisted on Order.orderItems. Kept here so the route and
 // any future caller (cron-promo, admin re-create) share one source of truth.
+//
+// Phase 3 added the pricing snapshot fields. `price` is the per-unit
+// estimated cost (`unitPrice(product, product.price)`), so
+// `price × qty` is the line's estimated total — the amount Stripe charged
+// at the redirect. The realized total (when admin enters the weighed value
+// at pickup) reads from `pricePerLb × realizedWeightLb` — see
+// `realizedLineTotal` for the precedence rules.
 export type OrderLine = {
   product: Types.ObjectId;
   name: string;
@@ -27,6 +51,13 @@ export type OrderLine = {
   image: string;
   price: number;
   productType: string;
+  pricingType?: PricingType;
+  pricePerLb?: number;
+  estimatedWeightLb?: number;
+  minWeightLb?: number;
+  maxWeightLb?: number;
+  displayPriceLabel?: string;
+  displayWeightLabel?: string;
 };
 
 // Either a successful build with order lines + stock errors (route maps the
@@ -46,13 +77,41 @@ type PopulatedCartItem = {
   price: number;
 };
 
-const buildLine = (product: OrderProductLean, qty: number): OrderLine => ({
+// Snapshot the right "best-guess weight" field per pricingType. For per_lb
+// it's the estimated cut weight; for whole_item_by_weight it's the typical
+// average weight; both other types don't have a weight axis so this stays
+// undefined.
+function snapshotEstimatedWeight(product: OrderProductLean): number | undefined {
+  if (product.pricingType === 'per_lb') return product.estimatedWeightLb;
+  if (product.pricingType === 'whole_item_by_weight') return product.averageWeightLb;
+  return undefined;
+}
+
+export const buildLine = (product: OrderProductLean, qty: number): OrderLine => ({
   product: product._id,
   name: product.name,
   qty,
   image: product.images?.[0] ?? '',
-  price: product.price,
+  // Per-unit estimated cost — for variable-weight cuts this is
+  // `pricePerLb × estimatedWeightLb` (NOT the raw pricePerLb the customer
+  // would otherwise be over-charged). `unitPrice` also handles fixed_package
+  // / each / bundle correctly, and falls back to the legacy `product.price`
+  // for pre-Phase-1 products that don't carry pricingType.
+  price: unitPrice(product, product.price),
   productType: product.category ?? '',
+  ...(product.pricingType && { pricingType: product.pricingType }),
+  ...(product.pricingType === 'per_lb' || product.pricingType === 'whole_item_by_weight'
+    ? {
+        ...(typeof product.pricePerLb === 'number' && { pricePerLb: product.pricePerLb }),
+        ...(snapshotEstimatedWeight(product) !== undefined && {
+          estimatedWeightLb: snapshotEstimatedWeight(product),
+        }),
+        ...(typeof product.minWeightLb === 'number' && { minWeightLb: product.minWeightLb }),
+        ...(typeof product.maxWeightLb === 'number' && { maxWeightLb: product.maxWeightLb }),
+      }
+    : {}),
+  ...(product.displayPriceLabel && { displayPriceLabel: product.displayPriceLabel }),
+  ...(product.displayWeightLabel && { displayWeightLabel: product.displayWeightLabel }),
 });
 
 const stockErrorFor = (product: OrderProductLean, qty: number): string | null =>
@@ -105,7 +164,9 @@ export async function buildOrderItemsFromGuestItems(
 ): Promise<BuildOrderItemsResult> {
   const products = await Product.find(
     { _id: { $in: items.map((it) => it.productId) } },
-    'name price images category stockCount',
+    'name price images category stockCount pricingType packagePrice pricePerLb ' +
+      'estimatedWeightLb averageWeightLb minWeightLb maxWeightLb unitPrice bundlePrice ' +
+      'displayPriceLabel displayWeightLabel',
   ).lean<OrderProductLean[]>();
 
   const productMap = new Map(products.map((p) => [p._id.toString(), p]));
