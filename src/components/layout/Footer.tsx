@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import Reveal from '@/components/uielements/Reveal';
 import {
   formatPhoneHref,
@@ -173,6 +175,24 @@ const Footer = async () => {
                 <span className='text-cream/65'>
                   Portfolio project — not a real shop. No orders are processed.
                 </span>
+                <span className='mx-2 text-cream/40' aria-hidden>
+                  ·
+                </span>
+                <Link
+                  href='/terms'
+                  className='text-cream/70 transition-colors duration-300 hover:text-cream focus-visible:outline-none focus-visible:text-cream motion-reduce:transition-none'
+                >
+                  Terms
+                </Link>
+                <span className='mx-2 text-cream/40' aria-hidden>
+                  ·
+                </span>
+                <Link
+                  href='/privacy'
+                  className='text-cream/70 transition-colors duration-300 hover:text-cream focus-visible:outline-none focus-visible:text-cream motion-reduce:transition-none'
+                >
+                  Privacy
+                </Link>
               </div>
               <div>
                 Created by{' '}

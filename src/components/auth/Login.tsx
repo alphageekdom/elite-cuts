@@ -339,9 +339,9 @@ export default function Login() {
 
             <p className="auth-reveal text-center mt-10 text-sm text-ink-soft [animation-delay:750ms]">
               By signing in, you agree to our{' '}
-              <Link href="#" className="text-oxblood font-medium border-b border-oxblood pb-px">Terms</Link>
+              <Link href="/terms" className="text-oxblood font-medium border-b border-oxblood pb-px">Terms</Link>
               {' '}&amp;{' '}
-              <Link href="#" className="text-oxblood font-medium border-b border-oxblood pb-px">Privacy Policy</Link>.
+              <Link href="/privacy" className="text-oxblood font-medium border-b border-oxblood pb-px">Privacy Policy</Link>.
             </p>
           </div>
         </div>
