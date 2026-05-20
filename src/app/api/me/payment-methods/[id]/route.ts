@@ -51,6 +51,8 @@ export const PATCH = async (request: NextRequest, ctx: RouteContext) => {
   if (!sessionUser?.userId) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
+  const demoBlocked = refuseDemoActor(sessionUser.user);
+  if (demoBlocked) return demoBlocked;
 
   const { id } = await ctx.params;
   if (!id) {
