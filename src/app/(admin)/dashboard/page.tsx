@@ -72,11 +72,12 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
   const chartWindowStart = new Date(now.getTime() - rangeDays * DAY_MS);
   const chartPrevWindowStart = new Date(now.getTime() - 2 * rangeDays * DAY_MS);
 
-  // Phase D — exclude the demo customer's orders + both demo accounts
-  // from every admin aggregate so demo activity doesn't move the real
-  // metrics. `excludeDemo` resolves to `{}` when no demo customer
-  // exists; the user filter is a flat `{ isDemo: { $ne: true } }` so
-  // both demo customer and demo admin drop out of user counts.
+  // Phase D — exclude demo activity from every admin aggregate so it
+  // doesn't move the real metrics. `excludeDemo` filters out the demo
+  // customer's orders (the demo admin places none) and resolves to `{}`
+  // when no demo customer exists. The user filter is a flat
+  // `{ isDemo: { $ne: true } }` so both demo accounts drop out of user
+  // counts.
   const excludeDemo = await excludeDemoOrders();
   const excludeDemoUser = { isDemo: { $ne: true } };
 

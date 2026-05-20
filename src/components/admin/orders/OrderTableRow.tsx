@@ -3,6 +3,7 @@ import { getInitials, formatDateTime } from '@/lib/format';
 import { printReceipt } from '@/lib/print-receipt';
 import type { OrderTableRow } from '@/types/admin';
 import type { OrderColumnVisibility } from '@/hooks/useOrderColumns';
+import DemoPill from '@/components/demo/DemoPill';
 
 const STATUS_PILL: Record<string, { bg: string; text: string; label: string; camel?: boolean }> = {
   'Order Placed':     { bg: 'bg-line-soft',  text: 'text-muted',    label: 'Order Placed' },
@@ -73,9 +74,7 @@ export default function OrderTableRowComponent({
               <div className="font-medium text-[14px] leading-snug inline-flex items-center gap-1.5">
                 {order.customerName}
                 {order.isDemo && (
-                  <span className="inline-flex items-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-medium tracking-widest uppercase text-amber-900 border border-amber-200">
-                    Demo
-                  </span>
+                  <DemoPill title="Seeded demo account — orders clear every night by the reset cron." />
                 )}
               </div>
               <div className="text-[11px] text-muted">{order.customerEmail}</div>

@@ -17,6 +17,7 @@ export default function DemoModeChip() {
 
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -44,12 +45,18 @@ export default function DemoModeChip() {
   return (
     <div ref={containerRef} className="relative">
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         onFocus={() => setOpen(true)}
         onBlur={() => setOpen(false)}
         onMouseEnter={() => setOpen(true)}
-        onMouseLeave={() => setOpen(false)}
+        onMouseLeave={() => {
+          // Don't close while keyboard focus is still on the chip — that
+          // would desync `aria-expanded` from the user's actual state.
+          if (document.activeElement === buttonRef.current) return;
+          setOpen(false);
+        }}
         aria-describedby="demo-mode-tooltip"
         aria-expanded={open}
         className={`inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-medium tracking-widest uppercase text-amber-900 border border-amber-200 hover:bg-amber-200 transition-colors ${FOCUS_RING}`}
