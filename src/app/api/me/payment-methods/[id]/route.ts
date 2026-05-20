@@ -5,7 +5,7 @@ import {
   deleteSavedCard,
   updateSavedCardExpiry,
 } from '@/lib/payments/savedCards';
-import { refuseDemoActor } from '@/lib/auth/demo-permissions';
+import { refuseDemoActor } from '@/lib/auth/demo-responses';
 
 export const dynamic = 'force-dynamic';
 

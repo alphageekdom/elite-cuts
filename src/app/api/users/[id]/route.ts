@@ -9,7 +9,7 @@ import { withAdmin } from '@/lib/api-handler';
 import { EMAIL_RE } from '@/lib/validation';
 import { clientIpFromHeaders, rateLimit } from '@/lib/rateLimit';
 import { clearDormancyWarning, hardDeleteUser, restoreUser, softDeleteUser } from '@/lib/accountDeletion';
-import { refuseDemoActor, refuseDemoTarget } from '@/lib/auth/demo-permissions';
+import { refuseDemoActor, refuseDemoTarget } from '@/lib/auth/demo-responses';
 
 type RouteContext = { params: Promise<{ id: string }> };
 

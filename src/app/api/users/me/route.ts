@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { withAuth } from '@/lib/api-handler';
 import { softDeleteUser } from '@/lib/accountDeletion';
 import User from '@/models/User';
-import { refuseDemoActor } from '@/lib/auth/demo-permissions';
+import { refuseDemoActor } from '@/lib/auth/demo-responses';
 
 // DELETE /api/users/me — customer-initiated soft delete. Schedules the account
 // for hard-deletion in 30 days; signing back in cancels.
