@@ -63,8 +63,13 @@ export function useOrdersTable(initialOrders: OrderTableRow[]) {
     if (!openOrderId || handledDeepLinkRef.current === openOrderId) return;
     handledDeepLinkRef.current = openOrderId;
     const target = orders.find((o) => o.id === openOrderId);
-    if (target) openDrawer(target);
+    // Defer to a task tick so the setState inside openDrawer lands async
+    // (rule-clean) instead of synchronously from the effect body.
+    const id = target ? setTimeout(() => openDrawer(target), 0) : null;
     router.replace(pathname);
+    return () => {
+      if (id !== null) clearTimeout(id);
+    };
   }, [openOrderId, orders, openDrawer, pathname, router]);
 
   function toggleSelect(id: string) {

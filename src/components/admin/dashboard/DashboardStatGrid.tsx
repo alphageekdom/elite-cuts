@@ -42,18 +42,19 @@ function countChange(current: number, prev: number): { label: string; dir: 'up' 
   };
 }
 
-function StatCard({ stat }: { stat: Stat }) {
-  const ArrowUp = () => (
-    <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-      <polyline points="18 15 12 9 6 15" />
-    </svg>
-  );
-  const ArrowDown = () => (
-    <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
-  );
+const ArrowUp = () => (
+  <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+    <polyline points="18 15 12 9 6 15" />
+  </svg>
+);
 
+const ArrowDown = () => (
+  <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+);
+
+function StatCard({ stat }: { stat: Stat }) {
   return (
     <div
       className="bg-paper rounded-[4px] px-5 md:px-6.5 py-6 border border-line-soft hover:-translate-y-0.5 transition-transform duration-400"

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { GiMeatCleaver } from 'react-icons/gi';
 import AdminNavLinks from './AdminNavLinks';
@@ -11,27 +11,41 @@ type Props = {
   openMessageCount: number;
 };
 
-export default function AdminSidebarClient({ name, initial, criticalInventoryCount, openMessageCount }: Props) {
-  const [collapsed, setCollapsed] = useState(false);
+// Sidebar collapsed flag lives in localStorage so it survives navigation and
+// stays consistent across admin tabs. A module-level subscriber set notifies
+// React readers via useSyncExternalStore — the SSR snapshot returns false to
+// match the server, then the client snapshot reads the actual stored value
+// after hydration.
+const COLLAPSED_KEY = 'admin-sidebar-collapsed';
+const collapsedListeners = new Set<() => void>();
+const subscribeCollapsed = (listener: () => void) => {
+  collapsedListeners.add(listener);
+  return () => {
+    collapsedListeners.delete(listener);
+  };
+};
+const getCollapsedSnapshot = () =>
+  window.localStorage.getItem(COLLAPSED_KEY) === 'true';
+const getCollapsedServerSnapshot = () => false;
+const writeCollapsed = (value: boolean) => {
+  window.localStorage.setItem(COLLAPSED_KEY, String(value));
+  collapsedListeners.forEach((l) => l());
+};
 
-  // Hydrate from localStorage after mount to avoid SSR mismatch
-  useEffect(() => {
-    if (localStorage.getItem('admin-sidebar-collapsed') === 'true') {
-      setCollapsed(true);
-    }
-  }, []);
+export default function AdminSidebarClient({ name, initial, criticalInventoryCount, openMessageCount }: Props) {
+  const collapsed = useSyncExternalStore(
+    subscribeCollapsed,
+    getCollapsedSnapshot,
+    getCollapsedServerSnapshot,
+  );
 
   function toggle() {
-    setCollapsed((prev) => {
-      const next = !prev;
-      localStorage.setItem('admin-sidebar-collapsed', String(next));
-      return next;
-    });
+    writeCollapsed(!collapsed);
   }
 
   return (
     <aside
-      className={`hidden lg:flex flex-col bg-ink text-cream sticky top-0 h-screen shrink-0 overflow-hidden transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+      className={`hidden lg:flex flex-col bg-ink text-cream sticky top-0 h-screen shrink-0 overflow-hidden transition-[width] duration-300 ease-in-out ${
         collapsed ? 'w-16' : 'w-60'
       }`}
     >

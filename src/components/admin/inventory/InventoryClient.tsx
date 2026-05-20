@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { useStatFilter } from '@/hooks/useStatFilter';
 import { toast } from 'sonner';
 import { CATEGORY_PAR, DEFAULT_PAR } from '@/lib/inventory';
@@ -70,8 +70,15 @@ export default function InventoryClient({
   totalProducts,
   lastStocktakeLabel,
 }: Props) {
+  // localRows mirrors the `rows` prop but supports optimistic updates (see
+  // setLocalRows usage in the stock-edit handler). Adjust-during-render syncs
+  // it back to the server snapshot whenever the prop reference changes.
   const [localRows, setLocalRows] = useState(rows);
-  useEffect(() => { setLocalRows(rows); }, [rows]);
+  const [lastRows, setLastRows] = useState(rows);
+  if (lastRows !== rows) {
+    setLastRows(rows);
+    setLocalRows(rows);
+  }
 
   // Snapshot of row IDs visible in the active tab — updated only when the tab changes,
   // not on stock edits, so items don't vanish mid-session when stock crosses a threshold.

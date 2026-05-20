@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 
 import { useCartContext, type CartLine } from '@/context/CartContext';
+import { useIsMounted } from '@/hooks/useIsMounted';
 import { computeTotals, fmtPrice } from '@/lib/pricing';
 
 type Props = {
@@ -118,9 +119,7 @@ const CartDrawer = ({ isOpen, onClose }: Props) => {
   const { data: session } = useSession();
   const isLoggedIn = Boolean(session?.user);
   const count = cartItems.length;
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
+  const mounted = useIsMounted();
 
   const totals = useMemo(
     () => computeTotals(cartItems, { isLoggedIn }),

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type ChangeEvent } from 'react';
+import { useState, type ChangeEvent } from 'react';
 import { useSession } from 'next-auth/react';
 
 import { useCheckoutContext } from '@/context/CheckoutContext';
@@ -22,9 +22,11 @@ const CheckoutContactCard = () => {
   // If the shopper signs in successfully (via the inline panel or in another
   // tab) we collapse the sign-in card back to the contact form. The eyebrow
   // also disappears once isLoggedIn flips so the toggle is unreachable.
-  useEffect(() => {
+  const [lastIsLoggedIn, setLastIsLoggedIn] = useState(isLoggedIn);
+  if (lastIsLoggedIn !== isLoggedIn) {
+    setLastIsLoggedIn(isLoggedIn);
     if (isLoggedIn && mode === 'signin') setMode('contact');
-  }, [isLoggedIn, mode]);
+  }
 
   const onPhone = (e: ChangeEvent<HTMLInputElement>) => {
     const digits = e.target.value.replace(/\D/g, '').slice(0, 10);

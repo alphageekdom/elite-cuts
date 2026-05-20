@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useStatFilter } from '@/hooks/useStatFilter';
 import { useOrdersTable } from '@/hooks/useOrdersTable';
-import { useOrderColumns, ORDER_COLUMN_OPTIONS, type OrderColumnVisibility } from '@/hooks/useOrderColumns';
+import { useOrderColumns, ORDER_COLUMN_OPTIONS } from '@/hooks/useOrderColumns';
 import OrderTableRowComponent from './OrderTableRow';
 import OrdersPageHeader from './OrdersPageHeader';
 import OrdersFilterPanel from './OrdersFilterPanel';

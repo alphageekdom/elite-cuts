@@ -17,22 +17,32 @@ export default function AccountDeletedBanner() {
   const params = useSearchParams();
   const deletedFlag = params.get('deleted');
   const dormancyFlag = params.get('dormancyCleared');
-  const until = params.get('until');
-  const [mode, setMode] = useState<Mode | null>(null);
+  const liveUntil = params.get('until');
+  const liveMode: Mode | null =
+    deletedFlag === '1' ? 'deleted' : dormancyFlag === '1' ? 'dormancyCleared' : null;
 
+  // Capture the first flag seen in the URL into local state so the banner
+  // persists past the URL strip below. Adjusting state during render (the
+  // React 19 "Adjusting state while rendering" pattern) is the rule-safe
+  // way to snapshot an external value on first sight.
+  const [captured, setCaptured] = useState<{ mode: Mode; until: string | null } | null>(null);
+  const [dismissed, setDismissed] = useState(false);
+  if (liveMode !== null && captured === null) {
+    setCaptured({ mode: liveMode, until: liveUntil });
+  }
+
+  // Strip the URL flags so a refresh doesn't re-show the banner.
   useEffect(() => {
-    const next: Mode | null =
-      deletedFlag === '1' ? 'deleted' : dormancyFlag === '1' ? 'dormancyCleared' : null;
-    if (!next) return;
-    setMode(next);
+    if (captured === null) return;
     const url = new URL(window.location.href);
     url.searchParams.delete('deleted');
     url.searchParams.delete('dormancyCleared');
     url.searchParams.delete('until');
     router.replace(`${url.pathname}${url.search}${url.hash}`);
-  }, [deletedFlag, dormancyFlag, router]);
+  }, [captured, router]);
 
-  if (!mode) return null;
+  if (dismissed || captured === null) return null;
+  const { mode, until } = captured;
 
   if (mode === 'dormancyCleared') {
     return (
@@ -44,7 +54,7 @@ export default function AccountDeletedBanner() {
           </span>
           <button
             type="button"
-            onClick={() => setMode(null)}
+            onClick={() => setDismissed(true)}
             className="ml-auto text-muted hover:text-ink transition-colors text-[12px] underline-offset-2 hover:underline"
           >
             Dismiss
@@ -77,7 +87,7 @@ export default function AccountDeletedBanner() {
         </span>
         <button
           type="button"
-          onClick={() => setMode(null)}
+          onClick={() => setDismissed(true)}
           className="ml-auto text-muted hover:text-ink transition-colors text-[12px] underline-offset-2 hover:underline"
         >
           Dismiss

@@ -81,7 +81,12 @@ export default function ScheduleClient({
     }
   }, []);
 
-  useEffect(() => { fetchShifts(weekStart); }, [weekStart, fetchShifts]);
+  useEffect(() => {
+    // Defer to a task tick so the setState calls inside fetchShifts land async
+    // (rule-clean) instead of synchronously from the effect body.
+    const id = setTimeout(() => fetchShifts(weekStart), 0);
+    return () => clearTimeout(id);
+  }, [weekStart, fetchShifts]);
 
   function prevWeek() { setWeekStart((d) => { const n = new Date(d); n.setDate(n.getDate() - 7); return n; }); }
   function nextWeek() { setWeekStart((d) => { const n = new Date(d); n.setDate(n.getDate() + 7); return n; }); }

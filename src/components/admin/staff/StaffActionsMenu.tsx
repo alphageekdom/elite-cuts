@@ -38,10 +38,10 @@ export default function StaffActionsMenu({
   // entirely. Reposition on scroll/resize so the menu tracks the trigger
   // while the page (or the table itself) scrolls.
   useLayoutEffect(() => {
-    if (!open) {
-      setMenuPos(null);
-      return;
-    }
+    // No early-clear of menuPos: the portaled menu is also gated on `open`
+    // below, so a stale position when closed never reaches the DOM, and the
+    // next open overwrites menuPos via `update()`.
+    if (!open) return;
     const update = () => {
       const btn = triggerRef.current;
       if (!btn) return;

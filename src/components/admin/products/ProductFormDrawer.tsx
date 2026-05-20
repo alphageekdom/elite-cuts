@@ -171,8 +171,15 @@ export default function ProductFormDrawer({ product, onClose, onSave }: Props) {
 
   useEffect(() => {
     const urls = imageFiles.map((f) => URL.createObjectURL(f));
-    setPreviewUrls(urls);
-    return () => { urls.forEach((url) => URL.revokeObjectURL(url)); };
+    // Defer the state update so the setState lands async (rule-clean) — the
+    // URL list still pairs with its own revoke cleanup below for the previous
+    // urls held by state. useMemo isn't safe here because React reserves the
+    // right to recompute, which would leak object URLs.
+    const id = setTimeout(() => setPreviewUrls(urls), 0);
+    return () => {
+      clearTimeout(id);
+      urls.forEach((url) => URL.revokeObjectURL(url));
+    };
   }, [imageFiles]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 

@@ -31,10 +31,13 @@ export default function AdminMobileBottomNav({ criticalInventoryCount }: Props) 
 
   const moreIsActive = MOBILE_MORE.some((item) => isActive(item.href));
 
-  // Close sheet on route change
-  useEffect(() => {
-    setSheetOpen(false);
-  }, [pathname]);
+  // Close sheet on route change — adjust state while rendering rather than running
+  // a setState-in-effect cascade.
+  const [lastPathname, setLastPathname] = useState(pathname);
+  if (lastPathname !== pathname) {
+    setLastPathname(pathname);
+    if (sheetOpen) setSheetOpen(false);
+  }
 
   // ESC key closes sheet
   useEffect(() => {

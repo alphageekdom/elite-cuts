@@ -6,6 +6,7 @@ import { FaBell } from 'react-icons/fa';
 import type { Announcement } from '@/lib/announcements';
 import { ANNOUNCEMENT_DOT_BG } from '@/lib/announcement-display';
 import { FOCUS_RING, scrollAwareTone } from '@/lib/styles';
+import { useIsMounted } from '@/hooks/useIsMounted';
 import AnnouncementBellPopover from './AnnouncementBellPopover';
 
 type AnnouncementBellProps = {
@@ -35,16 +36,23 @@ const AnnouncementBell = ({
   scrolled = false,
 }: AnnouncementBellProps) => {
   const [open, setOpen] = useState(false);
-  const [dismissed, setDismissed] = useState<Record<string, true>>({});
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Hydrate dismissed state from localStorage on mount. Until then we render
-  // null so SSR and client agree (avoids flash + hydration mismatch).
-  useEffect(() => {
+  // Hydrate dismissed state from localStorage on first render of each
+  // announcements set. Lazy + adjust-during-render keeps the read out of
+  // useEffect so the rule doesn't flag a setState cascade; the component
+  // still returns null until `mounted` is true (after hydration) so the
+  // SSR HTML matches the first client paint.
+  const announcementIdsKey = announcements.map((a) => a.id).join(',');
+  const [dismissed, setDismissed] = useState<Record<string, true>>(() =>
+    loadDismissed(announcements.map((a) => a.id)),
+  );
+  const [lastAnnouncementIdsKey, setLastAnnouncementIdsKey] = useState(announcementIdsKey);
+  if (lastAnnouncementIdsKey !== announcementIdsKey) {
+    setLastAnnouncementIdsKey(announcementIdsKey);
     setDismissed(loadDismissed(announcements.map((a) => a.id)));
-    setMounted(true);
-  }, [announcements]);
+  }
 
   useEffect(() => {
     if (!open) return;
