@@ -39,8 +39,7 @@ export default function PromosClient({ promos, savingsByPromoId }: Props) {
   const [isCreating, setIsCreating] = useState(false);
   const [, startTransition] = useTransition();
   const [togglingId, setTogglingId] = useState<string | null>(null);
-
-  const now = Date.now();
+  const [now] = useState(() => Date.now());
 
   const toggleActive = (p: PromoFormRow, e: React.MouseEvent) => {
     e.stopPropagation();

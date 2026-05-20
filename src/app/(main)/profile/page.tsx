@@ -239,6 +239,8 @@ export default async function ProfilePage({ searchParams }: Props) {
   const displayName = sessionUser.user.name ?? rawUser.name ?? 'Member';
   const displayEmail = sessionUser.user.email ?? rawUser.email ?? '';
   const totalSpent = serializedOrders.reduce((s, o) => s + o.totalCost, 0);
+  // Server component — renders once per request, Date.now() is safe here.
+  // eslint-disable-next-line react-hooks/purity
   const joinedMs = Date.now() - rawUser.createdAt.getTime();
   const joinedMonths = Math.max(1, Math.round(joinedMs / (1000 * 60 * 60 * 24 * 30)));
 

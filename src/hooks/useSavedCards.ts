@@ -32,15 +32,14 @@ export type UseSavedCards = {
 
 export function useSavedCards({ enabled = true }: { enabled?: boolean } = {}): UseSavedCards {
   const [cards, setCards] = useState<SavedCardSummary[]>([]);
-  const [loaded, setLoaded] = useState(false);
+  const [fetched, setFetched] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Disabled callers don't wait on the fetch — derive loaded from enabled so
+  // we never need a synchronous setState in the effect body to short-circuit.
+  const loaded = !enabled || fetched;
 
   useEffect(() => {
-    if (!enabled) {
-      // Mark as loaded so callers that wait on `loaded` don't hang.
-      setLoaded(true);
-      return;
-    }
+    if (!enabled) return;
     let cancelled = false;
     (async () => {
       try {
@@ -54,7 +53,7 @@ export function useSavedCards({ enabled = true }: { enabled?: boolean } = {}): U
         if (cancelled) return;
         setError('Could not load saved cards.');
       } finally {
-        if (!cancelled) setLoaded(true);
+        if (!cancelled) setFetched(true);
       }
     })();
     return () => {

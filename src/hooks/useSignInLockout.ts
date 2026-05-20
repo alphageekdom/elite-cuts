@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 
 // sessionStorage key used by every sign-in surface so the cool-down can't be
 // bypassed by switching pages mid-lockout. The backend is the source of
@@ -16,6 +16,38 @@ const LOCKOUT_MESSAGE_PREFIX = 'Too many failed login attempts';
 // Pulls the lockout duration in minutes out of the backend message so the
 // countdown picks the right end-time even when the backend's window changes.
 const LOCKOUT_RE = /Try again in (\d+) minute/;
+
+// Module-level subscriber set so a registerLockoutFromMessage call from one
+// mounted instance notifies any other instance reading the same key.
+const lockoutListeners = new Set<() => void>();
+const subscribeLockout = (listener: () => void) => {
+  lockoutListeners.add(listener);
+  return () => {
+    lockoutListeners.delete(listener);
+  };
+};
+
+const readClientLockout = (): number | null => {
+  const stored = window.sessionStorage.getItem(LOCKOUT_KEY);
+  if (!stored) return null;
+  const ts = parseInt(stored, 10);
+  if (!Number.isFinite(ts) || ts <= Date.now()) {
+    window.sessionStorage.removeItem(LOCKOUT_KEY);
+    return null;
+  }
+  return ts;
+};
+
+const readServerLockout = (): number | null => null;
+
+const writeLockout = (value: number | null) => {
+  if (value === null) {
+    window.sessionStorage.removeItem(LOCKOUT_KEY);
+  } else {
+    window.sessionStorage.setItem(LOCKOUT_KEY, String(value));
+  }
+  lockoutListeners.forEach((l) => l());
+};
 
 export type SignInLockout = {
   /** True while the cool-down is active; disables form inputs + buttons */
@@ -34,51 +66,43 @@ export type SignInLockout = {
  * Shared sign-in cool-down hook used by `/login` and the inline checkout
  * sign-in panel. The lockout is persisted in sessionStorage so a refresh
  * keeps the user disabled until the backend agrees the cool-down has elapsed.
+ * The stored value is read through useSyncExternalStore so SSR returns null
+ * (matching the server) and the client-only timestamp kicks in after
+ * hydration — no hydration mismatch on the disabled-button state.
  */
 export function useSignInLockout(): SignInLockout {
-  const [lockedUntil, setLockedUntil] = useState<number | null>(null);
-  const [lockSecondsLeft, setLockSecondsLeft] = useState<number | null>(null);
+  const lockedUntil = useSyncExternalStore(
+    subscribeLockout,
+    readClientLockout,
+    readServerLockout,
+  );
+  const [now, setNow] = useState<number>(() =>
+    typeof window === 'undefined' ? 0 : Date.now(),
+  );
 
-  // Restore any in-flight lockout from a previous render of this tab.
+  // Tick the clock once per second while the cool-down is active. The
+  // setState calls inside the interval callback are async (rule-clean), and
+  // the interval shuts itself down once the cool-down expires.
   useEffect(() => {
-    const stored = sessionStorage.getItem(LOCKOUT_KEY);
-    if (!stored) return;
-    const ts = parseInt(stored, 10);
-    if (ts > Date.now()) {
-      setLockedUntil(ts);
-    } else {
-      sessionStorage.removeItem(LOCKOUT_KEY);
-    }
-  }, []);
-
-  // Countdown tick — drives the button label and clears the lockout when it
-  // expires. Tearing down the interval on every `lockedUntil` change is fine
-  // since the lockout only flips during sign-in submissions.
-  useEffect(() => {
-    if (lockedUntil === null) {
-      setLockSecondsLeft(null);
-      return;
-    }
-    const tick = () => {
-      const remaining = Math.max(0, Math.ceil((lockedUntil - Date.now()) / 1000));
-      setLockSecondsLeft(remaining);
-      if (remaining <= 0) {
-        setLockedUntil(null);
-        sessionStorage.removeItem(LOCKOUT_KEY);
-      }
-    };
-    tick();
-    const id = setInterval(tick, 1000);
+    if (lockedUntil === null) return;
+    const id = setInterval(() => {
+      const currentNow = Date.now();
+      setNow(currentNow);
+      if (currentNow >= lockedUntil) writeLockout(null);
+    }, 1000);
     return () => clearInterval(id);
   }, [lockedUntil]);
+
+  const lockSecondsLeft =
+    lockedUntil === null || now === 0
+      ? null
+      : Math.max(0, Math.ceil((lockedUntil - now) / 1000));
 
   const registerLockoutFromMessage = (message: string | undefined): boolean => {
     if (!message || !message.startsWith(LOCKOUT_MESSAGE_PREFIX)) return false;
     const match = message.match(LOCKOUT_RE);
     const minutes = match ? parseInt(match[1], 10) : 60;
-    const until = Date.now() + minutes * 60 * 1000;
-    sessionStorage.setItem(LOCKOUT_KEY, String(until));
-    setLockedUntil(until);
+    writeLockout(Date.now() + minutes * 60 * 1000);
     return true;
   };
 

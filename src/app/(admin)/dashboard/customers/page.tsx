@@ -75,6 +75,9 @@ export default async function AdminCustomersPage() {
 
   // `new this week` is a header-only metric (not one of the stat filters),
   // so it stays inline.
+  // Server component — renders once per request, so Date.now() can't trigger the
+  // cascading-render scenario react-hooks/purity guards against.
+  // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
   const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
   let newThisWeek = 0;

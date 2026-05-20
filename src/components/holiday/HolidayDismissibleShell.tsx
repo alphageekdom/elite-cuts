@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
+import { useSyncExternalStore, type ReactNode } from 'react';
 
 import type { HolidaySlug } from '@/lib/holidays';
 
@@ -13,28 +13,36 @@ type Props = {
 const storageKey = (slug: HolidaySlug, year: number) =>
   `holiday-dismissed-${slug}-${year}`;
 
+// Module-level subscriber set so calling handleDismiss in one mounted instance
+// also notifies any other instance reading the same key (and so the
+// useSyncExternalStore reader re-reads sessionStorage on dismiss).
+const dismissListeners = new Set<() => void>();
+const subscribeDismiss = (listener: () => void) => {
+  dismissListeners.add(listener);
+  return () => {
+    dismissListeners.delete(listener);
+  };
+};
+
 // Wraps a server-rendered holiday surface and renders an absolutely-positioned
 // × button that hides the content for the rest of the browser session (per-tab
 // dismissal in sessionStorage). The banner returns on a fresh session so the
 // escalating countdown ("IN 14 DAYS" → "IN 7 DAYS" → "TOMORROW") still reaches
-// the customer as the holiday approaches. Server-side renders the content by
-// default so the initial paint is correct; client-mount may hide it after
-// reading sessionStorage.
+// the customer as the holiday approaches. Server snapshot returns false so the
+// SSR HTML always renders the content, and the client snapshot reads
+// sessionStorage after hydration to hide if dismissed.
 export default function HolidayDismissibleShell({ slug, year, children }: Props) {
-  const [dismissed, setDismissed] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (window.sessionStorage.getItem(storageKey(slug, year)) === '1') {
-      setDismissed(true);
-    }
-  }, [slug, year]);
+  const dismissed = useSyncExternalStore(
+    subscribeDismiss,
+    () => window.sessionStorage.getItem(storageKey(slug, year)) === '1',
+    () => false,
+  );
 
   if (dismissed) return null;
 
   const handleDismiss = () => {
     window.sessionStorage.setItem(storageKey(slug, year), '1');
-    setDismissed(true);
+    dismissListeners.forEach((l) => l());
   };
 
   return (

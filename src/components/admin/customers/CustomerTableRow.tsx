@@ -47,10 +47,10 @@ export default function CustomerTableRowComponent({
   // and pin it to the More button via getBoundingClientRect. Reposition on
   // scroll/resize so the menu stays attached while the table scrolls.
   useLayoutEffect(() => {
-    if (!isOpen) {
-      setMenuPos(null);
-      return;
-    }
+    // No early-clear of menuPos here: the portaled menu is also gated on
+    // `isOpen` below, so a stale position when closed never reaches the DOM,
+    // and the next open immediately overwrites menuPos via `update()`.
+    if (!isOpen) return;
     function update() {
       const btn = moreBtnRef.current;
       if (!btn) return;

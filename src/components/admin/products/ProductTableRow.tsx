@@ -68,10 +68,10 @@ export default function ProductTableRowComponent({
   // pin it via the shared floating-menu helper, which also flips above
   // the trigger when the viewport is too short to fit the menu below.
   useLayoutEffect(() => {
-    if (!isMenuOpen) {
-      setMenuPos(null);
-      return;
-    }
+    // No early-clear of menuPos: the portaled dropdown is also gated on
+    // `isMenuOpen` below, so a stale position when closed never reaches the
+    // DOM, and the next open overwrites menuPos via `update()`.
+    if (!isMenuOpen) return;
     const update = () => {
       const btn = moreBtnRef.current;
       if (!btn) return;

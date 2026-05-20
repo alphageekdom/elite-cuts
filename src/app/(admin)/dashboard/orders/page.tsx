@@ -56,6 +56,8 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
 
   const { range: rangeParam } = await searchParams;
   const range = parseRange(rangeParam);
+  // Server component — renders once per request, Date.now() is safe here.
+  // eslint-disable-next-line react-hooks/purity
   const windowStart = new Date(Date.now() - RANGE_DAYS[range] * DAY_MS);
 
   const now = new Date();

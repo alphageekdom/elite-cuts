@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
@@ -29,18 +29,22 @@ export default function ContactModal({
   const [submitting, setSubmitting] = useState(false);
   const subjectRef = useRef<HTMLInputElement>(null);
 
-  // Sync subject when prefilledSubject changes (e.g. different order)
-  useEffect(() => {
+  // Adjust state while rendering: sync subject when the parent passes a new
+  // prefilledSubject (e.g. opening contact for a different order), and reset
+  // the tab + body when the modal goes from open → closed.
+  const [lastPrefilled, setLastPrefilled] = useState(prefilledSubject);
+  if (lastPrefilled !== prefilledSubject) {
+    setLastPrefilled(prefilledSubject);
     setSubject(prefilledSubject);
-  }, [prefilledSubject]);
-
-  // Reset form on close
-  useEffect(() => {
+  }
+  const [lastIsOpen, setLastIsOpen] = useState(isOpen);
+  if (lastIsOpen !== isOpen) {
+    setLastIsOpen(isOpen);
     if (!isOpen) {
       setTab('inapp');
       setBody('');
     }
-  }, [isOpen]);
+  }
 
   // Focus subject on open
   useEffect(() => {

@@ -41,6 +41,8 @@ export default async function AdminInventoryPage() {
 
   const lastStocktakeLabel = (() => {
     if (!lastStocktake?.createdAt) return 'Never stocktaken';
+    // Server component — renders once per request, Date.now() is safe here.
+    // eslint-disable-next-line react-hooks/purity
     const diffMs = Date.now() - new Date(lastStocktake.createdAt).getTime();
     const diffDays = Math.floor(diffMs / 86400000);
     if (diffDays <= 0) return 'Last stocktake: today';

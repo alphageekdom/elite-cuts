@@ -45,8 +45,7 @@ type Props = { cuts: AgingCutRow[] };
 
 export default function InventoryAgingRoom({ cuts }: Props) {
   const [agingTab, setAgingTab] = useState<'active' | 'history'>('active');
-
-  const today = Date.now();
+  const [today] = useState(() => Date.now());
   const rows = cuts
     .filter((c) => (agingTab === 'active' ? c.isActive : !c.isActive))
     .map((c) => {

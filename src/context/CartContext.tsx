@@ -258,12 +258,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
       } else {
         void fetchServerCart();
       }
-    } else {
-      // Guest (or tombstoned session): sync from localStorage and clear the
-      // loading flag.
+      return;
+    }
+    // Guest (or tombstoned session): sync from localStorage and clear the
+    // loading flag. Defer to a task tick so the setState lands async
+    // (rule-clean); the one-tick gap is invisible to users.
+    const id = setTimeout(() => {
       setCartItems(readGuestCart());
       setLoading(false);
-    }
+    }, 0);
+    return () => clearTimeout(id);
   }, [status, hasUser, fetchServerCart, mergeGuestCartIntoServer]);
 
   const addItemToCart = useCallback(

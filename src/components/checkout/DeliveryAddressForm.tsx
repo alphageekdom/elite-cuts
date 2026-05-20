@@ -66,7 +66,7 @@ const DeliveryAddressForm = () => {
 
   useEffect(() => {
     if (!address1Focused) return;
-    if (address1.trim().length < 4) { setSuggestions([]); return; }
+    if (address1.trim().length < 4) return;
     const timeout = setTimeout(async () => {
       const results = await fetchSuggestions(address1);
       setSuggestions(results);
@@ -188,7 +188,7 @@ const DeliveryAddressForm = () => {
           autoComplete='address-line1'
           className={FIELD_CLASS}
         />
-        {showSuggestions && suggestions.length > 0 && (
+        {showSuggestions && suggestions.length > 0 && address1.trim().length >= 4 && (
           <ul className='absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-sm border border-line bg-paper shadow-md'>
             {suggestions.map((f, i) => (
               <li key={i}>

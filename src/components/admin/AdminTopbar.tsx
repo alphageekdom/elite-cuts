@@ -56,11 +56,16 @@ export default function AdminTopbar({ openMessageCount = 0 }: AdminTopbarProps) 
     }
   }, []);
 
-  // Initial fetch + 30 s polling
+  // Initial fetch + 30 s polling. Schedule the initial poll via setTimeout(0)
+  // so the setState it ends up triggering is async (rule-clean) rather than a
+  // synchronous call from the effect body.
   useEffect(() => {
-    fetchNotifications();
-    const id = setInterval(fetchNotifications, POLL_INTERVAL);
-    return () => clearInterval(id);
+    const initialId = setTimeout(fetchNotifications, 0);
+    const intervalId = setInterval(fetchNotifications, POLL_INTERVAL);
+    return () => {
+      clearTimeout(initialId);
+      clearInterval(intervalId);
+    };
   }, [fetchNotifications]);
 
   // Close on outside click

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { signOut, useSession } from 'next-auth/react';
 import { usePathname, useRouter } from 'next/navigation';
@@ -44,22 +44,28 @@ const Navbar = ({ announcements = [] }: NavbarProps) => {
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  const [rawScrolled, setRawScrolled] = useState(!isOverHero);
+  const [scrollPastThreshold, setScrollPastThreshold] = useState(false);
   const [bannerVisible, setBannerVisible] = useState(false);
 
   // The cart expiry banner forces the navbar into its solid "scrolled" state
   // so the transparent hero treatment doesn't bleed through behind the banner.
-  const scrolled = rawScrolled || bannerVisible;
+  // Non-hero routes always read as scrolled so the readable cream/ink state
+  // shows from first paint without a setState-in-effect hop.
+  const scrolled = !isOverHero || scrollPastThreshold || bannerVisible;
 
   useEffect(() => {
-    if (!isOverHero) {
-      setRawScrolled(true);
-      return;
-    }
-    const handleScroll = () => setRawScrolled(window.scrollY > SCROLL_THRESHOLD);
-    handleScroll();
+    if (!isOverHero) return;
+    const handleScroll = () =>
+      setScrollPastThreshold(window.scrollY > SCROLL_THRESHOLD);
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    // Read initial scroll on the next frame so the setState lands async (avoids
+    // setState-in-effect) but still catches back/forward nav that restored the
+    // page past the threshold.
+    const rafId = requestAnimationFrame(handleScroll);
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, [isOverHero]);
 
   useEffect(() => {
@@ -82,10 +88,14 @@ const Navbar = ({ announcements = [] }: NavbarProps) => {
   }, [isMobileMenuOpen, isProfileMenuOpen]);
 
   // Close any open menu when the route changes (link clicks, back/forward, etc).
-  useEffect(() => {
-    setIsMobileMenuOpen(false);
-    setIsProfileMenuOpen(false);
-  }, [pathname]);
+  // Adjust state while rendering so the close lands in the same render as the
+  // pathname change rather than a cascading effect tick.
+  const [lastPathname, setLastPathname] = useState(pathname);
+  if (lastPathname !== pathname) {
+    setLastPathname(pathname);
+    if (isMobileMenuOpen) setIsMobileMenuOpen(false);
+    if (isProfileMenuOpen) setIsProfileMenuOpen(false);
+  }
 
   useScrollLock(isMobileMenuOpen);
 

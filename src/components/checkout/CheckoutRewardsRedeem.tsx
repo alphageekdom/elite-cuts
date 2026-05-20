@@ -63,13 +63,22 @@ export default function CheckoutRewardsRedeem({ subtotal, maxDiscountable }: Pro
   // Cap the redemption to the discountable subtotal so a customer can't
   // redeem more dollars than the order is worth pre-tax. If the discountable
   // drops below the applied redemption mid-flow (cart edit, promo apply),
-  // clear it automatically.
+  // clear the persisted redemption in the effect and follow up with the local
+  // draft clear via the adjust-during-render block below, which catches the
+  // pointsDiscount → 0 transition without a setState-in-effect.
   useEffect(() => {
     if (state.pointsDiscount > maxDiscountable) {
       dispatch({ type: 'SET_REDEMPTION', payload: { points: 0, dollars: 0 } });
-      setDraft('');
     }
   }, [maxDiscountable, state.pointsDiscount, dispatch]);
+
+  const [lastPointsDiscount, setLastPointsDiscount] = useState(state.pointsDiscount);
+  if (lastPointsDiscount !== state.pointsDiscount) {
+    setLastPointsDiscount(state.pointsDiscount);
+    if (state.pointsDiscount === 0 && draft !== '') {
+      setDraft('');
+    }
+  }
 
   const previewResult = useMemo(() => {
     if (!info) return null;
