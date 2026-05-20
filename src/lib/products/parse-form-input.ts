@@ -79,10 +79,9 @@ export function coerceProductInput(raw: Record<string, string | undefined>): unk
   };
 }
 
-// Flatten FormData → string record. Mirrors `productRecordFromFormData`
-// from the old product-validate but with every new pricing field included.
-// includedItems is collected via `getAll(...)` and pipe-joined so the
-// coercer's string-list parser can split it.
+// Flatten FormData → string record. includedItems is collected via
+// `getAll(...)` and pipe-joined so the coercer's string-list parser can
+// split it.
 export function productRecordFromFormData(formData: FormData): Record<string, string | undefined> {
   const single = (key: string): string | undefined => {
     const v = formData.get(key);

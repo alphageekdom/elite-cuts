@@ -11,27 +11,54 @@ import {
   type ProductSortMode,
 } from '@/lib/admin-products';
 import { slugify } from '@/lib/slugify';
+import { CSV_COLUMNS } from '@/lib/products/import';
 
 export const dynamic = 'force-dynamic';
 
+// Format a number column. Blank for undefined so a round-trip leaves
+// optional fields blank rather than the literal string "0". Two decimals
+// for money-like columns (prices) and bare numbers otherwise — toFixed(2)
+// is what `formatMoney` writes elsewhere in the codebase, kept consistent
+// here for the human-readable export.
+const fmtMoney = (n: number | undefined) => (typeof n === 'number' ? n.toFixed(2) : '');
+const fmtNum = (n: number | undefined) => (typeof n === 'number' ? String(n) : '');
+const fmtBool = (b: boolean | undefined) => (b ? 'true' : 'false');
+
 // Fixed column order — the import endpoint expects the same headers in the
-// same positions. Update both files together if columns change. Legacy docs
-// that pre-date the slug field get a slug derived on the fly so the round-
-// trip still works; the pre-validate hook will persist that slug the next
-// time the doc is saved.
-const EXPORT_COLUMNS: { header: string; value: (p: Product) => unknown }[] = [
-  { header: 'slug',        value: (p) => p.slug || slugify(p.name) },
-  { header: 'name',        value: (p) => p.name },
-  { header: 'description', value: (p) => p.description },
-  { header: 'category',    value: (p) => p.category },
-  // Price is stored as dollars (not cents) on this project's Product model,
-  // so no conversion is needed. Two decimals for human readability.
-  { header: 'price',       value: (p) => p.price.toFixed(2) },
-  { header: 'unit',        value: (p) => p.unit ?? 'lb' },
-  { header: 'stock',       value: (p) => p.stockCount },
-  { header: 'isFeatured',  value: (p) => (p.isFeatured ? 'true' : 'false') },
-  { header: 'isActive',    value: (p) => (p.isActive ? 'true' : 'false') },
-  { header: 'supplier',    value: (p) => p.supplier ?? '' },
+// same positions. The CSV_COLUMNS constant is the shared source of truth
+// for both routes; this map writes a cell value per column. Legacy docs
+// that pre-date the slug field get one derived on the fly so a round-
+// trip still works.
+const EXPORT_COLUMNS: { header: typeof CSV_COLUMNS[number]; value: (p: Product) => unknown }[] = [
+  { header: 'slug',              value: (p) => p.slug || slugify(p.name) },
+  { header: 'name',              value: (p) => p.name },
+  { header: 'description',       value: (p) => p.description },
+  { header: 'category',          value: (p) => p.category },
+  { header: 'cutType',           value: (p) => p.cutType ?? '' },
+  { header: 'qualityTier',       value: (p) => p.qualityTier ?? '' },
+  { header: 'pricingType',       value: (p) => p.pricingType ?? '' },
+  { header: 'packagePrice',      value: (p) => fmtMoney(p.packagePrice) },
+  { header: 'packageWeightLb',   value: (p) => fmtNum(p.packageWeightLb) },
+  { header: 'pricePerLb',        value: (p) => fmtMoney(p.pricePerLb) },
+  { header: 'estimatedWeightLb', value: (p) => fmtNum(p.estimatedWeightLb) },
+  { header: 'averageWeightLb',   value: (p) => fmtNum(p.averageWeightLb) },
+  { header: 'minWeightLb',       value: (p) => fmtNum(p.minWeightLb) },
+  { header: 'maxWeightLb',       value: (p) => fmtNum(p.maxWeightLb) },
+  { header: 'unitPrice',         value: (p) => fmtMoney(p.unitPrice) },
+  { header: 'bundlePrice',       value: (p) => fmtMoney(p.bundlePrice) },
+  // includedItems uses the pipe separator the import coercer already
+  // expects — round-trip via the import endpoint is symmetrical.
+  { header: 'includedItems',     value: (p) => (p.includedItems ?? []).join('|') },
+  { header: 'stock',             value: (p) => p.stockCount },
+  { header: 'sku',               value: (p) => p.sku ?? '' },
+  { header: 'gradeBreed',        value: (p) => p.gradeBreed ?? '' },
+  { header: 'supplier',          value: (p) => p.supplier ?? '' },
+  { header: 'parLevel',          value: (p) => fmtNum(p.parLevel) },
+  { header: 'reorderPoint',      value: (p) => fmtNum(p.reorderPoint) },
+  { header: 'isFeatured',        value: (p) => fmtBool(p.isFeatured) },
+  { header: 'isActive',          value: (p) => fmtBool(p.isActive) },
+  { header: 'isAged',            value: (p) => fmtBool(p.isAged) },
+  { header: 'isNewArrival',      value: (p) => fmtBool(p.isNewArrival) },
 ];
 
 export const GET = withAdmin(async (req) => {

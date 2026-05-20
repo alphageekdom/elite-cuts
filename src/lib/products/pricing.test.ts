@@ -8,6 +8,7 @@ import {
   getDisplayPrice,
   getDisplayWeight,
   isEstimatedPrice,
+  stampPricingDerivedFields,
   unitPrice,
   type PricingView,
 } from './pricing';
@@ -277,5 +278,50 @@ describe('backcompatPrice / backcompatUnit', () => {
     expect(backcompatUnit(wholeItem)).toBe('lb');
     expect(backcompatUnit(each)).toBe('each');
     expect(backcompatUnit(bundle)).toBe('each');
+  });
+});
+
+describe('stampPricingDerivedFields', () => {
+  // The Product model's pre-validate hook and the CSV importer both call
+  // this helper, so the stamped bag must equal the per-helper results.
+  it('produces the same fields as the individual getters', () => {
+    for (const view of [fixedPackage, perLb, wholeItem, each, bundle]) {
+      const stamped = stampPricingDerivedFields(view);
+      expect(stamped.price).toBe(backcompatPrice(view));
+      expect(stamped.unit).toBe(backcompatUnit(view));
+      expect(stamped.displayPriceLabel).toBe(getDisplayPrice(view));
+      expect(stamped.displayWeightLabel).toBe(getDisplayWeight(view));
+      expect(stamped.isEstimatedPrice).toBe(isEstimatedPrice(view));
+    }
+  });
+
+  it('stamps the canonical fields for a per_lb cut', () => {
+    expect(stampPricingDerivedFields(perLb)).toEqual({
+      price: 24.99,
+      unit: 'lb',
+      displayPriceLabel: '$24.99/lb',
+      displayWeightLabel: 'Approx. 0.75–1.25 lb cut',
+      isEstimatedPrice: true,
+    });
+  });
+
+  it('stamps the canonical fields for a fixed_package cut', () => {
+    expect(stampPricingDerivedFields(fixedPackage)).toEqual({
+      price: 8.99,
+      unit: 'lb',
+      displayPriceLabel: '$8.99',
+      displayWeightLabel: '1.5 lb package',
+      isEstimatedPrice: false,
+    });
+  });
+
+  it('stamps the canonical fields for a bundle', () => {
+    expect(stampPricingDerivedFields(bundle)).toEqual({
+      price: 89.99,
+      unit: 'each',
+      displayPriceLabel: '$89.99',
+      displayWeightLabel: 'Includes 2.5 lb chicken thigh pack, 1 lb ground beef pack',
+      isEstimatedPrice: false,
+    });
   });
 });

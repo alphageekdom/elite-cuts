@@ -4,87 +4,30 @@ import mongoose from 'mongoose';
 import ProductModel from '@/models/Product';
 import { withAdmin } from '@/lib/api-handler';
 import { parseCsv, csvRowsToRecords } from '@/lib/csv-parse';
-import { validateProductInput, type ProductInput } from '@/lib/product-validate';
+import { productInputSchema, flattenProductIssues } from '@/lib/products/schema';
+import { coerceProductInput } from '@/lib/products/parse-form-input';
+import {
+  CSV_COLUMNS,
+  EXISTING_PRODUCT_PROJECTION,
+  classifyRow,
+  dedupeBySlug,
+  toProductDoc,
+  type ExistingProductRow,
+  type ProductDoc,
+  type RowResult,
+} from '@/lib/products/import';
 import { slugify } from '@/lib/slugify';
 
-// Mongoose's `bulkWrite` bypasses pre-save / pre-validate hooks on inserts and
-// only runs schema validators on updates when explicitly asked. That's fine
-// here because every doc has already passed through `validateProductInput`
-// above — the validator carries the same invariants the model would enforce
-// (category enum, unit enum, non-negative price, integer stock, slug present
-// and URL-safe). If you wire a new code path that hits this endpoint, make
-// sure it goes through the validator too; the model alone won't catch every
-// constraint at bulk-write time.
+// Mongoose's `bulkWrite` bypasses pre-save / pre-validate hooks on inserts
+// and only runs schema validators on updates when explicitly asked. That's
+// fine here because every doc has already passed through
+// `productInputSchema` above and `toProductDoc` calls
+// `stampPricingDerivedFields` directly — the helper is the same one the
+// model's pre-validate hook uses, so the canonical and stamped fields
+// can't drift between the two paths. If you wire a new code path that hits
+// this endpoint, route it through the same schema + builder.
 
 export const dynamic = 'force-dynamic';
-
-// Columns the export route emits; the import accepts the same shape. `slug`
-// is the upsert key (existing slug → update, new slug → create). If a row's
-// slug column is blank, the validator derives it from `name`.
-const REQUIRED_HEADERS = [
-  'slug',
-  'name',
-  'description',
-  'category',
-  'price',
-  'unit',
-  'stock',
-  'isFeatured',
-  'isActive',
-  'supplier',
-] as const;
-
-type DiffField = keyof ProductInput;
-type DiffEntry = { field: DiffField; from: unknown; to: unknown };
-
-type RowResult =
-  | { index: number; status: 'create'; slug: string; name: string; diff?: never; error?: never; warnings?: string[] }
-  | { index: number; status: 'update'; slug: string; name: string; diff: DiffEntry[]; error?: never; warnings?: string[] }
-  | { index: number; status: 'skip';   slug: string; name: string; diff?: never; error?: never; warnings?: string[] }
-  | { index: number; status: 'error';  slug: string; name: string; diff?: never; error: string;  warnings?: never };
-
-// Build the per-row diff against an existing product, plus any warning chips
-// the admin should see before committing.
-function diffAgainstExisting(
-  parsed: ProductInput,
-  existing: {
-    slug: string;
-    name: string;
-    description: string;
-    category: string;
-    price: number;
-    unit?: string;
-    stockCount: number;
-    isFeatured: boolean;
-    isActive: boolean;
-    supplier?: string;
-  },
-): { diff: DiffEntry[]; warnings: string[] } {
-  const diff: DiffEntry[] = [];
-  const warnings: string[] = [];
-
-  if (parsed.name !== existing.name) {
-    diff.push({ field: 'name', from: existing.name, to: parsed.name });
-    if (parsed.slug === existing.slug) {
-      warnings.push('Slug matches an existing product but the name differs — confirm this is a rename');
-    }
-  }
-  if (parsed.description !== existing.description) diff.push({ field: 'description', from: existing.description, to: parsed.description });
-  if (parsed.category !== existing.category) diff.push({ field: 'category', from: existing.category, to: parsed.category });
-  if (parsed.price !== existing.price) {
-    diff.push({ field: 'price', from: existing.price, to: parsed.price });
-    if (existing.price > 0) {
-      const delta = Math.abs(parsed.price - existing.price) / existing.price;
-      if (delta > 0.5) warnings.push('Price change is unusually large (>50%)');
-    }
-  }
-  if (parsed.unit !== (existing.unit ?? 'lb')) diff.push({ field: 'unit', from: existing.unit ?? 'lb', to: parsed.unit });
-  if (parsed.stock !== existing.stockCount) diff.push({ field: 'stock', from: existing.stockCount, to: parsed.stock });
-  if (parsed.isFeatured !== existing.isFeatured) diff.push({ field: 'isFeatured', from: existing.isFeatured, to: parsed.isFeatured });
-  if (parsed.isActive !== existing.isActive) diff.push({ field: 'isActive', from: existing.isActive, to: parsed.isActive });
-  if (parsed.supplier !== (existing.supplier ?? '')) diff.push({ field: 'supplier', from: existing.supplier ?? '', to: parsed.supplier });
-  return { diff, warnings };
-}
 
 async function readCsvFromRequest(req: Request): Promise<{ csv?: string; error?: string }> {
   const contentType = req.headers.get('content-type') ?? '';
@@ -105,34 +48,6 @@ async function readCsvFromRequest(req: Request): Promise<{ csv?: string; error?:
   return { error: 'Unsupported Content-Type — use multipart/form-data or application/json' };
 }
 
-// Mongoose typing for bulkWrite is generic enough that hand-building the ops
-// types here keeps the call site readable without `any` casts.
-type ProductDoc = {
-  slug: string;
-  name: string;
-  description: string;
-  category: string;
-  price: number;
-  unit: string;
-  stockCount: number;
-  isFeatured: boolean;
-  isActive: boolean;
-  supplier: string;
-};
-
-const toDoc = (d: ProductInput): ProductDoc => ({
-  slug: d.slug,
-  name: d.name,
-  description: d.description,
-  category: d.category,
-  price: d.price,
-  unit: d.unit,
-  stockCount: d.stock,
-  isFeatured: d.isFeatured,
-  isActive: d.isActive,
-  supplier: d.supplier,
-});
-
 export const POST = withAdmin(async (req) => {
   try {
     const { csv, error } = await readCsvFromRequest(req);
@@ -148,7 +63,7 @@ export const POST = withAdmin(async (req) => {
     }
     const { headers, records } = csvRowsToRecords(rows);
 
-    const missing = REQUIRED_HEADERS.filter((h) => !headers.includes(h));
+    const missing = CSV_COLUMNS.filter((h) => !headers.includes(h));
     if (missing.length) {
       return NextResponse.json(
         { message: `CSV is missing required column(s): ${missing.join(', ')}` },
@@ -164,58 +79,55 @@ export const POST = withAdmin(async (req) => {
 
     // Validate every row up front. Errored rows surface in the per-row
     // results; valid rows continue through dedup + diff.
-    type Validated = { index: number; data: ProductInput };
+    type Validated = { index: number; data: import('@/lib/products/schema').ProductInput };
     const validated: Validated[] = [];
     const results: RowResult[] = [];
     records.forEach((rec, i) => {
-      const v = validateProductInput(rec);
-      if (!v.ok) {
+      const parsed = productInputSchema.safeParse(coerceProductInput(rec));
+      if (!parsed.success) {
+        const flat = flattenProductIssues(parsed.error.issues);
+        const firstKey = Object.keys(flat)[0] ?? '_';
+        const firstMessage = flat[firstKey] ?? 'Row is invalid';
         const fallbackSlug = rec.slug?.trim() || (rec.name ? slugify(rec.name) : `row-${i + 1}`);
-        results.push({ index: i, status: 'error', slug: fallbackSlug, name: rec.name ?? '', error: v.error });
+        results.push({ index: i, status: 'error', slug: fallbackSlug, name: rec.name ?? '', error: firstMessage });
       } else {
-        validated.push({ index: i, data: v.data });
+        validated.push({ index: i, data: parsed.data });
       }
     });
 
     // Two CSV rows that resolve to the same slug would race during commit;
-    // surface a clear error on the duplicates so the admin can fix them.
-    const seenSlugs = new Map<string, number>();
-    const deduped: Validated[] = [];
-    for (const v of validated) {
-      const first = seenSlugs.get(v.data.slug);
-      if (first !== undefined) {
-        results.push({
-          index: v.index,
-          status: 'error',
-          slug: v.data.slug,
-          name: v.data.name,
-          error: `Duplicate slug — row ${first + 1} already uses "${v.data.slug}"`,
-        });
-        continue;
-      }
-      seenSlugs.set(v.data.slug, v.index);
-      deduped.push(v);
+    // dedupeBySlug surfaces them as row-level errors so the admin can fix
+    // them before re-uploading.
+    const { kept: deduped, duplicates } = dedupeBySlug(validated);
+    for (const dup of duplicates) {
+      results.push({
+        index: dup.item.index,
+        status: 'error',
+        slug: dup.slug,
+        name: dup.item.data.name,
+        error: `Duplicate slug — row ${dup.firstIndex + 1} already uses "${dup.slug}"`,
+      });
     }
 
     // Look up every existing product in one query. Match by slug first; for
     // legacy docs without a slug (pre-migration), fall back to a case-
     // insensitive name match so the import can re-key them in place.
-    const slugList = deduped.map((v) => v.data.slug);
+    const slugList = deduped.map((v) => v.data.slug ?? slugify(v.data.name));
     const nameList = deduped.map((v) => v.data.name);
     const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const namePatterns = nameList.map((n) => new RegExp(`^${escapeRe(n)}$`, 'i'));
-    const existingDocs = await ProductModel.find(
+    const existingDocs = (await ProductModel.find(
       {
         $or: [
           { slug: { $in: slugList } },
           { $and: [{ $or: [{ slug: { $exists: false } }, { slug: '' }] }, { name: { $in: namePatterns } }] },
         ],
       },
-      '_id slug name description category price unit stockCount isFeatured isActive supplier',
-    ).lean();
+      EXISTING_PRODUCT_PROJECTION,
+    ).lean()) as unknown as ExistingProductRow[];
 
-    const existingBySlug = new Map<string, (typeof existingDocs)[number]>();
-    const existingByName = new Map<string, (typeof existingDocs)[number]>();
+    const existingBySlug = new Map<string, ExistingProductRow>();
+    const existingByName = new Map<string, ExistingProductRow>();
     for (const d of existingDocs) {
       if (d.slug) existingBySlug.set(d.slug, d);
       else existingByName.set(d.name.trim().toLowerCase(), d);
@@ -227,33 +139,30 @@ export const POST = withAdmin(async (req) => {
     const bulkOps: BulkOp[] = [];
 
     for (const { index, data } of deduped) {
-      const bySlug = existingBySlug.get(data.slug);
+      const slug = data.slug ?? slugify(data.name);
+      const bySlug = existingBySlug.get(slug);
       const byName = bySlug ? undefined : existingByName.get(data.name.toLowerCase());
       const existing = bySlug ?? byName;
+      const outcome = classifyRow(data, existing);
+      const doc = toProductDoc(data);
 
-      if (!existing) {
-        results.push({ index, status: 'create', slug: data.slug, name: data.name });
-        bulkOps.push({ kind: 'insert', doc: toDoc(data) });
-        continue;
+      if (outcome.status === 'create') {
+        results.push({ index, status: 'create', slug, name: data.name });
+        bulkOps.push({ kind: 'insert', doc });
+      } else if (outcome.status === 'skip') {
+        results.push({ index, status: 'skip', slug, name: data.name });
+      } else {
+        results.push({
+          index,
+          status: 'update',
+          slug,
+          name: data.name,
+          diff: outcome.diff,
+          warnings: outcome.warnings.length ? outcome.warnings : undefined,
+        });
+        // existing is defined whenever classifyRow returned 'update'
+        bulkOps.push({ kind: 'update', matchId: existing!._id as mongoose.Types.ObjectId, doc });
       }
-
-      const { diff, warnings } = diffAgainstExisting(data, existing);
-      // Legacy docs that matched by name are getting their slug filled in,
-      // which is a real change even when no other field moves.
-      const legacyBackfill = !existing.slug;
-      if (diff.length === 0 && !legacyBackfill) {
-        results.push({ index, status: 'skip', slug: data.slug, name: data.name });
-        continue;
-      }
-      results.push({
-        index,
-        status: 'update',
-        slug: data.slug,
-        name: data.name,
-        diff,
-        warnings: warnings.length ? warnings : undefined,
-      });
-      bulkOps.push({ kind: 'update', matchId: existing._id, doc: toDoc(data) });
     }
 
     const summary = {

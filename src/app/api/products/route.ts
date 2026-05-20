@@ -4,7 +4,7 @@ import type { SortOrder } from 'mongoose';
 import cloudinary from '@/config/cloudinary';
 import connectDB from '@/config/database';
 import Product from '@/models/Product';
-import { validateProductImages } from '@/lib/product-validate';
+import { validateProductImages } from '@/lib/products/image-validate';
 import {
   coerceProductInput,
   productRecordFromFormData,
