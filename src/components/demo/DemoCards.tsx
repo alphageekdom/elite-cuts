@@ -35,7 +35,7 @@ const DemoCards = () => {
           type='button'
           onClick={() => handleDemo('customer')}
           disabled={pending !== null}
-          className={`mt-auto inline-flex w-full items-center justify-center gap-3 rounded-full bg-ink px-7 py-4 text-sm font-medium tracking-[0.04em] text-cream transition-[background-color,transform] duration-300 hover:-translate-y-px hover:bg-oxblood disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:bg-ink motion-reduce:transition-none motion-reduce:hover:translate-y-0 ${FOCUS_RING}`}
+          className={`mt-auto inline-flex w-full items-center justify-center gap-2.5 whitespace-nowrap rounded-full bg-ink px-4 py-4 text-sm font-medium tracking-[0.04em] text-cream transition-[background-color,transform] duration-300 hover:-translate-y-px hover:bg-oxblood disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:bg-ink motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:px-6 lg:gap-3 lg:px-7 ${FOCUS_RING}`}
         >
           {pending === 'customer'
             ? 'Starting demo…'
@@ -72,7 +72,7 @@ const DemoCards = () => {
           type='button'
           onClick={() => handleDemo('admin')}
           disabled={pending !== null}
-          className={`mt-auto inline-flex w-full items-center justify-center gap-3 rounded-full border border-ink px-7 py-4 text-sm font-medium tracking-[0.04em] text-ink transition-[background-color,color,transform] duration-300 hover:-translate-y-px hover:bg-ink hover:text-cream disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:bg-transparent disabled:hover:text-ink motion-reduce:transition-none motion-reduce:hover:translate-y-0 ${FOCUS_RING}`}
+          className={`mt-auto inline-flex w-full items-center justify-center gap-2.5 whitespace-nowrap rounded-full border border-ink px-4 py-4 text-sm font-medium tracking-[0.04em] text-ink transition-[background-color,color,transform] duration-300 hover:-translate-y-px hover:bg-ink hover:text-cream disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:bg-transparent disabled:hover:text-ink motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:px-6 lg:gap-3 lg:px-7 ${FOCUS_RING}`}
         >
           {pending === 'admin'
             ? 'Starting demo…'

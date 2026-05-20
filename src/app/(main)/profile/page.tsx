@@ -245,7 +245,7 @@ export default async function ProfilePage({ searchParams }: Props) {
   const joinedMonths = Math.max(1, Math.round(joinedMs / (1000 * 60 * 60 * 24 * 30)));
 
   return (
-    <main className="bg-cream min-h-screen pt-20">
+    <div className="bg-cream min-h-[calc(100vh-5rem)]">
       <div className="max-w-300 mx-auto px-5 md:px-8">
 
         <ProfileHero
@@ -424,6 +424,6 @@ export default async function ProfilePage({ searchParams }: Props) {
           </aside>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

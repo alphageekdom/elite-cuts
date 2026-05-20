@@ -24,8 +24,8 @@ export default async function DemoPage() {
   }
 
   return (
-    <main className='min-h-[calc(100vh-5rem)] bg-cream'>
-      <section className='mx-auto max-w-5xl px-4 pt-24 pb-20 sm:px-6 sm:pt-32 lg:px-8'>
+    <div className='flex min-h-[calc(100vh-5rem)] items-center bg-cream'>
+      <section className='mx-auto w-full max-w-5xl px-4 py-20 sm:px-6 sm:py-24 lg:px-8'>
         <header className='mb-12 text-center sm:mb-16'>
           <span className='font-display italic text-sm text-camel mb-4 inline-block tracking-[0.02em]'>
             ↗ Take it for a spin
@@ -45,6 +45,6 @@ export default async function DemoPage() {
           Already have an account? <Link href='/login' className='border-b border-muted text-ink-soft hover:text-ink transition-colors'>Sign in</Link>
         </p>
       </section>
-    </main>
+    </div>
   );
 }
