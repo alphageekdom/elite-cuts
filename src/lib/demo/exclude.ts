@@ -44,13 +44,6 @@ export async function excludeDemoOrders(): Promise<DemoExclusionFilter> {
   return { user: { $ne: demoId } };
 }
 
-// Same helper, exposed as a Mongo `$match`-friendly object for
-// aggregate pipelines (identical shape; named alias for readability
-// at the callsite).
-export async function excludeDemoOrdersMatch(): Promise<DemoExclusionFilter> {
-  return excludeDemoOrders();
-}
-
 // Looks up the demo customer's id directly. Useful for callers that
 // already filter in memory by `user._id` (the customers dashboard's
 // stat-chip count) and just need the id to compare against.

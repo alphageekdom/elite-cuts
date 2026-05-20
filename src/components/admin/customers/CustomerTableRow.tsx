@@ -6,6 +6,7 @@ import { AVATAR_COLORS } from '@/lib/admin-constants';
 import { computeFloatingMenuPos } from '@/lib/floatingMenu';
 import { getTier, getActivity, deriveTags, TIER_CONFIG, ACTIVITY_CONFIG } from './customerUtils';
 import type { CustomerTableRow } from '@/types/admin';
+import DemoPill from '@/components/demo/DemoPill';
 
 type Props = {
   cust: CustomerTableRow;
@@ -108,12 +109,7 @@ export default function CustomerTableRowComponent({
             <div className="flex items-center gap-2">
               <span className="font-medium text-[14px] leading-snug">{cust.name}</span>
               {cust.isDemo && (
-                <span
-                  className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium tracking-[0.08em] uppercase bg-amber-100 text-amber-800 border border-amber-200"
-                  title="Seeded demo account — protected from destructive admin actions."
-                >
-                  Demo
-                </span>
+                <DemoPill title="Seeded demo account — protected from destructive admin actions." />
               )}
             </div>
             <div className="font-mono text-[11px] text-muted tracking-[0.02em]">{cust.email}</div>

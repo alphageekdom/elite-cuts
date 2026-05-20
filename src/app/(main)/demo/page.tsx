@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 
 import { getSessionUser } from '@/lib/getSessionUser';
 import DemoCards from '@/components/demo/DemoCards';
@@ -41,7 +42,7 @@ export default async function DemoPage() {
         <DemoCards />
 
         <p className='mx-auto mt-12 max-w-[52ch] text-center text-[12px] tracking-[0.06em] uppercase text-muted'>
-          Already have an account? <a href='/login' className='border-b border-muted text-ink-soft hover:text-ink transition-colors'>Sign in</a>
+          Already have an account? <Link href='/login' className='border-b border-muted text-ink-soft hover:text-ink transition-colors'>Sign in</Link>
         </p>
       </section>
     </main>

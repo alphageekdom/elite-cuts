@@ -65,9 +65,11 @@ export type DemoResetCounts = ResetCounts & CatalogCounts;
 // orchestrator so the two paths can't drift on either side.
 //
 // Scope is by document ownership (`user === demoCustomerId`,
-// `userId === demoCustomerId`) — no per-record `isDemo` flag is added to
-// owned collections. Audit logs (AccountDeletionAudit) are deliberately
-// untouched per the Phase C spec.
+// `userId === demoCustomerId`) — the owned collections don't carry their
+// own `isDemo` column; admin surfaces that need to flag a row as demo
+// (e.g. the orders table) read it from the populated user instead. Audit
+// logs (AccountDeletionAudit) are deliberately untouched per the Phase
+// C spec.
 //
 // Returns zeros on every count if the demo customer doesn't exist
 // (a fresh DB where the seed hasn't run yet) so the cron / admin call

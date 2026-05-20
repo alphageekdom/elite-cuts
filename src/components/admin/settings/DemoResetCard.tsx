@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 
 import { isDemoAdmin } from '@/lib/auth/demo-permissions';
+import type { DemoResetCounts } from '@/lib/demo/reset';
 import { sectionTitleCls, sectionSubCls } from './SettingsUI';
 
 // "Reset demo data" card that sits on the Settings → General tab. Calls
@@ -28,14 +29,7 @@ export default function DemoResetCard() {
       const res = await fetch('/api/admin/demo/reset', { method: 'POST' });
       const body = (await res.json().catch(() => ({}))) as {
         message?: string;
-        data?: {
-          ordersDeleted: number;
-          userReset: boolean;
-          productsRestored: number;
-          promosRestored: number;
-          staffRestored: number;
-          shiftsRestored: number;
-        };
+        data?: DemoResetCounts;
       };
       if (!res.ok) {
         toast.error(body.message || 'Could not reset demo data');
