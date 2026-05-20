@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import CheckoutCancelToast from '@/components/checkout/CheckoutCancelToast';
 import CheckoutContactCard from '@/components/checkout/CheckoutContactCard';
@@ -119,19 +120,19 @@ export default async function CheckoutPage() {
 
               <p className='text-center text-[12px] leading-relaxed text-muted'>
                 By placing this order you agree to our{' '}
-                <a
-                  href='#'
+                <Link
+                  href='/terms'
                   className='border-b border-current pb-px text-oxblood'
                 >
                   Terms
-                </a>{' '}
+                </Link>{' '}
                 and{' '}
-                <a
-                  href='#'
+                <Link
+                  href='/privacy'
                   className='border-b border-current pb-px text-oxblood'
                 >
                   Privacy Policy
-                </a>
+                </Link>
                 . We don&apos;t charge until your order is hand-cut and ready.
               </p>
             </div>

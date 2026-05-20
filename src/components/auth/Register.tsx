@@ -396,11 +396,11 @@ export default function Register() {
                 />
                 <span>
                   I agree to the{' '}
-                  <Link href="#" className="text-oxblood border-b border-oxblood">
+                  <Link href="/terms" className="text-oxblood border-b border-oxblood">
                     Terms of Service
                   </Link>{' '}
                   and{' '}
-                  <Link href="#" className="text-oxblood border-b border-oxblood">
+                  <Link href="/privacy" className="text-oxblood border-b border-oxblood">
                     Privacy Policy
                   </Link>
                   , and I&apos;m at least 18 years old.
