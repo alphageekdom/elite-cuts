@@ -143,11 +143,11 @@ export default function AdminTopbar({ openMessageCount = 0 }: AdminTopbarProps) 
           {open && (
             <div
               ref={panelRef}
-              className="absolute right-0 top-full mt-2 w-80 bg-ink rounded-xl shadow-2xl z-50 overflow-hidden border border-cream/15"
+              className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-6rem)] bg-paper rounded-lg shadow-xl z-50 overflow-hidden border border-line"
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-cream/10">
-                <span className="font-display text-[15px] font-medium text-cream">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-line-soft">
+                <span className="font-display text-[15px] font-medium text-ink">
                   Notifications
                   {unreadCount > 0 && (
                     <span className="ml-2 text-[11px] font-mono text-camel">{unreadCount} new</span>
@@ -157,7 +157,7 @@ export default function AdminTopbar({ openMessageCount = 0 }: AdminTopbarProps) 
                   <button
                     onClick={markAllRead}
                     disabled={marking}
-                    className="text-[12px] text-cream/50 hover:text-cream transition-colors disabled:opacity-40"
+                    className="text-[12px] text-muted hover:text-ink transition-colors disabled:opacity-40"
                   >
                     {marking ? 'Marking…' : 'Mark all read'}
                   </button>
@@ -168,10 +168,12 @@ export default function AdminTopbar({ openMessageCount = 0 }: AdminTopbarProps) 
               <div className="max-h-80 overflow-y-auto">
                 {notifications.length === 0 ? (
                   <div className="py-10 text-center">
-                    <svg className="w-8 h-8 text-cream/20 mx-auto mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                      <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" />
-                    </svg>
-                    <p className="text-[13px] text-cream/40">No notifications yet</p>
+                    <div className="w-12 h-12 rounded-full bg-cream grid place-items-center mx-auto mb-3">
+                      <svg className="w-5 h-5 text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" />
+                      </svg>
+                    </div>
+                    <p className="text-[13px] text-ink-soft">No notifications yet</p>
                   </div>
                 ) : (
                   notifications.map((n) => {
@@ -179,13 +181,13 @@ export default function AdminTopbar({ openMessageCount = 0 }: AdminTopbarProps) 
                     return (
                       <div
                         key={n._id}
-                        className={`flex gap-3 px-4 py-3 border-b border-cream/6 last:border-0 transition-colors ${
-                          isUnread ? 'bg-cream/4' : ''
+                        className={`flex gap-3 px-4 py-3 border-b border-line-soft last:border-0 transition-colors ${
+                          isUnread ? 'bg-cream' : ''
                         }`}
                       >
                         {/* Type icon */}
                         <div className={`w-7 h-7 rounded-full grid place-items-center shrink-0 mt-0.5 ${
-                          n.type === 'new_order' ? 'bg-green/20 text-green' : 'bg-camel/20 text-camel'
+                          n.type === 'new_order' ? 'bg-green/15 text-green' : 'bg-camel/20 text-camel'
                         }`}>
                           {n.type === 'new_order' ? (
                             <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -201,15 +203,15 @@ export default function AdminTopbar({ openMessageCount = 0 }: AdminTopbarProps) 
                         {/* Content */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
-                            <p className={`text-[13px] font-medium leading-snug ${isUnread ? 'text-cream' : 'text-cream/70'}`}>
+                            <p className={`text-[13px] font-medium leading-snug ${isUnread ? 'text-ink' : 'text-ink-soft'}`}>
                               {n.title}
                             </p>
                             {isUnread && (
                               <span className="w-1.5 h-1.5 rounded-full bg-oxblood shrink-0 mt-1.5" />
                             )}
                           </div>
-                          <p className="text-[12px] text-cream/50 leading-snug mt-0.5 truncate">{n.body}</p>
-                          <p className="font-mono text-[10px] text-cream/30 tracking-[0.04em] mt-1">
+                          <p className="text-[12px] text-muted leading-snug mt-0.5 truncate">{n.body}</p>
+                          <p className="font-mono text-[10px] text-muted tracking-[0.04em] mt-1">
                             {relativeTime(n.createdAt)}
                           </p>
                         </div>
