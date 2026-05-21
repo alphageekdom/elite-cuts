@@ -95,7 +95,7 @@ const readGuestCart = (): CartLine[] => {
     const raw = window.localStorage.getItem(GUEST_CART_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as unknown;
-    return Array.isArray(parsed) ? (parsed as CartLine[]) : [];
+    return Array.isArray(parsed) ? dedupeLines(parsed as CartLine[]) : [];
   } catch {
     return [];
   }
@@ -117,6 +117,29 @@ const clearGuestCart = (): void => {
   } catch {
     // see above
   }
+};
+
+// Fold any duplicate product lines into one, summing their quantities.
+// Defends against legacy server-cart docs that pre-date the dedup-on-add
+// logic and any future ingress path that skips it — every cart consumer
+// (drawer, cart page, checkout) reads one line per product as a result,
+// and React's per-product key in those renders stays unique.
+const dedupeLines = (lines: CartLine[]): CartLine[] => {
+  const byProduct = new Map<string, CartLine>();
+  for (const line of lines) {
+    if (!line.product?._id) continue;
+    const id = String(line.product._id);
+    const existing = byProduct.get(id);
+    if (existing) {
+      byProduct.set(id, {
+        ...existing,
+        quantity: existing.quantity + line.quantity,
+      });
+    } else {
+      byProduct.set(id, line);
+    }
+  }
+  return [...byProduct.values()];
 };
 
 // Apply an incremental "add N of this product" to a guest cart array. New
@@ -185,7 +208,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const res = await fetch('/api/cart', { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to load cart');
       const data = (await res.json()) as CartApiResponse;
-      setCartItems(data.items ?? []);
+      setCartItems(dedupeLines(data.items ?? []));
       setCartUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : null);
       clearGuestCart();
     } catch (error) {

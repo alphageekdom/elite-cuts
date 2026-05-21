@@ -26,12 +26,28 @@ const loadCart = async (userId: string) => {
     (await Cart.findOne({ user: userId }).populate('items.product')) ??
     (await Cart.create({ user: userId, items: [] }));
 
-  // Self-heal: strip any items whose product was deleted from the DB.
-  // `.populate()` leaves those as null; keep them in the doc would crash the client.
+  // Self-heal: strip any items whose product was deleted from the DB, and
+  // fold any duplicate product lines into one with summed quantities.
+  // Duplicates can persist from legacy carts that pre-date the dedup-on-add
+  // logic — left in place they'd crash the client's React render via
+  // duplicate keys.
   const before = cart.items.length;
-  cart.items = cart.items.filter(
+  const live = cart.items.filter(
     (line) => line.product != null,
   ) as typeof cart.items;
+  const byProduct = new Map<string, (typeof live)[number]>();
+  for (const line of live) {
+    const id = String(
+      (line.product as { _id: unknown })._id ?? line.product,
+    );
+    const existing = byProduct.get(id);
+    if (existing) {
+      existing.quantity += line.quantity;
+    } else {
+      byProduct.set(id, line);
+    }
+  }
+  cart.items = [...byProduct.values()] as typeof cart.items;
   if (cart.items.length !== before) await cart.save();
 
   return cart;
