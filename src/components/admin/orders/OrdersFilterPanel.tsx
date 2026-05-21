@@ -47,7 +47,7 @@ export default function OrdersFilterPanel({
   return (
     <>
       <div className="fixed inset-0 z-10" onClick={onClose} />
-      <div className="absolute left-0 top-full mt-2 z-20 w-64 bg-paper border border-line rounded-lg shadow-xl py-3">
+      <div className="absolute right-0 sm:right-auto sm:left-0 top-full mt-2 z-20 w-64 max-w-[calc(100vw-2rem)] bg-paper border border-line rounded-lg shadow-xl py-3">
         <div className="px-3.5 pb-2 flex items-center justify-between">
           <span className="text-[11px] font-medium tracking-[0.16em] uppercase text-muted">More filters</span>
           {hasActive && (
