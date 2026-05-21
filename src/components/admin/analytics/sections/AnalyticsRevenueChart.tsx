@@ -5,7 +5,7 @@ import AdminEyebrow from '@/components/admin/AdminEyebrow';
 
 export default function AnalyticsRevenueChart({ data }: { data: AnalyticsData }) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1.7fr_1fr] gap-4 mb-4">
+    <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-4 mb-4">
       <RevenueCard
         range={data.range}
         buckets={data.buckets}
