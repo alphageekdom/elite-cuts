@@ -134,9 +134,9 @@ export default function NewMessageModal({
           <button
             onClick={onClose}
             aria-label="Close"
-            className="w-8 h-8 rounded-full grid place-items-center text-muted hover:text-ink hover:bg-cream-deep transition-colors"
+            className="w-8 h-8 rounded-full grid place-items-center text-muted hover:text-ink hover:bg-cream-deep focus-visible:outline-none focus-visible:text-ink focus-visible:bg-cream-deep transition-colors"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
               <path d="M18 6L6 18M6 6l12 12" />
             </svg>
           </button>
@@ -147,7 +147,7 @@ export default function NewMessageModal({
           <button
             type="button"
             onClick={() => setTab('inapp')}
-            className={`flex-1 py-2.5 text-sm font-medium rounded-lg border transition-colors ${
+            className={`flex-1 py-2.5 text-sm font-medium rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper ${
               tab === 'inapp'
                 ? 'bg-ink text-cream border-ink'
                 : 'bg-transparent text-muted border-line hover:border-ink hover:text-ink'
@@ -158,7 +158,7 @@ export default function NewMessageModal({
           <button
             type="button"
             onClick={() => setTab('email')}
-            className={`flex-1 py-2.5 text-sm font-medium rounded-lg border transition-colors ${
+            className={`flex-1 py-2.5 text-sm font-medium rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper ${
               tab === 'email'
                 ? 'bg-ink text-cream border-ink'
                 : 'bg-transparent text-muted border-line hover:border-ink hover:text-ink'
@@ -174,7 +174,7 @@ export default function NewMessageModal({
             <div>
               <label
                 htmlFor="inapp-subject"
-                className="block text-[12px] font-medium text-ink-soft tracking-[0.06em] uppercase mb-1.5"
+                className="block text-[11px] font-medium text-ink-soft tracking-[0.06em] uppercase mb-1.5"
               >
                 Subject
               </label>
@@ -194,7 +194,7 @@ export default function NewMessageModal({
             <div>
               <label
                 htmlFor="inapp-body"
-                className="block text-[12px] font-medium text-ink-soft tracking-[0.06em] uppercase mb-1.5"
+                className="block text-[11px] font-medium text-ink-soft tracking-[0.06em] uppercase mb-1.5"
               >
                 Message
               </label>
@@ -213,7 +213,7 @@ export default function NewMessageModal({
             <button
               type="submit"
               disabled={submitting || !subject.trim() || !body.trim()}
-              className="w-full bg-ink text-cream text-[13px] font-medium tracking-[0.04em] py-3 rounded-full hover:bg-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-ink text-cream text-[13px] font-medium tracking-[0.04em] py-3 rounded-full hover:bg-oxblood focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oxblood focus-visible:ring-offset-2 focus-visible:ring-offset-paper transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? 'Sending…' : 'Send message'}
             </button>
@@ -226,7 +226,7 @@ export default function NewMessageModal({
             <div>
               <label
                 htmlFor="email-subject"
-                className="block text-[12px] font-medium text-ink-soft tracking-[0.06em] uppercase mb-1.5"
+                className="block text-[11px] font-medium text-ink-soft tracking-[0.06em] uppercase mb-1.5"
               >
                 Subject
               </label>
@@ -242,7 +242,7 @@ export default function NewMessageModal({
             <div>
               <label
                 htmlFor="email-body"
-                className="block text-[12px] font-medium text-ink-soft tracking-[0.06em] uppercase mb-1.5"
+                className="block text-[11px] font-medium text-ink-soft tracking-[0.06em] uppercase mb-1.5"
               >
                 Message (optional pre-fill)
               </label>
@@ -258,9 +258,9 @@ export default function NewMessageModal({
             <a
               href={mailtoHref}
               onClick={onClose}
-              className="flex items-center justify-center gap-2 w-full bg-ink text-cream text-[13px] font-medium tracking-[0.04em] py-3 rounded-full hover:bg-oxblood transition-colors"
+              className="flex items-center justify-center gap-2 w-full bg-ink text-cream text-[13px] font-medium tracking-[0.04em] py-3 rounded-full hover:bg-oxblood focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oxblood focus-visible:ring-offset-2 focus-visible:ring-offset-paper transition-colors"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
                 <polyline points="22,6 12,13 2,6" />
               </svg>

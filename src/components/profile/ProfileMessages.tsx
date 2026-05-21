@@ -20,7 +20,9 @@ const ADMIN_AVATAR_COLOR = 'bg-linear-to-br from-ink to-oxblood-deep text-camel'
 const SUBJECT_MAX = 120;
 const BODY_MAX = 2000;
 const CANCEL_BUTTON_CLASS =
-  'text-muted hover:text-ink transition-colors disabled:opacity-50';
+  'text-muted hover:text-ink focus-visible:outline-none focus-visible:text-ink transition-colors disabled:opacity-50';
+const PRIMARY_CTA_FOCUS =
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oxblood focus-visible:ring-offset-2 focus-visible:ring-offset-cream';
 
 type Props = {
   messages: SerializedMessage[];
@@ -162,9 +164,9 @@ export default function ProfileMessages({ messages, userId, name, rewardPoints, 
           <button
             type="button"
             onClick={() => setModalOpen(true)}
-            className="inline-flex items-center gap-2 text-[13px] font-medium bg-ink text-cream px-4 py-2 rounded-full hover:bg-oxblood transition-colors whitespace-nowrap shrink-0"
+            className={`inline-flex items-center gap-2 text-[13px] font-medium bg-ink text-cream px-4 py-2 rounded-full hover:bg-oxblood transition-colors whitespace-nowrap shrink-0 ${PRIMARY_CTA_FOCUS}`}
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
               <path d="M12 5v14M5 12h14" />
             </svg>
             New inquiry
@@ -185,7 +187,7 @@ export default function ProfileMessages({ messages, userId, name, rewardPoints, 
             <button
               type="button"
               onClick={() => setModalOpen(true)}
-              className="inline-flex items-center gap-2 bg-ink text-cream text-[13px] font-medium tracking-[0.04em] px-5 py-3 rounded-full hover:bg-oxblood transition-colors"
+              className={`inline-flex items-center gap-2 bg-ink text-cream text-[13px] font-medium tracking-[0.04em] px-5 py-3 rounded-full hover:bg-oxblood transition-colors ${PRIMARY_CTA_FOCUS}`}
             >
               Send a message
             </button>
@@ -275,7 +277,7 @@ export default function ProfileMessages({ messages, userId, name, rewardPoints, 
                           <p className="font-display font-medium text-[17px] tracking-tight truncate">
                             {msg.subject}
                           </p>
-                          <p className="text-[13px] text-muted mt-0.5 line-clamp-1">{msg.body}</p>
+                          <p className="text-[13px] text-muted mt-0.5 line-clamp-2">{msg.body}</p>
                         </>
                       )}
                     </div>
@@ -305,7 +307,7 @@ export default function ProfileMessages({ messages, userId, name, rewardPoints, 
                           type="button"
                           onClick={() => saveEdit(msg._id)}
                           disabled={isPending || !editDirty || !editValid}
-                          className="font-medium text-ink hover:text-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="font-medium text-ink hover:text-oxblood focus-visible:outline-none focus-visible:text-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {isPending ? 'Saving…' : 'Save'}
                         </button>
@@ -325,7 +327,7 @@ export default function ProfileMessages({ messages, userId, name, rewardPoints, 
                           type="button"
                           onClick={() => doDelete(msg._id)}
                           disabled={isPending}
-                          className="font-medium text-oxblood hover:text-oxblood-deep transition-colors disabled:opacity-50"
+                          className="font-medium text-oxblood hover:text-oxblood-deep focus-visible:outline-none focus-visible:text-oxblood-deep transition-colors disabled:opacity-50"
                         >
                           {isPending ? 'Deleting…' : 'Delete'}
                         </button>
@@ -336,7 +338,7 @@ export default function ProfileMessages({ messages, userId, name, rewardPoints, 
                           <button
                             type="button"
                             onClick={() => startEdit(msg)}
-                            className="text-muted hover:text-ink transition-colors"
+                            className="text-muted hover:text-ink focus-visible:outline-none focus-visible:text-ink transition-colors"
                           >
                             Edit
                           </button>
@@ -347,7 +349,7 @@ export default function ProfileMessages({ messages, userId, name, rewardPoints, 
                             cancelEdit();
                             setConfirmingDeleteId(msg._id);
                           }}
-                          className="text-muted hover:text-oxblood transition-colors"
+                          className="text-muted hover:text-oxblood focus-visible:outline-none focus-visible:text-oxblood transition-colors"
                         >
                           Delete
                         </button>
