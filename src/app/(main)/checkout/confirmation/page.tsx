@@ -70,7 +70,7 @@ export default async function ConfirmationPage({ searchParams }: Props) {
   });
 
   return (
-    <div className='min-h-screen bg-cream'>
+    <div className='bg-cream'>
       <ConfirmationCartReset />
       <CheckoutStepRail currentStep={3} />
 
@@ -85,7 +85,7 @@ export default async function ConfirmationPage({ searchParams }: Props) {
           <p className='mb-3 text-[11px] font-medium uppercase tracking-[0.22em] text-muted'>
             Order placed
           </p>
-          <h1 className='font-display text-[clamp(36px,5vw,60px)] font-normal leading-none tracking-tight'>
+          <h1 className='font-display text-[clamp(36px,5vw,60px)] font-normal leading-[1.05] tracking-tight'>
             You&apos;re all <em className='text-oxblood'>set.</em>
           </h1>
           <p className='mx-auto mt-3.5 max-w-[42ch] text-[15px] text-ink-soft'>
@@ -211,8 +211,8 @@ export default async function ConfirmationPage({ searchParams }: Props) {
                     </div>
                   )}
                   <div className='min-w-0 flex-1'>
-                    <p className='truncate text-[14px] font-medium text-ink'>{item.name}</p>
-                    <p className='text-[12px] text-muted'>
+                    <p className='line-clamp-2 text-[14px] font-medium text-ink'>{item.name}</p>
+                    <p className='mt-1 text-[12px] text-muted'>
                       {item.productType} · qty {item.qty}
                     </p>
                   </div>
@@ -302,7 +302,7 @@ export default async function ConfirmationPage({ searchParams }: Props) {
                 // whenever user is absent. So the field is always populated
                 // by the time this branch renders.
                 href={`/register?email=${encodeURIComponent(order.guestContact!.email)}`}
-                className='inline-flex items-center gap-2 border-b border-current pb-px text-oxblood transition-colors duration-300 hover:text-ink motion-reduce:transition-none'
+                className='inline-flex items-center gap-2 border-b border-current pb-px text-oxblood transition-colors duration-300 hover:text-ink focus-visible:outline-none focus-visible:text-ink motion-reduce:transition-none'
               >
                 Create an account
                 <svg
@@ -323,14 +323,14 @@ export default async function ConfirmationPage({ searchParams }: Props) {
           <div className='flex flex-col gap-3 sm:flex-row'>
             <Link
               href='/products'
-              className='flex-1 rounded-full bg-ink px-7 py-4 text-center text-[15px] font-medium text-cream transition-colors duration-300 hover:bg-oxblood'
+              className='flex-1 rounded-full bg-ink px-7 py-4 text-center text-[15px] font-medium text-cream transition-colors duration-300 hover:bg-oxblood focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oxblood focus-visible:ring-offset-2 focus-visible:ring-offset-cream motion-reduce:transition-none'
             >
               Continue shopping
             </Link>
             {!isGuestOrder && (
               <Link
                 href='/profile?tab=orders'
-                className='flex-1 rounded-full border border-line-soft px-7 py-4 text-center text-[15px] font-medium text-ink transition-colors duration-300 hover:border-ink'
+                className='flex-1 rounded-full border border-line-soft px-7 py-4 text-center text-[15px] font-medium text-ink transition-colors duration-300 hover:border-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oxblood focus-visible:ring-offset-2 focus-visible:ring-offset-cream motion-reduce:transition-none'
               >
                 View my orders
               </Link>
