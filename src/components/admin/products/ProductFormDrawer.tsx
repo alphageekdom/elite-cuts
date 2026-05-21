@@ -269,7 +269,7 @@ export default function ProductFormDrawer({ product, onClose, onSave }: Props) {
             />
             <FieldError message={errors.name} />
           </DrawerField>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <DrawerField label="Category">
               <select
                 value={state.category}
@@ -291,7 +291,7 @@ export default function ProductFormDrawer({ product, onClose, onSave }: Props) {
               <FieldError message={errors.cutType} />
             </DrawerField>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <DrawerField label="Quality tier">
               <select
                 value={state.qualityTier}
@@ -318,7 +318,7 @@ export default function ProductFormDrawer({ product, onClose, onSave }: Props) {
             />
             <FieldError message={errors.description} />
           </DrawerField>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <DrawerField label="Grade / breed">
               <input type="text" value={state.gradeBreed} onChange={(e) => setField('gradeBreed', e.target.value)} placeholder="e.g. USDA Prime, Berkshire" className={inputCls} />
             </DrawerField>
@@ -356,7 +356,7 @@ export default function ProductFormDrawer({ product, onClose, onSave }: Props) {
           </DrawerField>
 
           {pricingType === 'fixed_package' && (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <DrawerField label="Package price ($)">
                 <input type="number" step="0.01" min="0" value={state.pricing.packagePrice}
                   onChange={(e) => setPricing('packagePrice', e.target.value)} placeholder="8.99" className={inputCls} />
@@ -372,7 +372,7 @@ export default function ProductFormDrawer({ product, onClose, onSave }: Props) {
 
           {pricingType === 'per_lb' && (
             <>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <DrawerField label="Price per pound ($)">
                   <input type="number" step="0.01" min="0" value={state.pricing.pricePerLb}
                     onChange={(e) => setPricing('pricePerLb', e.target.value)} placeholder="24.99" className={inputCls} />
@@ -384,7 +384,7 @@ export default function ProductFormDrawer({ product, onClose, onSave }: Props) {
                   <FieldError message={errors.estimatedWeightLb} />
                 </DrawerField>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <DrawerField label="Min weight (lb)">
                   <input type="number" step="0.01" min="0" value={state.pricing.minWeightLb}
                     onChange={(e) => setPricing('minWeightLb', e.target.value)} placeholder="0.75" className={inputCls} />
@@ -401,7 +401,7 @@ export default function ProductFormDrawer({ product, onClose, onSave }: Props) {
 
           {pricingType === 'whole_item_by_weight' && (
             <>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <DrawerField label="Price per pound ($)">
                   <input type="number" step="0.01" min="0" value={state.pricing.pricePerLb}
                     onChange={(e) => setPricing('pricePerLb', e.target.value)} placeholder="2.99" className={inputCls} />
@@ -413,7 +413,7 @@ export default function ProductFormDrawer({ product, onClose, onSave }: Props) {
                   <FieldError message={errors.averageWeightLb} />
                 </DrawerField>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <DrawerField label="Min weight (lb)">
                   <input type="number" step="0.01" min="0" value={state.pricing.minWeightLb}
                     onChange={(e) => setPricing('minWeightLb', e.target.value)} placeholder="3" className={inputCls} />
@@ -464,7 +464,7 @@ export default function ProductFormDrawer({ product, onClose, onSave }: Props) {
         </DrawerSection>
 
         <DrawerSection label="Inventory">
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <DrawerField label="Current stock">
               <input
                 type="number"
