@@ -127,14 +127,14 @@ export default function CustomerDetailDrawer({
   return (
     <>
       {/* Hero */}
-      <div className="relative bg-ink text-cream px-8 py-8 shrink-0 overflow-hidden">
+      <div className="relative bg-ink text-cream px-6 py-6 sm:px-8 sm:py-8 shrink-0 overflow-hidden">
         <div className="absolute -top-30 -right-30 w-64 h-64 rounded-full pointer-events-none bg-[radial-gradient(circle,rgba(184,137,90,0.18)_0%,transparent_60%)]" />
 
         <div className="relative z-10">
-          <div className="flex items-start justify-between mb-6">
-            <div>
+          <div className="flex items-start justify-between gap-3 mb-6">
+            <div className="min-w-0 flex-1">
               <AdminEyebrow size="drawer" className="mb-1">Customer profile</AdminEyebrow>
-              <div className="font-mono text-[11px] text-cream/50 tracking-[0.04em]">
+              <div className="font-mono text-[11px] text-cream/50 tracking-[0.04em] truncate">
                 {custId} · MEMBER SINCE {formatDate(customer.createdAt).toUpperCase()}
               </div>
             </div>
@@ -149,15 +149,21 @@ export default function CustomerDetailDrawer({
           </div>
 
           <div className="flex items-center gap-4 mb-6">
-            <div className="w-16 h-16 rounded-full bg-camel text-ink grid place-items-center font-display font-semibold text-[22px] shrink-0">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-camel text-ink grid place-items-center font-display font-semibold text-[20px] sm:text-[22px] shrink-0">
               {initials}
             </div>
-            <div>
-              <div className="font-display text-[26px] font-medium tracking-tight leading-tight mb-1">
+            <div className="min-w-0 flex-1">
+              <div className="font-display text-[22px] sm:text-[26px] font-medium tracking-tight leading-tight mb-1 wrap-break-word">
                 {customer.name}
               </div>
-              <div className="font-mono text-[12px] text-cream/65 tracking-[0.04em] mb-2.5">
-                {customer.email.toUpperCase()}{customer.phone ? ` · ${customer.phone}` : ''}
+              <div className="font-mono text-[12px] text-cream/65 tracking-[0.04em] mb-2.5 wrap-break-word">
+                {customer.email.toUpperCase()}
+                {customer.phone && (
+                  <>
+                    {' · '}
+                    <span className="whitespace-nowrap">{customer.phone}</span>
+                  </>
+                )}
               </div>
               <div className="flex gap-2 flex-wrap">
                 {isSoftDeleted && (

@@ -55,13 +55,14 @@ export default function CustomerTableRowComponent({
     function update() {
       const btn = moreBtnRef.current;
       if (!btn) return;
-      // Estimated height: 3 items × ~44px + 1 divider ≈ 140px. The shared
-      // helper flips the menu above the trigger when there's not enough
-      // room below, so a tight viewport doesn't clip it off-screen.
+      // 3 items × ~44px + 1 divider ≈ 150px actual menu height, plus ~70px
+      // reserved so the menu flips above when the last visible row would
+      // otherwise drop the menu on top of the pagination strip below the
+      // table. The shared helper flips when room-below is short.
       setMenuPos(
         computeFloatingMenuPos(btn.getBoundingClientRect(), {
           menuWidth: MENU_WIDTH,
-          estimatedMenuHeight: 150,
+          estimatedMenuHeight: 220,
         }),
       );
     }
@@ -174,7 +175,7 @@ export default function CustomerTableRowComponent({
       </td>
 
       <td className="pr-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
-        <div className={`inline-flex gap-1 transition-opacity ${isOpen ? '' : 'opacity-40 group-hover:opacity-100'}`}>
+        <div className={`inline-flex gap-1 transition-opacity ${isOpen ? '' : 'opacity-40 group-hover:opacity-100 pointer-coarse:opacity-100'}`}>
           <button onClick={() => onView(cust)} aria-label="View customer" className="w-7 h-7 rounded-full border border-line text-ink-soft grid place-items-center hover:border-ink hover:bg-cream hover:text-ink transition-colors">
             <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
           </button>
