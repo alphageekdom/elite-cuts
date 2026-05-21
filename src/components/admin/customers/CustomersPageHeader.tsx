@@ -22,7 +22,7 @@ export default function CustomersPageHeader({
       breadcrumb="Customers"
       title="All"
       titleAccent="customers"
-      subtitle={`${total} customers · ${newThisWeek} new this week`}
+      subtitle={`${total} ${total === 1 ? 'customer' : 'customers'} · ${newThisWeek} new this week`}
       actions={
         <>
           <button

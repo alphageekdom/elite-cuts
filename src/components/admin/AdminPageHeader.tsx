@@ -20,7 +20,7 @@ export default function AdminPageHeader({
   actions,
 }: Props) {
   return (
-    <div className="flex items-start justify-between mb-9 gap-6 flex-wrap">
+    <div className="flex items-start justify-between mb-6 sm:mb-9 gap-4 sm:gap-6 flex-wrap">
       <div className="w-full flex items-center gap-2 text-[12px] text-muted tracking-[0.04em] mb-1">
         <Link href="/dashboard" className="hover:text-oxblood transition-colors">
           Dashboard

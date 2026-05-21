@@ -153,7 +153,8 @@ export default function CustomersClient({ customers, counts, total, newThisWeek 
         }))}
         activeKey={activeStatFilter}
         onSelect={handleStatFilter}
-        cols="grid-cols-2 sm:grid-cols-4"
+        cols="grid-cols-2 sm:grid-cols-3 lg:grid-cols-5"
+        lastCellExtraClass="col-span-2 border-r-0 sm:border-r-0 lg:col-span-1"
       />
 
       {/* Toolbar */}
@@ -233,9 +234,12 @@ export default function CustomersClient({ customers, counts, total, newThisWeek 
                   </button>
                   <button
                     onClick={() => { table.bulk.setAdjustMode(false); table.bulk.setPointsDelta(''); }}
-                    className="text-cream/60 text-[12px] px-2 hover:text-cream"
+                    aria-label="Cancel points adjustment"
+                    className="text-cream/60 px-2 hover:text-cream transition-colors"
                   >
-                    ✕
+                    <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
                   </button>
                 </div>
               ) : (
@@ -306,7 +310,7 @@ export default function CustomersClient({ customers, counts, total, newThisWeek 
               </tbody>
             </table>
           </div>
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-linear-to-l from-paper to-transparent lg:hidden" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-linear-to-l from-paper to-transparent" />
         </div>
 
         <AdminPagination
