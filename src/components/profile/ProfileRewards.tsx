@@ -113,7 +113,7 @@ export default function ProfileRewards({
         </Link>
       </div>
 
-      <div className='grid grid-cols-1 gap-4 md:grid-cols-2 mb-4'>
+      <div className='grid grid-cols-1 gap-4 md:grid-cols-2 mb-6 md:mb-8'>
 
         {/* Status card — dark */}
         <div className='relative overflow-hidden rounded bg-ink text-cream p-6 sm:p-8'>
@@ -240,16 +240,21 @@ export default function ProfileRewards({
       {/* Activity */}
       <div className='overflow-hidden rounded border border-line-soft bg-paper'>
         <div className='flex flex-wrap items-center justify-between gap-3 border-b border-line-soft px-5 py-4 sm:px-8 sm:py-5'>
-          <h3 className='font-display text-lg font-medium tracking-tight'>
+          <h3 className='font-display text-xl font-medium tracking-tight leading-tight'>
             Points <em className='font-normal italic text-oxblood'>activity</em>
           </h3>
-          <div className='inline-flex rounded-full bg-cream-deep p-0.5'>
+          <div
+            role='group'
+            aria-label='Filter activity'
+            className='inline-flex rounded-full bg-cream-deep p-0.5'
+          >
             {FILTERS.map((f) => (
               <button
                 key={f}
                 type='button'
                 onClick={() => setFilter(f)}
-                className={`rounded-full px-3 py-1.5 text-xs font-medium capitalize transition-colors duration-200 motion-reduce:transition-none ${FOCUS_RING} ${
+                aria-pressed={filter === f}
+                className={`rounded-full px-3.5 py-2 text-xs font-medium capitalize transition-colors duration-200 motion-reduce:transition-none ${FOCUS_RING} focus-visible:ring-offset-cream-deep ${
                   filter === f ? 'bg-ink text-cream' : 'text-ink-soft hover:text-ink'
                 }`}
               >
@@ -259,11 +264,17 @@ export default function ProfileRewards({
           </div>
         </div>
 
-        <div className='px-5 py-1 sm:px-8 sm:py-2'>
+        <p className='sr-only' role='status' aria-live='polite'>
+          {recentHistory.length === 0
+            ? 'No activity yet'
+            : `Showing ${visible.length} ${filter === 'all' ? '' : filter} ${visible.length === 1 ? 'entry' : 'entries'}`}
+        </p>
+
+        <div className='px-5 py-2 sm:px-8 sm:py-3'>
           {recentHistory.length === 0 ? (
-            <p className='py-10 text-center text-sm text-muted'>Nothing yet — your first completed order starts your history.</p>
+            <p className='py-12 text-center text-sm text-muted'>Nothing yet — your first completed order starts your history.</p>
           ) : visible.length === 0 ? (
-            <p className='py-10 text-center text-sm text-muted'>No {filter} activity to show.</p>
+            <p className='py-12 text-center text-sm text-muted'>No {filter} activity to show.</p>
           ) : (
             visible.map((row, i) => {
               const { title, kind } = reasonLabel(row.reason);
@@ -275,23 +286,23 @@ export default function ProfileRewards({
                 >
                   <div className={`grid h-9 w-9 place-items-center rounded-full ${kind === 'earned' ? 'bg-green/10 text-green' : kind === 'redeemed' ? 'bg-oxblood/10 text-oxblood' : 'bg-camel/15 text-camel'}`}>
                     {kind === 'earned' && (
-                      <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2} className='h-3.5 w-3.5' aria-hidden>
+                      <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2} className='h-4 w-4' aria-hidden>
                         <circle cx='12' cy='12' r='9' /><line x1='12' y1='7' x2='12' y2='13' /><line x1='9' y1='10' x2='15' y2='10' />
                       </svg>
                     )}
                     {kind === 'redeemed' && (
-                      <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2} className='h-3.5 w-3.5' aria-hidden>
+                      <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2} className='h-4 w-4' aria-hidden>
                         <polyline points='20 12 12 12 12 4' /><circle cx='12' cy='12' r='9' />
                       </svg>
                     )}
                     {kind === 'bonus' && (
-                      <svg viewBox='0 0 24 24' fill='currentColor' className='h-3.5 w-3.5' aria-hidden>
+                      <svg viewBox='0 0 24 24' fill='currentColor' className='h-4 w-4' aria-hidden>
                         <path d='M12 2l2.39 7.36H22l-6.18 4.49L18.21 21 12 16.51 5.79 21l2.39-7.15L2 9.36h7.61z' />
                       </svg>
                     )}
                   </div>
                   <div className='min-w-0'>
-                    <p className='truncate font-display text-[15px] font-medium tracking-tight leading-tight'>{title}</p>
+                    <p className='line-clamp-2 font-display text-[15px] font-medium tracking-tight leading-tight'>{title}</p>
                     <p className='mt-0.5 font-mono text-[11px] tracking-[0.04em] text-muted'>{meta}</p>
                   </div>
                   <div className={`font-display text-lg font-medium tracking-tight ${row.delta > 0 ? 'text-green' : 'text-oxblood'}`}>
