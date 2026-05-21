@@ -16,6 +16,9 @@ type Props = {
   activeKey: string;
   onSelect: (key: string) => void;
   cols?: string;
+  // Breakpoint at which the strip collapses to a single row. Must match the
+  // widest breakpoint in `cols` so border-collapse logic stays in sync.
+  wideBreakpoint?: 'lg' | 'xl';
 };
 
 export default function AdminStatStrip({
@@ -23,6 +26,7 @@ export default function AdminStatStrip({
   activeKey,
   onSelect,
   cols = 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5',
+  wideBreakpoint = 'lg',
 }: Props) {
   return (
     <div className={`grid ${cols} bg-paper border border-line-soft rounded-sm mb-6 overflow-hidden`}>
@@ -38,7 +42,7 @@ export default function AdminStatStrip({
             className={[
               'relative text-left px-4 py-4 sm:px-5 sm:py-5 transition-colors',
               clickable ? 'cursor-pointer' : 'cursor-default',
-              statCellBorderClasses(idx, cells.length),
+              statCellBorderClasses(idx, cells.length, wideBreakpoint),
               isActive ? 'bg-cream' : clickable ? 'hover:bg-cream' : '',
             ].join(' ')}
           >
