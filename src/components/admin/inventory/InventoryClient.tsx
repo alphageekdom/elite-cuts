@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { CATEGORY_PAR, DEFAULT_PAR } from '@/lib/inventory';
 import AdminSearchInput from '@/components/admin/AdminSearchInput';
 import AdminPagination from '@/components/admin/AdminPagination';
+import AdminSortPopover from '@/components/admin/AdminSortPopover';
 import AdminStatStrip from '@/components/admin/AdminStatStrip';
 import { PRODUCT_CATEGORIES, type ProductCategory } from '@/lib/admin-constants';
 import InventoryAgingRoom, { type AgingCutRow } from './InventoryAgingRoom';
@@ -52,9 +53,9 @@ type SortBy = 'stock-asc' | 'name-asc' | 'price-desc' | 'newest';
 
 
 const SORT_OPTIONS: { value: SortBy; label: string }[] = [
-  { value: 'stock-asc', label: 'Stock: Lowest first' },
-  { value: 'name-asc', label: 'Name: A → Z' },
-  { value: 'newest', label: 'Newest first' },
+  { value: 'stock-asc', label: 'Lowest stock' },
+  { value: 'name-asc', label: 'Name A–Z' },
+  { value: 'newest', label: 'Newest' },
 ];
 
 
@@ -104,7 +105,6 @@ export default function InventoryClient({
   const [activeCategory, setActiveCategory] = useState('');
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<SortBy>('stock-asc');
-  const [sortOpen, setSortOpen] = useState(false);
   const [stockEditId, setStockEditId] = useState<string | null>(null);
   const [stockEditValue, setStockEditValue] = useState('');
   const [stockSaving, setStockSaving] = useState(false);
@@ -238,11 +238,8 @@ export default function InventoryClient({
 
   function handleSort(s: SortBy) {
     setSortBy(s);
-    setSortOpen(false);
     setPage(1);
   }
-
-  const currentSortLabel = SORT_OPTIONS.find((o) => o.value === sortBy)?.label ?? 'Sort';
 
 
   return (
@@ -272,10 +269,12 @@ export default function InventoryClient({
           </span>
           <button
             onClick={() => setAlertDismissed(true)}
-            className="ml-auto text-muted hover:text-ink text-lg leading-none transition-colors"
+            className="ml-auto text-muted hover:text-ink transition-colors shrink-0"
             aria-label="Dismiss"
           >
-            ×
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
           </button>
         </div>
       )}
@@ -290,75 +289,53 @@ export default function InventoryClient({
         ]}
         activeKey={activeFilter}
         onSelect={handleFilter}
+        lastCellExtraClass="col-span-2 border-r-0 sm:border-r-0 lg:col-span-1"
       />
 
-      {/* Toolbar */}
+      {/* Toolbar — search + sort on row 1, category chips on row 2.
+          A single flex-wrap row was crowding the chips off iPad and SE. */}
       <div className="flex flex-col gap-3 mb-4">
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-2 flex-wrap flex-1">
-            <AdminSearchInput
-              value={search}
-              onChange={(v) => { setSearch(v); setPage(1); }}
-              placeholder="Search by cut, SKU, supplier…"
-              className="w-full sm:w-auto sm:min-w-65"
-            />
+          <AdminSearchInput
+            value={search}
+            onChange={(v) => { setSearch(v); setPage(1); }}
+            placeholder="Search by cut, SKU, supplier…"
+            className="w-full sm:max-w-sm"
+          />
+          <AdminSortPopover
+            value={sortBy}
+            options={SORT_OPTIONS}
+            onChange={handleSort}
+          />
+        </div>
 
-            {/* Category filters */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => handleCategory('')}
+            className={`inline-flex items-center gap-1.5 border rounded-full px-3.5 py-2 text-[13px] font-medium transition-colors ${
+              activeCategory === ''
+                ? 'bg-ink border-ink text-cream'
+                : 'bg-paper border-line text-ink-soft hover:border-ink hover:text-ink'
+            }`}
+          >
+            All categories
+          </button>
+          {PRODUCT_CATEGORIES.filter((c) => (categoryCounts[c] ?? 0) > 0).map((cat) => (
             <button
-              onClick={() => handleCategory('')}
+              key={cat}
+              onClick={() => handleCategory(cat)}
               className={`inline-flex items-center gap-1.5 border rounded-full px-3.5 py-2 text-[13px] font-medium transition-colors ${
-                activeCategory === ''
+                activeCategory === cat
                   ? 'bg-ink border-ink text-cream'
                   : 'bg-paper border-line text-ink-soft hover:border-ink hover:text-ink'
               }`}
             >
-              All categories
+              {cat}
+              <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${activeCategory === cat ? 'bg-cream/20 text-cream' : 'bg-cream-deep text-muted'}`}>
+                {categoryCounts[cat]}
+              </span>
             </button>
-            {PRODUCT_CATEGORIES.filter((c) => (categoryCounts[c] ?? 0) > 0).map((cat) => (
-              <button
-                key={cat}
-                onClick={() => handleCategory(cat)}
-                className={`inline-flex items-center gap-1.5 border rounded-full px-3.5 py-2 text-[13px] font-medium transition-colors ${
-                  activeCategory === cat
-                    ? 'bg-ink border-ink text-cream'
-                    : 'bg-paper border-line text-ink-soft hover:border-ink hover:text-ink'
-                }`}
-              >
-                {cat}
-                <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${activeCategory === cat ? 'bg-cream/20 text-cream' : 'bg-cream-deep text-muted'}`}>
-                  {categoryCounts[cat]}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          {/* Sort */}
-          <div className="relative">
-            <button
-              onClick={() => setSortOpen((v) => !v)}
-              className="inline-flex items-center gap-1.5 bg-paper border border-line rounded-full px-3.5 py-2 text-[13px] text-ink-soft font-medium hover:border-ink hover:text-ink transition-colors"
-            >
-              Sort: {currentSortLabel}
-              <svg className="w-3 h-3 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </button>
-            {sortOpen && (
-              <div className="absolute right-0 top-full mt-1 z-20 bg-paper border border-line rounded shadow-md min-w-50 py-1">
-                {SORT_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => handleSort(opt.value)}
-                    className={`w-full text-left px-4 py-2.5 text-[13px] transition-colors hover:bg-cream ${
-                      sortBy === opt.value ? 'text-oxblood font-medium' : 'text-ink-soft'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          ))}
         </div>
       </div>
 
@@ -366,7 +343,7 @@ export default function InventoryClient({
       <div className="bg-paper border border-line-soft rounded overflow-hidden mb-6">
         <div className="overflow-x-auto relative">
           {/* Scroll hint gradient */}
-          <div className="absolute top-0 right-0 bottom-0 w-12 bg-linear-to-l from-paper pointer-events-none lg:hidden z-10" />
+          <div className="absolute top-0 right-0 bottom-0 w-12 bg-linear-to-l from-paper pointer-events-none z-10" />
           <table className="w-full border-collapse text-sm min-w-225">
             <thead className="bg-cream border-b border-line-soft">
               <tr>
@@ -433,18 +410,10 @@ export default function InventoryClient({
       </div>
 
       {/* Two-column grid: Aging room + Deliveries */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <InventoryAgingRoom cuts={agingCuts} />
         <InventoryUpcomingDeliveries deliveries={deliveries} receivedDeliveries={receivedDeliveries} />
       </div>
-
-      {/* Click-outside handler for sort dropdown */}
-      {sortOpen && (
-        <div
-          className="fixed inset-0 z-10"
-          onClick={() => setSortOpen(false)}
-        />
-      )}
 
       {reorderRow && (
         <InventoryReorderDrawer row={reorderRow} onClose={() => setReorderRow(null)} />

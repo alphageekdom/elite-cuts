@@ -176,7 +176,7 @@ export default function InventoryTableRowComponent({
             </button>
           </div>
         ) : (
-          <div className="inline-flex gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+          <div className="inline-flex gap-1 opacity-40 group-hover:opacity-100 pointer-coarse:opacity-100 transition-opacity">
             <button
               onClick={() => onStockEdit(row.id, String(row.stockCount))}
               className="w-7 h-7 rounded-full bg-transparent border border-line text-ink-soft hover:border-ink hover:bg-cream hover:text-ink transition-colors grid place-items-center"
