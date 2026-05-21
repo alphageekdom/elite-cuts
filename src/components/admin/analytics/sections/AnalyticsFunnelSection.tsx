@@ -65,7 +65,7 @@ export default function AnalyticsFunnelSection({ data }: { data: AnalyticsData }
             Worth <em className="italic text-oxblood">knowing</em>
           </h3>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 relative">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 relative">
           {insights.map((ins, i) => (
             <div key={i} className="flex items-start gap-3.5 px-4.5 py-3.5 bg-cream border border-line-soft rounded-sm">
               <span

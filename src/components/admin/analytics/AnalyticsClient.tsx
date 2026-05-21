@@ -62,15 +62,6 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
   const sparkPaths = buildSparklinePath(sparkValues, { width: 600, height: 180, padding: 24 });
   const hasSpark = sparkValues.some((v) => v > 0);
 
-  // Pick a handful of x-axis tick labels from the buckets so 1Y (12 buckets)
-  // doesn't crowd. Always shows first + last; fills in evenly between.
-  const tickCount = Math.min(5, data.buckets.length);
-  const tickLabels = tickCount === 0
-    ? []
-    : Array.from({ length: tickCount }, (_, i) =>
-        data.buckets[Math.round((i * (data.buckets.length - 1)) / Math.max(1, tickCount - 1))].label,
-      );
-
   return (
     <>
       <AdminPageHeader
@@ -95,13 +86,13 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
       />
 
       {/* ── HEADLINE BLOCK ────────────────────────────────────────────────── */}
-      <div className="bg-ink text-cream rounded-sm p-9 mb-6 relative overflow-hidden">
+      <div className="bg-ink text-cream rounded-sm p-6 sm:p-9 mb-6 relative overflow-hidden">
         <div className="absolute -top-45 -right-45 w-120 h-120 rounded-full bg-[radial-gradient(circle,rgba(184,137,90,0.18)_0%,transparent_60%)] pointer-events-none" />
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] gap-10 items-end relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[1fr_1.2fr] gap-6 sm:gap-10 items-end relative z-10">
           <div>
-            <div className="text-[11px] tracking-[0.22em] uppercase text-camel-soft mb-3.5 flex items-center gap-2.5">
-              <span className="w-6 h-px bg-current opacity-60" />
+            <div className="text-[11px] tracking-[0.18em] lg:tracking-[0.22em] uppercase text-camel-soft mb-3.5 flex items-center gap-2.5">
+              <span className="hidden lg:block w-6 h-px bg-current opacity-60" />
               Net revenue · {data.heroPeriodLabel}
             </div>
             <div className="font-display font-light text-[clamp(56px,7vw,96px)] leading-none tracking-[-0.04em] mb-3.5 flex items-baseline gap-3.5">
@@ -112,7 +103,7 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
               <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                 <polyline points="18 15 12 9 6 15" />
               </svg>
-              {data.revenueChange >= 0 ? '+' : ''}{data.revenueChange.toFixed(1)}% vs previous period
+              {data.revenueChange >= 0 ? '+' : ''}{data.revenueChange.toFixed(1)}% vs previous
             </span>
             <div className="mt-4 text-[13px] text-cream/65 font-mono tracking-[0.04em]">
               {data.orderCount} ORDERS · {aovWhole}.{aovFrac} AVG ·{' '}
@@ -148,11 +139,11 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
                 </>
               )}
             </svg>
-            <div className="flex justify-between mt-2 text-[10px] font-mono text-cream/45 tracking-[0.04em]">
-              {hasSpark
-                ? tickLabels.map((label, i) => <span key={i}>{label}</span>)
-                : <span className="mx-auto">No revenue this period</span>}
-            </div>
+            {!hasSpark && (
+              <div className="mt-2 text-center text-[10px] font-mono text-cream/45 tracking-[0.04em]">
+                No revenue this period
+              </div>
+            )}
           </div>
         </div>
       </div>
