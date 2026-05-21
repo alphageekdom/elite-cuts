@@ -125,6 +125,16 @@ export default function OrderCreateDrawer({
 
   const submitDisabled = submitting || !customerId || lines.length === 0 || !pickupLocation.trim();
 
+  const missingHint = submitting
+    ? null
+    : !customerId
+      ? 'Select a customer'
+      : lines.length === 0
+        ? 'Add at least one item'
+        : !pickupLocation.trim()
+          ? 'Set a pickup location'
+          : null;
+
   async function handleSubmit() {
     if (submitDisabled) return;
     setSubmitting(true);
@@ -211,16 +221,33 @@ export default function OrderCreateDrawer({
                 {filteredCustomers.length === 0 ? (
                   <div className="px-3.5 py-4 text-[13px] text-muted text-center">No matches</div>
                 ) : (
-                  filteredCustomers.map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => setCustomerId(c.id)}
-                      className="w-full flex items-center justify-between px-3.5 py-2 text-left text-[13px] hover:bg-cream transition-colors border-b border-line-soft last:border-b-0"
-                    >
-                      <span className="font-medium">{c.name}</span>
-                      <span className="text-muted text-[12px]">{c.email}</span>
-                    </button>
-                  ))
+                  <>
+                    {!customerQuery.trim() && (
+                      <div className="px-3.5 pt-2 pb-1 text-[10px] font-medium tracking-[0.18em] uppercase text-muted">
+                        Suggested
+                      </div>
+                    )}
+                    {filteredCustomers.map((c) => (
+                      <button
+                        key={c.id}
+                        onClick={() => setCustomerId(c.id)}
+                        className="group w-full flex items-center gap-3 px-3.5 py-2 text-left text-[13px] hover:bg-cream transition-colors border-b border-line-soft last:border-b-0"
+                      >
+                        <span className="font-medium flex-1 min-w-0 truncate">{c.name}</span>
+                        <span className="text-muted text-[12px] min-w-0 truncate">{c.email}</span>
+                        <svg
+                          aria-hidden="true"
+                          className="w-3.5 h-3.5 text-muted shrink-0 group-hover:text-oxblood transition-colors"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <polyline points="9 18 15 12 9 6" />
+                        </svg>
+                      </button>
+                    ))}
+                  </>
                 )}
               </div>
             </>
@@ -300,19 +327,36 @@ export default function OrderCreateDrawer({
                 {lines.length === products.length ? 'Every active cut is in the order' : 'No matches'}
               </div>
             ) : (
-              filteredProducts.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => addProduct(p.id)}
-                  className="w-full flex items-center justify-between px-3.5 py-2 text-left text-[13px] hover:bg-cream transition-colors border-b border-line-soft last:border-b-0"
-                >
-                  <div>
-                    <div className="font-medium">{p.name}</div>
-                    <div className="text-[11px] text-muted">{p.category ?? ''} · {p.stockCount} in stock</div>
+              <>
+                {!productQuery.trim() && (
+                  <div className="px-3.5 pt-2 pb-1 text-[10px] font-medium tracking-[0.18em] uppercase text-muted">
+                    Suggested
                   </div>
-                  <div className="text-ink-soft">${fmtPrice(p.price)}</div>
-                </button>
-              ))
+                )}
+                {filteredProducts.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => addProduct(p.id)}
+                    className="group w-full flex items-center justify-between px-3.5 py-2 text-left text-[13px] hover:bg-cream transition-colors border-b border-line-soft last:border-b-0"
+                  >
+                    <div className="min-w-0">
+                      <div className="font-medium truncate">{p.name}</div>
+                      <div className="text-[11px] text-muted">{p.category ?? ''} · {p.stockCount} in stock</div>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0 ml-3">
+                      <span className="text-ink-soft">${fmtPrice(p.price)}</span>
+                      <span
+                        aria-hidden="true"
+                        className="w-6 h-6 rounded-full border border-line text-muted grid place-items-center group-hover:border-oxblood group-hover:text-oxblood transition-colors"
+                      >
+                        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+                        </svg>
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </>
             )}
           </div>
         </section>
@@ -369,39 +413,45 @@ export default function OrderCreateDrawer({
           </div>
         </section>
 
-        {/* Totals */}
-        <section className="border-t border-line-soft pt-4 space-y-1.5 text-[13px]">
-          <div className="flex justify-between text-ink-soft">
-            <span>Subtotal</span>
-            <span className="font-mono">${fmtPrice(totals.subtotal)}</span>
-          </div>
-          <div className="flex justify-between text-ink-soft">
-            <span>Tax</span>
-            <span className="font-mono">${fmtPrice(totals.tax)}</span>
-          </div>
-          <div className="flex justify-between font-display text-[16px] font-medium pt-1.5 border-t border-line-soft">
-            <span>Total</span>
-            <span>${fmtPrice(totals.total)}</span>
-          </div>
-        </section>
+        {lines.length > 0 && (
+          <section className="border-t border-line-soft pt-4 space-y-1.5 text-[13px]">
+            <div className="flex justify-between text-ink-soft">
+              <span>Subtotal</span>
+              <span className="font-mono">${fmtPrice(totals.subtotal)}</span>
+            </div>
+            <div className="flex justify-between text-ink-soft">
+              <span>Tax</span>
+              <span className="font-mono">${fmtPrice(totals.tax)}</span>
+            </div>
+            <div className="flex justify-between font-display text-[16px] font-medium pt-1.5 border-t border-line-soft">
+              <span>Total</span>
+              <span>${fmtPrice(totals.total)}</span>
+            </div>
+          </section>
+        )}
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-line-soft bg-paper">
-        <button
-          onClick={onClose}
-          disabled={submitting}
-          className="px-4 py-2 rounded-full bg-paper border border-line text-ink-soft text-[13px] hover:border-ink hover:text-ink transition-colors disabled:opacity-50"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={handleSubmit}
-          disabled={submitDisabled}
-          className="px-4.5 py-2 rounded-full bg-ink text-cream text-[13px] font-medium hover:bg-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {submitting ? 'Creating…' : 'Create order'}
-        </button>
+      <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-line-soft bg-paper">
+        <span className="text-[12px] text-muted truncate" aria-live="polite">
+          {missingHint ?? ''}
+        </span>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={onClose}
+            disabled={submitting}
+            className="px-4 py-2 rounded-full bg-paper border border-line text-ink-soft text-[13px] hover:border-ink hover:text-ink transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={submitDisabled}
+            className="px-4.5 py-2 rounded-full bg-ink text-cream text-[13px] font-medium hover:bg-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {submitting ? 'Creating…' : 'Create order'}
+          </button>
+        </div>
       </div>
     </div>
   );
