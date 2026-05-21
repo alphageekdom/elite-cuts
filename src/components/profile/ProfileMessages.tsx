@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import ContactModal from './ContactModal';
+import NewMessageModal from './NewMessageModal';
 import { AVATAR_COLORS, MEMBER_AVATAR_COLORS } from '@/lib/admin-constants';
 import { avatarColorForId, getInitials } from '@/lib/format';
 import type { MessageStatus } from '@/models/Message';
@@ -129,7 +129,7 @@ export default function ProfileMessages({ messages, userId, name, rewardPoints, 
         )}
       </section>
 
-      <ContactModal
+      <NewMessageModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
       />

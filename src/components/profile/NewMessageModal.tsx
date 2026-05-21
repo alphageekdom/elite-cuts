@@ -15,7 +15,7 @@ const SHOP_EMAIL = 'hello@elitecuts.com';
 const SUBJECT_MAX = 120;
 const BODY_MAX = 2000;
 
-export default function ContactModal({
+export default function NewMessageModal({
   isOpen,
   onClose,
   prefilledSubject = '',

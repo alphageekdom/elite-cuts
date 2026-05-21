@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import ContactModal from './ContactModal';
+import NewMessageModal from './NewMessageModal';
 
 type Props = {
   orderId: string;
@@ -20,7 +20,7 @@ export default function OrderHelpButton({ orderId, orderRef }: Props) {
         Get help
       </button>
 
-      <ContactModal
+      <NewMessageModal
         isOpen={open}
         onClose={() => setOpen(false)}
         prefilledSubject={`Order #EC-${orderRef} — I need help with this order`}
