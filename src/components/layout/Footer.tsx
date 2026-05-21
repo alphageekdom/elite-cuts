@@ -84,6 +84,7 @@ const QUICK_LINKS = [
   { label: 'Shop All Cuts', href: '/products' },
   { label: 'Featured Cuts', href: '/#featured' },
   { label: 'Our Story', href: '/#about-heading' },
+  { label: 'Contact', href: '/contact' },
 ] as const;
 
 const COLUMN_HEADING =

@@ -1,6 +1,5 @@
 import type { ShopHoursDay } from '@/models/ShopHours';
-
-const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+import { DAY_NAMES } from '@/lib/shopHoursFormat';
 
 type Props = { hours: ShopHoursDay[] };
 

@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 
 import {
   formatPhoneHref,
@@ -7,110 +6,109 @@ import {
   formatShopCityStateZip,
   getShopSettings,
 } from '@/lib/shopSettings';
+import { formatShopHoursRows, getShopHours } from '@/lib/shopHours';
 import SectionLabel from '@/components/ui/SectionLabel';
 
 export async function generateMetadata(): Promise<Metadata> {
   const { shopName } = await getShopSettings();
   return {
     title: `Contact · ${shopName}`,
-    description: `Get in touch with ${shopName} — we're here to help with orders, custom cuts, and anything else.`,
+    description: `Reach ${shopName} for custom cuts, pickup questions, holiday orders, and weeknight recommendations.`,
   };
 }
 
 export default async function ContactPage() {
-  const settings = await getShopSettings();
+  const [settings, hoursDays] = await Promise.all([
+    getShopSettings(),
+    getShopHours(),
+  ]);
   const fullAddress = formatShopAddress(settings);
+  const hours = formatShopHoursRows(hoursDays);
   const contactItems = [
     {
       label: 'Phone',
       value: settings.phone,
       href: formatPhoneHref(settings.phone),
-      detail: 'Mon – Sat, 8 AM – 6 PM',
+      detail: 'Quickest during shop hours.',
     },
     {
       label: 'Email',
       value: settings.email,
       href: `mailto:${settings.email}`,
-      detail: 'We reply within one business day',
+      detail: 'Best for custom-cut requests.',
     },
     {
       label: 'Address',
       value: `${settings.street}, ${formatShopCityStateZip(settings)}`,
       href: `https://maps.google.com/?q=${encodeURIComponent(fullAddress)}`,
-      detail: 'Street parking available nearby',
+      detail: 'Easy parking out front.',
     },
   ];
 
   return (
-    <div className='min-h-screen bg-cream'>
-      {/* Hero */}
-      <div className='border-b border-line-soft px-6 pb-16 pt-32 text-center sm:px-8'>
-        <SectionLabel className='mb-3 block'>
-          Get in touch
-        </SectionLabel>
-        <h1 className='font-display text-[clamp(40px,5vw,64px)] font-normal leading-none tracking-tight text-ink'>
-          We&apos;re here to <em className='text-oxblood'>help.</em>
+    <div className='bg-cream'>
+      <section className='px-6 pt-24 pb-12 text-center sm:px-8 md:pt-32 md:pb-16'>
+        <SectionLabel className='mb-3 block'>Get in touch</SectionLabel>
+        <h1 className='font-display text-[clamp(40px,5vw,64px)] font-normal leading-[1.05] tracking-tight text-ink'>
+          Talk to the <em className='text-oxblood'>counter.</em>
         </h1>
         <p className='mx-auto mt-5 max-w-[48ch] text-[15px] leading-relaxed text-ink-soft'>
-          Questions about your order, a custom cut request, or anything else —
-          reach out and we&apos;ll get back to you quickly.
+          Custom cuts, pickup questions, holiday orders, weeknight
+          recommendations. Ring us, write us, or stop in at the case.
         </p>
-      </div>
+      </section>
 
-      {/* Contact cards */}
-      <div className='mx-auto max-w-4xl px-6 py-16 sm:px-8'>
-        <div className='grid gap-4 sm:grid-cols-3'>
-          {contactItems.map((item) => (
-            <a
-              key={item.label}
-              href={item.href}
-              target={item.href.startsWith('http') ? '_blank' : undefined}
-              rel={item.href.startsWith('http') ? 'noopener noreferrer' : undefined}
-              className='group flex flex-col gap-2 rounded-lg border border-line-soft bg-paper p-6 transition-colors hover:border-line'
-            >
-              <span className='text-[10px] font-medium uppercase tracking-[0.18em] text-muted'>
-                {item.label}
-              </span>
-              <span className='font-medium text-ink transition-colors group-hover:text-oxblood'>
-                {item.value}
-              </span>
-              <span className='text-[13px] text-ink-soft'>{item.detail}</span>
-            </a>
-          ))}
-        </div>
+      <section className='mx-auto max-w-5xl px-6 pb-24 sm:px-8 lg:pb-32'>
+        <ul className='grid gap-4 sm:grid-cols-3'>
+          {contactItems.map((item) => {
+            const external = item.href.startsWith('http');
+            return (
+              <li key={item.label} className='flex'>
+                <a
+                  href={item.href}
+                  target={external ? '_blank' : undefined}
+                  rel={external ? 'noopener noreferrer' : undefined}
+                  aria-label={external ? `Open ${item.value} in Google Maps` : undefined}
+                  className='group flex w-full flex-col gap-2 rounded-lg border border-line-soft bg-paper p-6 transition-colors hover:border-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oxblood focus-visible:ring-offset-2 focus-visible:ring-offset-cream'
+                >
+                  <span className='text-[11px] font-medium uppercase tracking-[0.18em] text-muted'>
+                    {item.label}
+                  </span>
+                  <span className='font-medium text-ink transition-colors group-hover:text-oxblood'>
+                    {item.value}
+                  </span>
+                  <span className='text-[13px] leading-snug text-ink-soft'>
+                    {item.detail}
+                  </span>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
 
-        {/* Hours */}
-        <div className='mt-12 border-t border-line-soft pt-12'>
-          <h2 className='mb-6 font-display text-[22px] font-normal tracking-tight text-ink'>
+        <div className='mx-auto mt-12 max-w-md rounded-lg border border-line-soft bg-paper p-8'>
+          <h2
+            id='shop-hours'
+            className='mb-5 font-display text-[22px] font-normal tracking-tight text-ink'
+          >
             Shop hours
           </h2>
-          <table className='w-full max-w-sm text-[14px]'>
-            <tbody className='divide-y divide-line-soft'>
-              {[
-                ['Monday', 'Closed'],
-                ['Tuesday – Friday', '8 AM – 6 PM'],
-                ['Saturday', '7 AM – 5 PM'],
-                ['Sunday', '9 AM – 3 PM'],
-              ].map(([day, hours]) => (
-                <tr key={day}>
-                  <td className='py-2.5 pr-8 text-ink-soft'>{day}</td>
-                  <td className='py-2.5 font-medium text-ink'>{hours}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Back to rewards */}
-        <div className='mt-12 border-t border-line-soft pt-8'>
-          <Link
-            href='/rewards'
-            className='text-[13px] text-ink-soft transition-colors hover:text-oxblood'
+          <dl
+            aria-labelledby='shop-hours'
+            className='divide-y divide-line-soft text-[14px]'
           >
-            ← Back to Rewards
-          </Link>
+            {hours.map(({ label, value }) => (
+              <div
+                key={label}
+                className='flex items-center justify-between gap-4 py-2.5'
+              >
+                <dt className='text-ink-soft'>{label}</dt>
+                <dd className='font-medium text-ink'>{value}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
