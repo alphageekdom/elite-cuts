@@ -155,6 +155,7 @@ export default function ProductsClient({ products, counts, categoryCounts, heade
         ]}
         activeKey={activeFilter}
         onSelect={handleStatFilter}
+        lastCellExtraClass="col-span-2 border-r-0 sm:border-r-0 lg:col-span-1"
       />
 
       {/* Toolbar */}
@@ -284,7 +285,7 @@ export default function ProductsClient({ products, counts, categoryCounts, heade
           </div>
 
           {/* Scroll-hint fade */}
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-linear-to-l from-paper to-transparent lg:hidden" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-linear-to-l from-paper to-transparent xl:hidden" />
         </div>
 
         <AdminPagination

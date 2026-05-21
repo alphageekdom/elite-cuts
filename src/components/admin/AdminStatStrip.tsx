@@ -19,6 +19,10 @@ type Props = {
   // Breakpoint at which the strip collapses to a single row. Must match the
   // widest breakpoint in `cols` so border-collapse logic stays in sync.
   wideBreakpoint?: 'lg' | 'xl';
+  // Extra class applied only to the last cell. Useful for col-span tricks
+  // that fill the trailing row when cellCount doesn't divide cleanly into
+  // the column count at narrower breakpoints.
+  lastCellExtraClass?: string;
 };
 
 export default function AdminStatStrip({
@@ -27,6 +31,7 @@ export default function AdminStatStrip({
   onSelect,
   cols = 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5',
   wideBreakpoint = 'lg',
+  lastCellExtraClass = '',
 }: Props) {
   return (
     <div className={`grid ${cols} bg-paper border border-line-soft rounded-sm mb-6 overflow-hidden`}>
@@ -44,6 +49,7 @@ export default function AdminStatStrip({
               clickable ? 'cursor-pointer' : 'cursor-default',
               statCellBorderClasses(idx, cells.length, wideBreakpoint),
               isActive ? 'bg-cream' : clickable ? 'hover:bg-cream' : '',
+              idx === cells.length - 1 ? lastCellExtraClass : '',
             ].join(' ')}
           >
             {isActive && (
