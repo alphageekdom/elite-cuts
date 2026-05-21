@@ -25,7 +25,7 @@ export default function InventoryPageHeader({
       breadcrumb="Inventory"
       title="Stock &"
       titleAccent="aging"
-      subtitle={`${totalProducts} cuts tracked · ${lastStocktakeLabel}`}
+      subtitle={`${totalProducts} ${totalProducts === 1 ? 'cut' : 'cuts'} tracked · ${lastStocktakeLabel}`}
       actions={
         <>
           <button
