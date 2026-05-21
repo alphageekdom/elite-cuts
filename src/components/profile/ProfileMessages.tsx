@@ -1,5 +1,7 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+
 import NewMessageModal from './NewMessageModal';
 import { AVATAR_COLORS, MEMBER_AVATAR_COLORS } from '@/lib/admin-constants';
 import { avatarColorForId, getInitials } from '@/lib/format';
@@ -15,6 +17,10 @@ export type SerializedMessage = {
 };
 
 const ADMIN_AVATAR_COLOR = 'bg-linear-to-br from-ink to-oxblood-deep text-camel';
+const SUBJECT_MAX = 120;
+const BODY_MAX = 2000;
+const CANCEL_BUTTON_CLASS =
+  'text-muted hover:text-ink transition-colors disabled:opacity-50';
 
 type Props = {
   messages: SerializedMessage[];
@@ -44,6 +50,102 @@ export default function ProfileMessages({ messages, userId, name, rewardPoints, 
     ? ADMIN_AVATAR_COLOR
     : avatarColorForId(userId, isMember ? MEMBER_AVATAR_COLORS : AVATAR_COLORS);
   const [modalOpen, setModalOpen] = useState(false);
+  const [items, setItems] = useState<SerializedMessage[]>(messages);
+
+  // Sync local state when the parent re-fetches (e.g. NewMessageModal calls
+  // router.refresh() after a successful POST) — the server is the source of
+  // truth and optimistic edits/deletes are merged-in until the next prop tick.
+  const [prevMessages, setPrevMessages] = useState(messages);
+  if (prevMessages !== messages) {
+    setPrevMessages(messages);
+    setItems(messages);
+  }
+
+  // Single-row edit at a time keeps the form state simple — one subject /
+  // body pair, lifted into the parent so cancel / save can clear it cleanly.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editSubject, setEditSubject] = useState('');
+  const [editBody, setEditBody] = useState('');
+
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
+  const [pendingId, setPendingId] = useState<string | null>(null);
+
+  function startEdit(msg: SerializedMessage) {
+    setConfirmingDeleteId(null);
+    setEditingId(msg._id);
+    setEditSubject(msg.subject);
+    setEditBody(msg.body);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditSubject('');
+    setEditBody('');
+  }
+
+  // Escape cancels whichever inline interaction is open (edit form or
+  // delete-confirm) — matches the NewMessageModal's Escape-closes behavior
+  // so the keyboard contract stays consistent across the messages tab.
+  useEffect(() => {
+    if (editingId === null && confirmingDeleteId === null) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (editingId !== null) cancelEdit();
+      if (confirmingDeleteId !== null) setConfirmingDeleteId(null);
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [editingId, confirmingDeleteId]);
+
+  async function saveEdit(id: string) {
+    const subject = editSubject.trim();
+    const body = editBody.trim();
+    if (!subject || !body) {
+      toast.error('Subject and message are required');
+      return;
+    }
+    setPendingId(id);
+    try {
+      const res = await fetch(`/api/messages/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subject, body }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        toast.error(data?.message ?? 'Failed to update message');
+        return;
+      }
+      setItems((prev) =>
+        prev.map((m) => (m._id === id ? { ...m, subject, body } : m)),
+      );
+      cancelEdit();
+      toast.success('Message updated');
+    } catch {
+      toast.error('Something went wrong. Try again.');
+    } finally {
+      setPendingId(null);
+    }
+  }
+
+  async function doDelete(id: string) {
+    setPendingId(id);
+    try {
+      const res = await fetch(`/api/messages/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        toast.error(data?.message ?? 'Failed to delete message');
+        return;
+      }
+      setItems((prev) => prev.filter((m) => m._id !== id));
+      setConfirmingDeleteId(null);
+      if (editingId === id) cancelEdit();
+    } catch {
+      toast.error('Something went wrong. Try again.');
+    } finally {
+      setPendingId(null);
+    }
+  }
 
   return (
     <>
@@ -51,9 +153,9 @@ export default function ProfileMessages({ messages, userId, name, rewardPoints, 
         <div className="flex items-end justify-between mb-7 gap-5">
           <h2 className="font-display text-[28px] font-normal tracking-tight leading-tight">
             Your <em className="italic text-oxblood">messages</em>
-            {messages.length > 0 && (
+            {items.length > 0 && (
               <span className="ml-3 font-sans text-[15px] font-normal text-muted align-middle">
-                ({messages.length})
+                ({items.length})
               </span>
             )}
           </h2>
@@ -69,7 +171,7 @@ export default function ProfileMessages({ messages, userId, name, rewardPoints, 
           </button>
         </div>
 
-        {messages.length === 0 ? (
+        {items.length === 0 ? (
           <div className="bg-paper border border-dashed border-line rounded p-14 text-center">
             <div className="w-14 h-14 rounded-full bg-cream-deep text-ink-soft flex items-center justify-center mx-auto mb-5" aria-hidden="true">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -90,41 +192,171 @@ export default function ProfileMessages({ messages, userId, name, rewardPoints, 
           </div>
         ) : (
           <div className="space-y-3">
-            {messages.map((msg) => (
-              <div
-                key={msg._id}
-                className="bg-paper border border-line-soft rounded px-5 py-4 flex items-start gap-4"
-              >
-                {/* Avatar */}
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-display font-medium text-[13px] tracking-tight shrink-0 mt-0.5 select-none ${avatarColor}`}>
-                  {getInitials(name)}
-                </div>
+            {items.map((msg) => {
+              const isEditing = editingId === msg._id;
+              const isConfirmingDelete = confirmingDeleteId === msg._id;
+              const isPending = pendingId === msg._id;
+              const canEdit = msg.status === 'open';
+              const editDirty =
+                isEditing &&
+                (editSubject.trim() !== msg.subject ||
+                  editBody.trim() !== msg.body);
+              const editValid =
+                isEditing &&
+                editSubject.trim().length > 0 &&
+                editBody.trim().length > 0;
 
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2 mb-1">
-                    {msg.orderRef && (
-                      <span className="font-mono text-[11px] text-ink-soft bg-cream-deep px-2 py-0.5 rounded">
-                        #{msg.orderRef}
+              return (
+                <div
+                  key={msg._id}
+                  className="bg-paper border border-line-soft rounded px-5 py-4"
+                >
+                  <div className="flex items-start gap-4">
+                    {/* Avatar */}
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-display font-medium text-[13px] tracking-tight shrink-0 mt-0.5 select-none ${avatarColor}`}>
+                      {getInitials(name)}
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        {msg.orderRef && (
+                          <span className="font-mono text-[11px] text-ink-soft bg-cream-deep px-2 py-0.5 rounded">
+                            #{msg.orderRef}
+                          </span>
+                        )}
+                        <span className="text-[11px] tracking-[0.14em] uppercase text-muted">
+                          {formatDate(msg.createdAt)}
+                        </span>
+                      </div>
+                      {isEditing ? (
+                        <div className="space-y-3 mt-2">
+                          <div>
+                            <label
+                              htmlFor="edit-subject"
+                              className="block text-[11px] font-medium text-ink-soft tracking-[0.06em] uppercase mb-1"
+                            >
+                              Subject
+                            </label>
+                            <input
+                              id="edit-subject"
+                              type="text"
+                              value={editSubject}
+                              onChange={(e) => setEditSubject(e.target.value.slice(0, SUBJECT_MAX))}
+                              disabled={isPending}
+                              className="w-full bg-cream border border-line-soft rounded-lg px-3 py-2 text-[14px] text-ink focus:outline-none focus:border-ink transition-colors disabled:opacity-60"
+                            />
+                            <div className="text-right text-[11px] text-muted mt-0.5">
+                              {editSubject.length}/{SUBJECT_MAX}
+                            </div>
+                          </div>
+                          <div>
+                            <label
+                              htmlFor="edit-body"
+                              className="block text-[11px] font-medium text-ink-soft tracking-[0.06em] uppercase mb-1"
+                            >
+                              Message
+                            </label>
+                            <textarea
+                              id="edit-body"
+                              value={editBody}
+                              onChange={(e) => setEditBody(e.target.value.slice(0, BODY_MAX))}
+                              disabled={isPending}
+                              rows={5}
+                              className="w-full bg-cream border border-line-soft rounded-lg px-3 py-2 text-[14px] text-ink focus:outline-none focus:border-ink transition-colors resize-none disabled:opacity-60"
+                            />
+                            <div className="text-right text-[11px] text-muted -mt-0.5">
+                              {editBody.length}/{BODY_MAX}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="font-display font-medium text-[17px] tracking-tight truncate">
+                            {msg.subject}
+                          </p>
+                          <p className="text-[13px] text-muted mt-0.5 line-clamp-1">{msg.body}</p>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Status (hidden while editing to free horizontal space) */}
+                    {!isEditing && (
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium tracking-[0.04em] whitespace-nowrap shrink-0 mt-0.5 ${statusPill(msg.status)}`}>
+                        <span className="w-1.5 h-1.5 rounded-full bg-current" aria-hidden="true" />
+                        {msg.status === 'open' ? 'Open' : 'Closed'}
                       </span>
                     )}
-                    <span className="text-[11px] tracking-[0.14em] uppercase text-muted">
-                      {formatDate(msg.createdAt)}
-                    </span>
                   </div>
-                  <p className="font-display font-medium text-[17px] tracking-tight truncate">
-                    {msg.subject}
-                  </p>
-                  <p className="text-[13px] text-muted mt-0.5 line-clamp-1">{msg.body}</p>
-                </div>
 
-                {/* Status */}
-                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium tracking-[0.04em] whitespace-nowrap shrink-0 mt-0.5 ${statusPill(msg.status)}`}>
-                  <span className="w-1.5 h-1.5 rounded-full bg-current" aria-hidden="true" />
-                  {msg.status === 'open' ? 'Open' : 'Closed'}
-                </span>
-              </div>
-            ))}
+                  {/* Action row */}
+                  <div className="mt-3 pt-3 border-t border-line-soft flex items-center justify-end gap-3 text-[12px]">
+                    {isEditing ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={cancelEdit}
+                          disabled={isPending}
+                          className={CANCEL_BUTTON_CLASS}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => saveEdit(msg._id)}
+                          disabled={isPending || !editDirty || !editValid}
+                          className="font-medium text-ink hover:text-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isPending ? 'Saving…' : 'Save'}
+                        </button>
+                      </>
+                    ) : isConfirmingDelete ? (
+                      <>
+                        <span className="text-muted mr-auto">Delete this message?</span>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmingDeleteId(null)}
+                          disabled={isPending}
+                          className={CANCEL_BUTTON_CLASS}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => doDelete(msg._id)}
+                          disabled={isPending}
+                          className="font-medium text-oxblood hover:text-oxblood-deep transition-colors disabled:opacity-50"
+                        >
+                          {isPending ? 'Deleting…' : 'Delete'}
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        {canEdit && (
+                          <button
+                            type="button"
+                            onClick={() => startEdit(msg)}
+                            className="text-muted hover:text-ink transition-colors"
+                          >
+                            Edit
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            cancelEdit();
+                            setConfirmingDeleteId(msg._id);
+                          }}
+                          className="text-muted hover:text-oxblood transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </section>

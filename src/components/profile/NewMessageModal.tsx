@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
+import { useScrollLock } from '@/hooks/useScrollLock';
+
 type Props = {
   isOpen: boolean;
   onClose: () => void;
@@ -45,6 +47,8 @@ export default function NewMessageModal({
       setBody('');
     }
   }
+
+  useScrollLock(isOpen);
 
   // Focus subject on open
   useEffect(() => {
@@ -108,11 +112,19 @@ export default function NewMessageModal({
       />
 
       {/* Modal */}
-      <div className="relative bg-paper border border-line-soft rounded-xl w-full max-w-lg shadow-2xl">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="new-message-modal-title"
+        className="relative bg-paper border border-line-soft rounded-xl w-full max-w-lg shadow-2xl"
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-line-soft">
           <div>
-            <h2 className="font-display text-[22px] font-normal tracking-tight">
+            <h2
+              id="new-message-modal-title"
+              className="font-display text-[22px] font-normal tracking-tight"
+            >
               Contact <em className="italic text-oxblood">us</em>
             </h2>
             {prefilledOrderRef && (
@@ -160,10 +172,14 @@ export default function NewMessageModal({
         {tab === 'inapp' && (
           <form onSubmit={handleSubmit} className="px-6 pb-6 pt-2 space-y-4">
             <div>
-              <label className="block text-[12px] font-medium text-ink-soft tracking-[0.06em] uppercase mb-1.5">
+              <label
+                htmlFor="inapp-subject"
+                className="block text-[12px] font-medium text-ink-soft tracking-[0.06em] uppercase mb-1.5"
+              >
                 Subject
               </label>
               <input
+                id="inapp-subject"
                 ref={subjectRef}
                 type="text"
                 value={subject}
@@ -176,10 +192,14 @@ export default function NewMessageModal({
             </div>
 
             <div>
-              <label className="block text-[12px] font-medium text-ink-soft tracking-[0.06em] uppercase mb-1.5">
+              <label
+                htmlFor="inapp-body"
+                className="block text-[12px] font-medium text-ink-soft tracking-[0.06em] uppercase mb-1.5"
+              >
                 Message
               </label>
               <textarea
+                id="inapp-body"
                 value={body}
                 onChange={(e) => setBody(e.target.value.slice(0, BODY_MAX))}
                 placeholder="Tell us how we can help…"
@@ -204,10 +224,14 @@ export default function NewMessageModal({
         {tab === 'email' && (
           <div className="px-6 pb-6 pt-4 space-y-4">
             <div>
-              <label className="block text-[12px] font-medium text-ink-soft tracking-[0.06em] uppercase mb-1.5">
+              <label
+                htmlFor="email-subject"
+                className="block text-[12px] font-medium text-ink-soft tracking-[0.06em] uppercase mb-1.5"
+              >
                 Subject
               </label>
               <input
+                id="email-subject"
                 type="text"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value.slice(0, SUBJECT_MAX))}
@@ -216,10 +240,14 @@ export default function NewMessageModal({
               />
             </div>
             <div>
-              <label className="block text-[12px] font-medium text-ink-soft tracking-[0.06em] uppercase mb-1.5">
+              <label
+                htmlFor="email-body"
+                className="block text-[12px] font-medium text-ink-soft tracking-[0.06em] uppercase mb-1.5"
+              >
                 Message (optional pre-fill)
               </label>
               <textarea
+                id="email-body"
                 value={body}
                 onChange={(e) => setBody(e.target.value.slice(0, BODY_MAX))}
                 placeholder="Add context before opening your mail client…"
