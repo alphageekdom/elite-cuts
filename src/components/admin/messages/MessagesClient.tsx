@@ -5,6 +5,7 @@ import { useAdminDrawer } from '@/hooks/useAdminDrawer';
 import { toast } from 'sonner';
 import { avatarColorForId, relativeTime, statCellBorderClasses, getInitials, formatDate } from '@/lib/format';
 import { AVATAR_COLORS } from '@/lib/admin-constants';
+import AdminSearchInput from '@/components/admin/AdminSearchInput';
 
 import type { MessageStatus } from '@/models/Message';
 
@@ -117,108 +118,179 @@ export default function MessagesClient({
       </div>
 
       {/* Search */}
-      <div className="flex items-center gap-3 mb-5">
-        <div className="relative flex-1 max-w-sm">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
-          </svg>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search messages…"
-            className="w-full bg-paper border border-line-soft rounded-lg pl-9 pr-4 py-2.5 text-sm text-ink placeholder:text-muted focus:outline-none focus:border-ink transition-colors"
-          />
-        </div>
+      <div className="mb-5">
+        <AdminSearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Search messages…"
+          className="w-full sm:max-w-md lg:max-w-xl"
+        />
       </div>
 
-      {/* Table */}
+      {/* Listing */}
       {filtered.length === 0 ? (
         <div className="bg-paper border border-dashed border-line rounded-xl p-16 text-center">
           <p className="text-muted text-sm">No messages found.</p>
         </div>
       ) : (
-        <div className="bg-paper border border-line-soft rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-line-soft">
-                <th className="text-left px-5 py-3 text-[11px] tracking-widest uppercase text-muted font-medium">Customer</th>
-                <th className="text-left px-4 py-3 text-[11px] tracking-widest uppercase text-muted font-medium">Subject</th>
-                <th className="text-left px-4 py-3 text-[11px] tracking-widest uppercase text-muted font-medium hidden md:table-cell">Order</th>
-                <th className="text-left px-4 py-3 text-[11px] tracking-widest uppercase text-muted font-medium hidden lg:table-cell">Date</th>
-                <th className="text-left px-4 py-3 text-[11px] tracking-widest uppercase text-muted font-medium">Status</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line-soft">
-              {filtered.map((msg) => (
-                <tr
-                  key={msg.id}
-                  className={`cursor-pointer transition-colors ${
-                    msg.status === 'closed'
-                      ? 'bg-cream-deep/30 opacity-60 hover:opacity-100 hover:bg-cream-deep/50'
-                      : 'hover:bg-cream-deep/40'
-                  }`}
-                  onClick={() => openDrawer(msg)}
-                >
-                  {/* Customer */}
-                  <td className="px-5 py-3.5">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-full grid place-items-center text-[11px] font-semibold shrink-0 ${avatarColorForId(msg.id, AVATAR_COLORS)}`}>
-                        {getInitials(msg.customerName)}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="font-medium text-ink text-[13px] truncate max-w-35">{msg.customerName}</div>
-                        <div className="text-[11px] text-muted truncate max-w-35">{msg.customerEmail}</div>
-                      </div>
+        <>
+          {/* Mobile card list — below sm: the table overflows iPhone widths */}
+          <div className="space-y-3 sm:hidden">
+            {filtered.map((msg) => (
+              <div
+                key={msg.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => openDrawer(msg)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openDrawer(msg);
+                  }
+                }}
+                className={`group flex w-full cursor-pointer flex-col gap-2 rounded-sm border border-line-soft bg-paper px-4 py-4 text-left transition-colors hover:border-line hover:bg-cream focus:outline-none focus-visible:border-ink ${
+                  msg.status === 'closed' ? 'opacity-60 hover:opacity-100' : ''
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                    <div className={`w-9 h-9 rounded-full grid place-items-center text-[12px] font-semibold shrink-0 ${avatarColorForId(msg.id, AVATAR_COLORS)}`}>
+                      {getInitials(msg.customerName)}
                     </div>
-                  </td>
-
-                  {/* Subject */}
-                  <td className="px-4 py-3.5 max-w-50">
-                    <span className="text-[13px] text-ink truncate block">{msg.subject}</span>
-                  </td>
-
-                  {/* Order ref */}
-                  <td className="px-4 py-3.5 hidden md:table-cell">
-                    {msg.orderRef ? (
-                      <span className="font-mono text-[11px] text-ink-soft bg-cream-deep px-2 py-0.5 rounded">
-                        #{msg.orderRef}
-                      </span>
-                    ) : (
-                      <span className="text-muted text-[12px]">—</span>
+                    <div className="min-w-0">
+                      <div className="truncate text-[13px] font-medium text-ink">{msg.customerName}</div>
+                      <div className="truncate text-[11px] text-muted">{msg.customerEmail}</div>
+                    </div>
+                  </div>
+                  <span className={`inline-flex shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-[0.04em] whitespace-nowrap ${statusPill(msg.status)}`}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                    {msg.status === 'open' ? 'Open' : 'Closed'}
+                  </span>
+                </div>
+                <div className="line-clamp-2 text-[13px] text-ink">{msg.subject}</div>
+                <div className="mt-1 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-[11px] text-muted">
+                    <span>{relativeTime(msg.createdAt)}</span>
+                    {msg.orderRef && (
+                      <>
+                        <span className="text-muted/50">·</span>
+                        <span className="font-mono">#{msg.orderRef}</span>
+                      </>
                     )}
-                  </td>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); toggleStatus(msg); }}
+                    disabled={toggling}
+                    className="rounded-full border border-line px-3 py-1 text-[11px] text-muted transition-colors hover:border-ink/30 hover:text-ink whitespace-nowrap disabled:opacity-50"
+                  >
+                    {msg.status === 'open' ? 'Close' : 'Re-open'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
 
-                  {/* Date */}
-                  <td className="px-4 py-3.5 hidden lg:table-cell text-[12px] text-muted whitespace-nowrap">
-                    {relativeTime(msg.createdAt)}
-                  </td>
-
-                  {/* Status */}
-                  <td className="px-4 py-3.5">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-[0.04em] whitespace-nowrap ${statusPill(msg.status)}`}>
-                      <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                      {msg.status === 'open' ? 'Open' : 'Closed'}
-                    </span>
-                  </td>
-
-                  {/* Actions */}
-                  <td className="px-4 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      type="button"
-                      onClick={() => toggleStatus(msg)}
-                      disabled={toggling}
-                      className="text-[12px] text-muted hover:text-ink border border-line hover:border-ink/30 px-3 py-1.5 rounded-full transition-colors whitespace-nowrap disabled:opacity-50"
+          {/* Desktop table — sm+ */}
+          <div className="hidden sm:block bg-paper border border-line-soft rounded-xl overflow-hidden">
+            <div className="overflow-x-auto relative">
+              <div className="pointer-events-none absolute top-0 right-0 bottom-0 w-12 bg-linear-to-l from-paper z-10" />
+              <table className="w-full text-sm min-w-150">
+                <thead>
+                  <tr className="border-b border-line-soft">
+                    <th className="text-left px-5 py-3 text-[11px] tracking-widest uppercase text-muted font-medium">Customer</th>
+                    <th className="text-left px-4 py-3 text-[11px] tracking-widest uppercase text-muted font-medium">Subject</th>
+                    <th className="text-left px-4 py-3 text-[11px] tracking-widest uppercase text-muted font-medium hidden md:table-cell">Order</th>
+                    <th className="text-left px-4 py-3 text-[11px] tracking-widest uppercase text-muted font-medium hidden lg:table-cell">Date</th>
+                    <th className="text-left px-4 py-3 text-[11px] tracking-widest uppercase text-muted font-medium">Status</th>
+                    <th className="px-4 py-3" aria-label="Actions" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line-soft">
+                  {filtered.map((msg) => (
+                    <tr
+                      key={msg.id}
+                      className={`group cursor-pointer transition-colors ${
+                        msg.status === 'closed'
+                          ? 'bg-cream-deep/30 opacity-60 hover:opacity-100 hover:bg-cream-deep/50'
+                          : 'hover:bg-cream-deep/40'
+                      }`}
+                      onClick={() => openDrawer(msg)}
                     >
-                      {msg.status === 'open' ? 'Close' : 'Re-open'}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                      {/* Customer */}
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-full grid place-items-center text-[11px] font-semibold shrink-0 ${avatarColorForId(msg.id, AVATAR_COLORS)}`}>
+                            {getInitials(msg.customerName)}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="truncate text-[13px] font-medium text-ink max-w-40 md:max-w-50 lg:max-w-none">{msg.customerName}</div>
+                            <div className="truncate text-[11px] text-muted max-w-40 md:max-w-50 lg:max-w-none">{msg.customerEmail}</div>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Subject */}
+                      <td className="px-4 py-3.5 max-w-50 md:max-w-80">
+                        <span className="block truncate text-[13px] text-ink">{msg.subject}</span>
+                      </td>
+
+                      {/* Order ref */}
+                      <td className="px-4 py-3.5 hidden md:table-cell whitespace-nowrap">
+                        {msg.orderRef ? (
+                          <span className="font-mono text-[11px] text-ink-soft bg-cream-deep px-2 py-0.5 rounded">
+                            #{msg.orderRef}
+                          </span>
+                        ) : (
+                          <span className="text-muted text-[12px]">—</span>
+                        )}
+                      </td>
+
+                      {/* Date */}
+                      <td className="px-4 py-3.5 hidden lg:table-cell text-[12px] text-muted whitespace-nowrap">
+                        {relativeTime(msg.createdAt)}
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-4 py-3.5 whitespace-nowrap">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-[0.04em] whitespace-nowrap ${statusPill(msg.status)}`}>
+                          <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                          {msg.status === 'open' ? 'Open' : 'Closed'}
+                        </span>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-4 py-3.5 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                        <div className="inline-flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => toggleStatus(msg)}
+                            disabled={toggling}
+                            className="text-[12px] text-muted hover:text-ink border border-line hover:border-ink/30 px-3 py-1.5 rounded-full transition-colors whitespace-nowrap disabled:opacity-50"
+                          >
+                            {msg.status === 'open' ? 'Close' : 'Re-open'}
+                          </button>
+                          <svg
+                            aria-hidden="true"
+                            className="h-3.5 w-3.5 shrink-0 text-muted/40 transition-colors group-hover:text-oxblood"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <polyline points="9 18 15 12 9 6" />
+                          </svg>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Drawer */}

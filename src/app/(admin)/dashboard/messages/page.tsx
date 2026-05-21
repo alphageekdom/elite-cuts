@@ -58,7 +58,7 @@ export default async function AdminMessagesPage() {
         breadcrumb="Messages"
         title="Customer"
         titleAccent="messages"
-        subtitle={`${openCount} open${openCount === 1 ? '' : ''} · ${counts.all} total`}
+        subtitle={`${counts.all} ${counts.all === 1 ? 'message' : 'messages'} · ${openCount} open`}
       />
       <MessagesClient messages={messages} />
     </>
