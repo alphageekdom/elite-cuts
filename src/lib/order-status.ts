@@ -34,21 +34,17 @@ export const RECEIPT_ORDER_STATUS_STYLES: Record<string, string> = {
   'Cancelled':        'bg-red-soft text-oxblood',
 };
 
-// The orders table row uses an inline `background` style for the camel
-// variants (matching `bg-camel/18` precisely via rgba), so the `camel`
-// flag pairs with empty `bg` here. See OrderTableRow for the rendering.
 export type TableOrderStatusPill = {
   bg: string;
   text: string;
   label: string;
-  camel?: boolean;
 };
 
 export const TABLE_ORDER_STATUS_PILL: Record<string, TableOrderStatusPill> = {
   'Order Placed':     { bg: 'bg-line-soft',  text: 'text-muted',    label: 'Order Placed' },
-  'Preparing':        { bg: '',              text: 'text-camel',    label: 'Preparing',        camel: true },
-  'Ready for Pickup': { bg: '',              text: 'text-camel',    label: 'Ready',            camel: true },
-  'Out for Delivery': { bg: '',              text: 'text-camel',    label: 'Out for Delivery', camel: true },
+  'Preparing':        { bg: 'bg-camel/18',   text: 'text-camel',    label: 'Preparing' },
+  'Ready for Pickup': { bg: 'bg-camel/18',   text: 'text-camel',    label: 'Ready' },
+  'Out for Delivery': { bg: 'bg-camel/18',   text: 'text-camel',    label: 'Out for Delivery' },
   'Completed':        { bg: 'bg-green-soft', text: 'text-green',    label: 'Completed' },
   'Cancelled':        { bg: 'bg-red-soft',   text: 'text-oxblood',  label: 'Cancelled' },
 };

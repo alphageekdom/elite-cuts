@@ -17,6 +17,7 @@ import OrderCreateDrawer, {
 import AdminStatStrip from '@/components/admin/AdminStatStrip';
 import AdminSearchInput from '@/components/admin/AdminSearchInput';
 import AdminPagination from '@/components/admin/AdminPagination';
+import SlideDrawer from '@/components/admin/SlideDrawer';
 import RangeToggle, { type RangeKey } from '@/components/admin/analytics/RangeToggle';
 import { AVATAR_COLORS } from '@/lib/admin-constants';
 import type { OrderTableRow, StatusCounts } from '@/types/admin';
@@ -337,19 +338,11 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
         />
       </div>
 
-      {/* Drawer backdrop */}
-      {table.drawer.isOpen && (
-        <div
-          className="fixed inset-0 bg-ink/40 backdrop-blur-sm z-50"
-          onClick={table.drawer.close}
-        />
-      )}
-
       {/* Order detail drawer */}
-      <aside
-        className={`fixed top-0 right-0 w-full max-w-135 h-screen bg-cream z-51 flex flex-col shadow-2xl transition-transform duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
-          table.drawer.isOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
+      <SlideDrawer
+        open={table.drawer.isOpen}
+        onClose={table.drawer.close}
+        ariaLabelledBy="order-detail-title"
       >
         {table.drawer.item && (
           <OrderDetailDrawer
@@ -365,19 +358,13 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
             onRetrySettlement={table.actions.retrySettlement}
           />
         )}
-      </aside>
+      </SlideDrawer>
 
       {/* New order create drawer */}
-      {createOpen && (
-        <div
-          className="fixed inset-0 bg-ink/40 backdrop-blur-sm z-50"
-          onClick={() => setCreateOpen(false)}
-        />
-      )}
-      <aside
-        className={`fixed top-0 right-0 w-full max-w-135 h-screen bg-cream z-51 flex flex-col shadow-2xl transition-transform duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
-          createOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
+      <SlideDrawer
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        ariaLabelledBy="order-create-title"
       >
         {createOpen && (
           <OrderCreateDrawer
@@ -391,7 +378,7 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
             }}
           />
         )}
-      </aside>
+      </SlideDrawer>
     </>
   );
 }
