@@ -30,3 +30,22 @@ export function getActivity(row: CustomerActivityInput): ActivityStatus {
   if (lastOrderAge <= NINETY_DAYS_MS) return 'dormant';
   return 'at-risk';
 }
+
+// Lifecycle predicates the customer detail hero + footer both branch on.
+// `isDormancyWarned` excludes the soft-deleted state so the dormancy pill
+// doesn't show on accounts that have already been scheduled for deletion.
+export type CustomerLifecycle = {
+  isSoftDeleted: boolean;
+  isDormancyWarned: boolean;
+};
+
+export function getLifecycle(row: {
+  deletedAt?: string;
+  dormancyWarnedAt?: string;
+}): CustomerLifecycle {
+  const isSoftDeleted = Boolean(row.deletedAt);
+  return {
+    isSoftDeleted,
+    isDormancyWarned: Boolean(row.dormancyWarnedAt) && !isSoftDeleted,
+  };
+}

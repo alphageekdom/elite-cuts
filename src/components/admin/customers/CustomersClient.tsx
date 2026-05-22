@@ -7,6 +7,7 @@ import AdminSearchInput from '@/components/admin/AdminSearchInput';
 import AdminPagination from '@/components/admin/AdminPagination';
 import AdminStatStrip from '@/components/admin/AdminStatStrip';
 import AdminSortPopover from '@/components/admin/AdminSortPopover';
+import SlideDrawer from '@/components/admin/SlideDrawer';
 import type { CustomerTableRow, CustomerCounts } from '@/types/admin';
 import CustomerDetailDrawer from './CustomerDetailDrawer';
 import CustomerTableRowComponent from './CustomerTableRow';
@@ -286,7 +287,7 @@ export default function CustomersClient({ customers, counts, total, newThisWeek 
               <tbody>
                 {pageRows.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="text-center py-16 text-muted text-sm">
+                    <td colSpan={8} className="text-center py-16 text-muted text-sm">
                       No customers found.
                     </td>
                   </tr>
@@ -320,39 +321,30 @@ export default function CustomersClient({ customers, counts, total, newThisWeek 
         />
       </div>
 
-      {/* Drawer backdrop — only one drawer is ever open at a time, so close
-          whichever it is rather than chain both calls. */}
-      {(table.drawer.isOpen || createOpen) && (
-        <div
-          className="fixed inset-0 bg-ink/40 backdrop-blur-sm z-50"
-          onClick={() => (createOpen ? setCreateOpen(false) : table.drawer.close())}
-        />
-      )}
-
-      {/* Customer detail drawer */}
-      <aside
-        className={`fixed top-0 right-0 w-full max-w-145 h-screen bg-cream z-51 flex flex-col shadow-2xl transition-transform duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
-          table.drawer.isOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
+      <SlideDrawer
+        open={table.drawer.isOpen}
+        onClose={table.drawer.close}
+        ariaLabelledBy="customer-detail-title"
+        widthClass="max-w-145"
       >
         {table.drawer.item && (
           <CustomerDetailDrawer
-            key={table.drawer.item.id}
             customer={table.drawer.item}
             onClose={table.drawer.close}
             onSave={table.actions.save}
+            onSaveNote={table.actions.saveNote}
             onDelete={table.actions.softDelete}
             onCancelDeletion={table.actions.cancelDeletion}
             onCancelDormancy={table.actions.cancelDormancy}
           />
         )}
-      </aside>
+      </SlideDrawer>
 
-      {/* Customer create drawer */}
-      <aside
-        className={`fixed top-0 right-0 w-full max-w-145 h-screen bg-cream z-51 shadow-2xl transition-transform duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
-          createOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
+      <SlideDrawer
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        ariaLabelledBy="customer-create-title"
+        widthClass="max-w-145"
       >
         {createOpen && (
           <CustomerCreateDrawer
@@ -360,7 +352,7 @@ export default function CustomersClient({ customers, counts, total, newThisWeek 
             onCreated={handleCustomerCreated}
           />
         )}
-      </aside>
+      </SlideDrawer>
     </>
   );
 }
