@@ -1,4 +1,4 @@
-import { SelectField, inputCls, labelCls, sectionTitleCls, sectionSubCls, btnPrimary } from '../SettingsUI';
+import { SelectField, inputCls, labelCls, sectionTitleCls, sectionSubCls, btnPrimary, btnGhost } from '../SettingsUI';
 import type { ShopSettings } from '@/models/ShopSettings';
 import { computeRedemptionCap } from '@/lib/rewards';
 
@@ -6,6 +6,7 @@ type Props = {
   values: ShopSettings;
   onChange: (patch: Partial<ShopSettings>) => void;
   onSave: () => void;
+  onDiscard: () => void;
   saving: boolean;
 };
 
@@ -21,7 +22,7 @@ const EXPIRY_OPTIONS: { value: number; label: string }[] = [
   { value: 0, label: 'Never' },
 ];
 
-export default function RewardsTab({ values, onChange, onSave, saving }: Props) {
+export default function RewardsTab({ values, onChange, onSave, onDiscard, saving }: Props) {
   return (
     <div className="space-y-10">
       <section>
@@ -138,6 +139,7 @@ export default function RewardsTab({ values, onChange, onSave, saving }: Props) 
 
       <section>
         <h2 className={sectionTitleCls}>Tier <em className="italic text-oxblood font-normal">thresholds</em></h2>
+        <p className={sectionSubCls}>Points needed to unlock each tier.</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-3">
           <div>
             <label className={labelCls}>Connoisseur (pts)</label>
@@ -185,6 +187,7 @@ export default function RewardsTab({ values, onChange, onSave, saving }: Props) 
           </svg>
           {saving ? 'Saving…' : 'Save changes'}
         </button>
+        <button type="button" onClick={onDiscard} className={btnGhost}>Discard</button>
       </div>
     </div>
   );

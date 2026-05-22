@@ -1,4 +1,4 @@
-import { Toggle, sectionTitleCls, sectionSubCls, btnPrimary } from '../SettingsUI';
+import { Toggle, sectionTitleCls, sectionSubCls, btnPrimary, btnGhost } from '../SettingsUI';
 import type { ShopSettings } from '@/models/ShopSettings';
 
 const NOTIFICATIONS: { label: string; desc: string; key: keyof ShopSettings }[] = [
@@ -11,10 +11,11 @@ type Props = {
   values: ShopSettings;
   onChange: (patch: Partial<ShopSettings>) => void;
   onSave: () => void;
+  onDiscard: () => void;
   saving: boolean;
 };
 
-export default function NotificationsTab({ values, onChange, onSave, saving }: Props) {
+export default function NotificationsTab({ values, onChange, onSave, onDiscard, saving }: Props) {
   return (
     <div>
       <h2 className={sectionTitleCls}>Admin <em className="italic text-oxblood font-normal">alerts</em></h2>
@@ -35,13 +36,14 @@ export default function NotificationsTab({ values, onChange, onSave, saving }: P
           </div>
         ))}
       </div>
-      <div className="pt-6">
+      <div className="flex gap-2 pt-6">
         <button type="button" className={btnPrimary} onClick={onSave} disabled={saving}>
           <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="20 6 9 17 4 12" />
           </svg>
           {saving ? 'Saving…' : 'Save changes'}
         </button>
+        <button type="button" onClick={onDiscard} className={btnGhost}>Discard</button>
       </div>
     </div>
   );
