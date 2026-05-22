@@ -159,7 +159,7 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
       <div className="flex items-center justify-between gap-4 px-8 py-6 border-b border-line-soft bg-paper shrink-0">
         <div>
           <AdminEyebrow size="drawer" className="mb-1">Order detail</AdminEyebrow>
-          <div className="font-mono text-[18px] font-medium tracking-[0.02em] text-ink">{order.orderRef}</div>
+          <div id="order-detail-title" className="font-mono text-[18px] font-medium tracking-[0.02em] text-ink">{order.orderRef}</div>
         </div>
         <button
           onClick={onClose}

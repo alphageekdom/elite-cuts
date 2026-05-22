@@ -298,7 +298,7 @@ export const POST = withAdmin(async (request: NextRequest, _ctx, adminUserId) =>
       console.error('[orders POST admin-create] notification error', err),
     );
 
-    return NextResponse.json(order, { status: 201 });
+    return NextResponse.json({ data: order }, { status: 201 });
   } catch (error) {
     console.error('[orders POST]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });

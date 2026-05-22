@@ -64,7 +64,7 @@ export const DELETE = withAdmin(async (_request: NextRequest, ctx: unknown) => {
     if (!deleted) {
       return NextResponse.json({ message: 'Order not found' }, { status: 404 });
     }
-    return NextResponse.json({ message: 'Order deleted successfully' });
+    return NextResponse.json({ data: { id }, message: 'Order deleted successfully' });
   } catch (error) {
     console.error('[orders/:id DELETE]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
@@ -394,7 +394,7 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
 
     if (Object.keys(updateFields).length === 0) {
       // Nothing changed — idempotent no-op
-      return NextResponse.json(existing);
+      return NextResponse.json({ data: existing });
     }
 
     const order = await Order.findByIdAndUpdate(
@@ -487,7 +487,7 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
       }
     }
 
-    return NextResponse.json(order);
+    return NextResponse.json({ data: order });
   } catch (error) {
     console.error('[orders/:id PATCH]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });

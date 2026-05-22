@@ -172,7 +172,7 @@ export default function OrderCreateDrawer({
       <div className="flex items-start justify-between px-6 py-5 border-b border-line-soft">
         <div>
           <div className="text-[11px] font-medium tracking-[0.18em] uppercase text-muted">New order</div>
-          <div className="font-display text-[22px] tracking-[-0.01em]">Build an order</div>
+          <div id="order-create-title" className="font-display text-[22px] tracking-[-0.01em]">Build an order</div>
         </div>
         <button
           onClick={onClose}

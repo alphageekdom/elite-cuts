@@ -17,7 +17,7 @@ import OrdersClient, {
   type AdminOrderProduct,
 } from '@/components/admin/orders/OrdersClient';
 import { excludeDemoOrders } from '@/lib/demo/exclude';
-import type { RangeKey } from '@/components/admin/analytics/RangeToggle';
+import { DAY_MS, RANGE_DAYS, parseRange } from '@/lib/admin/range-buckets';
 
 type PopulatedUser = {
   _id: Types.ObjectId;
@@ -30,17 +30,6 @@ export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Orders · EliteCuts Admin',
-};
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-const ALLOWED_RANGES = ['7D', '30D', '90D', '1Y'] as const satisfies readonly RangeKey[];
-const RANGE_DAYS: Record<RangeKey, number> = { '7D': 7, '30D': 30, '90D': 90, '1Y': 360 };
-
-const parseRange = (raw: string | undefined): RangeKey => {
-  const upper = raw?.toUpperCase();
-  return (ALLOWED_RANGES as readonly string[]).includes(upper ?? '')
-    ? (upper as RangeKey)
-    : '30D';
 };
 
 type Props = {

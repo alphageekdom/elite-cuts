@@ -1,0 +1,81 @@
+'use client';
+
+import { useEffect, useRef, type ReactNode } from 'react';
+import { FOCUSABLE_SELECTOR } from '@/hooks/useFocusTrap';
+
+type Props = {
+  open: boolean;
+  onClose: () => void;
+  ariaLabelledBy?: string;
+  ariaLabel?: string;
+  widthClass?: string;
+  children: ReactNode;
+};
+
+// Slide-in drawer shell owning the overlay, slide animation, and dialog
+// a11y (role, aria-modal, focus trap, Escape close). The aside stays mounted
+// so the translate-x transition still plays on open/close — callers
+// typically unmount their inner content when closed.
+export default function SlideDrawer({
+  open,
+  onClose,
+  ariaLabelledBy,
+  ariaLabel,
+  widthClass = 'max-w-135',
+  children,
+}: Props) {
+  const asideRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const root = asideRef.current;
+      if (!root) return;
+      const focusables = root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      if (e.shiftKey && active === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+
+  return (
+    <>
+      {open && (
+        <div
+          className="fixed inset-0 bg-ink/40 backdrop-blur-sm z-50"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
+      <aside
+        ref={asideRef}
+        role="dialog"
+        aria-modal={open || undefined}
+        aria-labelledby={ariaLabelledBy}
+        aria-label={ariaLabel}
+        aria-hidden={!open || undefined}
+        inert={!open}
+        className={`fixed top-0 right-0 w-full ${widthClass} h-screen bg-cream z-51 flex flex-col shadow-2xl transition-transform duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
+          open ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        {children}
+      </aside>
+    </>
+  );
+}
