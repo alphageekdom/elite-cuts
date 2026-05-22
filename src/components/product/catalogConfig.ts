@@ -2,15 +2,12 @@
 // the server page (to translate URL params → Mongo query) and the client
 // filter bar (to render the controls).
 
-export const CATEGORY_FILTERS = [
-  'All',
-  'Beef',
-  'Pork',
-  'Poultry',
-  'Lamb',
-  'Charcuterie',
-  'Other',
-] as const;
+import { PRODUCT_CATEGORIES } from '@/lib/admin-constants';
+
+// Derived from PRODUCT_CATEGORIES so the customer filter list can't drift
+// from the admin/data set — adding a category in admin-constants
+// automatically surfaces it as a filter option here.
+export const CATEGORY_FILTERS = ['All', ...PRODUCT_CATEGORIES] as const;
 
 export type CategoryFilter = (typeof CATEGORY_FILTERS)[number];
 

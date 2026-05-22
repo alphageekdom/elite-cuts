@@ -7,10 +7,6 @@
 
 type Bulk = {
   loading: string;
-  editPriceMode: boolean;
-  setEditPriceMode: (open: boolean) => void;
-  price: string;
-  setPrice: (value: string) => void;
   patch: (body: Record<string, unknown>, label: string) => Promise<void>;
   remove: () => Promise<void>;
 };
@@ -44,44 +40,6 @@ export default function ProductsBulkBar({ count, bulk }: Props) {
         >
           {bulk.loading === 'unpublish' ? 'Updating…' : 'Unpublish'}
         </button>
-        {bulk.editPriceMode ? (
-          <div className="flex items-center gap-1">
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={bulk.price}
-              onChange={(e) => bulk.setPrice(e.target.value)}
-              placeholder="New price"
-              autoFocus
-              className="w-24 bg-cream/10 border border-cream/30 rounded-full px-3 py-1 text-[12px] text-cream outline-none placeholder:text-cream/40"
-            />
-            <button
-              onClick={() => {
-                const p = parseFloat(bulk.price);
-                if (!isNaN(p) && p >= 0) bulk.patch({ price: p }, 'price');
-              }}
-              disabled={!!bulk.loading || !bulk.price}
-              className="bg-camel text-ink rounded-full px-3 py-1.5 text-[12px] font-medium disabled:opacity-50"
-            >
-              {bulk.loading === 'price' ? '…' : 'Set'}
-            </button>
-            <button
-              onClick={() => bulk.setEditPriceMode(false)}
-              className="text-cream/60 text-[12px] px-2 hover:text-cream"
-            >
-              ✕
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => bulk.setEditPriceMode(true)}
-            disabled={!!bulk.loading}
-            className="bg-cream/10 text-cream border border-cream/20 rounded-full px-3 py-1.5 text-[12px] hover:bg-cream/20 hover:border-cream/40 transition-colors disabled:opacity-50"
-          >
-            Edit price
-          </button>
-        )}
         <button
           onClick={bulk.remove}
           disabled={!!bulk.loading}

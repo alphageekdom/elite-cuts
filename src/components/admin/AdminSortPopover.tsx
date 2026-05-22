@@ -9,6 +9,14 @@ type Props<T extends string> = {
   onChange: (value: T) => void;
   // Visual prefix shown muted before the current label (e.g. "Sort:").
   prefix?: string;
+  // Heading inside the opened panel (e.g. "Sort by", "Category"). The
+  // component is generic enough to drive any single-pick filter, not just
+  // sorts — callers override this when the panel reads "Sort by" wouldn't fit.
+  panelLabel?: string;
+  // Which side of the trigger the panel anchors against. Defaults to 'right'
+  // for a button on the right of a toolbar; pass 'left' when the trigger
+  // sits on the left side so the panel expands rightward instead of off-screen.
+  align?: 'left' | 'right';
 };
 
 export default function AdminSortPopover<T extends string>({
@@ -16,6 +24,8 @@ export default function AdminSortPopover<T extends string>({
   options,
   onChange,
   prefix = 'Sort:',
+  panelLabel = 'Sort by',
+  align = 'right',
 }: Props<T>) {
   const [open, setOpen] = useState(false);
   const current = options.find((o) => o.value === value) ?? options[0];
@@ -39,9 +49,9 @@ export default function AdminSortPopover<T extends string>({
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full mt-2 z-20 w-52 bg-paper border border-line rounded-lg shadow-xl py-1.5">
+          <div className={`absolute ${align === 'left' ? 'left-0' : 'right-0'} top-full mt-2 z-20 w-52 bg-paper border border-line rounded-lg shadow-xl py-1.5`}>
             <div className="px-3.5 py-1.5 text-[11px] font-medium tracking-[0.16em] uppercase text-muted">
-              Sort by
+              {panelLabel}
             </div>
             {options.map((o) => {
               const active = o.value === value;

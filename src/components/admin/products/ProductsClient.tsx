@@ -12,6 +12,7 @@ import AdminSearchInput from '@/components/admin/AdminSearchInput';
 import AdminPagination from '@/components/admin/AdminPagination';
 import AdminStatStrip from '@/components/admin/AdminStatStrip';
 import AdminSortPopover from '@/components/admin/AdminSortPopover';
+import SlideDrawer from '@/components/admin/SlideDrawer';
 import { PRODUCT_CATEGORIES } from '@/lib/admin-constants';
 import {
   PRODUCT_SORT_OPTIONS,
@@ -126,10 +127,21 @@ export default function ProductsClient({ products, counts, categoryCounts, heade
   }
 
   function handleCategoryFilter(cat: string) {
-    setActiveCategory((prev) => (prev === cat ? '' : cat));
+    setActiveCategory(cat);
     setPage(1);
     clearSelection();
   }
+
+  // Build the Category dropdown options. '' is the no-filter "All" entry;
+  // each category carries its current count so the menu reads the same as
+  // the prior pill row without dominating the toolbar.
+  const categoryOptions = [
+    { value: '', label: `All (${counts.all})` },
+    ...PRODUCT_CATEGORIES.map((cat) => ({
+      value: cat,
+      label: `${cat} (${categoryCounts[cat] ?? 0})`,
+    })),
+  ];
 
   const allPageSelected = pageRows.length > 0 && pageRows.every((r) => selectedIds.has(r.id));
   const someSelected = selectedIds.size > 0;
@@ -168,46 +180,16 @@ export default function ProductsClient({ products, counts, categoryCounts, heade
           className="w-full sm:max-w-xs"
         />
 
-        {/* Row 2: category pills left, view/sort/add right */}
+        {/* Row 2: category dropdown left, sort + add right */}
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={() => handleCategoryFilter('')}
-              className={`inline-flex items-center gap-1.5 border rounded-full px-3.5 py-2 text-[13px] font-medium transition-colors ${
-                activeCategory === ''
-                  ? 'bg-ink text-cream border-ink'
-                  : 'bg-paper border-line text-ink-soft hover:border-ink hover:text-ink'
-              }`}
-            >
-              All
-            </button>
-            {PRODUCT_CATEGORIES.map((cat) => {
-              const count = categoryCounts[cat] ?? 0;
-              if (count === 0) return null;
-              return (
-                <button
-                  key={cat}
-                  onClick={() => handleCategoryFilter(cat)}
-                  className={`inline-flex items-center gap-1.5 border rounded-full px-3.5 py-2 text-[13px] font-medium transition-colors ${
-                    activeCategory === cat
-                      ? 'bg-ink text-cream border-ink'
-                      : 'bg-paper border-line text-ink-soft hover:border-ink hover:text-ink'
-                  }`}
-                >
-                  {cat}
-                  <span
-                    className={`text-[11px] px-1.5 py-0.5 rounded-full ${
-                      activeCategory === cat
-                        ? 'bg-cream/20 text-cream'
-                        : 'bg-cream-deep text-ink-soft'
-                    }`}
-                  >
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+          <AdminSortPopover
+            value={activeCategory}
+            options={categoryOptions}
+            onChange={handleCategoryFilter}
+            prefix="Category:"
+            panelLabel="Category"
+            align="left"
+          />
 
           <div className="flex items-center gap-2">
             <AdminSortPopover
@@ -304,39 +286,29 @@ export default function ProductsClient({ products, counts, categoryCounts, heade
         <div className="fixed inset-0 z-10" onClick={() => setOpenMenuId(null)} />
       )}
 
-      {/* Drawer backdrop */}
-      {drawer.isOpen && (
-        <div
-          className="fixed inset-0 bg-ink/40 backdrop-blur-sm z-50"
-          onClick={drawer.close}
-        />
-      )}
-
       {/* Add / Edit product drawer */}
-      <aside
-        className={`fixed top-0 right-0 w-full max-w-150 h-screen bg-cream z-51 flex flex-col shadow-2xl transition-transform duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
-          drawer.isOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
+      <SlideDrawer
+        open={drawer.isOpen}
+        onClose={drawer.close}
+        widthClass="max-w-150"
+        ariaLabelledBy="product-form-title"
       >
-        <ProductFormDrawer
-          key={drawer.item?.id ?? 'new'}
-          product={drawer.item}
-          onClose={drawer.close}
-          onSave={handleSave}
-        />
-      </aside>
+        {drawer.isOpen && (
+          <ProductFormDrawer
+            key={drawer.item?.id ?? 'new'}
+            product={drawer.item}
+            onClose={drawer.close}
+            onSave={handleSave}
+          />
+        )}
+      </SlideDrawer>
 
       {/* CSV import drawer */}
-      {importOpen && (
-        <div
-          className="fixed inset-0 bg-ink/40 backdrop-blur-sm z-50"
-          onClick={() => setImportOpen(false)}
-        />
-      )}
-      <aside
-        className={`fixed top-0 right-0 w-full max-w-150 h-screen bg-cream z-51 flex flex-col shadow-2xl transition-transform duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
-          importOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
+      <SlideDrawer
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        widthClass="max-w-150"
+        ariaLabelledBy="product-import-title"
       >
         {importOpen && (
           <ProductImportDrawer
@@ -344,7 +316,7 @@ export default function ProductsClient({ products, counts, categoryCounts, heade
             onCommitted={() => router.refresh()}
           />
         )}
-      </aside>
+      </SlideDrawer>
     </>
   );
 }

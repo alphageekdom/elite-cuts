@@ -32,7 +32,7 @@ const PARTNERS = [
     flip: true,
   },
   {
-    eyebrow: 'Poultry · Since 2021',
+    eyebrow: 'Chicken · Since 2021',
     title: 'Sunridge',
     titleEm: 'Farm',
     body: 'Free-range heritage chickens raised on 60 acres of coastal sage scrubland in Ventura County. No antibiotics, no confinement — the birds forage year-round, and the flavor shows it. We take whole-bird delivery every Tuesday and break them down ourselves.',

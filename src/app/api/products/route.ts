@@ -96,7 +96,7 @@ export const POST = withAdmin(async (request: NextRequest) => {
     await newProduct.save();
 
     return NextResponse.json(
-      { id: String(newProduct._id) },
+      { data: { id: String(newProduct._id) } },
       { status: 201 },
     );
   } catch (error) {

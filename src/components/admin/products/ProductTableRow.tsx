@@ -1,6 +1,7 @@
 'use client';
 import { productImageSrc, formatMoney } from '@/lib/format';
 import { CATEGORY_COLORS } from '@/lib/admin-constants';
+import { STOCK_UNIT, UNIT_SUFFIX } from '@/lib/products/price-bands';
 import AdminRowActionsMenu, { type RowActionsMenuItem } from '@/components/admin/AdminRowActionsMenu';
 import type { ProductTableRow } from '@/types/admin';
 
@@ -68,6 +69,11 @@ export default function ProductTableRowComponent({
   const catClass = CATEGORY_COLORS[product.category] ?? 'bg-cream-deep text-ink-soft';
   const thumb    = productImageSrc(product.images[0]);
 
+  // Pricing-type-driven unit labels. Legacy rows without a pricingType fall
+  // back to no suffix on the price and a bare "in stock" count.
+  const priceSuffix = product.pricingType ? UNIT_SUFFIX[product.pricingType] : '';
+  const stockUnit = product.pricingType ? STOCK_UNIT[product.pricingType] : '';
+
   const isMenuOpen = openMenuId === product.id;
 
   return (
@@ -127,7 +133,9 @@ export default function ProductTableRowComponent({
         <span className="font-display text-[16px] font-medium tracking-[-0.01em]">
           {formatMoney(product.price)}
         </span>
-        <span className="text-[11px] text-muted italic font-normal ml-0.5">/lb</span>
+        {priceSuffix && (
+          <span className="text-[11px] text-muted italic font-normal ml-0.5">{priceSuffix}</span>
+        )}
       </td>
 
       {/* Stock */}
@@ -140,7 +148,7 @@ export default function ProductTableRowComponent({
             />
           </div>
           <span className="font-mono text-[12px] text-ink font-medium min-w-9">
-            {product.stockCount} lb
+            {product.stockCount}{stockUnit && ` ${stockUnit}`}
           </span>
         </div>
       </td>
@@ -152,7 +160,7 @@ export default function ProductTableRowComponent({
             <span className="inline-block px-1.5 py-0.5 rounded-full text-[10px] font-mono tracking-[0.06em] uppercase bg-red-soft text-oxblood">AGED</span>
           )}
           {product.isFeatured && (
-            <span className="inline-block px-1.5 py-0.5 rounded-full text-[10px] font-mono tracking-[0.06em] uppercase bg-[rgba(184,137,90,0.18)] text-camel">FEATURED</span>
+            <span className="inline-block px-1.5 py-0.5 rounded-full text-[10px] font-mono tracking-[0.06em] uppercase bg-camel/18 text-camel">FEATURED</span>
           )}
           {product.isNewArrival && (
             <span className="inline-block px-1.5 py-0.5 rounded-full text-[10px] font-mono tracking-[0.06em] uppercase bg-ink text-cream">NEW</span>

@@ -5,14 +5,16 @@ import connectDB from '@/config/database';
 import Reveal from '@/components/uielements/Reveal';
 import Product, { type SerializedProduct } from '@/models/Product';
 import { convertToSerializableObject } from '@/lib/convertToObject';
+import { PRODUCT_CATEGORIES } from '@/lib/admin-constants';
 
 import ProductCard from '@/components/product/ProductCard';
 
 import SectionEyebrow from './SectionEyebrow';
 
-// Match the Product schema enum exactly so the URL param flows straight
-// through once category filtering lands on /products.
-const CATEGORIES = ['Beef', 'Pork', 'Poultry', 'Lamb'] as const;
+// Mirror the admin/data set so the homepage category nav can't drift —
+// every link routes to /products?category=<name> and the customer catalog
+// page resolves each name back to a Mongo query.
+const CATEGORIES = PRODUCT_CATEGORIES;
 
 const FeaturedProducts = async () => {
   await connectDB();
@@ -64,7 +66,7 @@ const FeaturedProducts = async () => {
         <Reveal delayMs={140}>
           <nav
             aria-label='Browse by category'
-            className='mb-16 grid grid-cols-4 gap-2 sm:flex sm:flex-wrap sm:gap-2.5'
+            className='mb-16 flex flex-wrap justify-center gap-2 sm:gap-2.5'
           >
             {CATEGORIES.map((category) => (
               <Link

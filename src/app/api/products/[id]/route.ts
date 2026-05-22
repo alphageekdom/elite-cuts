@@ -68,7 +68,7 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
     if (!product) {
       return NextResponse.json({ message: 'Product not found' }, { status: 404 });
     }
-    return NextResponse.json({ id: String(product._id), ...update });
+    return NextResponse.json({ data: { id: String(product._id), ...update } });
   } catch (error) {
     console.error('[products/:id PATCH]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
@@ -89,7 +89,7 @@ export const DELETE = withAdmin(async (_request: NextRequest, ctx: unknown) => {
     }
 
     await Product.findByIdAndDelete(id);
-    return NextResponse.json({ message: 'Product deleted successfully' });
+    return NextResponse.json({ data: { id }, message: 'Product deleted successfully' });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ message: 'Failed to delete product' }, { status: 500 });
@@ -142,7 +142,7 @@ export const PUT = withAdmin(async (request: NextRequest, ctx: unknown) => {
       update,
       { returnDocument: 'after', runValidators: true },
     );
-    return NextResponse.json(updatedProduct);
+    return NextResponse.json({ data: updatedProduct });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ message: 'Failed to update product' }, { status: 500 });
@@ -214,7 +214,7 @@ export const POST = async (request: NextRequest, { params }: RouteContext) => {
     });
     await review.save();
 
-    return NextResponse.json(product, { status: 201 });
+    return NextResponse.json({ data: product }, { status: 201 });
   } catch (error) {
     if (
       error !== null &&
