@@ -23,7 +23,7 @@ import {
 export const metadata: Metadata = {
   title: 'The Counter — EliteCuts',
   description:
-    'Browse our full case — beef, pork, poultry, lamb and charcuterie, hand-cut to order and ready for same-day pickup.',
+    'Browse our full case — beef, pork, chicken, lamb and charcuterie, hand-cut to order and ready for same-day pickup.',
 };
 
 type SearchParams = {

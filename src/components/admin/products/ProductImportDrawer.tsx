@@ -148,7 +148,7 @@ export default function ProductImportDrawer({ onClose, onCommitted }: Props) {
       <div className="flex items-start justify-between px-6 py-5 border-b border-line-soft">
         <div>
           <div className="text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Bulk import</div>
-          <div className="font-display text-[22px] tracking-[-0.01em]">Import products from CSV</div>
+          <div id="product-import-title" className="font-display text-[22px] tracking-[-0.01em]">Import products from CSV</div>
         </div>
         <button
           onClick={onClose}

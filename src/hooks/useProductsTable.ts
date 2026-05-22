@@ -18,8 +18,6 @@ export function useProductsTable(initialProducts: ProductTableRow[]) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [bulkLoading, setBulkLoading] = useState('');
-  const [editPriceMode, setEditPriceMode] = useState(false);
-  const [bulkPrice, setBulkPrice] = useState('');
   const drawer = useAdminDrawer<ProductTableRow>();
 
   function toggleSelect(id: string) {
@@ -50,7 +48,7 @@ export function useProductsTable(initialProducts: ProductTableRow[]) {
         toast.error(message ?? 'Failed to save product');
         return false;
       }
-      const data = await res.json();
+      const { data } = await res.json();
       const now = new Date().toISOString();
       const cat = fd.get('category') as ProductCategory;
       // Backcompat optimistic price — the model's pre-validate hook stamps
@@ -129,20 +127,62 @@ export function useProductsTable(initialProducts: ProductTableRow[]) {
   }
 
   async function duplicate(product: ProductTableRow) {
+    // Legacy rows from pre-Phase-1 data have no pricingType — the admin
+    // form treats those as "must pick one before saving", and we can't
+    // construct a valid duplicate without it.
+    if (!product.pricingType) {
+      toast.error('Open this product and pick a pricing model before duplicating');
+      return;
+    }
     try {
       const fd = new FormData();
       fd.append('name', `${product.name} (Copy)`);
+      fd.append('description', product.description ?? '');
       fd.append('category', product.category);
-      fd.append('description', '');
-      fd.append('price', String(product.price));
-      fd.append('stockCount', '0');
+      fd.append('cutType', product.cutType ?? '');
+      fd.append('qualityTier', product.qualityTier ?? 'standard');
+      fd.append('pricingType', product.pricingType);
+
+      // Carry every per-type pricing field the source has — the schema's
+      // superRefine only enforces the ones that match the active type,
+      // but a future re-edit (admin switches type) is best off seeing the
+      // source's values rather than starting empty.
+      const numericFields: Array<keyof ProductTableRow> = [
+        'packagePrice', 'packageWeightLb',
+        'pricePerLb', 'estimatedWeightLb', 'averageWeightLb',
+        'minWeightLb', 'maxWeightLb',
+        'unitPrice', 'bundlePrice',
+      ];
+      for (const key of numericFields) {
+        const value = product[key];
+        if (typeof value === 'number') fd.append(String(key), String(value));
+      }
+
+      if (product.includedItems?.length) {
+        fd.append('includedItems', product.includedItems.join('|'));
+      }
+
+      // Carry SKU/grade/supplier so the new draft reads as a real cut, but
+      // leave par/reorder unset so the admin reviews them for the new SKU.
+      if (product.sku) fd.append('sku', `${product.sku}-COPY`);
+      if (product.gradeBreed) fd.append('gradeBreed', product.gradeBreed);
+      if (product.supplier) fd.append('supplier', product.supplier);
+
+      // New copies always start unstocked and unpublished — the admin
+      // reviews them before going live.
+      fd.append('stock', '0');
+      fd.append('isActive', 'false');
+      fd.append('isFeatured', 'false');
+      fd.append('isAged', product.isAged ? 'true' : 'false');
+      fd.append('isNewArrival', 'true');
+
       const res = await fetch('/api/products', { method: 'POST', body: fd });
       if (!res.ok) {
         const { message } = await res.json();
         toast.error(message ?? 'Failed to duplicate product');
         return;
       }
-      const data = await res.json();
+      const { data } = await res.json();
       const now = new Date().toISOString();
       setProducts((prev) => [
         {
@@ -150,6 +190,9 @@ export function useProductsTable(initialProducts: ProductTableRow[]) {
           id: data.id as string,
           name: `${product.name} (Copy)`,
           stockCount: 0,
+          isActive: false,
+          isFeatured: false,
+          isNewArrival: true,
           images: [],
           createdAt: now,
           updatedAt: now,
@@ -192,17 +235,7 @@ export function useProductsTable(initialProducts: ProductTableRow[]) {
           }),
         ),
       );
-      // The publish/unpublish path doesn't change a column the table renders,
-      // so the optimistic spread is a no-op — leave the rows as-is. The
-      // price-edit path does need to refresh the rendered price.
-      if (body.price !== undefined) {
-        const price = body.price as number;
-        setProducts((prev) =>
-          prev.map((p) => (selectedIds.has(p.id) ? { ...p, price } : p)),
-        );
-      }
       clearSelection();
-      setEditPriceMode(false);
       toast.success(`${ids.length} product${ids.length !== 1 ? 's' : ''} updated`);
     } catch {
       toast.error('Failed to update some products');
@@ -241,10 +274,6 @@ export function useProductsTable(initialProducts: ProductTableRow[]) {
     remove,
     bulk: {
       loading: bulkLoading,
-      editPriceMode,
-      setEditPriceMode,
-      price: bulkPrice,
-      setPrice: setBulkPrice,
       patch: bulkPatch,
       remove: bulkDelete,
     },

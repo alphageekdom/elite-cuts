@@ -58,14 +58,26 @@ export const PRICE_BAND_FIELD: Record<PricingType, 'packagePrice' | 'pricePerLb'
   bundle: 'bundlePrice',
 };
 
-// Human-readable unit suffix for the warning copy, so "$24.99/lb" reads
-// right for per-lb cuts and "$8.99" reads right for packages.
-const UNIT_SUFFIX: Record<PricingType, string> = {
+// Human-readable price-suffix, so "$24.99/lb" reads right for per-lb cuts
+// and "$8.99" reads right for packages. Also surfaces in the admin products
+// table-row price cell for the same reason — a bundle was previously showing
+// as "$89.99/lb".
+export const UNIT_SUFFIX: Record<PricingType, string> = {
   fixed_package: 'per pack',
   per_lb: '/lb',
   whole_item_by_weight: '/lb',
   each: 'each',
   bundle: '',
+};
+
+// Stock unit displayed alongside the integer stockCount in the products
+// table-row stock cell. Bundles and `each` items count units, not pounds.
+export const STOCK_UNIT: Record<PricingType, string> = {
+  fixed_package: 'packs',
+  per_lb: 'lb',
+  whole_item_by_weight: 'lb',
+  each: 'units',
+  bundle: 'bundles',
 };
 
 const fmt = (n: number) => `$${n.toFixed(2)}`;

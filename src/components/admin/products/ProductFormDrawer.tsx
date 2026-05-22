@@ -17,7 +17,7 @@ import {
 } from '@/lib/products/schema';
 import { coerceProductInput } from '@/lib/products/parse-form-input';
 import { checkPriceBand, PRICE_BAND_FIELD } from '@/lib/products/price-bands';
-import { inputCls, Toggle, DrawerSection, DrawerField } from '@/components/admin/settings/SettingsUI';
+import { inputCls, SelectField, Toggle, DrawerSection, DrawerField } from '@/components/admin/settings/SettingsUI';
 import AdminEyebrow from '@/components/admin/AdminEyebrow';
 import type { ProductTableRow } from '@/types/admin';
 
@@ -26,8 +26,6 @@ type Props = {
   onClose: () => void;
   onSave: (data: FormData, id?: string) => Promise<void>;
 };
-
-const selectCls = `${inputCls} appearance-none cursor-pointer`;
 
 function ToggleRow({ label, desc, on, onToggle }: { label: string; desc: string; on: boolean; onToggle: () => void }) {
   return (
@@ -237,7 +235,7 @@ export default function ProductFormDrawer({ product, onClose, onSave }: Props) {
           <AdminEyebrow size="drawer" className="mb-1">
             {isEdit ? 'Edit product' : 'Add new'}
           </AdminEyebrow>
-          <div className="font-display text-[22px] font-medium tracking-[-0.015em]">
+          <div id="product-form-title" className="font-display text-[22px] font-medium tracking-[-0.015em]">
             {isEdit ? (
               <><em className="italic text-oxblood font-normal">{product.name}</em></>
             ) : (
@@ -271,13 +269,12 @@ export default function ProductFormDrawer({ product, onClose, onSave }: Props) {
           </DrawerField>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <DrawerField label="Category">
-              <select
+              <SelectField
                 value={state.category}
                 onChange={(e) => setField('category', e.target.value)}
-                className={selectCls}
               >
                 {PRODUCT_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-              </select>
+              </SelectField>
               <FieldError message={errors.category} />
             </DrawerField>
             <DrawerField label="Cut type">
@@ -293,15 +290,14 @@ export default function ProductFormDrawer({ product, onClose, onSave }: Props) {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <DrawerField label="Quality tier">
-              <select
+              <SelectField
                 value={state.qualityTier}
                 onChange={(e) => setField('qualityTier', e.target.value as MeatQualityTier)}
-                className={selectCls}
               >
                 {MEAT_QUALITY_TIERS.map((t) => (
                   <option key={t} value={t}>{QUALITY_TIER_LABEL[t]}</option>
                 ))}
-              </select>
+              </SelectField>
               <FieldError message={errors.qualityTier} />
             </DrawerField>
             <DrawerField label="SKU">
@@ -330,7 +326,7 @@ export default function ProductFormDrawer({ product, onClose, onSave }: Props) {
 
         <DrawerSection label="Pricing">
           <DrawerField label="Pricing model">
-            <select
+            <SelectField
               value={state.pricingType}
               onChange={(e) => {
                 // Switching pricing model resets per-type fields so a stale
@@ -345,13 +341,12 @@ export default function ProductFormDrawer({ product, onClose, onSave }: Props) {
                   includedItems: '',
                 }));
               }}
-              className={selectCls}
             >
               <option value="" disabled>Pick a pricing model…</option>
               {PRICING_TYPES.map((t) => (
                 <option key={t} value={t}>{PRICING_TYPE_LABEL[t]}</option>
               ))}
-            </select>
+            </SelectField>
             <FieldError message={errors.pricingType} />
           </DrawerField>
 

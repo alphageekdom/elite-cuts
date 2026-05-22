@@ -47,7 +47,7 @@ const Hero = () => {
         </h1>
 
         <p className='mb-10 max-w-[44ch] animate-[heroRise_0.8s_ease_both_0.42s] text-[18px] leading-relaxed text-cream/90 motion-reduce:animate-none'>
-          Hand-cut beef, pork, poultry, and lamb — pasture-raised, dry-aged
+          Hand-cut beef, pork, chicken, and lamb — pasture-raised, dry-aged
           in-house, and butchered to order. Ready when you are.
         </p>
 

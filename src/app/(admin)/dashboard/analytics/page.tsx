@@ -25,10 +25,11 @@ export const metadata: Metadata = {
 
 // CSS variable values used as inline chart colors — intentionally separate from
 // the Tailwind-class-based CATEGORY_COLORS in admin-constants (those are for pills).
+// Categories not listed fall back to a neutral camel-soft.
 const CHART_CATEGORY_COLORS: Record<string, string> = {
   Beef: 'var(--color-oxblood)',
   Pork: 'var(--color-camel)',
-  Poultry: 'var(--color-green)',
+  Chicken: 'var(--color-green)',
   Lamb: 'var(--color-ink)',
   Charcuterie: 'var(--color-camel-soft)',
   Other: 'var(--color-camel-soft)',
