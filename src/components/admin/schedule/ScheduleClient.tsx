@@ -153,7 +153,7 @@ export default function ScheduleClient({
         subtitle="Staff shifts, pickup slots, and shop hours"
         actions={
           <>
-            <button onClick={() => window.print()} className="inline-flex items-center gap-2 px-4.5 py-2.5 rounded-full bg-paper border border-line text-ink-soft text-[13px] font-medium tracking-[0.02em] hover:border-ink hover:text-ink transition-colors">
+            <button onClick={() => window.print()} className="hidden sm:inline-flex items-center gap-2 px-4.5 py-2.5 rounded-full bg-paper border border-line text-ink-soft text-[13px] font-medium tracking-[0.02em] hover:border-ink hover:text-ink transition-colors">
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="6 9 6 2 18 2 18 9" />
                 <path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" />
@@ -193,16 +193,15 @@ export default function ScheduleClient({
             Today
           </button>
         </div>
-        <span className="inline-flex bg-paper border border-line rounded-full px-3.5 py-1.5 text-xs font-medium text-ink-soft">
-          Week
-        </span>
       </div>
 
       {/* Schedule Layout */}
       <div className="grid gap-6 xl:grid-cols-[1fr_320px] items-start">
         {/* Calendar */}
-        <div className="bg-paper border border-line-soft rounded overflow-hidden overflow-x-auto">
-          <div className="min-w-[640px]">
+        <div className="bg-paper border border-line-soft rounded overflow-hidden relative min-w-0">
+          <div className="pointer-events-none absolute top-0 right-0 bottom-0 w-12 bg-linear-to-l from-paper z-20 sm:hidden" />
+          <div className="overflow-x-auto">
+            <div className="min-w-[640px]">
             {/* Header */}
             <div className="grid grid-cols-[56px_repeat(7,1fr)] border-b border-line-soft">
               <div className="bg-cream" />
@@ -266,11 +265,12 @@ export default function ScheduleClient({
                 </div>
               )}
             </div>
+            </div>
           </div>
         </div>
 
         {/* Sidebar */}
-        <div className="grid gap-4 grid-cols-2 xl:grid-cols-1">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
           <ScheduleTodayCard
             staffCount={staffCount}
             slotsBooked={slotsBooked}

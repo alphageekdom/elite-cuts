@@ -56,7 +56,7 @@ export default function ScheduleOnTodayCard({ todayStaff }: Props) {
                 <div className="font-display text-sm font-medium tracking-tight mb-0.5">{staff.name}</div>
                 <div className="font-mono text-[11px] text-muted tracking-[0.04em]">{staff.time}</div>
               </div>
-              <span className="inline-block px-2 py-0.5 rounded-full text-[10px] tracking-widest uppercase font-medium bg-ink/6 text-ink-soft">
+              <span className="inline-block min-w-0 truncate px-2 py-0.5 rounded-full text-[10px] tracking-widest uppercase font-medium bg-ink/6 text-ink-soft">
                 {staff.role}
               </span>
             </div>
