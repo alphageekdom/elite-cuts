@@ -20,23 +20,12 @@ export default function StocktakeDrawer({ rows, onClose }: Props) {
   );
   const [note, setNote] = useState('');
   const [search, setSearch] = useState('');
+  const [showOnlyChanged, setShowOnlyChanged] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Search filters visible rows but never wipes typed counts — the changed
-  // tally still reflects edits to rows that have scrolled out of view.
-  const visibleRows = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter(
-      (r) =>
-        r.name.toLowerCase().includes(q) ||
-        r.category.toLowerCase().includes(q) ||
-        (r.supplier ?? '').toLowerCase().includes(q),
-    );
-  }, [rows, search]);
-
-  // Rows whose typed count differs from the on-record stock. We submit only
-  // these — the stocktake doc stays a record of real change, not a no-op.
+  // Rows whose typed count differs from on-record stock. Drives the footer
+  // tally, the per-row tint, and the "Show only changed" filter — keep these
+  // three derived from one source so they can't drift.
   const changedEntries = useMemo(() => {
     const out: { row: InventoryRow; counted: number; delta: number }[] = [];
     for (const r of rows) {
@@ -49,6 +38,29 @@ export default function StocktakeDrawer({ rows, onClose }: Props) {
     }
     return out;
   }, [rows, counts]);
+
+  const changedIds = useMemo(
+    () => new Set(changedEntries.map((e) => e.row.id)),
+    [changedEntries],
+  );
+
+  // Search filters visible rows but never wipes typed counts — the changed
+  // tally still reflects edits to rows that have scrolled out of view. The
+  // "Show only changed" toggle composes on top of the search filter.
+  const visibleRows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    let out = rows;
+    if (q) {
+      out = out.filter(
+        (r) =>
+          r.name.toLowerCase().includes(q) ||
+          r.category.toLowerCase().includes(q) ||
+          (r.supplier ?? '').toLowerCase().includes(q),
+      );
+    }
+    if (showOnlyChanged) out = out.filter((r) => changedIds.has(r.id));
+    return out;
+  }, [rows, search, showOnlyChanged, changedIds]);
 
   const totalDelta = changedEntries.reduce((acc, e) => acc + e.delta, 0);
 
@@ -99,21 +111,22 @@ export default function StocktakeDrawer({ rows, onClose }: Props) {
     }
   }
 
-  const fieldCls =
-    'w-full bg-cream border border-line-soft rounded-lg px-4 py-2.5 text-[14px] text-ink placeholder:text-muted focus:outline-none focus:border-ink transition-colors';
+  const inputCls =
+    'w-full bg-cream border border-line-soft rounded-lg px-4 py-2 text-[14px] text-ink placeholder:text-muted focus:outline-none focus:border-ink transition-colors';
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-ink/40" onClick={onClose} aria-hidden="true" />
-      <aside className="relative bg-paper w-full max-w-2xl h-full overflow-y-auto shadow-2xl flex flex-col">
-        {/* Header */}
-        <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-line-soft shrink-0">
+      <aside className="relative bg-paper w-full max-w-2xl h-full shadow-2xl flex flex-col">
+        {/* Header — tighter padding + smaller h2 + description hidden on phones
+            so the cut list starts higher up on iPhone SE. */}
+        <div className="flex items-start justify-between px-6 pt-4 pb-3 sm:pt-6 sm:pb-4 border-b border-line-soft shrink-0">
           <div className="pr-4">
-            <div className="text-[11px] tracking-widest uppercase text-muted mb-1.5">Stocktake</div>
-            <h2 className="font-display text-[22px] font-normal tracking-tight leading-snug">
+            <div className="text-[11px] tracking-widest uppercase text-muted mb-1 sm:mb-1.5">Stocktake</div>
+            <h2 className="font-display text-[20px] sm:text-[22px] font-normal tracking-tight leading-snug">
               Recount <em className="italic text-oxblood font-normal">all cuts.</em>
             </h2>
-            <p className="text-[12px] text-muted mt-1.5 max-w-[44ch]">
+            <p className="hidden sm:block text-[12px] text-muted mt-1.5 max-w-[44ch]">
               Edit the count next to any cut that doesn&apos;t match the case.
               Unchanged rows are skipped; only the differences land in the stocktake record.
             </p>
@@ -130,25 +143,44 @@ export default function StocktakeDrawer({ rows, onClose }: Props) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1">
-          <div className="px-6 pt-5 pb-3 shrink-0">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          {/* Filter + Note stacked above the scroll list so the Note is
+              visible without scrolling past 30 rows. */}
+          <div className="px-6 pt-5 pb-3 shrink-0 space-y-2.5">
             <input
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Filter by cut, category, or supplier…"
-              className="w-full bg-cream border border-line-soft rounded-lg px-4 py-2 text-[14px] text-ink placeholder:text-muted focus:outline-none focus:border-ink transition-colors"
+              className={inputCls}
+            />
+            <input
+              type="text"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Note (optional) — e.g. Friday close"
+              maxLength={500}
+              className={inputCls}
+              aria-label="Stocktake note"
             />
           </div>
-          <div className="flex-1 overflow-y-auto px-6 pb-5">
+          <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-5">
             {grouped.length === 0 ? (
               <p className="text-muted text-sm py-8 text-center">
-                {search.trim() ? 'No cuts match that filter.' : 'No cuts to recount.'}
+                {showOnlyChanged
+                  ? 'No changes yet — toggle off to see every cut.'
+                  : search.trim()
+                  ? 'No cuts match that filter.'
+                  : 'No cuts to recount.'}
               </p>
             ) : (
               grouped.map(([category, rowsInCategory]) => (
                 <div key={category} className="mb-6 last:mb-0">
-                  <div className="text-[11px] font-medium tracking-[0.2em] uppercase text-muted mb-2">
+                  {/* Sticky so the active category stays visible while
+                      scrolling through 30 cuts. -mx-6 / px-6 spans the full
+                      scroll-container width so rows don't peek through the
+                      gutter behind the label. */}
+                  <div className="sticky top-0 z-10 bg-paper -mx-6 px-6 py-2 mb-1 text-[11px] font-medium tracking-[0.2em] uppercase text-muted">
                     {category}
                   </div>
                   <div className="border border-line-soft rounded-lg overflow-hidden">
@@ -159,12 +191,13 @@ export default function StocktakeDrawer({ rows, onClose }: Props) {
                       const delta = validCount ? counted - r.stockCount : 0;
                       const isOutlier =
                         validCount && r.stockCount > 0 && Math.abs(delta) / r.stockCount > OUTLIER_RATIO;
+                      const isChanged = delta !== 0;
                       return (
                         <div
                           key={r.id}
-                          className={`flex items-center gap-3 px-4 py-2.5 text-[14px] ${
+                          className={`flex items-center gap-3 px-4 py-2.5 text-[14px] transition-colors ${
                             idx > 0 ? 'border-t border-line-soft' : ''
-                          }`}
+                          } ${isChanged && !showOnlyChanged ? 'bg-camel/8' : ''}`}
                         >
                           <div className="flex-1 min-w-0">
                             <div className="truncate font-medium text-ink">{r.name}</div>
@@ -203,38 +236,37 @@ export default function StocktakeDrawer({ rows, onClose }: Props) {
                 </div>
               ))
             )}
-
-            <div className="mt-6">
-              <label className="block text-[12px] font-medium text-ink-soft tracking-widest uppercase mb-1.5">
-                Note (optional)
-              </label>
-              <input
-                type="text"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="e.g. Friday close — case + walk-in"
-                maxLength={500}
-                className={fieldCls}
-              />
-            </div>
           </div>
 
-          {/* Footer summary + submit */}
+          {/* Footer — changes count becomes a toggle that filters the list to
+              only changed rows once the admin has edits. */}
           <div className="px-6 py-4 border-t border-line-soft shrink-0 flex items-center justify-between gap-4 bg-cream-deep/30">
-            <div className="text-[12px] text-ink-soft">
-              {changedEntries.length === 0 ? (
-                <span>No changes yet</span>
-              ) : (
-                <>
-                  <span className="font-medium text-ink">{changedEntries.length}</span>{' '}
-                  {changedEntries.length === 1 ? 'change' : 'changes'} ·{' '}
-                  <span className={totalDelta >= 0 ? 'text-green' : 'text-oxblood'}>
-                    {totalDelta >= 0 ? `+${totalDelta}` : totalDelta}
-                  </span>{' '}
-                  total
-                </>
-              )}
-            </div>
+            {changedEntries.length === 0 ? (
+              <div className="text-[12px] text-ink-soft">No changes yet</div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowOnlyChanged((prev) => !prev)}
+                aria-pressed={showOnlyChanged}
+                title={showOnlyChanged ? 'Showing only changed rows — tap to show all' : 'Tap to show only changed rows'}
+                className={`inline-flex items-center gap-1 text-[12px] px-3 py-1.5 rounded-full border transition-colors ${
+                  showOnlyChanged
+                    ? 'border-camel bg-camel/15 text-ink'
+                    : 'border-line-soft text-ink-soft hover:border-ink hover:bg-cream'
+                }`}
+              >
+                <span className="font-medium text-ink">{changedEntries.length}</span>
+                <span>{changedEntries.length === 1 ? 'change' : 'changes'}</span>
+                <span className="text-muted">·</span>
+                <span className={totalDelta >= 0 ? 'text-green' : 'text-oxblood'}>
+                  {totalDelta >= 0 ? `+${totalDelta}` : totalDelta}
+                </span>
+                <span>total</span>
+                {showOnlyChanged && (
+                  <span className="ml-1 text-[10px] uppercase tracking-widest text-camel">· filtered</span>
+                )}
+              </button>
+            )}
             <button
               type="submit"
               disabled={saving || changedEntries.length === 0}
