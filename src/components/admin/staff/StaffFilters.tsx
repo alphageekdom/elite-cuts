@@ -57,26 +57,30 @@ function Pill({
 
 export default function StaffFilters({ active, onChange, counts }: Props) {
   return (
-    <div className="flex flex-wrap items-center gap-2 mb-5">
-      {STATUS_FILTERS.map((f) => (
-        <Pill
-          key={f.key}
-          label={f.label}
-          count={counts[f.key]}
-          isActive={active === f.key}
-          onClick={() => onChange(f.key)}
-        />
-      ))}
+    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center mb-5">
+      <div className="flex flex-wrap items-center gap-2">
+        {STATUS_FILTERS.map((f) => (
+          <Pill
+            key={f.key}
+            label={f.label}
+            count={counts[f.key]}
+            isActive={active === f.key}
+            onClick={() => onChange(f.key)}
+          />
+        ))}
+      </div>
       <span className="hidden sm:inline-block w-px h-5 bg-line-soft mx-1" aria-hidden="true" />
-      {ROLE_FILTERS.map((f) => (
-        <Pill
-          key={f.key}
-          label={f.label}
-          count={counts[f.key]}
-          isActive={active === f.key}
-          onClick={() => onChange(f.key)}
-        />
-      ))}
+      <div className="flex flex-wrap items-center gap-2">
+        {ROLE_FILTERS.map((f) => (
+          <Pill
+            key={f.key}
+            label={f.label}
+            count={counts[f.key]}
+            isActive={active === f.key}
+            onClick={() => onChange(f.key)}
+          />
+        ))}
+      </div>
     </div>
   );
 }
