@@ -3,26 +3,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getInitials, formatMoney, avatarColorForId } from '@/lib/format';
 import { AVATAR_COLORS } from '@/lib/admin-constants';
+import {
+  DASHBOARD_ORDER_STATUS_STYLES,
+  getDashboardOrderStatusLabel,
+} from '@/lib/order-status';
 import type { OrderRow } from '@/types/admin';
 export type { OrderRow };
-
-const STATUS_STYLES: Record<string, string> = {
-  'Order Placed':     'bg-line-soft text-ink-soft',
-  'Preparing':        'bg-camel/15 text-camel',
-  'Ready for Pickup': 'bg-camel/15 text-camel',
-  'Out for Delivery': 'bg-camel/15 text-camel',
-  'Completed':        'bg-green-soft text-green',
-  'Cancelled':        'bg-red-soft text-oxblood',
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  'Order Placed':     'Placed',
-  'Preparing':        'Preparing',
-  'Ready for Pickup': 'Ready',
-  'Out for Delivery': 'Out',
-  'Completed':        'Completed',
-  'Cancelled':        'Cancelled',
-};
 
 
 type Props = {
@@ -72,8 +58,8 @@ export default function DashboardRecentOrders({ orders }: Props) {
               {orders.map((order) => {
                 const avatarColor = avatarColorForId(order.id, AVATAR_COLORS);
                 const initials = getInitials(order.customerName);
-                const statusStyle = STATUS_STYLES[order.status] ?? 'bg-line-soft text-ink-soft';
-                const statusLabel = STATUS_LABELS[order.status] ?? order.status;
+                const statusStyle = DASHBOARD_ORDER_STATUS_STYLES[order.status] ?? 'bg-line-soft text-ink-soft';
+                const statusLabel = getDashboardOrderStatusLabel(order.status);
 
                 return (
                   <tr key={order.id} className="group">

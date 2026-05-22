@@ -7,21 +7,13 @@ import { withAdmin } from '@/lib/api-handler';
 import { toCsv, csvFilename } from '@/lib/csv';
 import { refundSummary } from '@/lib/order-refunds';
 import { excludeDemoOrders } from '@/lib/demo/exclude';
-import type { RangeKey } from '@/components/admin/analytics/RangeToggle';
+import {
+  DAY_MS,
+  RANGE_DAYS,
+  parseOptionalRange,
+} from '@/lib/admin/range-buckets';
 
 export const dynamic = 'force-dynamic';
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-const ALLOWED_RANGES = ['7D', '30D', '90D', '1Y'] as const satisfies readonly RangeKey[];
-const RANGE_DAYS: Record<RangeKey, number> = { '7D': 7, '30D': 30, '90D': 90, '1Y': 360 };
-
-const parseRange = (raw: string | null): RangeKey | null => {
-  if (!raw) return null;
-  const upper = raw.toUpperCase();
-  return (ALLOWED_RANGES as readonly string[]).includes(upper)
-    ? (upper as RangeKey)
-    : null;
-};
 
 const ALLOWED_PAYMENTS = ['Completed', 'Pending', 'Refunded', 'Partially Refunded'] as const;
 type PaymentValue = (typeof ALLOWED_PAYMENTS)[number];
@@ -65,7 +57,7 @@ export const GET = withAdmin(async (req) => {
     const url = new URL(req.url);
     const statusParam = url.searchParams.get('status')?.trim() ?? '';
     const search = url.searchParams.get('search')?.trim() ?? '';
-    const range = parseRange(url.searchParams.get('range'));
+    const range = parseOptionalRange(url.searchParams.get('range'));
     const paymentParam = url.searchParams.get('payment')?.trim() ?? '';
     const fulfillmentParam = url.searchParams.get('fulfillment')?.trim() ?? '';
     // Phase D — `?includeDemo=true` opts the demo customer back into the

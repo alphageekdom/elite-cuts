@@ -6,15 +6,20 @@ import User from '@/models/User';
 import Order from '@/models/Order';
 import type { Types } from 'mongoose';
 
-import DashboardPageHeader from '@/components/admin/dashboard/DashboardPageHeader';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import DashboardStatGrid from '@/components/admin/dashboard/DashboardStatGrid';
 import DashboardTopCuts from '@/components/admin/dashboard/DashboardTopCuts';
 import DashboardRecentOrders from '@/components/admin/dashboard/DashboardRecentOrders';
 import type { OrderRow } from '@/components/admin/dashboard/DashboardRecentOrders';
-import RevenueCard, { type RevenueBucket } from '@/components/admin/analytics/RevenueCard';
-import type { RangeKey } from '@/components/admin/analytics/RangeToggle';
-import { MONTH_ABBR } from '@/lib/format';
+import RevenueCard from '@/components/admin/analytics/RevenueCard';
 import { excludeDemoOrders } from '@/lib/demo/exclude';
+import {
+  DAY_MS,
+  RANGE_DAYS,
+  RANGE_BUCKETS,
+  parseRange,
+  buildRangeBuckets,
+} from '@/lib/admin/range-buckets';
 
 type PopulatedUser = {
   _id: Types.ObjectId;
@@ -26,26 +31,6 @@ export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Dashboard · EliteCuts Admin',
-};
-
-const DAY_MS = 86400000;
-const WEEKDAY_ABBR = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-
-const ALLOWED_RANGES: RangeKey[] = ['7D', '30D', '90D', '1Y'];
-const RANGE_DAYS: Record<RangeKey, number> = { '7D': 7, '30D': 30, '90D': 90, '1Y': 360 };
-const RANGE_BUCKETS: Record<
-  RangeKey,
-  { count: number; sizeDays: number; unit: 'Day' | 'Week' | 'Biweekly' | 'Monthly' }
-> = {
-  '7D': { count: 7, sizeDays: 1, unit: 'Day' },
-  '30D': { count: 5, sizeDays: 6, unit: 'Week' },
-  '90D': { count: 6, sizeDays: 15, unit: 'Biweekly' },
-  '1Y': { count: 12, sizeDays: 30, unit: 'Monthly' },
-};
-
-const parseRange = (raw: string | undefined): RangeKey => {
-  const upper = raw?.toUpperCase();
-  return ALLOWED_RANGES.includes(upper as RangeKey) ? (upper as RangeKey) : '30D';
 };
 
 type Props = {
@@ -82,16 +67,10 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
   const excludeDemoUser = { isDemo: { $ne: true } };
 
   const [
-    usersCount, ordersCount, revenueResult, rawOrders, topCutsRaw,
+    rawOrders, topCutsRaw,
     chartOrders, chartPrevOrders,
     currentPeriodAgg, prevPeriodAgg, currentCustomers, prevCustomers,
   ] = await Promise.all([
-      User.countDocuments(excludeDemoUser),
-      Order.countDocuments(excludeDemo),
-      Order.aggregate<{ total: number }>([
-        { $match: excludeDemo },
-        { $group: { _id: null, total: { $sum: '$totalCost' } } },
-      ]),
       Order.find(excludeDemo)
         .sort({ createdAt: -1 })
         .limit(5)
@@ -142,10 +121,8 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
       }),
     ]);
 
-  const revenue = revenueResult[0]?.total ?? 0;
-  const avgOrder = ordersCount > 0 ? Math.round(revenue / ordersCount) : 0;
-
-  // Period-over-period stats for change pills
+  // Headline stat values use the active 30-day window so the value and its
+  // change pill compare the same period — see context history 2026-05-13.
   const currentMonthRevenue = currentPeriodAgg[0]?.total ?? 0;
   const currentMonthOrders  = currentPeriodAgg[0]?.count ?? 0;
   const prevMonthRevenue    = prevPeriodAgg[0]?.total ?? 0;
@@ -160,36 +137,7 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
     widthPct: Math.round((c.revenue / maxRevenue) * 100),
   }));
 
-  // Bucket chart orders into range-sized windows — daily for 7D, weekly for
-  // 30D, biweekly for 90D, monthly for 1Y. Same shape RevenueCard expects.
-  const chartBuckets: RevenueBucket[] = [];
-  for (let i = bucketCfg.count - 1; i >= 0; i--) {
-    const bEnd = new Date(now.getTime() - i * bucketCfg.sizeDays * DAY_MS);
-    const bStart = new Date(bEnd.getTime() - bucketCfg.sizeDays * DAY_MS);
-    const prevEnd = new Date(bEnd.getTime() - rangeDays * DAY_MS);
-    const prevStart = new Date(bStart.getTime() - rangeDays * DAY_MS);
-
-    let label: string;
-    if (bucketCfg.unit === 'Day') {
-      label = WEEKDAY_ABBR[bEnd.getDay()];
-    } else if (bucketCfg.unit === 'Week') {
-      label = `WK ${bucketCfg.count - i}`;
-    } else if (bucketCfg.unit === 'Monthly') {
-      label = MONTH_ABBR[bStart.getMonth()];
-    } else {
-      label = `${MONTH_ABBR[bStart.getMonth()]} ${bStart.getDate()}`;
-    }
-
-    chartBuckets.push({
-      label,
-      value: chartOrders
-        .filter((o) => o.createdAt >= bStart && o.createdAt < bEnd)
-        .reduce((s, o) => s + o.totalCost, 0),
-      prevValue: chartPrevOrders
-        .filter((o) => o.createdAt >= prevStart && o.createdAt < prevEnd)
-        .reduce((s, o) => s + o.totalCost, 0),
-    });
-  }
+  const chartBuckets = buildRangeBuckets(range, now, chartOrders, chartPrevOrders);
   const chartTotal = chartOrders.reduce((s, o) => s + o.totalCost, 0);
   const chartPrevTotal = chartPrevOrders.reduce((s, o) => s + o.totalCost, 0);
 
@@ -210,21 +158,35 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
   });
 
   const name = sessionUser.user.name ?? 'Admin';
+  const today = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
 
   return (
     <>
-      <DashboardPageHeader name={name} />
+      <AdminPageHeader
+        eyebrow={`Welcome back, ${name}`}
+        breadcrumb="Overview"
+        title="This month's"
+        titleAccent="counter."
+        subtitle={
+          <>
+            {today}
+            <span className="mx-2">·</span>
+            Here&apos;s how the shop is running.
+          </>
+        }
+      />
       <DashboardStatGrid
-        revenue={revenue}
-        orders={ordersCount}
-        customers={usersCount}
-        avgOrder={avgOrder}
-        currentMonthRevenue={currentMonthRevenue}
-        prevMonthRevenue={prevMonthRevenue}
-        currentMonthOrders={currentMonthOrders}
-        prevMonthOrders={prevMonthOrders}
-        currentMonthCustomers={currentCustomers}
-        prevMonthCustomers={prevCustomers}
+        currentRevenue={currentMonthRevenue}
+        prevRevenue={prevMonthRevenue}
+        currentOrders={currentMonthOrders}
+        prevOrders={prevMonthOrders}
+        currentNewCustomers={currentCustomers}
+        prevNewCustomers={prevCustomers}
       />
       <div className="grid grid-cols-1 lg:grid-cols-[1.7fr_1fr] gap-4 mb-4">
         <RevenueCard

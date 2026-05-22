@@ -1,18 +1,10 @@
 'use client';
 import { getInitials, formatDateTime } from '@/lib/format';
 import { printReceipt } from '@/lib/print-receipt';
+import { TABLE_ORDER_STATUS_PILL } from '@/lib/order-status';
 import type { OrderTableRow } from '@/types/admin';
 import type { OrderColumnVisibility } from '@/hooks/useOrderColumns';
 import DemoPill from '@/components/demo/DemoPill';
-
-const STATUS_PILL: Record<string, { bg: string; text: string; label: string; camel?: boolean }> = {
-  'Order Placed':     { bg: 'bg-line-soft',  text: 'text-muted',    label: 'Order Placed' },
-  'Preparing':        { bg: '',              text: 'text-camel',    label: 'Preparing',        camel: true },
-  'Ready for Pickup': { bg: '',              text: 'text-camel',    label: 'Ready',            camel: true },
-  'Out for Delivery': { bg: '',              text: 'text-camel',    label: 'Out for Delivery', camel: true },
-  'Completed':        { bg: 'bg-green-soft', text: 'text-green',    label: 'Completed' },
-  'Cancelled':        { bg: 'bg-red-soft',   text: 'text-oxblood',  label: 'Cancelled' },
-};
 
 type Props = {
   order: OrderTableRow;
@@ -33,7 +25,7 @@ export default function OrderTableRowComponent({
   onToggleSelect,
   onDelete,
 }: Props) {
-  const pill     = STATUS_PILL[order.status] ?? { bg: 'bg-line-soft', text: 'text-muted', label: order.status };
+  const pill     = TABLE_ORDER_STATUS_PILL[order.status] ?? { bg: 'bg-line-soft', text: 'text-muted', label: order.status };
   const initials = getInitials(order.customerName);
   const { day, time } = formatDateTime(order.createdAt);
   const refundedCount = order.items.filter((it) => it.refunded).length;
