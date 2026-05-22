@@ -41,7 +41,7 @@ export default function ScheduleTodayCard({
   ];
 
   return (
-    <div className='bg-ink text-cream relative col-span-2 overflow-hidden rounded p-7 xl:col-span-1'>
+    <div className='bg-ink text-cream relative sm:col-span-2 overflow-hidden rounded p-7 xl:col-span-1'>
       <div className='pointer-events-none absolute -top-24 -right-24 h-65 w-65 rounded-full bg-[radial-gradient(circle,rgba(184,137,90,0.18)_0%,transparent_60%)]' />
       <div className='relative z-2'>
         <div className='text-camel-soft mb-3.5 flex items-center gap-2 text-[10px] tracking-[0.22em] uppercase'>

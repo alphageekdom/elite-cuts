@@ -245,7 +245,7 @@ export default function ShiftFormDrawer({
       subtitle={isEdit ? 'Update or remove this hour slot' : 'One staff member, one hour slot'}
       onClose={onClose}
     >
-      <form onSubmit={handleSubmit} className="flex flex-col flex-1 px-6 py-5 gap-5">
+      <form onSubmit={handleSubmit} className="flex flex-col px-6 py-5 gap-5">
           <div>
             <FieldLabel>Staff</FieldLabel>
             <select
@@ -331,7 +331,7 @@ export default function ShiftFormDrawer({
             <ColorSwatchPicker value={color} onChange={setColor} />
           </div>
 
-          <div className="mt-auto pt-4 border-t border-line-soft space-y-3">
+          <div className="pt-4 border-t border-line-soft space-y-3">
             <button
               type="submit"
               disabled={submitDisabled}
