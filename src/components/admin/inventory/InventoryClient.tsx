@@ -351,16 +351,10 @@ export default function InventoryClient({
                   Cut
                 </th>
                 <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">
-                  Aged
-                </th>
-                <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">
                   Category
                 </th>
                 <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">
                   Stock
-                </th>
-                <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">
-                  Status
                 </th>
                 <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">
                   Supplier
@@ -374,7 +368,7 @@ export default function InventoryClient({
             <tbody>
               {pageRows.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-16 text-muted text-[14px]">
+                  <td colSpan={6} className="text-center py-16 text-muted text-[14px]">
                     No cuts match your filters.
                   </td>
                 </tr>

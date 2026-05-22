@@ -9,8 +9,23 @@ import {
   STATUS_BADGE,
   STATUS_LABEL,
 } from '@/lib/staff-display';
-import StaffActionsMenu from './StaffActionsMenu';
+import AdminRowActionsMenu, { type RowActionsMenuItem } from '@/components/admin/AdminRowActionsMenu';
 import type { StaffRow } from '@/lib/staff-display';
+
+// SVG icons reused by every staff row — defined module-scope so React doesn't
+// re-create them on every render.
+const ICON_VIEW = (
+  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
+const ICON_EDIT = (
+  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+  </svg>
+);
 
 type Props = {
   rows: StaffRow[];
@@ -112,12 +127,14 @@ export default function StaffTable({ rows, onOpenProfile, onEdit }: Props) {
                 )}
               </td>
               <td className="px-6 py-4 text-right">
-                <StaffActionsMenu
-                  staffName={s.name}
+                <AdminRowActionsMenu
+                  ariaLabel={`Actions for ${s.name}`}
                   open={isMenuOpen}
                   onOpenChange={(next) => setOpenMenuId(next ? s.id : null)}
-                  onViewProfile={() => onOpenProfile(s)}
-                  onEdit={() => onEdit(s)}
+                  items={[
+                    { label: 'View profile', icon: ICON_VIEW, onSelect: () => onOpenProfile(s) },
+                    { label: 'Edit staff', icon: ICON_EDIT, onSelect: () => onEdit(s) },
+                  ] satisfies RowActionsMenuItem[]}
                 />
               </td>
             </tr>

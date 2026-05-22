@@ -1,14 +1,24 @@
 'use client';
-import { useLayoutEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { productImageSrc, formatMoney } from '@/lib/format';
 import { CATEGORY_COLORS } from '@/lib/admin-constants';
-import { computeFloatingMenuPos, type FloatingMenuPos } from '@/lib/floatingMenu';
+import AdminRowActionsMenu, { type RowActionsMenuItem } from '@/components/admin/AdminRowActionsMenu';
 import type { ProductTableRow } from '@/types/admin';
 
-// Matches w-44 (11rem at 16px). The portal-positioned menu pins to the More
-// button right-aligned, matching the row-relative version it replaced.
-const MENU_WIDTH = 176;
+const ICON_DUPLICATE = (
+  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+  </svg>
+);
+const ICON_ARCHIVE = (
+  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <polyline points="21 8 21 21 3 21 3 8" /><rect x="1" y="3" width="22" height="5" /><line x1="10" y1="12" x2="14" y2="12" />
+  </svg>
+);
+const ICON_DELETE = (
+  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4h6v2" />
+  </svg>
+);
 
 const STOCK_FILL: Record<string, string> = {
   healthy: 'var(--color-green)',
@@ -58,39 +68,7 @@ export default function ProductTableRowComponent({
   const catClass = CATEGORY_COLORS[product.category] ?? 'bg-cream-deep text-ink-soft';
   const thumb    = productImageSrc(product.images[0]);
 
-  const moreBtnRef = useRef<HTMLButtonElement | null>(null);
-  const [menuPos, setMenuPos] = useState<FloatingMenuPos | null>(null);
   const isMenuOpen = openMenuId === product.id;
-
-  // The products table sits inside an `overflow-x-auto` wrapper that also
-  // has `overflow-hidden` ancestors, so a normally positioned absolute
-  // dropdown gets clipped on the last row. Portal the menu to body and
-  // pin it via the shared floating-menu helper, which also flips above
-  // the trigger when the viewport is too short to fit the menu below.
-  useLayoutEffect(() => {
-    // No early-clear of menuPos: the portaled dropdown is also gated on
-    // `isMenuOpen` below, so a stale position when closed never reaches the
-    // DOM, and the next open overwrites menuPos via `update()`.
-    if (!isMenuOpen) return;
-    const update = () => {
-      const btn = moreBtnRef.current;
-      if (!btn) return;
-      // 3 items × ~44px + 1 divider ≈ 145px.
-      setMenuPos(
-        computeFloatingMenuPos(btn.getBoundingClientRect(), {
-          menuWidth: MENU_WIDTH,
-          estimatedMenuHeight: 150,
-        }),
-      );
-    };
-    update();
-    window.addEventListener('scroll', update, true);
-    window.addEventListener('resize', update);
-    return () => {
-      window.removeEventListener('scroll', update, true);
-      window.removeEventListener('resize', update);
-    };
-  }, [isMenuOpen]);
 
   return (
     <tr
@@ -167,21 +145,6 @@ export default function ProductTableRowComponent({
         </div>
       </td>
 
-      {/* Status */}
-      <td className="px-4 py-4">
-        {product.stockCount > 0 ? (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-[0.04em] bg-green-soft text-green">
-            <span className="w-1.5 h-1.5 rounded-full bg-current" />
-            In Stock
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-[0.04em] bg-red-soft text-oxblood">
-            <span className="w-1.5 h-1.5 rounded-full bg-current" />
-            Out of Stock
-          </span>
-        )}
-      </td>
-
       {/* Tags */}
       <td className="px-4 py-4">
         <div className="flex flex-wrap gap-1 max-w-40">
@@ -214,48 +177,17 @@ export default function ProductTableRowComponent({
                 <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
               </svg>
             </button>
-            <button
-              ref={moreBtnRef}
-              onClick={() => onMenuToggle(isMenuOpen ? null : product.id)}
-              aria-label="More actions"
-              aria-haspopup="menu"
-              aria-expanded={isMenuOpen}
-              className="w-7 h-7 rounded-full border border-line text-ink-soft grid place-items-center hover:border-ink hover:bg-cream hover:text-ink transition-colors"
-            >
-              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
-                <circle cx="12" cy="12" r="1.5" /><circle cx="19" cy="12" r="1.5" /><circle cx="5" cy="12" r="1.5" />
-              </svg>
-            </button>
+            <AdminRowActionsMenu
+              ariaLabel={`Actions for ${product.name}`}
+              open={isMenuOpen}
+              onOpenChange={(next) => onMenuToggle(next ? product.id : null)}
+              items={[
+                { label: 'Duplicate', icon: ICON_DUPLICATE, onSelect: () => onDuplicate(product) },
+                { label: 'Archive', icon: ICON_ARCHIVE, onSelect: () => onArchive(product.id) },
+                { label: 'Delete', icon: ICON_DELETE, destructive: true, divider: true, onSelect: () => onDelete(product.id) },
+              ] satisfies RowActionsMenuItem[]}
+            />
           </div>
-          {isMenuOpen && menuPos && createPortal(
-            <div
-              role="menu"
-              style={{ top: menuPos.top, left: menuPos.left, width: MENU_WIDTH }}
-              className="fixed z-50 rounded-lg shadow-xl overflow-hidden bg-ink border border-cream/25"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button onClick={() => onDuplicate(product)} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left text-cream hover:bg-cream/10 transition-colors">
-                <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-                </svg>
-                Duplicate
-              </button>
-              <button onClick={() => onArchive(product.id)} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left text-cream hover:bg-cream/10 transition-colors">
-                <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
-                </svg>
-                Archive
-              </button>
-              <div className="border-t border-cream/25" />
-              <button onClick={() => onDelete(product.id)} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left text-red-400 hover:bg-cream/10 transition-colors">
-                <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
-                </svg>
-                Delete
-              </button>
-            </div>,
-            document.body,
-          )}
         </div>
       </td>
     </tr>

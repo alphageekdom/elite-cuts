@@ -63,7 +63,6 @@ export default function CustomersClient({ customers, counts, total, newThisWeek 
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [perPage, setPerPage] = useState(PAGE_SIZES[0]);
 
   async function handleExport() {
@@ -279,9 +278,7 @@ export default function CustomersClient({ customers, counts, total, newThisWeek 
                   <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Tier</th>
                   <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">Lifetime spend ↓</th>
                   <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Orders</th>
-                  <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">Avg order</th>
                   <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">Last order</th>
-                  <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Activity</th>
                   <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Tags</th>
                   <th className="pr-6 py-3.5" />
                 </tr>
@@ -299,10 +296,8 @@ export default function CustomersClient({ customers, counts, total, newThisWeek 
                       key={cust.id}
                       cust={cust}
                       isSelected={selectedIds.has(cust.id)}
-                      openMenuId={openMenuId}
                       onView={table.drawer.open}
                       onToggleSelect={table.selection.toggleSelect}
-                      onMenuToggle={setOpenMenuId}
                       onDelete={table.actions.softDelete}
                     />
                   ))
@@ -324,10 +319,6 @@ export default function CustomersClient({ customers, counts, total, newThisWeek 
           onPerPageChange={(n) => { setPerPage(n); setPage(1); }}
         />
       </div>
-
-      {openMenuId && (
-        <div className="fixed inset-0 z-10" onClick={() => setOpenMenuId(null)} />
-      )}
 
       {/* Drawer backdrop — only one drawer is ever open at a time, so close
           whichever it is rather than chain both calls. */}
