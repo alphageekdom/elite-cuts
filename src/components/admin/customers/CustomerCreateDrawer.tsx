@@ -37,14 +37,6 @@ export default function CustomerCreateDrawer({ onClose, onCreated }: Props) {
     nameInputRef.current?.focus();
   }, []);
 
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
-    }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
-
   const canSubmit = name.trim() && email.trim() && !emailError;
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -103,7 +95,7 @@ export default function CustomerCreateDrawer({ onClose, onCreated }: Props) {
         <div className="relative z-10 flex items-start justify-between">
           <div>
             <AdminEyebrow size="drawer" className="mb-1">New customer</AdminEyebrow>
-            <div className="font-display text-[26px] font-medium tracking-tight leading-tight">
+            <div id="customer-create-title" className="font-display text-[26px] font-medium tracking-tight leading-tight">
               Add a customer
             </div>
             <div className="font-mono text-[11px] text-cream/55 tracking-[0.04em] mt-1.5">

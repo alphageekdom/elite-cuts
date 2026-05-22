@@ -14,7 +14,11 @@ export const TIER_CONFIG: Record<Tier, { label: string; pillClass: string; showS
 };
 
 export const ACTIVITY_CONFIG: Record<ActivityStatus, { label: string; pillClass: string }> = {
-  active: { label: 'Active', pillClass: 'bg-green-soft text-green' },
+  // `active` only renders on the dark hero block in CustomerDetailDrawer, so it
+  // uses the brighter green tokens that read on `bg-ink`. The other states
+  // appear on lighter backgrounds and stay with their canonical green-soft /
+  // camel / oxblood pills.
+  active: { label: 'Active', pillClass: 'bg-green/25 text-green-bright' },
   dormant: { label: 'Dormant', pillClass: 'bg-camel/20 text-camel' },
   'at-risk': { label: 'At risk', pillClass: 'bg-red-soft text-oxblood' },
   new: { label: 'New', pillClass: 'bg-ink text-cream' },

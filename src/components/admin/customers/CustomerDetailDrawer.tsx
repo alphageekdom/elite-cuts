@@ -1,21 +1,18 @@
 'use client';
-import { useState } from 'react';
 import { toast } from 'sonner';
-import { formatMoney, formatDate, relativeTime, getInitials } from '@/lib/format';
+import { formatMoney, formatDate, relativeTime } from '@/lib/format';
 import { useDrawerForm } from '@/hooks/useDrawerForm';
 import { inputCls } from '@/components/admin/settings/SettingsUI';
-import AdminEyebrow from '@/components/admin/AdminEyebrow';
 import type { CustomerTableRow } from '@/types/admin';
-import { getTier, getActivity, TIER_CONFIG, ACTIVITY_CONFIG, deriveTags } from './customerUtils';
-export type { Tier, ActivityStatus } from './customerUtils';
-export { TIER_CONFIG, ACTIVITY_CONFIG, getTier, getActivity, deriveTags } from './customerUtils';
-
-
+import { deriveTags } from './customerUtils';
+import CustomerDetailHero from './CustomerDetailHero';
+import CustomerDetailFooter from './CustomerDetailFooter';
 
 type Props = {
   customer: CustomerTableRow;
   onClose: () => void;
   onSave: (id: string, data: { name: string; email: string; phone: string }) => Promise<void>;
+  onSaveNote: (id: string, adminNote: string) => Promise<void>;
   onDelete: (id: string, opts?: { reason?: string; immediate?: boolean }) => Promise<void>;
   onCancelDeletion?: (id: string) => Promise<void>;
   onCancelDormancy?: (id: string) => Promise<void>;
@@ -25,6 +22,7 @@ export default function CustomerDetailDrawer({
   customer,
   onClose,
   onSave,
+  onSaveNote,
   onDelete,
   onCancelDeletion,
   onCancelDormancy,
@@ -41,44 +39,22 @@ export default function CustomerDetailDrawer({
     async (vals) => onSave(customer.id, { name: vals.name.trim(), email: vals.email.trim(), phone: vals.phone.trim() }),
     '', // parent's onSave already shows the success toast
   );
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [deleteReason, setDeleteReason] = useState('');
-  const [deleteImmediate, setDeleteImmediate] = useState(false);
-  const [cancelling, setCancelling] = useState(false);
-  const [cancellingDormancy, setCancellingDormancy] = useState(false);
-  const isSoftDeleted = Boolean(customer.deletedAt);
-  const isDormancyWarned = Boolean(customer.dormancyWarnedAt) && !isSoftDeleted;
-  const scheduledForLabel = (() => {
-    if (!customer.deletionScheduledFor) return '';
-    const d = new Date(customer.deletionScheduledFor);
-    return Number.isNaN(d.getTime())
-      ? ''
-      : d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-  })();
-  // Format both the warning date and the scheduled cleanup date (warning + 30d)
-  // so the pill can show "sent on X, cleanup on Y".
-  const dormancyLabels = (() => {
-    if (!customer.dormancyWarnedAt) return { warned: '', cleanup: '' };
-    const warned = new Date(customer.dormancyWarnedAt);
-    if (Number.isNaN(warned.getTime())) return { warned: '', cleanup: '' };
-    const cleanup = new Date(warned.getTime() + 30 * 24 * 60 * 60 * 1000);
-    const fmt = (d: Date) =>
-      d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-    return { warned: fmt(warned), cleanup: fmt(cleanup) };
-  })();
-  const [noteEditing, setNoteEditing] = useState(false);
-  const [noteText, setNoteText] = useState(customer.adminNote ?? '');
-  const [savingNote, setSavingNote] = useState(false);
 
-  const tier = getTier(customer.orderCount);
-  const activity = getActivity(customer);
-  const tierCfg = TIER_CONFIG[tier];
-  const actCfg = ACTIVITY_CONFIG[activity];
-  const initials = getInitials(customer.name);
-  const avgOrder = customer.orderCount > 0 ? customer.totalSpend / customer.orderCount : 0;
+  const {
+    editing: noteEditing,
+    setEditing: setNoteEditing,
+    values: { adminNote: noteText },
+    setField: setNoteField,
+    saving: savingNote,
+    save: saveNote,
+    reset: resetNote,
+  } = useDrawerForm(
+    { adminNote: customer.adminNote ?? '' },
+    async (vals) => onSaveNote(customer.id, vals.adminNote),
+    'Note saved',
+  );
+
   const tags = deriveTags(customer);
-  const custId = `CUST-${customer.id.slice(-5).toUpperCase()}`;
 
   async function handleSave() {
     if (!editName.trim() || !editEmail.trim()) {
@@ -88,158 +64,9 @@ export default function CustomerDetailDrawer({
     await saveContact();
   }
 
-  async function handleDelete() {
-    if (deleteImmediate && !deleteReason.trim()) {
-      toast.error('Reason is required for immediate hard delete');
-      return;
-    }
-    setDeleting(true);
-    try {
-      await onDelete(customer.id, {
-        reason: deleteReason.trim() || undefined,
-        immediate: deleteImmediate,
-      });
-    } finally {
-      setDeleting(false);
-    }
-  }
-
-  async function handleCancelDeletion() {
-    if (!onCancelDeletion) return;
-    setCancelling(true);
-    try {
-      await onCancelDeletion(customer.id);
-    } finally {
-      setCancelling(false);
-    }
-  }
-
-  async function handleCancelDormancy() {
-    if (!onCancelDormancy) return;
-    setCancellingDormancy(true);
-    try {
-      await onCancelDormancy(customer.id);
-    } finally {
-      setCancellingDormancy(false);
-    }
-  }
-
   return (
     <>
-      {/* Hero */}
-      <div className="relative bg-ink text-cream px-6 py-6 sm:px-8 sm:py-8 shrink-0 overflow-hidden">
-        <div className="absolute -top-30 -right-30 w-64 h-64 rounded-full pointer-events-none bg-[radial-gradient(circle,rgba(184,137,90,0.18)_0%,transparent_60%)]" />
-
-        <div className="relative z-10">
-          <div className="flex items-start justify-between gap-3 mb-6">
-            <div className="min-w-0 flex-1">
-              <AdminEyebrow size="drawer" className="mb-1">Customer profile</AdminEyebrow>
-              <div className="font-mono text-[11px] text-cream/50 tracking-[0.04em] truncate">
-                {custId} · MEMBER SINCE {formatDate(customer.createdAt).toUpperCase()}
-              </div>
-            </div>
-            <button
-              onClick={onClose}
-              className="w-9 h-9 rounded-full border border-cream/15 bg-cream/8 text-cream grid place-items-center hover:border-cream/30 transition-colors shrink-0"
-            >
-              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          </div>
-
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-camel text-ink grid place-items-center font-display font-semibold text-[20px] sm:text-[22px] shrink-0">
-              {initials}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="font-display text-[22px] sm:text-[26px] font-medium tracking-tight leading-tight mb-1 wrap-break-word">
-                {customer.name}
-              </div>
-              <div className="font-mono text-[12px] text-cream/65 tracking-[0.04em] mb-2.5 wrap-break-word">
-                {customer.email.toUpperCase()}
-                {customer.phone && (
-                  <>
-                    {' · '}
-                    <span className="whitespace-nowrap">{customer.phone}</span>
-                  </>
-                )}
-              </div>
-              <div className="flex gap-2 flex-wrap">
-                {isSoftDeleted && (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-[0.04em] bg-oxblood/25 text-cream border border-oxblood/40">
-                    <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <circle cx="12" cy="12" r="10" />
-                      <line x1="12" y1="8" x2="12" y2="12" />
-                      <line x1="12" y1="16" x2="12.01" y2="16" />
-                    </svg>
-                    {scheduledForLabel
-                      ? `Scheduled for deletion on ${scheduledForLabel}`
-                      : 'Scheduled for deletion'}
-                  </span>
-                )}
-                {isDormancyWarned && (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-[0.04em] bg-camel/25 text-cream border border-camel/40">
-                    <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <circle cx="12" cy="12" r="10" />
-                      <polyline points="12 6 12 12 16 14" />
-                    </svg>
-                    {dormancyLabels.warned && dormancyLabels.cleanup
-                      ? `Dormancy warning sent ${dormancyLabels.warned} · cleanup on ${dormancyLabels.cleanup}`
-                      : 'Dormancy warning sent'}
-                  </span>
-                )}
-                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium tracking-widest uppercase ${tierCfg.pillClass}`}>
-                  {tierCfg.showStar && (
-                    <svg className="w-2.5 h-2.5 fill-current shrink-0" viewBox="0 0 24 24">
-                      <path d="M12 2l2.39 7.36H22l-6.18 4.49L18.21 21 12 16.51 5.79 21l2.39-7.15L2 9.36h7.61z" />
-                    </svg>
-                  )}
-                  {tierCfg.label}
-                </span>
-                <span
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-[0.04em] ${actCfg.pillClass}`}
-                  style={
-                    activity === 'active'
-                      ? { background: 'rgba(74,107,58,0.25)', color: '#B8DBA8' }
-                      : undefined
-                  }
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                  {actCfg.label}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* KPI strip */}
-          <div className="grid grid-cols-3 pt-5 border-t border-cream/12">
-            <div className="pr-4 border-r border-cream/8">
-              <div className="text-[10px] tracking-[0.18em] uppercase text-cream/50 mb-2">Lifetime spend</div>
-              <div className="font-display text-[20px] font-normal leading-none tracking-tight mb-0.5">
-                {formatMoney(customer.totalSpend)}
-              </div>
-              <div className="font-mono text-[11px] text-cream/50 tracking-[0.04em]">
-                {customer.orderCount} ORDER{customer.orderCount !== 1 ? 'S' : ''}
-              </div>
-            </div>
-            <div className="px-4 border-r border-cream/8">
-              <div className="text-[10px] tracking-[0.18em] uppercase text-cream/50 mb-2">Avg order</div>
-              <div className="font-display text-[20px] font-normal leading-none tracking-tight mb-0.5">
-                {avgOrder > 0 ? formatMoney(avgOrder) : '—'}
-              </div>
-              <div className="font-mono text-[11px] text-cream/50 tracking-[0.04em]">PER ORDER</div>
-            </div>
-            <div className="pl-4">
-              <div className="text-[10px] tracking-[0.18em] uppercase text-cream/50 mb-2">Saved cuts</div>
-              <div className="font-display text-[20px] font-normal leading-none tracking-tight mb-0.5">
-                {customer.savedCutsCount}
-              </div>
-              <div className="font-mono text-[11px] text-cream/50 tracking-[0.04em]">FAVOURITES</div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <CustomerDetailHero customer={customer} onClose={onClose} />
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto px-8 py-6">
@@ -397,41 +224,21 @@ export default function CustomerDetailDrawer({
             <div className="space-y-2">
               <textarea
                 value={noteText}
-                onChange={(e) => setNoteText(e.target.value)}
+                onChange={(e) => setNoteField('adminNote', e.target.value)}
                 placeholder="Add an internal note…"
                 rows={3}
                 className={`${inputCls} resize-y`}
               />
               <div className="flex gap-2">
                 <button
-                  onClick={() => { setNoteEditing(false); setNoteText(customer.adminNote ?? ''); }}
+                  onClick={resetNote}
                   className="flex-1 px-4 py-2 rounded-full border border-line text-ink-soft text-[13px] font-medium hover:border-ink hover:text-ink transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   disabled={savingNote}
-                  onClick={async () => {
-                    setSavingNote(true);
-                    try {
-                      const res = await fetch(`/api/users/${customer.id}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ adminNote: noteText }),
-                      });
-                      if (!res.ok) {
-                        const { message } = await res.json();
-                        toast.error(message ?? 'Failed to save note');
-                        return;
-                      }
-                      setNoteEditing(false);
-                      toast.success('Note saved');
-                    } catch {
-                      toast.error('Failed to save note');
-                    } finally {
-                      setSavingNote(false);
-                    }
-                  }}
+                  onClick={saveNote}
                   className="flex-1 px-4 py-2 rounded-full bg-ink text-cream text-[13px] font-medium hover:bg-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {savingNote ? 'Saving…' : 'Save'}
@@ -447,116 +254,13 @@ export default function CustomerDetailDrawer({
 
       </div>
 
-      {/* Footer */}
-      <div className="px-8 py-4.5 bg-paper border-t border-line-soft shrink-0">
-        {confirmDelete ? (
-          <div className="flex flex-col gap-3">
-            <div>
-              <div className="text-[10px] font-medium tracking-[0.18em] uppercase text-muted mb-1.5">
-                Reason {deleteImmediate && <span className="text-oxblood normal-case tracking-normal">· required</span>}
-              </div>
-              <textarea
-                value={deleteReason}
-                onChange={(e) => setDeleteReason(e.target.value)}
-                rows={2}
-                maxLength={1000}
-                placeholder={deleteImmediate ? 'Spam, abuse, fake reviews…' : 'Optional — noted in the audit log'}
-                className={`${inputCls} resize-y text-[13px]`}
-              />
-            </div>
-            <label className="flex items-start gap-2.5 text-[13px] text-ink-soft cursor-pointer">
-              <input
-                type="checkbox"
-                checked={deleteImmediate}
-                onChange={(e) => setDeleteImmediate(e.target.checked)}
-                className="mt-0.5 accent-oxblood"
-              />
-              <span>
-                Immediate hard-delete <span className="text-muted">(skip the 30-day grace; permanent)</span>
-              </span>
-            </label>
-            <div className="flex gap-2">
-              <button
-                onClick={() => { setConfirmDelete(false); setDeleteReason(''); setDeleteImmediate(false); }}
-                className="flex-1 px-4 py-2.5 rounded-full border border-line text-ink-soft text-[13px] font-medium hover:border-ink hover:text-ink transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={deleting || (deleteImmediate && !deleteReason.trim())}
-                className="flex-1 px-4 py-2.5 rounded-full bg-oxblood text-cream text-[13px] font-medium hover:bg-oxblood/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {deleting
-                  ? 'Deleting…'
-                  : deleteImmediate
-                    ? 'Hard-delete now'
-                    : 'Schedule deletion'}
-              </button>
-            </div>
-          </div>
-        ) : isSoftDeleted ? (
-          <div className="flex gap-2">
-            <button
-              onClick={handleCancelDeletion}
-              disabled={cancelling || !onCancelDeletion}
-              className="flex-1 inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-full bg-ink text-cream text-[13px] font-medium hover:bg-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {cancelling ? 'Cancelling…' : 'Cancel deletion'}
-            </button>
-            <button
-              onClick={() => setConfirmDelete(true)}
-              aria-label="Delete now"
-              className="w-10 h-10 rounded-full border border-line text-ink-soft grid place-items-center hover:border-oxblood hover:text-oxblood transition-colors shrink-0"
-              title="Delete immediately"
-            >
-              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
-              </svg>
-            </button>
-          </div>
-        ) : isDormancyWarned ? (
-          <div className="flex gap-2">
-            <button
-              onClick={handleCancelDormancy}
-              disabled={cancellingDormancy || !onCancelDormancy}
-              className="flex-1 inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-full bg-ink text-cream text-[13px] font-medium hover:bg-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {cancellingDormancy ? 'Cancelling…' : 'Cancel dormancy cleanup'}
-            </button>
-            <button
-              onClick={() => setConfirmDelete(true)}
-              aria-label="Delete customer"
-              className="w-10 h-10 rounded-full border border-line text-ink-soft grid place-items-center hover:border-oxblood hover:text-oxblood transition-colors shrink-0"
-            >
-              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
-              </svg>
-            </button>
-          </div>
-        ) : (
-          <div className="flex gap-2">
-            <button
-              onClick={() => setEditing(true)}
-              className="flex-1 inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-full bg-ink text-cream text-[13px] font-medium hover:bg-oxblood transition-colors"
-            >
-              Edit profile
-              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-              </svg>
-            </button>
-            <button
-              onClick={() => setConfirmDelete(true)}
-              aria-label="Delete customer"
-              className="w-10 h-10 rounded-full border border-line text-ink-soft grid place-items-center hover:border-oxblood hover:text-oxblood transition-colors shrink-0"
-            >
-              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
-              </svg>
-            </button>
-          </div>
-        )}
-      </div>
+      <CustomerDetailFooter
+        customer={customer}
+        onDelete={onDelete}
+        onCancelDeletion={onCancelDeletion}
+        onCancelDormancy={onCancelDormancy}
+        onEditProfile={() => setEditing(true)}
+      />
     </>
   );
 }

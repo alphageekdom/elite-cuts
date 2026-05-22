@@ -50,6 +50,21 @@ export function useCustomersTable(initialCustomers: CustomerTableRow[]) {
     }
   }
 
+  // Throws on failure so the drawer's `useDrawerForm` hook can show its own
+  // toast — matches the contract `useDrawerForm` expects from its onSave.
+  async function saveNote(id: string, adminNote: string) {
+    const res = await fetch(`/api/users/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ adminNote }),
+    });
+    if (!res.ok) {
+      const { message } = await res.json().catch(() => ({}));
+      throw new Error(message ?? 'Failed to save note');
+    }
+    patchRow(id, { adminNote });
+  }
+
   async function softDelete(id: string, opts: { reason?: string; immediate?: boolean } = {}) {
     try {
       const res = await fetch(`/api/users/${id}`, {
@@ -228,6 +243,7 @@ export function useCustomersTable(initialCustomers: CustomerTableRow[]) {
     },
     actions: {
       save,
+      saveNote,
       softDelete,
       cancelDeletion,
       cancelDormancy,
