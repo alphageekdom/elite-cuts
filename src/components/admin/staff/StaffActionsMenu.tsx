@@ -94,7 +94,11 @@ export default function StaffActionsMenu({
           e.stopPropagation();
           onOpenChange(!open);
         }}
-        className="w-8 h-8 grid place-items-center rounded-full text-muted hover:text-ink hover:bg-cream/80 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-oxblood/40"
+        className={`w-8 h-8 grid place-items-center rounded-full border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-oxblood/40 ${
+          open
+            ? 'border-oxblood text-ink bg-cream'
+            : 'border-transparent text-muted hover:text-ink hover:bg-cream/80'
+        }`}
       >
         <svg
           width="16"
