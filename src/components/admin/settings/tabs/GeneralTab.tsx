@@ -2,6 +2,32 @@ import { SelectField, inputCls, labelCls, sectionTitleCls, sectionSubCls, btnPri
 import DemoResetCard from '../DemoResetCard';
 import type { ShopSettings, DormancyThreshold } from '@/models/ShopSettings';
 
+const US_STATES = [
+  'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DC', 'DE', 'FL',
+  'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME',
+  'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH',
+  'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI',
+  'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY',
+];
+
+const TIMEZONES = [
+  // US
+  'America/New_York (ET)',
+  'America/Chicago (CT)',
+  'America/Denver (MT)',
+  'America/Phoenix (MST, no DST)',
+  'America/Los_Angeles (PT)',
+  'America/Anchorage (AKT)',
+  'Pacific/Honolulu (HST)',
+  // Canada
+  'America/Halifax (AT)',
+  'America/St_Johns (NT)',
+  'America/Toronto (ET)',
+  'America/Winnipeg (CT)',
+  'America/Edmonton (MT)',
+  'America/Vancouver (PT)',
+];
+
 type Props = {
   values: ShopSettings;
   onChange: (patch: Partial<ShopSettings>) => void;
@@ -67,7 +93,7 @@ export default function GeneralTab({ values, onChange, onSave, onDiscard, saving
           <div>
             <label className={labelCls}>State</label>
             <SelectField value={values.state} onChange={(e) => onChange({ state: e.target.value })}>
-              <option>CA</option><option>NV</option><option>AZ</option>
+              {US_STATES.map((s) => <option key={s}>{s}</option>)}
             </SelectField>
           </div>
           <div>
@@ -84,8 +110,7 @@ export default function GeneralTab({ values, onChange, onSave, onDiscard, saving
           <div>
             <label className={labelCls}>Timezone</label>
             <SelectField value={values.timezone} onChange={(e) => onChange({ timezone: e.target.value })}>
-              <option>America/Los_Angeles (PT)</option>
-              <option>America/Denver (MT)</option>
+              {TIMEZONES.map((tz) => <option key={tz}>{tz}</option>)}
             </SelectField>
           </div>
           <div>

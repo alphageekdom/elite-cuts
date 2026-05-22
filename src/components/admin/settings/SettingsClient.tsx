@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
-import { SaveToast } from './SettingsToast';
-import AdminEyebrow from '@/components/admin/AdminEyebrow';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import GeneralTab from './tabs/GeneralTab';
 import NotificationsTab from './tabs/NotificationsTab';
 import RewardsTab from './tabs/RewardsTab';
@@ -27,9 +26,9 @@ const DEFAULTS: ShopSettings = {
 };
 
 const MAIN_TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
-  { key: 'general', label: 'General', icon: (<svg className="w-3.75 h-3.75" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>) },
-  { key: 'notifications', label: 'Notifications', icon: (<svg className="w-3.75 h-3.75" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 01-3.46 0" /></svg>) },
-  { key: 'rewards', label: 'Rewards', icon: (<svg className="w-3.75 h-3.75" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2l2.39 7.36H22l-6.18 4.49L18.21 21 12 16.51 5.79 21l2.39-7.15L2 9.36h7.61z" /></svg>) },
+  { key: 'general', label: 'General', icon: (<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>) },
+  { key: 'notifications', label: 'Notifications', icon: (<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 01-3.46 0" /></svg>) },
+  { key: 'rewards', label: 'Rewards', icon: (<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2l2.39 7.36H22l-6.18 4.49L18.21 21 12 16.51 5.79 21l2.39-7.15L2 9.36h7.61z" /></svg>) },
 ];
 
 export default function SettingsClient() {
@@ -37,7 +36,6 @@ export default function SettingsClient() {
   const [settings, setSettings] = useState<ShopSettings>(DEFAULTS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [toastVisible, setToastVisible] = useState(false);
   const savedRef = useRef<ShopSettings>(DEFAULTS);
 
   useEffect(() => {
@@ -69,8 +67,7 @@ export default function SettingsClient() {
         return;
       }
       savedRef.current = settings;
-      setToastVisible(true);
-      setTimeout(() => setToastVisible(false), 2400);
+      toast.success('Settings saved');
     } catch {
       toast.error('Failed to save settings');
     } finally {
@@ -83,21 +80,24 @@ export default function SettingsClient() {
 
   return (
     <>
-      <div className="mb-9">
-        <AdminEyebrow size="page" className="mb-1.5">Configuration</AdminEyebrow>
-        <h1 className="font-display font-normal text-[clamp(36px,4vw,52px)] leading-none tracking-tight mb-1">
-          Shop <em className="italic text-oxblood">settings</em>
-        </h1>
-        <p className="text-sm text-muted tracking-[0.02em]">Shop profile, notifications, and rewards in one place</p>
-      </div>
+      <AdminPageHeader
+        eyebrow="Configuration"
+        breadcrumb="Settings"
+        title="Shop"
+        titleAccent="settings"
+        subtitle="Shop profile, notifications, and rewards in one place"
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-10 items-start">
         <nav className="md:sticky md:top-25">
-          <ul className="flex flex-row flex-wrap gap-1 md:flex-col md:gap-0.5">
+          {/* Phone widths get a 3-column grid so all three pills sit on one
+              line at equal width. From md: up we fall back to the vertical
+              sidebar list. */}
+          <ul className="grid grid-cols-3 gap-1 md:flex md:flex-col md:gap-0.5">
             {MAIN_TABS.map(({ key, label, icon }) => (
               <li key={key}>
                 <button type="button" onClick={() => setTab(key)}
-                  className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg text-sm w-full text-left transition-colors ${tab === key ? 'bg-ink text-cream' : 'text-ink-soft hover:bg-paper hover:text-ink'}`}
+                  className={`flex items-center justify-center md:justify-start gap-2.5 px-3.5 py-2.5 rounded-lg text-sm w-full text-left transition-colors ${tab === key ? 'bg-ink text-cream' : 'text-ink-soft hover:bg-paper hover:text-ink'}`}
                 >
                   <span className={tab === key ? 'opacity-100' : 'opacity-70'}>{icon}</span>
                   {label}
@@ -119,8 +119,6 @@ export default function SettingsClient() {
           )}
         </div>
       </div>
-
-      <SaveToast visible={toastVisible} />
     </>
   );
 }
