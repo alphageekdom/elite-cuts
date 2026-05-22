@@ -7,7 +7,11 @@ import { toast } from 'sonner';
 import { enablePromo, disablePromo } from '@/actions/promos';
 import { btnPrimary } from '@/components/admin/settings/SettingsUI';
 import AdminStatStrip, { type StatCell } from '@/components/admin/AdminStatStrip';
+import SlideDrawer from '@/components/admin/SlideDrawer';
 import PromoFormDrawer, { type PromoFormRow } from '@/components/admin/promos/PromoFormDrawer';
+import PromosPageHeader from '@/components/admin/promos/PromosPageHeader';
+import { useStatFilter } from '@/hooks/useStatFilter';
+import { formatMoney } from '@/lib/format';
 import { formatPromoLabel } from '@/lib/promos/format';
 
 type PromoStatus = 'active' | 'scheduled' | 'expired' | 'exhausted' | 'disabled';
@@ -44,10 +48,23 @@ export default function PromosClient({ promos, savingsByPromoId }: Props) {
   const [, startTransition] = useTransition();
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [now] = useState(() => Date.now());
-  const [activeKey, setActiveKey] = useState<FilterKey>('all');
+  const { activeKey, selectKey } = useStatFilter<FilterKey>('all');
 
-  const { rowsWithStatus, counts, filteredRows } = useMemo(() => {
-    const withStatus = promos.map((p) => ({ promo: p, status: deriveStatus(p, now) }));
+  const { counts, filteredRows } = useMemo(() => {
+    const withStatus = promos.map((p) => {
+      const status = deriveStatus(p, now);
+      return {
+        promo: p,
+        status,
+        statusCopy: STATUS_COPY[status],
+        typeLabel: formatPromoLabel(p),
+        usedDisplay:
+          p.usageLimit == null
+            ? `${p.usageCount} / ∞`
+            : `${p.usageCount} / ${p.usageLimit}`,
+        savings: savingsByPromoId[p.id] ?? 0,
+      };
+    });
     const tally: Record<PromoStatus, number> = {
       active: 0, scheduled: 0, expired: 0, exhausted: 0, disabled: 0,
     };
@@ -55,11 +72,11 @@ export default function PromosClient({ promos, savingsByPromoId }: Props) {
     const filtered = activeKey === 'all'
       ? withStatus
       : withStatus.filter((row) => row.status === activeKey);
-    return { rowsWithStatus: withStatus, counts: tally, filteredRows: filtered };
-  }, [promos, now, activeKey]);
+    return { counts: tally, filteredRows: filtered };
+  }, [promos, now, activeKey, savingsByPromoId]);
 
   const cells: StatCell[] = [
-    { key: 'all',       label: 'All codes',  value: rowsWithStatus.length, meta: 'total' },
+    { key: 'all',       label: 'All codes',  value: promos.length, meta: 'total' },
     ...STATUS_ORDER.map((s) => ({
       key: s,
       label: STATUS_COPY[s].label,
@@ -105,30 +122,18 @@ export default function PromosClient({ promos, savingsByPromoId }: Props) {
     router.refresh();
   };
 
-  const showEmptyAll = rowsWithStatus.length === 0;
+  const showEmptyAll = promos.length === 0;
   const showEmptyFiltered = !showEmptyAll && filteredRows.length === 0;
   const activeFilterLabel = activeKey === 'all' ? null : STATUS_COPY[activeKey].label.toLowerCase();
 
   return (
     <div className="px-6 py-8 lg:px-10">
-      <header className="mb-6 flex flex-col items-start gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted">
-            → Promo codes
-          </p>
-          <h1 className="mt-1 font-display text-[22px] font-medium tracking-tight sm:text-[28px]">
-            {promos.length} code{promos.length === 1 ? '' : 's'}
-          </h1>
-        </div>
-        <button type="button" onClick={openCreate} className={btnPrimary}>
-          + New promo
-        </button>
-      </header>
+      <PromosPageHeader total={promos.length} onNewPromo={openCreate} />
 
       <AdminStatStrip
         cells={cells}
         activeKey={activeKey}
-        onSelect={(k) => setActiveKey(k as FilterKey)}
+        onSelect={(k) => selectKey(k as FilterKey)}
         cols="grid-cols-2 sm:grid-cols-3 lg:grid-cols-6"
         wideBreakpoint="lg"
       />
@@ -154,7 +159,7 @@ export default function PromosClient({ promos, savingsByPromoId }: Props) {
           No {activeFilterLabel} promo codes right now.{' '}
           <button
             type="button"
-            onClick={() => setActiveKey('all')}
+            onClick={() => selectKey('all')}
             className="underline decoration-line underline-offset-2 hover:text-ink"
           >
             Show all codes
@@ -166,13 +171,7 @@ export default function PromosClient({ promos, savingsByPromoId }: Props) {
         <>
           {/* Mobile card list — below sm: the 6-column table overflows the iPhone SE viewport */}
           <div className="space-y-3 sm:hidden">
-            {filteredRows.map(({ promo: p, status }) => {
-              const statusCopy = STATUS_COPY[status];
-              const typeLabel = formatPromoLabel(p);
-              const usedDisplay = p.usageLimit == null
-                ? `${p.usageCount} / ∞`
-                : `${p.usageCount} / ${p.usageLimit}`;
-              const savings = savingsByPromoId[p.id] ?? 0;
+            {filteredRows.map(({ promo: p, statusCopy, typeLabel, usedDisplay, savings }) => {
               return (
                 <div
                   key={p.id}
@@ -205,9 +204,9 @@ export default function PromosClient({ promos, savingsByPromoId }: Props) {
                     <span aria-hidden="true" className="text-muted/50">·</span>
                     <span>{usedDisplay}</span>
                     <span aria-hidden="true" className="text-muted/50">·</span>
-                    <span>${savings.toFixed(2)}</span>
+                    <span>{formatMoney(savings)}</span>
                   </div>
-                  <div className="mt-2 flex justify-end">
+                  <div className="mt-2 flex justify-end" onClick={(e) => e.stopPropagation()}>
                     <button
                       type="button"
                       onClick={(e) => toggleActive(p, e)}
@@ -249,13 +248,7 @@ export default function PromosClient({ promos, savingsByPromoId }: Props) {
                 </tr>
               </thead>
               <tbody>
-                {filteredRows.map(({ promo: p, status }) => {
-                  const statusCopy = STATUS_COPY[status];
-                  const typeLabel = formatPromoLabel(p);
-                  const usedDisplay = p.usageLimit == null
-                    ? `${p.usageCount} / ∞`
-                    : `${p.usageCount} / ${p.usageLimit}`;
-                  const savings = savingsByPromoId[p.id] ?? 0;
+                {filteredRows.map(({ promo: p, statusCopy, typeLabel, usedDisplay, savings }) => {
                   return (
                     <tr
                       key={p.id}
@@ -289,22 +282,24 @@ export default function PromosClient({ promos, savingsByPromoId }: Props) {
                         {usedDisplay}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3.5 text-right font-mono text-[12px] text-ink-soft">
-                        ${savings.toFixed(2)}
+                        {formatMoney(savings)}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3.5 text-right">
                         <div className="flex items-center justify-end gap-3">
-                          <button
-                            type="button"
-                            onClick={(e) => toggleActive(p, e)}
-                            disabled={togglingId === p.id}
-                            className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-medium tracking-[0.04em] transition-colors disabled:cursor-wait disabled:opacity-50 ${
-                              p.isActive
-                                ? 'border-line text-ink-soft hover:border-oxblood hover:text-oxblood'
-                                : 'border-line text-ink-soft hover:border-ink hover:text-ink'
-                            }`}
-                          >
-                            {togglingId === p.id ? '…' : p.isActive ? 'Disable' : 'Enable'}
-                          </button>
+                          <span onClick={(e) => e.stopPropagation()}>
+                            <button
+                              type="button"
+                              onClick={(e) => toggleActive(p, e)}
+                              disabled={togglingId === p.id}
+                              className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-medium tracking-[0.04em] transition-colors disabled:cursor-wait disabled:opacity-50 ${
+                                p.isActive
+                                  ? 'border-line text-ink-soft hover:border-oxblood hover:text-oxblood'
+                                  : 'border-line text-ink-soft hover:border-ink hover:text-ink'
+                              }`}
+                            >
+                              {togglingId === p.id ? '…' : p.isActive ? 'Disable' : 'Enable'}
+                            </button>
+                          </span>
                           <svg
                             aria-hidden="true"
                             className="h-3.5 w-3.5 shrink-0 text-muted/40 transition-colors group-hover:text-oxblood"
@@ -328,26 +323,20 @@ export default function PromosClient({ promos, savingsByPromoId }: Props) {
         </>
       )}
 
-      {drawerOpen && (
-        <div
-          className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm"
-          onClick={closeDrawer}
-        />
-      )}
-      <aside
-        className={`fixed top-0 right-0 z-51 flex h-screen w-full max-w-150 flex-col bg-cream shadow-2xl transition-transform duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
-          drawerOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
+      <SlideDrawer
+        open={drawerOpen}
+        onClose={closeDrawer}
+        ariaLabelledBy="promo-form-title"
+        widthClass="max-w-150"
       >
         {drawerOpen && (
           <PromoFormDrawer
-            key={isCreating ? 'new' : drawerPromo?.id}
             promo={isCreating ? null : drawerPromo}
             onClose={closeDrawer}
             onSaved={onSaved}
           />
         )}
-      </aside>
+      </SlideDrawer>
     </div>
   );
 }

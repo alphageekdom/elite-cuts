@@ -175,7 +175,7 @@ export default function PromoFormDrawer({ promo, onClose, onSaved }: Props) {
           <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted">
             → {isEdit ? 'Edit promo' : 'New promo'}
           </p>
-          <h2 className="mt-1 font-display text-[22px] font-medium tracking-tight">
+          <h2 id="promo-form-title" className="mt-1 font-display text-[22px] font-medium tracking-tight">
             {isEdit ? promo!.code : 'Create a code'}
           </h2>
         </div>
