@@ -23,22 +23,6 @@ const STOCK_BAR_COLOR: Record<StockState, string> = {
   over:    'bg-camel',
 };
 
-const STOCK_STATUS_STYLE: Record<StockState, string> = {
-  healthy: 'bg-green-soft text-green',
-  low:     'bg-amber-soft text-amber',
-  critical:'bg-red-soft text-oxblood',
-  out:     'bg-[rgba(28,24,20,0.06)] text-muted',
-  over:    'bg-green-soft text-green',
-};
-
-const STOCK_STATUS_LABEL: Record<StockState, string> = {
-  healthy: 'In stock',
-  low:     'Low stock',
-  critical:'Critical',
-  out:     'Out of stock',
-  over:    'Overstocked',
-};
-
 type Props = {
   row: InventoryRow;
   stockEditId: string | null;
@@ -89,17 +73,6 @@ export default function InventoryTableRowComponent({
         </div>
       </td>
 
-      {/* Aging */}
-      <td className="px-4 py-3.5">
-        {row.isAged ? (
-          <div className="font-mono text-[11px] text-muted tracking-[0.04em] leading-relaxed">
-            <strong className="text-ink font-medium">Aged</strong>
-          </div>
-        ) : (
-          <span className="text-[12px] text-muted">—</span>
-        )}
-      </td>
-
       {/* Category */}
       <td className="px-4 py-3.5">
         <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-medium tracking-[0.12em] uppercase ${CATEGORY_COLORS[row.category] ?? 'bg-cream-deep text-muted'}`}>
@@ -120,12 +93,6 @@ export default function InventoryTableRowComponent({
         </div>
       </td>
 
-      {/* Status */}
-      <td className="px-4 py-3.5">
-        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-[0.04em] whitespace-nowrap before:content-[''] before:w-1.5 before:h-1.5 before:rounded-full before:bg-current ${STOCK_STATUS_STYLE[state]}`}>
-          {STOCK_STATUS_LABEL[state]}
-        </span>
-      </td>
 
       {/* Supplier */}
       <td className="px-4 py-3.5">

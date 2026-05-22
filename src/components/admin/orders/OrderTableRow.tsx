@@ -18,11 +18,9 @@ type Props = {
   order: OrderTableRow;
   avatarColor: string;
   isSelected: boolean;
-  openMenuId: string | null;
   visibleColumns: OrderColumnVisibility;
   onView: (order: OrderTableRow) => void;
   onToggleSelect: (id: string) => void;
-  onMenuToggle: (id: string | null) => void;
   onDelete: (id: string) => void;
 };
 
@@ -30,11 +28,9 @@ export default function OrderTableRowComponent({
   order,
   avatarColor,
   isSelected,
-  openMenuId,
   visibleColumns,
   onView,
   onToggleSelect,
-  onMenuToggle,
   onDelete,
 }: Props) {
   const pill     = STATUS_PILL[order.status] ?? { bg: 'bg-line-soft', text: 'text-muted', label: order.status };
@@ -142,7 +138,7 @@ export default function OrderTableRowComponent({
       )}
 
       <td className="pr-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
-        <div className={`relative inline-flex gap-1 transition-opacity ${openMenuId === order.id ? '' : 'opacity-40 group-hover:opacity-100'}`}>
+        <div className="inline-flex gap-1 opacity-40 group-hover:opacity-100 pointer-coarse:opacity-100 transition-opacity">
           <button onClick={() => onView(order)} aria-label="View order" className="w-7 h-7 rounded-full border border-line text-ink-soft grid place-items-center hover:border-ink hover:bg-cream hover:text-ink transition-colors">
             <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
@@ -153,28 +149,11 @@ export default function OrderTableRowComponent({
               <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>
             </svg>
           </button>
-          <button onClick={() => onMenuToggle(openMenuId === order.id ? null : order.id)} aria-label="More" className="w-7 h-7 rounded-full border border-line text-ink-soft grid place-items-center hover:border-ink hover:bg-cream hover:text-ink transition-colors">
-            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
-              <circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/>
+          <button onClick={() => onDelete(order.id)} aria-label="Delete order" className="w-7 h-7 rounded-full border border-line text-ink-soft grid place-items-center hover:border-oxblood hover:bg-red-soft hover:text-oxblood transition-colors">
+            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
             </svg>
           </button>
-          {openMenuId === order.id && (
-            <div className="absolute right-0 top-full mt-1 z-20 w-40 rounded-lg shadow-xl overflow-hidden bg-ink border border-cream/25">
-              <button onClick={() => { onView(order); onMenuToggle(null); }} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left text-cream hover:bg-cream/10 transition-colors">
-                <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                View details
-              </button>
-              <button onClick={() => { printReceipt(order); onMenuToggle(null); }} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left text-cream hover:bg-cream/10 transition-colors">
-                <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-                Print receipt
-              </button>
-              <div className="border-t border-cream/25" />
-              <button onClick={() => onDelete(order.id)} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-left text-red-400 hover:bg-cream/10 transition-colors">
-                <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-                Delete order
-              </button>
-            </div>
-          )}
         </div>
       </td>
     </tr>

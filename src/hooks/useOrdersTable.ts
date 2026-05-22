@@ -34,7 +34,6 @@ export function useOrdersTable(initialOrders: OrderTableRow[]) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [statusUpdate, setStatusUpdate] = useState<string>('');
   const [bulkLoading, setBulkLoading] = useState('');
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const drawer = useAdminDrawer<OrderTableRow>();
 
   function patchRow(id: string, updater: (row: OrderTableRow) => OrderTableRow) {
@@ -303,7 +302,6 @@ export function useOrdersTable(initialOrders: OrderTableRow[]) {
         return;
       }
       setOrders((prev) => prev.filter((o) => o.id !== id));
-      setOpenMenuId(null);
       toast.success('Order deleted');
     } catch {
       toast.error('Failed to delete order');
@@ -354,10 +352,6 @@ export function useOrdersTable(initialOrders: OrderTableRow[]) {
     bulk: {
       loading: bulkLoading,
       updateStatus: bulkUpdateStatus,
-    },
-    menu: {
-      openId: openMenuId,
-      setOpenId: setOpenMenuId,
     },
     actions: {
       updateOrder,

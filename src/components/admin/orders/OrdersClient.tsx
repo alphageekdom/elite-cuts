@@ -312,11 +312,9 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
                       order={order}
                       avatarColor={AVATAR_COLORS[i % AVATAR_COLORS.length]}
                       isSelected={selectedIds.has(order.id)}
-                      openMenuId={table.menu.openId}
                       visibleColumns={visibleColumns}
                       onView={table.drawer.open}
                       onToggleSelect={table.selection.toggleSelect}
-                      onMenuToggle={table.menu.setOpenId}
                       onDelete={table.actions.deleteOrder}
                     />
                   ))
@@ -338,10 +336,6 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
           onPerPageChange={(n) => { setPerPage(n); setPage(1); }}
         />
       </div>
-
-      {table.menu.openId && (
-        <div className="fixed inset-0 z-10" onClick={() => table.menu.setOpenId(null)} />
-      )}
 
       {/* Drawer backdrop */}
       {table.drawer.isOpen && (
