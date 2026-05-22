@@ -7,8 +7,9 @@ import AnalyticsRevenueChart from './sections/AnalyticsRevenueChart';
 import AnalyticsFunnelSection from './sections/AnalyticsFunnelSection';
 import AnalyticsHeatmap from './sections/AnalyticsHeatmap';
 import { buildSparklinePath } from '@/lib/sparkline';
+import type { RangeKey } from '@/lib/admin/range-buckets';
 
-export type AnalyticsRange = '7D' | '30D' | '90D' | '1Y';
+export type AnalyticsRange = RangeKey;
 
 export type AnalyticsData = {
   range: AnalyticsRange;

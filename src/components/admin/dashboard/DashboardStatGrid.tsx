@@ -1,63 +1,34 @@
+import ChangePill from '@/components/admin/ChangePill';
 import { formatMoney } from '@/lib/format';
 
 type Stat = {
   label: string;
   value: string;
   valueSuffix?: string;
-  change: string;
-  changeDir: 'up' | 'down';
+  change: number | null;
   changeMeta: string;
   icon: React.ReactNode;
   delay: string;
 };
 
 type Props = {
-  revenue: number;
-  orders: number;
-  customers: number;
-  avgOrder: number;
-  currentMonthRevenue: number;
-  prevMonthRevenue: number;
-  currentMonthOrders: number;
-  prevMonthOrders: number;
-  currentMonthCustomers: number;
-  prevMonthCustomers: number;
+  currentRevenue: number;
+  prevRevenue: number;
+  currentOrders: number;
+  prevOrders: number;
+  currentNewCustomers: number;
+  prevNewCustomers: number;
 };
 
-function pctChange(current: number, prev: number): { label: string; dir: 'up' | 'down' } | null {
+function pctChange(current: number, prev: number): number | null {
   if (prev === 0) return null;
-  const pct = ((current - prev) / prev) * 100;
-  return {
-    label: `${Math.abs(pct).toFixed(1)}%`,
-    dir: pct >= 0 ? 'up' : 'down',
-  };
+  return ((current - prev) / prev) * 100;
 }
-
-function countChange(current: number, prev: number): { label: string; dir: 'up' | 'down' } | null {
-  if (prev === 0 && current === 0) return null;
-  const diff = current - prev;
-  return {
-    label: diff >= 0 ? `+${diff} new` : `${diff} new`,
-    dir: diff >= 0 ? 'up' : 'down',
-  };
-}
-
-const ArrowUp = () => (
-  <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-    <polyline points="18 15 12 9 6 15" />
-  </svg>
-);
-
-const ArrowDown = () => (
-  <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-    <polyline points="6 9 12 15 18 9" />
-  </svg>
-);
 
 function StatCard({ stat }: { stat: Stat }) {
   return (
     <div
-      className="bg-paper rounded-[4px] px-5 md:px-6.5 py-6 border border-line-soft hover:-translate-y-0.5 transition-transform duration-400"
+      className="bg-paper rounded-sm px-5 md:px-6.5 py-6 border border-line-soft hover:-translate-y-0.5 transition-transform duration-400"
       style={{
         animation: `dashStatRise 0.8s cubic-bezier(0.2,0.8,0.2,1) ${stat.delay} both`,
       }}
@@ -71,7 +42,7 @@ function StatCard({ stat }: { stat: Stat }) {
         </span>
       </div>
 
-      <div className="font-display text-[40px] font-normal leading-none tracking-[-0.025em] mb-3">
+      <div className="font-display text-[40px] font-normal leading-none tracking-tight mb-3">
         {stat.value}
         {stat.valueSuffix && (
           <em className="italic text-oxblood text-[22px] ml-1">
@@ -81,18 +52,7 @@ function StatCard({ stat }: { stat: Stat }) {
       </div>
 
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-muted">
-        {stat.change !== '—' ? (
-          <span
-            className={`inline-flex items-center gap-[3px] px-2 py-0.5 rounded-full font-medium text-[11px] tracking-[0.02em] ${
-              stat.changeDir === 'up'
-                ? 'bg-green-soft text-green'
-                : 'bg-red-soft text-oxblood'
-            }`}
-          >
-            {stat.changeDir === 'up' ? <ArrowUp /> : <ArrowDown />}
-            {stat.change}
-          </span>
-        ) : null}
+        {stat.change !== null ? <ChangePill val={stat.change} /> : null}
         <span className="whitespace-nowrap">{stat.changeMeta}</span>
       </div>
     </div>
@@ -100,32 +60,30 @@ function StatCard({ stat }: { stat: Stat }) {
 }
 
 export default function DashboardStatGrid({
-  revenue, orders, customers, avgOrder,
-  currentMonthRevenue, prevMonthRevenue,
-  currentMonthOrders, prevMonthOrders,
-  currentMonthCustomers, prevMonthCustomers,
+  currentRevenue, prevRevenue,
+  currentOrders, prevOrders,
+  currentNewCustomers, prevNewCustomers,
 }: Props) {
-  const revenueFormatted = revenue > 0 ? formatMoney(revenue) : '$0.00';
+  const revenueFormatted = currentRevenue > 0 ? formatMoney(currentRevenue) : '$0.00';
   const [revMain, revCents] = revenueFormatted.split('.');
-  const avgFormatted = avgOrder > 0 ? formatMoney(avgOrder) : '$0.00';
+
+  const currentAvg = currentOrders > 0 ? currentRevenue / currentOrders : 0;
+  const prevAvg    = prevOrders > 0    ? prevRevenue / prevOrders : 0;
+  const avgFormatted = currentAvg > 0 ? formatMoney(Math.round(currentAvg)) : '$0.00';
   const [avgMain, avgCents] = avgFormatted.split('.');
 
-  const currentMonthAvg = currentMonthOrders > 0 ? currentMonthRevenue / currentMonthOrders : 0;
-  const prevMonthAvg    = prevMonthOrders > 0    ? prevMonthRevenue / prevMonthOrders : 0;
-
-  const revChange  = pctChange(currentMonthRevenue, prevMonthRevenue);
-  const ordChange  = pctChange(currentMonthOrders, prevMonthOrders);
-  const custChange = countChange(currentMonthCustomers, prevMonthCustomers);
-  const avgChange  = pctChange(currentMonthAvg, prevMonthAvg);
+  const revChange  = pctChange(currentRevenue, prevRevenue);
+  const ordChange  = pctChange(currentOrders, prevOrders);
+  const custChange = pctChange(currentNewCustomers, prevNewCustomers);
+  const avgChange  = pctChange(currentAvg, prevAvg);
 
   const stats: Stat[] = [
     {
       label: 'Revenue',
       value: revMain,
       valueSuffix: `.${revCents}`,
-      change: revChange?.label ?? '—',
-      changeDir: revChange?.dir ?? 'up',
-      changeMeta: revChange ? 'vs prior 30 days' : 'no prior data',
+      change: revChange,
+      changeMeta: revChange !== null ? 'vs prior 30 days' : 'no prior data',
       delay: '0.05s',
       icon: (
         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -136,10 +94,9 @@ export default function DashboardStatGrid({
     },
     {
       label: 'Orders',
-      value: orders.toLocaleString(),
-      change: ordChange?.label ?? '—',
-      changeDir: ordChange?.dir ?? 'up',
-      changeMeta: ordChange ? 'vs prior 30 days' : 'no prior data',
+      value: currentOrders.toLocaleString(),
+      change: ordChange,
+      changeMeta: ordChange !== null ? 'vs prior 30 days' : 'no prior data',
       delay: '0.12s',
       icon: (
         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -150,11 +107,10 @@ export default function DashboardStatGrid({
       ),
     },
     {
-      label: 'Customers',
-      value: customers.toLocaleString(),
-      change: custChange?.label ?? '—',
-      changeDir: custChange?.dir ?? 'up',
-      changeMeta: custChange ? 'vs prior 30 days' : 'no prior data',
+      label: 'New Customers',
+      value: currentNewCustomers.toLocaleString(),
+      change: custChange,
+      changeMeta: custChange !== null ? 'vs prior 30 days' : 'no prior data',
       delay: '0.19s',
       icon: (
         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -168,9 +124,8 @@ export default function DashboardStatGrid({
       label: 'Avg. Order',
       value: avgMain,
       valueSuffix: `.${avgCents}`,
-      change: avgChange?.label ?? '—',
-      changeDir: avgChange?.dir ?? 'up',
-      changeMeta: avgChange ? 'vs prior 30 days' : 'no prior data',
+      change: avgChange,
+      changeMeta: avgChange !== null ? 'vs prior 30 days' : 'no prior data',
       delay: '0.26s',
       icon: (
         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

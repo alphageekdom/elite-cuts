@@ -15,6 +15,7 @@ import {
   formatWebsiteDisplay,
   getShopSettings,
 } from '@/lib/shopSettings';
+import { RECEIPT_ORDER_STATUS_STYLES } from '@/lib/order-status';
 import ReceiptToolbar from './ReceiptToolbar';
 import ReceiptHeader from './ReceiptHeader';
 import ReceiptItemsTable from './ReceiptItemsTable';
@@ -37,15 +38,6 @@ function getTierLabel(pts: number) {
   if (pts >= 250) return 'Connoisseur';
   return 'Regular';
 }
-
-const STATUS_STYLE: Record<string, string> = {
-  'Order Placed':     'bg-camel/18 text-camel',
-  'Preparing':        'bg-camel/18 text-camel',
-  'Ready for Pickup': 'bg-camel/18 text-camel',
-  'Out for Delivery': 'bg-ink/10 text-ink',
-  'Completed':        'bg-green-soft text-green',
-  'Cancelled':        'bg-red-soft text-oxblood',
-};
 
 // ── page ────────────────────────────────────────────────────────────────────
 
@@ -118,7 +110,7 @@ export default async function ReceiptPage({ params }: Props) {
       })()
     : null;
 
-  const pillCls = STATUS_STYLE[order.orderStatus] ?? 'bg-line-soft text-muted';
+  const pillCls = RECEIPT_ORDER_STATUS_STYLES[order.orderStatus] ?? 'bg-line-soft text-muted';
 
   return (
     <>

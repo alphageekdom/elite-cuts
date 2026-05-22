@@ -1,8 +1,9 @@
 import Link from 'next/link';
+import type { RangeKey } from '@/lib/admin/range-buckets';
 
-export type RangeKey = '7D' | '30D' | '90D' | '1Y';
+export type { RangeKey };
 
-const OPTIONS: RangeKey[] = ['7D', '30D', '90D', '1Y'];
+const OPTIONS = ['7D', '30D', '90D', '1Y'] satisfies readonly RangeKey[];
 
 type Props = {
   active: RangeKey;
@@ -32,29 +33,39 @@ export default function RangeToggle({
   const wrapClasses =
     variant === 'chart-card'
       ? 'inline-flex bg-cream-deep rounded-full p-0.75'
-      : 'inline-flex bg-paper border border-line rounded-full p-[3px]';
+      : 'inline-flex bg-paper border border-line rounded-full p-0.75';
 
-  const buildHref = (p: RangeKey): string => {
+  const buildHref = (range: RangeKey): string => {
     const params = new URLSearchParams(extraParams);
-    if (p !== '30D') params.set('range', p);
+
+    params.delete('range');
+
+    if (range !== '30D') params.set('range', range);
+
     const qs = params.toString();
+
     return qs ? `${basePath}?${qs}` : basePath;
   };
 
   return (
     <div className={`${wrapClasses} ${className}`.trim()}>
-      {OPTIONS.map((p) => (
-        <Link
-          key={p}
-          href={buildHref(p)}
-          scroll={false}
-          className={`px-3.5 py-1.5 rounded-full text-[12px] font-medium transition-colors ${
-            active === p ? 'bg-ink text-cream' : 'text-ink-soft hover:text-ink'
-          }`}
-        >
-          {p}
-        </Link>
-      ))}
+      {OPTIONS.map((range) => {
+        const isActive = active === range;
+
+        return (
+          <Link
+            key={range}
+            href={buildHref(range)}
+            scroll={false}
+            aria-current={isActive ? 'page' : undefined}
+            className={`rounded-full px-3.5 py-1.5 text-[12px] font-medium transition-colors ${
+              isActive ? 'bg-ink text-cream' : 'text-ink-soft hover:text-ink'
+            }`}
+          >
+            {range}
+          </Link>
+        );
+      })}
     </div>
   );
 }

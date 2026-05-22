@@ -5,9 +5,17 @@ import OrderModel from '@/models/Order';
 import User from '@/models/User';
 
 import type { Metadata } from 'next';
-import AnalyticsClient, { type AnalyticsData, type AnalyticsRange } from '@/components/admin/analytics/AnalyticsClient';
+import AnalyticsClient, { type AnalyticsData } from '@/components/admin/analytics/AnalyticsClient';
 import { MONTH_ABBR } from '@/lib/format';
 import { excludeDemoOrders } from '@/lib/demo/exclude';
+import {
+  DAY_MS,
+  RANGE_DAYS,
+  RANGE_BUCKETS,
+  parseRange,
+  buildRangeBuckets,
+  type RangeKey,
+} from '@/lib/admin/range-buckets';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,31 +32,6 @@ const CHART_CATEGORY_COLORS: Record<string, string> = {
   Lamb: 'var(--color-ink)',
   Charcuterie: 'var(--color-camel-soft)',
   Other: 'var(--color-camel-soft)',
-};
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-const WEEKDAY_ABBR = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-
-const ALLOWED_RANGES = ['7D', '30D', '90D', '1Y'] as const satisfies readonly AnalyticsRange[];
-const RANGE_DAYS: Record<AnalyticsRange, number> = { '7D': 7, '30D': 30, '90D': 90, '1Y': 360 };
-
-// Each range gets its own bucket shape so the revenue chart stays readable:
-// daily for a week, weekly for a month, biweekly for a quarter, monthly for a year.
-const RANGE_BUCKETS: Record<
-  AnalyticsRange,
-  { count: number; sizeDays: number; unit: 'Day' | 'Week' | 'Biweekly' | 'Monthly' }
-> = {
-  '7D': { count: 7, sizeDays: 1, unit: 'Day' },
-  '30D': { count: 5, sizeDays: 6, unit: 'Week' },
-  '90D': { count: 6, sizeDays: 15, unit: 'Biweekly' },
-  '1Y': { count: 12, sizeDays: 30, unit: 'Monthly' },
-};
-
-const parseRange = (raw: string | undefined): AnalyticsRange => {
-  const upper = raw?.toUpperCase();
-  return (ALLOWED_RANGES as readonly string[]).includes(upper ?? '')
-    ? (upper as AnalyticsRange)
-    : '30D';
 };
 
 type Props = {
@@ -212,35 +195,7 @@ export default async function AdminAnalyticsPage({ searchParams }: Props) {
       };
     });
 
-  // Buckets sized to the active range: 7D → daily, 30D → weekly, 90D → biweekly.
-  const buckets: AnalyticsData['buckets'] = [];
-  for (let i = bucketCfg.count - 1; i >= 0; i--) {
-    const bEnd = new Date(now.getTime() - i * bucketCfg.sizeDays * DAY_MS);
-    const bStart = new Date(bEnd.getTime() - bucketCfg.sizeDays * DAY_MS);
-    const prevEnd = new Date(bEnd.getTime() - days * DAY_MS);
-    const prevStart = new Date(bStart.getTime() - days * DAY_MS);
-
-    let label: string;
-    if (bucketCfg.unit === 'Day') {
-      label = WEEKDAY_ABBR[bEnd.getDay()];
-    } else if (bucketCfg.unit === 'Week') {
-      label = `WK ${bucketCfg.count - i}`;
-    } else if (bucketCfg.unit === 'Monthly') {
-      label = MONTH_ABBR[bStart.getMonth()];
-    } else {
-      label = `${MONTH_ABBR[bStart.getMonth()]} ${bStart.getDate()}`;
-    }
-
-    buckets.push({
-      label,
-      value: currentOrders
-        .filter((o) => o.createdAt >= bStart && o.createdAt < bEnd)
-        .reduce((s, o) => s + o.totalCost, 0),
-      prevValue: previousOrders
-        .filter((o) => o.createdAt >= prevStart && o.createdAt < prevEnd)
-        .reduce((s, o) => s + o.totalCost, 0),
-    });
-  }
+  const buckets = buildRangeBuckets(range, now, currentOrders, previousOrders);
 
   // Heatmap: 7 rows (Mon–Sun) × 12 cols (9A–8P), normalized 0–5 for both volume and revenue
   const heatmapRaw: number[][] = Array.from({ length: 7 }, () => Array(12).fill(0));
@@ -269,7 +224,7 @@ export default async function AdminAnalyticsPage({ searchParams }: Props) {
   const periodLabel = `${MONTH_ABBR[windowStart.getMonth()]} ${windowStart.getDate()} – ${MONTH_ABBR[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()} · Compared to previous ${days} days`;
 
   // Hero label sits next to the big net-revenue number and has to read tight.
-  const heroPeriodLabel: Record<AnalyticsRange, string> = {
+  const heroPeriodLabel: Record<RangeKey, string> = {
     '7D': 'Last 7 days',
     '30D': 'Last 30 days',
     '90D': 'Last 90 days',
