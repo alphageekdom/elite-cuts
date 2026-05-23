@@ -1,7 +1,11 @@
 import { Schema, model, models, type HydratedDocument, type Model, type Types } from 'mongoose';
+import { MESSAGE_STATUSES, type MessageStatus } from '@/lib/messages/constants';
 
-export const MESSAGE_STATUSES = ['open', 'closed'] as const;
-export type MessageStatus = (typeof MESSAGE_STATUSES)[number];
+// Re-export so existing consumers (MessagesClient, the [id] route, etc.)
+// keep their import paths working. New code should pull from
+// `@/lib/messages/constants` directly when only the enum/type is needed.
+export { MESSAGE_STATUSES };
+export type { MessageStatus };
 
 export type Message = {
   user: Types.ObjectId | null;

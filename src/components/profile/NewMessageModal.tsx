@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 import { useScrollLock } from '@/hooks/useScrollLock';
+import { messageInputSchema } from '@/lib/messages/schema';
 
 type Props = {
   isOpen: boolean;
@@ -70,7 +71,19 @@ export default function NewMessageModal({
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!subject.trim() || !body.trim()) return;
+
+    // Validate client-side through the same Zod schema the server uses so the
+    // customer sees a clear field message instead of a round-trip generic.
+    const parsed = messageInputSchema.safeParse({
+      subject,
+      body,
+      orderId: prefilledOrderId,
+      orderRef: prefilledOrderRef,
+    });
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? 'Please fill out subject and message.');
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -78,10 +91,10 @@ export default function NewMessageModal({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          subject: subject.trim(),
-          body: body.trim(),
-          ...(prefilledOrderId ? { orderId: prefilledOrderId } : {}),
-          ...(prefilledOrderRef ? { orderRef: prefilledOrderRef } : {}),
+          subject: parsed.data.subject,
+          body: parsed.data.body,
+          ...(parsed.data.orderId ? { orderId: parsed.data.orderId } : {}),
+          ...(parsed.data.orderRef ? { orderRef: parsed.data.orderRef } : {}),
         }),
       });
 

@@ -1,9 +1,13 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import mongoose from 'mongoose';
-import MessageModel, { MESSAGE_STATUSES } from '@/models/Message';
+import MessageModel from '@/models/Message';
 import connectDB from '@/config/database';
 import { getSessionUser } from '@/lib/getSessionUser';
 import { unauthorized } from '@/lib/api-handler';
+import {
+  messageStatusUpdateSchema,
+  messageOwnerEditSchema,
+} from '@/lib/messages/schema';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -28,23 +32,20 @@ export const PATCH = async (request: NextRequest, ctx: unknown) => {
     const { id } = await (ctx as RouteContext).params;
     if (!mongoose.isValidObjectId(id)) return notFound();
 
-    const body = (await request.json()) as {
-      status?: string;
-      subject?: string;
-      body?: string;
-    };
+    const body = (await request.json()) as { status?: unknown };
     const isAdmin = Boolean(sessionUser.user?.isAdmin);
 
     // Admin status path — owner cannot change their own message's status, so
     // the customer profile UI keeps the original PATCH contract intact for the
     // admin dashboard while gaining a separate owner-edit branch below.
     if (isAdmin && typeof body.status === 'string') {
-      if (!(MESSAGE_STATUSES as readonly string[]).includes(body.status)) {
-        return badRequest('Invalid status');
+      const parsed = messageStatusUpdateSchema.safeParse(body);
+      if (!parsed.success) {
+        return badRequest(parsed.error.issues[0]?.message ?? 'Invalid status');
       }
       const updated = await MessageModel.findByIdAndUpdate(
         id,
-        { status: body.status },
+        { status: parsed.data.status },
         { returnDocument: 'after', runValidators: true },
       ).lean();
       if (!updated) return notFound();
@@ -64,15 +65,13 @@ export const PATCH = async (request: NextRequest, ctx: unknown) => {
       );
     }
 
-    const subject = typeof body.subject === 'string' ? body.subject.trim() : '';
-    const msgBody = typeof body.body === 'string' ? body.body.trim() : '';
-    if (!subject) return badRequest('Subject is required');
-    if (subject.length > 120) return badRequest('Subject must be 120 characters or fewer');
-    if (!msgBody) return badRequest('Message body is required');
-    if (msgBody.length > 2000) return badRequest('Message must be 2000 characters or fewer');
+    const parsed = messageOwnerEditSchema.safeParse(body);
+    if (!parsed.success) {
+      return badRequest(parsed.error.issues[0]?.message ?? 'Invalid message');
+    }
 
-    existing.subject = subject;
-    existing.body = msgBody;
+    existing.subject = parsed.data.subject;
+    existing.body = parsed.data.body;
     await existing.save();
 
     return NextResponse.json({ data: existing.toJSON() });
