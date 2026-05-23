@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { createPromo, updatePromo, deletePromo } from '@/actions/promos';
-import { btnPrimary, btnGhost, btnDanger } from '@/components/admin/settings/SettingsUI';
+import { btnPrimary, btnGhost, btnDanger } from '@/components/admin/AdminForm';
 import { flattenPromoIssues, promoInputSchema } from '@/lib/promos/schema';
 import type { PromoType } from '@/models/Promo';
 

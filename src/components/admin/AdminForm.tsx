@@ -1,32 +1,32 @@
 'use client';
-import { useState } from 'react';
 
-type ToggleProps =
-  | { checked: boolean; onChange: (v: boolean) => void; defaultOn?: never }
-  | { defaultOn?: boolean; checked?: never; onChange?: never };
+// Shared admin form primitives + style constants. Originally lived inside
+// `components/admin/settings/SettingsUI.tsx` but consumers outside the
+// settings tree (customer drawers, product drawer, promos client + drawer)
+// were already importing from it, so the module migrated to this canonical
+// home and the settings tree reaches the other way.
 
-export function Toggle({ defaultOn = false, checked, onChange }: ToggleProps) {
-  const [internal, setInternal] = useState(defaultOn);
-  const controlled = checked !== undefined;
-  const on = controlled ? checked : internal;
+type ToggleProps = {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  /** Required for screen readers — describes which switch this is. */
+  ariaLabel: string;
+};
 
-  function handleClick() {
-    if (controlled) onChange!(!on);
-    else setInternal((v) => !v);
-  }
-
+export function Toggle({ checked, onChange, ariaLabel }: ToggleProps) {
   return (
     <button
       type="button"
-      aria-pressed={on}
-      onClick={handleClick}
+      aria-pressed={checked}
+      aria-label={ariaLabel}
+      onClick={() => onChange(!checked)}
       className={`relative w-11 h-6 rounded-full border shrink-0 transition-colors duration-300 ${
-        on ? 'bg-green border-green' : 'bg-cream-deep border-line'
+        checked ? 'bg-green border-green' : 'bg-cream-deep border-line'
       }`}
     >
       <span
         className={`absolute top-0.5 left-0.5 w-4.5 h-4.5 rounded-full bg-white shadow-sm transition-transform duration-300 ${
-          on ? 'translate-x-5' : ''
+          checked ? 'translate-x-5' : ''
         }`}
       />
     </button>
@@ -66,9 +66,9 @@ export const sectionTitleCls =
   'font-display text-[22px] font-medium tracking-[-0.015em]';
 export const sectionSubCls = 'text-sm text-muted mb-6 max-w-[56ch]';
 export const btnPrimary =
-  'inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-ink text-cream text-[13px] font-medium tracking-[0.02em] border border-transparent transition-colors hover:bg-oxblood cursor-pointer';
+  'inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-ink text-cream text-[13px] font-medium tracking-[0.02em] border border-transparent transition-colors hover:bg-oxblood cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed';
 export const btnGhost =
-  'inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-paper text-ink-soft text-[13px] font-medium tracking-[0.02em] border border-line transition-colors hover:border-ink hover:text-ink cursor-pointer';
+  'inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-paper text-ink-soft text-[13px] font-medium tracking-[0.02em] border border-line transition-colors hover:border-ink hover:text-ink cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed';
 export const btnDanger =
   'inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-transparent text-oxblood text-[13px] font-medium tracking-[0.02em] border border-oxblood/30 transition-colors hover:bg-red-soft hover:border-oxblood cursor-pointer';
 
@@ -90,4 +90,13 @@ export function DrawerField({ label, children }: { label: string; children: Reac
       {children}
     </div>
   );
+}
+
+// Parses an `<input type="number">` value, returning `fallback` for blank or
+// non-numeric input. Replaces the bare `Number(e.target.value)` calls that
+// silently coerced empty strings to 0 across settings forms.
+export function numberFromInput(value: string, fallback = 0): number {
+  if (value.trim() === '') return fallback;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
 }

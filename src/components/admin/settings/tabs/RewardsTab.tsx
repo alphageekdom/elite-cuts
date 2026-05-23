@@ -1,14 +1,8 @@
-import { SelectField, inputCls, labelCls, sectionTitleCls, sectionSubCls, btnPrimary, btnGhost } from '../SettingsUI';
-import type { ShopSettings } from '@/models/ShopSettings';
+import { SelectField, inputCls, labelCls, sectionTitleCls, sectionSubCls, numberFromInput } from '@/components/admin/AdminForm';
+import SettingsTabFooter from '../SettingsTabFooter';
 import { computeRedemptionCap } from '@/lib/rewards';
-
-type Props = {
-  values: ShopSettings;
-  onChange: (patch: Partial<ShopSettings>) => void;
-  onSave: () => void;
-  onDiscard: () => void;
-  saving: boolean;
-};
+import { formatMoney } from '@/lib/format';
+import type { SettingsTabProps } from '../SettingsClient';
 
 const WEEKEND_MULTIPLIERS: { value: number; label: string }[] = [
   { value: 1, label: '1× (none)' },
@@ -22,7 +16,7 @@ const EXPIRY_OPTIONS: { value: number; label: string }[] = [
   { value: 0, label: 'Never' },
 ];
 
-export default function RewardsTab({ values, onChange, onSave, onDiscard, saving }: Props) {
+export default function RewardsTab({ values, onChange, onSave, onDiscard, saving, dirty }: SettingsTabProps) {
   return (
     <div className="space-y-10">
       <section>
@@ -35,7 +29,7 @@ export default function RewardsTab({ values, onChange, onSave, onDiscard, saving
               type="number"
               min={0}
               value={values.pointsPerDollar}
-              onChange={(e) => onChange({ pointsPerDollar: Number(e.target.value) })}
+              onChange={(e) => onChange({ pointsPerDollar: numberFromInput(e.target.value) })}
               className={inputCls}
             />
           </div>
@@ -43,7 +37,7 @@ export default function RewardsTab({ values, onChange, onSave, onDiscard, saving
             <label className={labelCls}>Weekend multiplier</label>
             <SelectField
               value={values.weekendMultiplier}
-              onChange={(e) => onChange({ weekendMultiplier: Number(e.target.value) })}
+              onChange={(e) => onChange({ weekendMultiplier: numberFromInput(e.target.value, 1) })}
             >
               {WEEKEND_MULTIPLIERS.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -54,7 +48,7 @@ export default function RewardsTab({ values, onChange, onSave, onDiscard, saving
             <label className={labelCls}>Points expiry</label>
             <SelectField
               value={values.pointsExpiryMonths}
-              onChange={(e) => onChange({ pointsExpiryMonths: Number(e.target.value) })}
+              onChange={(e) => onChange({ pointsExpiryMonths: numberFromInput(e.target.value) })}
             >
               {EXPIRY_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -69,7 +63,7 @@ export default function RewardsTab({ values, onChange, onSave, onDiscard, saving
               type="number"
               min={1}
               value={values.redemptionPoints}
-              onChange={(e) => onChange({ redemptionPoints: Number(e.target.value) })}
+              onChange={(e) => onChange({ redemptionPoints: numberFromInput(e.target.value, 1) })}
               className={inputCls}
             />
           </div>
@@ -80,7 +74,7 @@ export default function RewardsTab({ values, onChange, onSave, onDiscard, saving
               min={0}
               step="0.01"
               value={values.redemptionDollars}
-              onChange={(e) => onChange({ redemptionDollars: Number(e.target.value) })}
+              onChange={(e) => onChange({ redemptionDollars: numberFromInput(e.target.value) })}
               className={inputCls}
             />
           </div>
@@ -90,14 +84,14 @@ export default function RewardsTab({ values, onChange, onSave, onDiscard, saving
               type="number"
               min={0}
               value={values.minToRedeem}
-              onChange={(e) => onChange({ minToRedeem: Number(e.target.value) })}
+              onChange={(e) => onChange({ minToRedeem: numberFromInput(e.target.value) })}
               placeholder="No minimum"
               className={inputCls}
             />
           </div>
         </div>
         <p className="mt-2 text-xs text-muted">
-          {values.redemptionPoints} pts = ${Number.isInteger(values.redemptionDollars) ? values.redemptionDollars : values.redemptionDollars.toFixed(2)} off at checkout
+          {values.redemptionPoints} pts = {formatMoney(values.redemptionDollars)} off at checkout
         </p>
       </section>
 
@@ -112,7 +106,7 @@ export default function RewardsTab({ values, onChange, onSave, onDiscard, saving
               min={1}
               max={100}
               value={values.maxRedemptionPercent}
-              onChange={(e) => onChange({ maxRedemptionPercent: Number(e.target.value) })}
+              onChange={(e) => onChange({ maxRedemptionPercent: numberFromInput(e.target.value, 1) })}
               className={inputCls}
             />
           </div>
@@ -123,7 +117,7 @@ export default function RewardsTab({ values, onChange, onSave, onDiscard, saving
               min={0}
               step="0.01"
               value={values.maxRedemptionDollars}
-              onChange={(e) => onChange({ maxRedemptionDollars: Number(e.target.value) })}
+              onChange={(e) => onChange({ maxRedemptionDollars: numberFromInput(e.target.value) })}
               className={inputCls}
             />
           </div>
@@ -132,7 +126,7 @@ export default function RewardsTab({ values, onChange, onSave, onDiscard, saving
           {(() => {
             const cap80 = computeRedemptionCap(80, values);
             const cap250 = computeRedemptionCap(250, values);
-            return `Example: on an $80 order, max redemption = $${cap80.capDollars.toFixed(2)}. On a $250 order, max = $${cap250.capDollars.toFixed(2)}.`;
+            return `Example: on an $80 order, max redemption = ${formatMoney(cap80.capDollars)}. On a $250 order, max = ${formatMoney(cap250.capDollars)}.`;
           })()}
         </p>
       </section>
@@ -147,7 +141,7 @@ export default function RewardsTab({ values, onChange, onSave, onDiscard, saving
               type="number"
               min={0}
               value={values.connoisseurThreshold}
-              onChange={(e) => onChange({ connoisseurThreshold: Number(e.target.value) })}
+              onChange={(e) => onChange({ connoisseurThreshold: numberFromInput(e.target.value) })}
               className={inputCls}
             />
           </div>
@@ -157,7 +151,7 @@ export default function RewardsTab({ values, onChange, onSave, onDiscard, saving
               type="number"
               min={0}
               value={values.masterCutThreshold}
-              onChange={(e) => onChange({ masterCutThreshold: Number(e.target.value) })}
+              onChange={(e) => onChange({ masterCutThreshold: numberFromInput(e.target.value) })}
               className={inputCls}
             />
           </div>
@@ -168,7 +162,7 @@ export default function RewardsTab({ values, onChange, onSave, onDiscard, saving
               min={0}
               max={120}
               value={values.tierWindowMonths}
-              onChange={(e) => onChange({ tierWindowMonths: Number(e.target.value) })}
+              onChange={(e) => onChange({ tierWindowMonths: numberFromInput(e.target.value) })}
               className={inputCls}
             />
           </div>
@@ -180,15 +174,7 @@ export default function RewardsTab({ values, onChange, onSave, onDiscard, saving
         </p>
       </section>
 
-      <div className="flex gap-2 pt-2">
-        <button type="button" className={btnPrimary} onClick={onSave} disabled={saving}>
-          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-          {saving ? 'Saving…' : 'Save changes'}
-        </button>
-        <button type="button" onClick={onDiscard} className={btnGhost}>Discard</button>
-      </div>
+      <SettingsTabFooter saving={saving} dirty={dirty} onSave={onSave} onDiscard={onDiscard} />
     </div>
   );
 }

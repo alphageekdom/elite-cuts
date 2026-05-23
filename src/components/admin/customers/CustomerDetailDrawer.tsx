@@ -2,7 +2,7 @@
 import { toast } from 'sonner';
 import { formatMoney, formatDate, relativeTime } from '@/lib/format';
 import { useDrawerForm } from '@/hooks/useDrawerForm';
-import { inputCls } from '@/components/admin/settings/SettingsUI';
+import { inputCls } from '@/components/admin/AdminForm';
 import type { CustomerTableRow } from '@/types/admin';
 import { deriveTags } from './customerUtils';
 import CustomerDetailHero from './CustomerDetailHero';

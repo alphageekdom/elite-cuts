@@ -12,7 +12,7 @@ export default function ScheduleShopHours({ hours }: Props) {
 
   return (
     <div className="bg-paper border border-line-soft rounded p-6">
-      <ScheduleCardHeader title="Shop" accent="hours" linkHref="/dashboard/settings" linkLabel="Edit" />
+      <ScheduleCardHeader title="Shop" accent="hours" linkHref="/dashboard/settings" linkLabel="Settings" />
       <div>
         {sorted.map((h, i) => {
           const isToday = h.dayOfWeek === todayDow;
