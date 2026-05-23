@@ -92,15 +92,20 @@ export const POST = withAdmin(async (req, _ctx, userId) => {
     }
     const note = typeof body?.note === 'string' ? body.note.trim().slice(0, 500) : '';
 
-    // Verify every productId resolves to a real catalog row before recording
-    // the stocktake — keeps orphan entries out of the audit trail.
+    // Verify every productId resolves to a real, active catalog row before
+    // recording the stocktake — keeps orphan entries and soft-deleted
+    // products out of the audit trail, and stays aligned with the inventory
+    // page's `isActive: { $ne: false }` filter.
     const productObjectIds = parsed.map((e) => new mongoose.Types.ObjectId(e.productId));
-    const existing = await ProductModel.find({ _id: { $in: productObjectIds } }, '_id').lean();
+    const existing = await ProductModel.find(
+      { _id: { $in: productObjectIds }, isActive: { $ne: false } },
+      '_id',
+    ).lean();
     if (existing.length !== productObjectIds.length) {
       const known = new Set(existing.map((p) => p._id.toString()));
       const missing = parsed.find((e) => !known.has(e.productId))?.productId;
       return NextResponse.json(
-        { message: `Unknown product${missing ? `: ${missing}` : ''}` },
+        { message: `Unknown or inactive product${missing ? `: ${missing}` : ''}` },
         { status: 400 },
       );
     }
@@ -125,7 +130,7 @@ export const POST = withAdmin(async (req, _ctx, userId) => {
       if (session) await session.endSession();
     }
 
-    return NextResponse.json(result.stocktake, { status: 201 });
+    return NextResponse.json({ data: result.stocktake }, { status: 201 });
   } catch (error) {
     console.error('[stocktakes POST]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
@@ -143,7 +148,7 @@ export const GET = withAdmin(async (req) => {
       .limit(limit)
       .lean()
       .exec();
-    return NextResponse.json(docs);
+    return NextResponse.json({ items: docs, total: docs.length });
   } catch (error) {
     console.error('[stocktakes GET]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });

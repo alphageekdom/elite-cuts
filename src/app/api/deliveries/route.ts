@@ -9,7 +9,7 @@ export const GET = withAdmin(async () => {
     const upcoming = await Delivery.find({
       deliveryDate: { $gte: new Date() },
     }).sort({ deliveryDate: 1 }).limit(10).lean();
-    return NextResponse.json(upcoming);
+    return NextResponse.json({ items: upcoming, total: upcoming.length });
   } catch (error) {
     console.error('[deliveries GET]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
@@ -92,7 +92,7 @@ export const POST = withAdmin(async (request: NextRequest) => {
       if (session) await session.endSession();
     }
 
-    return NextResponse.json(delivery, { status: 201 });
+    return NextResponse.json({ data: delivery }, { status: 201 });
   } catch (error) {
     console.error('[deliveries POST]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });

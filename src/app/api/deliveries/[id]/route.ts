@@ -19,12 +19,19 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
       return NextResponse.json({ message: `status must be one of: ${DELIVERY_STATUSES.join(', ')}` }, { status: 400 });
     }
     const update: Record<string, unknown> = { status };
-    if (status === 'received' && typeof receivedQty === 'number' && receivedQty >= 0) {
-      update.receivedQty = receivedQty;
+    if (
+      status === 'received' &&
+      typeof receivedQty === 'number' &&
+      Number.isFinite(receivedQty) &&
+      receivedQty >= 0
+    ) {
+      // Match the POST companion's `Math.floor` so a float qty can't sneak in
+      // through the receive-existing-delivery path.
+      update.receivedQty = Math.floor(receivedQty);
     }
     const delivery = await Delivery.findByIdAndUpdate(id, update, { returnDocument: 'after', runValidators: true });
     if (!delivery) return NextResponse.json({ message: 'Not found' }, { status: 404 });
-    return NextResponse.json(delivery);
+    return NextResponse.json({ data: delivery });
   } catch (error) {
     console.error('[deliveries/:id PATCH]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });

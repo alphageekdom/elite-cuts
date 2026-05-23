@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import ProductModel, { type Product } from '@/models/Product';
 import { withAdmin } from '@/lib/api-handler';
 import { toCsv, csvFilename } from '@/lib/csv';
-import { CATEGORY_PAR, DEFAULT_PAR } from '@/lib/inventory';
+import { CATEGORY_PAR, DEFAULT_PAR, getStockState } from '@/lib/inventory';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,12 +23,13 @@ function parseStatus(raw: string | null): StatusFilter {
 
 function matchesStatus(p: Pick<Product, 'stockCount' | 'category'>, status: StatusFilter): boolean {
   if (status === 'all') return true;
-  if (p.stockCount === 0) return status === 'out-of-stock';
   const par = CATEGORY_PAR[p.category] ?? DEFAULT_PAR;
-  const ratio = p.stockCount / par;
-  if (ratio < 0.3) return status === 'critical';
-  if (ratio < 0.7) return status === 'low-stock';
-  return status === 'in-stock';
+  const state = getStockState(p.stockCount, par);
+  if (status === 'out-of-stock') return state === 'out';
+  if (status === 'critical') return state === 'critical';
+  if (status === 'low-stock') return state === 'low';
+  // in-stock covers the healthy + over branches
+  return state === 'healthy' || state === 'over';
 }
 
 export const GET = withAdmin(async (req) => {

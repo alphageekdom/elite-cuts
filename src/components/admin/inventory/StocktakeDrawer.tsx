@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import type { InventoryRow } from './InventoryClient';
+import type { InventoryRow } from '@/lib/inventory';
 
 type Props = {
   rows: InventoryRow[];
@@ -55,7 +55,7 @@ export default function StocktakeDrawer({ rows, onClose }: Props) {
         (r) =>
           r.name.toLowerCase().includes(q) ||
           r.category.toLowerCase().includes(q) ||
-          (r.supplier ?? '').toLowerCase().includes(q),
+          r.supplier.toLowerCase().includes(q),
       );
     }
     if (showOnlyChanged) out = out.filter((r) => changedIds.has(r.id));
@@ -115,35 +115,33 @@ export default function StocktakeDrawer({ rows, onClose }: Props) {
     'w-full bg-cream border border-line-soft rounded-lg px-4 py-2 text-[14px] text-ink placeholder:text-muted focus:outline-none focus:border-ink transition-colors';
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-ink/40" onClick={onClose} aria-hidden="true" />
-      <aside className="relative bg-paper w-full max-w-2xl h-full shadow-2xl flex flex-col">
-        {/* Header — tighter padding + smaller h2 + description hidden on phones
-            so the cut list starts higher up on iPhone SE. */}
-        <div className="flex items-start justify-between px-6 pt-4 pb-3 sm:pt-6 sm:pb-4 border-b border-line-soft shrink-0">
-          <div className="pr-4">
-            <div className="text-[11px] tracking-widest uppercase text-muted mb-1 sm:mb-1.5">Stocktake</div>
-            <h2 className="font-display text-[20px] sm:text-[22px] font-normal tracking-tight leading-snug">
-              Recount <em className="italic text-oxblood font-normal">all cuts.</em>
-            </h2>
-            <p className="hidden sm:block text-[12px] text-muted mt-1.5 max-w-[44ch]">
-              Edit the count next to any cut that doesn&apos;t match the case.
-              Unchanged rows are skipped; only the differences land in the stocktake record.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="w-8 h-8 rounded-full grid place-items-center text-muted hover:text-ink hover:bg-cream-deep transition-colors shrink-0 mt-1"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
+    <>
+      {/* Header — tighter padding + smaller h2 + description hidden on phones
+          so the cut list starts higher up on iPhone SE. */}
+      <div className="flex items-start justify-between px-6 pt-4 pb-3 sm:pt-6 sm:pb-4 border-b border-line-soft shrink-0">
+        <div className="pr-4">
+          <div className="text-[11px] tracking-widest uppercase text-muted mb-1 sm:mb-1.5">Stocktake</div>
+          <h2 id="stocktake-form-title" className="font-display text-[20px] sm:text-[22px] font-normal tracking-tight leading-snug">
+            Recount <em className="italic text-oxblood font-normal">all cuts.</em>
+          </h2>
+          <p className="hidden sm:block text-[12px] text-muted mt-1.5 max-w-[44ch]">
+            Edit the count next to any cut that doesn&apos;t match the case.
+            Unchanged rows are skipped; only the differences land in the stocktake record.
+          </p>
         </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="w-8 h-8 rounded-full grid place-items-center text-muted hover:text-ink hover:bg-cream-deep transition-colors shrink-0 mt-1"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+      <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
           {/* Filter + Note stacked above the scroll list so the Note is
               visible without scrolling past 30 rows. */}
           <div className="px-6 pt-5 pb-3 shrink-0 space-y-2.5">
@@ -274,9 +272,8 @@ export default function StocktakeDrawer({ rows, onClose }: Props) {
             >
               {saving ? 'Committing…' : 'Commit stocktake'}
             </button>
-          </div>
-        </form>
-      </aside>
-    </div>
+        </div>
+      </form>
+    </>
   );
 }

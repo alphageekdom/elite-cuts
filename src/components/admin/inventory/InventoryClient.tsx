@@ -1,13 +1,15 @@
 'use client';
 import { useMemo, useState } from 'react';
 import { useStatFilter } from '@/hooks/useStatFilter';
+import { useInventoryTable } from '@/hooks/useInventoryTable';
 import { toast } from 'sonner';
-import { CATEGORY_PAR, DEFAULT_PAR } from '@/lib/inventory';
+import { CATEGORY_PAR, DEFAULT_PAR, getStockState, type InventoryRow } from '@/lib/inventory';
 import AdminSearchInput from '@/components/admin/AdminSearchInput';
 import AdminPagination from '@/components/admin/AdminPagination';
 import AdminSortPopover from '@/components/admin/AdminSortPopover';
 import AdminStatStrip from '@/components/admin/AdminStatStrip';
-import { PRODUCT_CATEGORIES, type ProductCategory } from '@/lib/admin-constants';
+import SlideDrawer from '@/components/admin/SlideDrawer';
+import { PRODUCT_CATEGORIES } from '@/lib/admin-constants';
 import InventoryAgingRoom, { type AgingCutRow } from './InventoryAgingRoom';
 import InventoryUpcomingDeliveries, { type DeliveryRow, type ReceivedDeliveryRow } from './InventoryUpcomingDeliveries';
 import InventoryReorderDrawer from './InventoryReorderDrawer';
@@ -15,18 +17,7 @@ import InventoryTableRowComponent from './InventoryTableRow';
 import InventoryPageHeader from './InventoryPageHeader';
 import StocktakeDrawer from './StocktakeDrawer';
 
-export type InventoryRow = {
-  id: string;
-  name: string;
-  category: ProductCategory;
-  price: number;
-  images: string[];
-  stockCount: number;
-  isAged: boolean;
-  supplier: string;
-  createdAt: string;
-  deliveryStatus: string | null;
-};
+export type { InventoryRow };
 
 export type InventoryCounts = {
   all: number;
@@ -47,17 +38,13 @@ type Props = {
   lastStocktakeLabel: string;
 };
 
-type SortBy = 'stock-asc' | 'name-asc' | 'price-desc' | 'newest';
-
-
-
+type SortBy = 'stock-asc' | 'name-asc' | 'newest';
 
 const SORT_OPTIONS: { value: SortBy; label: string }[] = [
   { value: 'stock-asc', label: 'Lowest stock' },
   { value: 'name-asc', label: 'Name A–Z' },
   { value: 'newest', label: 'Newest' },
 ];
-
 
 const PAGE_SIZE = 8;
 
@@ -71,45 +58,30 @@ export default function InventoryClient({
   totalProducts,
   lastStocktakeLabel,
 }: Props) {
-  // localRows mirrors the `rows` prop but supports optimistic updates (see
-  // setLocalRows usage in the stock-edit handler). Adjust-during-render syncs
-  // it back to the server snapshot whenever the prop reference changes.
-  const [localRows, setLocalRows] = useState(rows);
-  const [lastRows, setLastRows] = useState(rows);
-  if (lastRows !== rows) {
-    setLastRows(rows);
-    setLocalRows(rows);
-  }
-
-  // Snapshot of row IDs visible in the active tab — updated only when the tab changes,
-  // not on stock edits, so items don't vanish mid-session when stock crosses a threshold.
-  const [tabSnapshot, setTabSnapshot] = useState<Set<string>>(
-    () => new Set(rows.map((r) => r.id)),
-  );
+  // List state, snapshot, stock-edit, and reorder-drawer state machine live
+  // in the hook; this component is purely presentational over them.
+  const table = useInventoryTable(rows);
 
   const liveCounts = useMemo(() => {
     let inStock = 0, lowStock = 0, critical = 0;
-    for (const r of localRows) {
-      if (r.stockCount === 0) continue;
+    for (const r of table.rows) {
       const par = CATEGORY_PAR[r.category] ?? DEFAULT_PAR;
-      const ratio = r.stockCount / par;
-      if (ratio < 0.3) critical++;
-      else if (ratio < 0.7) lowStock++;
-      else inStock++;
+      const state = getStockState(r.stockCount, par);
+      if (state === 'critical') critical++;
+      else if (state === 'low') lowStock++;
+      else if (state === 'healthy' || state === 'over') inStock++;
     }
-    return { all: localRows.length, inStock, lowStock, critical, agingRoom: counts.agingRoom };
-  }, [localRows, counts.agingRoom]);
+    return { all: table.rows.length, inStock, lowStock, critical, agingRoom: counts.agingRoom };
+  }, [table.rows, counts.agingRoom]);
+
+  // Purely visual state stays here — page, search, sort, category, alert
+  // dismissal, export-in-flight, and the two boolean modal toggles.
   const [alertDismissed, setAlertDismissed] = useState(false);
   const [page, setPage] = useState(1);
-  const { activeKey: activeFilter, selectKey: _selectFilter } = useStatFilter<string>('all', () => setPage(1));
+  const { activeKey: activeFilter, selectKey: selectStatFilter } = useStatFilter<string>('all', () => setPage(1));
   const [activeCategory, setActiveCategory] = useState('');
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<SortBy>('stock-asc');
-  const [stockEditId, setStockEditId] = useState<string | null>(null);
-  const [stockEditValue, setStockEditValue] = useState('');
-  const [stockSaving, setStockSaving] = useState(false);
-
-  const [reorderRow, setReorderRow] = useState<InventoryRow | null>(null);
   const [stocktakeOpen, setStocktakeOpen] = useState(false);
   const [logDeliveryOpen, setLogDeliveryOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -151,41 +123,11 @@ export default function InventoryClient({
     }
   }
 
-  async function handleStockSave(id: string) {
-    const newCount = parseInt(stockEditValue, 10);
-    if (isNaN(newCount) || newCount < 0) {
-      toast.error('Stock must be a non-negative number');
-      return;
-    }
-    setStockSaving(true);
-    try {
-      const res = await fetch(`/api/products/${id}/stock`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ stockCount: newCount }),
-      });
-      if (!res.ok) {
-        const { message } = await res.json();
-        toast.error(message ?? 'Failed to update stock');
-        return;
-      }
-      setLocalRows((prev) =>
-        prev.map((r) => (r.id === id ? { ...r, stockCount: newCount } : r)),
-      );
-      setStockEditId(null);
-      toast.success('Stock updated');
-    } catch {
-      toast.error('Failed to update stock');
-    } finally {
-      setStockSaving(false);
-    }
-  }
-
   const filtered = useMemo(() => {
     // For non-'all' tabs use the snapshot so items don't vanish when stock changes mid-session.
     let list = activeFilter === 'all'
-      ? localRows
-      : localRows.filter((r) => tabSnapshot.has(r.id));
+      ? table.rows
+      : table.rows.filter((r) => table.tabSnapshot.has(r.id));
 
     if (activeCategory) {
       list = list.filter((r) => r.category === activeCategory);
@@ -197,38 +139,24 @@ export default function InventoryClient({
         (r) =>
           r.name.toLowerCase().includes(q) ||
           r.category.toLowerCase().includes(q) ||
-          (r.supplier ?? '').toLowerCase().includes(q),
+          r.supplier.toLowerCase().includes(q),
       );
     }
 
     const sorted = [...list];
     if (sortBy === 'stock-asc') sorted.sort((a, b) => a.stockCount - b.stockCount);
     else if (sortBy === 'name-asc') sorted.sort((a, b) => a.name.localeCompare(b.name));
-    else if (sortBy === 'price-desc') sorted.sort((a, b) => b.price - a.price);
     else if (sortBy === 'newest') sorted.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 
     return sorted;
-  }, [localRows, activeFilter, tabSnapshot, activeCategory, search, sortBy]);
+  }, [table.rows, activeFilter, table.tabSnapshot, activeCategory, search, sortBy]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   function handleFilter(f: string) {
-    // Re-snapshot which rows qualify for this tab at the moment the tab is clicked.
-    if (f === 'all') {
-      setTabSnapshot(new Set(localRows.map((r) => r.id)));
-    } else {
-      const matched = localRows.filter((r) => {
-        const par = CATEGORY_PAR[r.category] ?? DEFAULT_PAR;
-        const ratio = r.stockCount / par;
-        if (f === 'inStock') return r.stockCount > 0 && ratio >= 0.7;
-        if (f === 'lowStock') return r.stockCount > 0 && ratio >= 0.3 && ratio < 0.7;
-        if (f === 'critical') return r.stockCount > 0 && ratio < 0.3;
-        return true;
-      });
-      setTabSnapshot(new Set(matched.map((r) => r.id)));
-    }
-    _selectFilter(f);
+    table.refreshSnapshot(f);
+    selectStatFilter(f);
   }
 
   function handleCategory(cat: string) {
@@ -240,7 +168,6 @@ export default function InventoryClient({
     setSortBy(s);
     setPage(1);
   }
-
 
   return (
     <div>
@@ -255,7 +182,7 @@ export default function InventoryClient({
 
       {/* Alert banner */}
       {liveCounts.critical > 0 && !alertDismissed && (
-        <div className="flex items-center gap-3.5 px-6 py-4 bg-red-soft border border-[rgba(107,31,31,0.2)] rounded mb-6 text-[14px] text-ink-soft">
+        <div className="flex items-center gap-3.5 px-6 py-4 bg-red-soft border border-oxblood/20 rounded mb-6 text-[14px] text-ink-soft">
           <span className="w-8 h-8 rounded-full bg-oxblood text-cream grid place-items-center shrink-0">
             <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
@@ -377,14 +304,14 @@ export default function InventoryClient({
                   <InventoryTableRowComponent
                     key={row.id}
                     row={row}
-                    stockEditId={stockEditId}
-                    stockEditValue={stockEditValue}
-                    stockSaving={stockSaving}
-                    onStockEdit={(id, val) => { setStockEditId(id); setStockEditValue(val); }}
-                    onStockValueChange={setStockEditValue}
-                    onStockSave={handleStockSave}
-                    onStockCancel={() => setStockEditId(null)}
-                    onReorder={setReorderRow}
+                    stockEditId={table.stockEdit.id}
+                    stockEditValue={table.stockEdit.value}
+                    stockSaving={table.stockEdit.saving}
+                    onStockEdit={table.stockEdit.begin}
+                    onStockValueChange={table.stockEdit.setValue}
+                    onStockSave={table.stockEdit.save}
+                    onStockCancel={table.stockEdit.cancel}
+                    onReorder={table.reorder.open}
                   />
                 ))
               )}
@@ -409,22 +336,43 @@ export default function InventoryClient({
         <InventoryUpcomingDeliveries deliveries={deliveries} receivedDeliveries={receivedDeliveries} />
       </div>
 
-      {reorderRow && (
-        <InventoryReorderDrawer row={reorderRow} onClose={() => setReorderRow(null)} />
-      )}
+      <SlideDrawer
+        open={!!table.reorder.row}
+        onClose={table.reorder.close}
+        widthClass="max-w-md"
+        ariaLabelledBy="reorder-form-title"
+      >
+        {table.reorder.row && (
+          <InventoryReorderDrawer row={table.reorder.row} onClose={table.reorder.close} />
+        )}
+      </SlideDrawer>
 
-      {stocktakeOpen && (
-        <StocktakeDrawer rows={localRows} onClose={() => setStocktakeOpen(false)} />
-      )}
+      <SlideDrawer
+        open={stocktakeOpen}
+        onClose={() => setStocktakeOpen(false)}
+        widthClass="max-w-2xl"
+        ariaLabelledBy="stocktake-form-title"
+      >
+        {stocktakeOpen && (
+          <StocktakeDrawer rows={table.rows} onClose={() => setStocktakeOpen(false)} />
+        )}
+      </SlideDrawer>
 
-      {logDeliveryOpen && (
-        <InventoryReorderDrawer
-          row={null}
-          mode="log-delivery"
-          rows={localRows}
-          onClose={() => setLogDeliveryOpen(false)}
-        />
-      )}
+      <SlideDrawer
+        open={logDeliveryOpen}
+        onClose={() => setLogDeliveryOpen(false)}
+        widthClass="max-w-md"
+        ariaLabelledBy="reorder-form-title"
+      >
+        {logDeliveryOpen && (
+          <InventoryReorderDrawer
+            row={null}
+            mode="log-delivery"
+            rows={table.rows}
+            onClose={() => setLogDeliveryOpen(false)}
+          />
+        )}
+      </SlideDrawer>
     </div>
   );
 }
