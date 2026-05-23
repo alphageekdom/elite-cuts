@@ -183,9 +183,7 @@ export default function GrillEventSection({ upcoming, past }: Props) {
         </ul>
       )}
 
-      {drawer.isOpen && (
-        <GrillEventFormDrawer event={drawer.item ?? null} onClose={drawer.close} />
-      )}
+      <GrillEventFormDrawer open={drawer.isOpen} event={drawer.item ?? null} onClose={drawer.close} />
     </section>
   );
 }

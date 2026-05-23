@@ -19,6 +19,7 @@ import CustomersFilterPanel, {
   type CustomerFilters,
 } from './CustomersFilterPanel';
 import { matchesStatFilter, type StatFilter } from '@/lib/customer-status';
+import { downloadCsvFromUrl } from '@/lib/admin/download';
 import {
   matchesAdvancedFilters,
   matchesSearch,
@@ -79,26 +80,9 @@ export default function CustomersClient({ customers, counts, total, newThisWeek 
       if (filters.tiers.length > 0) params.set('tier', filters.tiers.join(','));
       if (filters.noteSearch.trim()) params.set('noteSearch', filters.noteSearch.trim());
       const url = `/api/users/export${params.size ? `?${params.toString()}` : ''}`;
-      const res = await fetch(url);
-      if (!res.ok) {
-        toast.error('Export failed');
-        return;
-      }
-      const blob = await res.blob();
-      const disposition = res.headers.get('Content-Disposition') ?? '';
-      const filenameMatch = disposition.match(/filename="([^"]+)"/);
-      const filename = filenameMatch?.[1] ?? 'customers.csv';
-      const objectUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = objectUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(objectUrl);
-      toast.success('Customers exported');
-    } catch {
-      toast.error('Export failed');
+      const ok = await downloadCsvFromUrl(url, 'customers.csv');
+      if (ok) toast.success('Customers exported');
+      else toast.error('Export failed');
     } finally {
       setExporting(false);
     }

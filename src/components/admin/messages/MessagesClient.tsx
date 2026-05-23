@@ -28,7 +28,7 @@ export default function MessagesClient({
   const [messages, setMessages] = useState(initialMessages);
   const { activeKey: filter, selectKey: setFilter } = useStatFilter<Filter>('all');
   const [search, setSearch] = useState('');
-  const drawer = useAdminDrawer<MessageRow>({ scrollLock: false });
+  const drawer = useAdminDrawer<MessageRow>();
   const [toggling, setToggling] = useState(false);
 
   const liveCounts = useMemo(

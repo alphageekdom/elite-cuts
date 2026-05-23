@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 
 import { type ShiftColor } from '@/lib/shift-constants';
 import SlideDrawer from '@/components/admin/SlideDrawer';
-import FieldLabel from '@/components/admin/FieldLabel';
+import { labelCls } from '@/components/admin/AdminForm';
 import ColorSwatchPicker from '@/components/admin/ColorSwatchPicker';
 import AdminEyebrow from '@/components/admin/AdminEyebrow';
 import { DAY_LABELS_SHORT, HOUR_LABELS } from '@/lib/schedule-utils';
@@ -293,7 +293,7 @@ function ShiftFormBody({
 
       <form onSubmit={handleSubmit} className="flex flex-col px-6 py-5 gap-5 overflow-y-auto">
         <div>
-          <FieldLabel>Staff</FieldLabel>
+          <label className={labelCls}>Staff</label>
           <select
             value={staffMode}
             onChange={(e) => handleStaffChange(e.target.value)}
@@ -322,7 +322,7 @@ function ShiftFormBody({
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <FieldLabel>Day</FieldLabel>
+            <label className={labelCls}>Day</label>
             <select
               value={dayOfWeek}
               onChange={(e) => setDayOfWeek(Number(e.target.value))}
@@ -334,7 +334,7 @@ function ShiftFormBody({
             </select>
           </div>
           <div>
-            <FieldLabel>Hour</FieldLabel>
+            <label className={labelCls}>Hour</label>
             <select
               value={hourIndex}
               onChange={(e) => setHourIndex(Number(e.target.value))}
@@ -348,7 +348,7 @@ function ShiftFormBody({
         </div>
 
         <div>
-          <FieldLabel>Role</FieldLabel>
+          <label className={labelCls}>Role</label>
           <select
             value={roleMode}
             onChange={(e) => handleRoleChange(e.target.value)}
@@ -373,7 +373,7 @@ function ShiftFormBody({
         </div>
 
         <div>
-          <FieldLabel>Color</FieldLabel>
+          <label className={labelCls}>Color</label>
           <ColorSwatchPicker value={color} onChange={setColor} />
         </div>
 

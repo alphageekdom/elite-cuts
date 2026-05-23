@@ -20,9 +20,6 @@ export default function AdminSearchInput({ value, onChange, placeholder, classNa
         placeholder={placeholder}
         className="flex-1 bg-transparent border-none outline-none text-[13px] text-ink placeholder:text-muted min-w-0"
       />
-      <span className="hidden sm:inline font-mono text-[10px] text-muted bg-cream-deep px-1.5 py-0.5 rounded tracking-[0.04em] shrink-0">
-        ⌘K
-      </span>
     </label>
   );
 }

@@ -16,6 +16,7 @@ import InventoryReorderDrawer from './InventoryReorderDrawer';
 import InventoryTableRowComponent from './InventoryTableRow';
 import InventoryPageHeader from './InventoryPageHeader';
 import StocktakeDrawer from './StocktakeDrawer';
+import { downloadCsvFromUrl } from '@/lib/admin/download';
 
 export type { InventoryRow };
 
@@ -97,27 +98,9 @@ export default function InventoryClient({
       if (activeCategory) params.set('category', activeCategory);
       if (search.trim()) params.set('search', search.trim());
       const url = `/api/products/inventory/export${params.size ? `?${params.toString()}` : ''}`;
-      const res = await fetch(url);
-      if (!res.ok) {
-        toast.error('Export failed');
-        return;
-      }
-      // Pull the filename from Content-Disposition; fall back to a sensible default.
-      const blob = await res.blob();
-      const disposition = res.headers.get('Content-Disposition') ?? '';
-      const filenameMatch = disposition.match(/filename="([^"]+)"/);
-      const filename = filenameMatch?.[1] ?? 'inventory.csv';
-      const objectUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = objectUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(objectUrl);
-      toast.success('Inventory exported');
-    } catch {
-      toast.error('Export failed');
+      const ok = await downloadCsvFromUrl(url, 'inventory.csv');
+      if (ok) toast.success('Inventory exported');
+      else toast.error('Export failed');
     } finally {
       setExporting(false);
     }

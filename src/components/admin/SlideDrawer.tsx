@@ -1,7 +1,13 @@
 'use client';
 
 import { useEffect, useRef, type ReactNode } from 'react';
-import { FOCUSABLE_SELECTOR } from '@/hooks/useFocusTrap';
+import { useScrollLock } from '@/hooks/useScrollLock';
+
+// CSS selector for all keyboard-focusable elements — used by the Tab-cycle
+// trap below. Lives here (not in a shared hook) because the trap logic is
+// inline and `SlideDrawer` is the only surface that needs the selector.
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 type Props = {
   open: boolean;
@@ -25,6 +31,11 @@ export default function SlideDrawer({
   children,
 }: Props) {
   const asideRef = useRef<HTMLElement>(null);
+
+  // Lock body scroll while the drawer is open. Centralized here at the
+  // dialog-modal layer so every consumer gets the same behavior — the
+  // prior `useAdminDrawer({ scrollLock: false })` opt-out is gone.
+  useScrollLock(open);
 
   useEffect(() => {
     if (!open) return;

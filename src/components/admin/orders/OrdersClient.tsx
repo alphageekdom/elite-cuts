@@ -20,6 +20,7 @@ import AdminPagination from '@/components/admin/AdminPagination';
 import SlideDrawer from '@/components/admin/SlideDrawer';
 import RangeToggle, { type RangeKey } from '@/components/admin/analytics/RangeToggle';
 import { AVATAR_COLORS } from '@/lib/admin-constants';
+import { downloadCsvFromUrl } from '@/lib/admin/download';
 import type { OrderTableRow, StatusCounts } from '@/types/admin';
 import {
   applyOrdersFilter,
@@ -107,26 +108,9 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
         includeDemo,
       });
       const url = `/api/orders/export?${params.toString()}`;
-      const res = await fetch(url);
-      if (!res.ok) {
-        toast.error('Export failed');
-        return;
-      }
-      const blob = await res.blob();
-      const disposition = res.headers.get('Content-Disposition') ?? '';
-      const filenameMatch = disposition.match(/filename="([^"]+)"/);
-      const filename = filenameMatch?.[1] ?? 'orders.csv';
-      const objectUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = objectUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(objectUrl);
-      toast.success('Orders exported');
-    } catch {
-      toast.error('Export failed');
+      const ok = await downloadCsvFromUrl(url, 'orders.csv');
+      if (ok) toast.success('Orders exported');
+      else toast.error('Export failed');
     } finally {
       setExporting(false);
     }
