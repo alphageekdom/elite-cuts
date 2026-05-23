@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 import { type ShiftColor } from '@/lib/shift-constants';
-import FormDrawer from '@/components/admin/FormDrawer';
+import SlideDrawer from '@/components/admin/SlideDrawer';
 import FieldLabel from '@/components/admin/FieldLabel';
 import ColorSwatchPicker from '@/components/admin/ColorSwatchPicker';
+import AdminEyebrow from '@/components/admin/AdminEyebrow';
 import {
   FORM_FIELD_CLS,
   ROLE_COLOR,
@@ -51,11 +52,26 @@ function isEmailShapeValid(value: string): boolean {
 }
 
 type Props = {
+  open: boolean;
   staff: StaffRow | null;  // null = create mode
   onClose: () => void;
 };
 
-export default function StaffFormDrawer({ staff, onClose }: Props) {
+export default function StaffFormDrawer(props: Props) {
+  const { open, onClose } = props;
+  return (
+    <SlideDrawer
+      open={open}
+      onClose={onClose}
+      widthClass="max-w-md"
+      ariaLabelledBy="staff-form-title"
+    >
+      {open && <StaffFormBody {...props} />}
+    </SlideDrawer>
+  );
+}
+
+function StaffFormBody({ staff, onClose }: Props) {
   const router = useRouter();
   const isEdit = staff !== null;
 
@@ -216,154 +232,175 @@ export default function StaffFormDrawer({ staff, onClose }: Props) {
   }
 
   return (
-    <FormDrawer
-      eyebrow={isEdit ? 'Edit staff' : 'New staff'}
-      title={isEdit ? staff.name : 'Add a staff member'}
-      titleId="staff-form-title"
-      subtitle={isEdit ? 'Update or remove this staff record' : 'Roster entry — no login created'}
-      onClose={onClose}
-    >
-      <form onSubmit={handleSubmit} className="flex flex-col flex-1 px-6 py-5 gap-5">
-          <div>
-            <FieldLabel>Name</FieldLabel>
+    <>
+      <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-line-soft shrink-0">
+        <div className="pr-4">
+          <AdminEyebrow size="drawer" className="mb-1.5">
+            {isEdit ? 'Edit staff' : 'New staff'}
+          </AdminEyebrow>
+          <h2
+            id="staff-form-title"
+            className="font-display text-[20px] font-normal tracking-tight leading-snug"
+          >
+            {isEdit ? staff.name : 'Add a staff member'}
+          </h2>
+          <p className="mt-1 text-[12px] text-muted">
+            {isEdit ? 'Update or remove this staff record' : 'Roster entry — no login created'}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="w-8 h-8 rounded-full grid place-items-center text-muted hover:text-ink hover:bg-cream-deep transition-colors shrink-0 mt-1"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <form onSubmit={handleSubmit} className="flex flex-col flex-1 px-6 py-5 gap-5 overflow-y-auto">
+        <div>
+          <FieldLabel>Name</FieldLabel>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Carlos Mendez"
+            maxLength={80}
+            required
+            className={FORM_FIELD_CLS}
+          />
+        </div>
+
+        <div>
+          <FieldLabel>Role</FieldLabel>
+          <select
+            value={roleMode}
+            onChange={(e) => handleRoleChange(e.target.value)}
+            className={FORM_FIELD_CLS}
+          >
+            {ROLE_QUICK_PICKS.map((k) => (
+              <option key={k} value={ROLE_LABEL[k]}>{ROLE_LABEL[k]}</option>
+            ))}
+            <option value={ROLE_OTHER_VALUE}>Other (type a role)</option>
+          </select>
+          {roleMode === ROLE_OTHER_VALUE && (
             <input
               type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Carlos Mendez"
-              maxLength={80}
-              required
-              className={FORM_FIELD_CLS}
+              value={roleOther}
+              onChange={(e) => setRoleOther(e.target.value)}
+              placeholder="e.g. Cleanup, Trainer"
+              maxLength={40}
+              className={`${FORM_FIELD_CLS} mt-2`}
+              autoFocus
             />
-          </div>
+          )}
+        </div>
 
-          <div>
-            <FieldLabel>Role</FieldLabel>
-            <select
-              value={roleMode}
-              onChange={(e) => handleRoleChange(e.target.value)}
-              className={FORM_FIELD_CLS}
-            >
-              {ROLE_QUICK_PICKS.map((k) => (
-                <option key={k} value={ROLE_LABEL[k]}>{ROLE_LABEL[k]}</option>
-              ))}
-              <option value={ROLE_OTHER_VALUE}>Other (type a role)</option>
-            </select>
-            {roleMode === ROLE_OTHER_VALUE && (
-              <input
-                type="text"
-                value={roleOther}
-                onChange={(e) => setRoleOther(e.target.value)}
-                placeholder="e.g. Cleanup, Trainer"
-                maxLength={40}
-                className={`${FORM_FIELD_CLS} mt-2`}
-                autoFocus
-              />
-            )}
-          </div>
+        <div>
+          <FieldLabel>Station</FieldLabel>
+          <input
+            type="text"
+            value={station}
+            onChange={(e) => setStation(e.target.value)}
+            placeholder="e.g. Front Counter, Butcher Station"
+            maxLength={60}
+            className={FORM_FIELD_CLS}
+          />
+        </div>
 
-          <div>
-            <FieldLabel>Station</FieldLabel>
-            <input
-              type="text"
-              value={station}
-              onChange={(e) => setStation(e.target.value)}
-              placeholder="e.g. Front Counter, Butcher Station"
-              maxLength={60}
-              className={FORM_FIELD_CLS}
-            />
-          </div>
+        <div>
+          <FieldLabel>Color</FieldLabel>
+          <ColorSwatchPicker value={color} onChange={setColor} />
+        </div>
 
-          <div>
-            <FieldLabel>Color</FieldLabel>
-            <ColorSwatchPicker value={color} onChange={setColor} />
-          </div>
+        <div>
+          <FieldLabel>Status</FieldLabel>
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value as StaffStatus)}
+            className={FORM_FIELD_CLS}
+          >
+            {STAFF_STATUSES.map((s) => (
+              <option key={s} value={s}>{STATUS_LABEL[s]}</option>
+            ))}
+          </select>
+        </div>
 
-          <div>
-            <FieldLabel>Status</FieldLabel>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value as StaffStatus)}
-              className={FORM_FIELD_CLS}
-            >
-              {STAFF_STATUSES.map((s) => (
-                <option key={s} value={s}>{STATUS_LABEL[s]}</option>
-              ))}
-            </select>
-          </div>
+        <div>
+          <FieldLabel>Email</FieldLabel>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="e.g. name@elitecuts.demo"
+            maxLength={120}
+            aria-invalid={!emailValid}
+            className={FORM_FIELD_CLS}
+          />
+          {!emailValid && (
+            <p className="mt-1.5 text-[11px] text-oxblood">Email looks malformed</p>
+          )}
+        </div>
 
-          <div>
-            <FieldLabel>Email</FieldLabel>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="e.g. name@elitecuts.demo"
-              maxLength={120}
-              aria-invalid={!emailValid}
-              className={FORM_FIELD_CLS}
-            />
-            {!emailValid && (
-              <p className="mt-1.5 text-[11px] text-oxblood">Email looks malformed</p>
-            )}
-          </div>
+        <div>
+          <FieldLabel>Notes</FieldLabel>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Anything worth knowing about this staff member"
+            maxLength={500}
+            rows={3}
+            className={`${FORM_FIELD_CLS} resize-none`}
+          />
+        </div>
 
-          <div>
-            <FieldLabel>Notes</FieldLabel>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Anything worth knowing about this staff member"
-              maxLength={500}
-              rows={3}
-              className={`${FORM_FIELD_CLS} resize-none`}
-            />
-          </div>
+        <div className="mt-auto pt-4 border-t border-line-soft space-y-3">
+          <button
+            type="submit"
+            disabled={submitDisabled}
+            className="w-full bg-ink text-cream text-[13px] font-medium tracking-[0.04em] py-3 rounded-full hover:bg-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Create staff'}
+          </button>
+          {isEdit && !isDirty && !saving && (
+            <p className="text-[11px] text-muted text-center -mt-1">No changes yet</p>
+          )}
 
-          <div className="mt-auto pt-4 border-t border-line-soft space-y-3">
-            <button
-              type="submit"
-              disabled={submitDisabled}
-              className="w-full bg-ink text-cream text-[13px] font-medium tracking-[0.04em] py-3 rounded-full hover:bg-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Create staff'}
-            </button>
-            {isEdit && !isDirty && !saving && (
-              <p className="text-[11px] text-muted text-center -mt-1">No changes yet</p>
-            )}
-
-            {isEdit && (
-              confirmDelete ? (
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setConfirmDelete(false)}
-                    disabled={deleting}
-                    className="text-[12px] font-medium tracking-[0.04em] py-2.5 rounded-full border border-line text-ink-soft hover:border-ink hover:text-ink transition-colors disabled:opacity-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleDelete}
-                    disabled={deleting}
-                    className="text-[12px] font-medium tracking-[0.04em] py-2.5 rounded-full bg-oxblood text-cream hover:bg-oxblood/90 transition-colors disabled:opacity-50"
-                  >
-                    {deleting ? 'Deleting…' : 'Confirm delete'}
-                  </button>
-                </div>
-              ) : (
+          {isEdit && (
+            confirmDelete ? (
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  onClick={() => setConfirmDelete(true)}
-                  className="w-full text-[12px] font-medium tracking-[0.04em] py-2.5 rounded-full border border-oxblood/30 text-oxblood hover:bg-oxblood/5 transition-colors"
+                  onClick={() => setConfirmDelete(false)}
+                  disabled={deleting}
+                  className="text-[12px] font-medium tracking-[0.04em] py-2.5 rounded-full border border-line text-ink-soft hover:border-ink hover:text-ink transition-colors disabled:opacity-50"
                 >
-                  Delete staff
+                  Cancel
                 </button>
-              )
-            )}
-          </div>
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="text-[12px] font-medium tracking-[0.04em] py-2.5 rounded-full bg-oxblood text-cream hover:bg-oxblood/90 transition-colors disabled:opacity-50"
+                >
+                  {deleting ? 'Deleting…' : 'Confirm delete'}
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(true)}
+                className="w-full text-[12px] font-medium tracking-[0.04em] py-2.5 rounded-full border border-oxblood/30 text-oxblood hover:bg-oxblood/5 transition-colors"
+              >
+                Delete staff
+              </button>
+            )
+          )}
+        </div>
       </form>
-    </FormDrawer>
+    </>
   );
 }

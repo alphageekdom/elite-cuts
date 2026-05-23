@@ -1,14 +1,4 @@
-import { MONTH_ABBR } from '@/lib/format';
-
-const DAY_NAMES = [
-  'Sunday',
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-];
+import { buildTodayDateLabel } from '@/lib/admin/schedule';
 
 type Props = {
   staffCount: number;
@@ -26,8 +16,7 @@ export default function ScheduleTodayCard({
   openLabel,
 }: Props) {
   const now = new Date();
-  const dayName = DAY_NAMES[now.getDay()];
-  const dateStr = `${MONTH_ABBR[now.getMonth()]} ${now.getDate()}`;
+  const { dayName, dateStr } = buildTodayDateLabel(now);
   const revLabel =
     projectedRevenue >= 1000
       ? `$${(projectedRevenue / 1000).toFixed(1)}K`

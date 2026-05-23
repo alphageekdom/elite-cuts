@@ -142,12 +142,11 @@ export default function StaffPageClient({ rows, headerSubtitle }: Props) {
         </>
       )}
 
-      {drawerOpen && (
-        <StaffFormDrawer
-          staff={drawerStaff}
-          onClose={() => setDrawer({ kind: 'closed' })}
-        />
-      )}
+      <StaffFormDrawer
+        open={drawerOpen}
+        staff={drawerStaff}
+        onClose={() => setDrawer({ kind: 'closed' })}
+      />
     </>
   );
 }
