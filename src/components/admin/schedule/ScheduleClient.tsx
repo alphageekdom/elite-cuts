@@ -1,46 +1,26 @@
 'use client';
-import { Fragment, useState, useEffect, useCallback } from 'react';
-import { toast } from 'sonner';
+
+import { useMemo } from 'react';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import ScheduleTodayCard from './ScheduleTodayCard';
 import ScheduleOnTodayCard from './ScheduleOnTodayCard';
 import SchedulePickupSlots, { type PickupSlotRow } from './SchedulePickupSlots';
 import ScheduleShopHours from './ScheduleShopHours';
+import ScheduleCalendarGrid from './ScheduleCalendarGrid';
 import ShiftFormDrawer from './ShiftFormDrawer';
 import { MONTH_ABBR } from '@/lib/format';
-import { getMondayOf } from '@/lib/schedule-utils';
 import type { ShopHoursDay } from '@/models/ShopHours';
-import type { ShiftColor } from '@/models/Shift';
-import type { StaffRoleKey } from '@/lib/staff-display';
-// ShiftColor re-exported for ScheduleOnTodayCard usage via ScheduleClient import
-
-
-export type ShiftRow = {
-  _id: string;
-  dayOfWeek: number;
-  hourIndex: number;
-  staffName: string;
-  role: string;
-  color: ShiftColor;
-};
-
-export type StaffUserOption = {
-  _id: string;
-  name: string;
-  roleKey: StaffRoleKey;
-};
-
-const HOURS = ['8 AM', '9 AM', '10 AM', '11 AM', '12 PM', '1 PM', '2 PM', '3 PM', '4 PM'];
-const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-const SHIFT_STYLES: Record<ShiftColor, string> = {
-  tangelo:  'bg-oxblood text-cream',
-  marcus:   'bg-ink text-cream',
-  elena:    'bg-camel text-ink',
-  sam:      'bg-green text-cream',
-  maya:     'bg-camel-soft text-ink',
-  delivery: 'bg-cream-deep border border-dashed border-line text-ink-soft',
-};
+import {
+  buildDayCells,
+  buildOpenLabel,
+  buildShiftGrid,
+  buildTodayStaff,
+  buildWeekRangeLabel,
+  toMondayIndex,
+  type ShiftRow,
+  type StaffUserOption,
+} from '@/lib/admin/schedule';
+import { useScheduleWeek } from '@/hooks/useScheduleWeek';
 
 type Props = {
   initialShifts: ShiftRow[];
@@ -52,96 +32,28 @@ type Props = {
   staffUsers: StaffUserOption[];
 };
 
-type DrawerState =
-  | { kind: 'closed' }
-  | { kind: 'create'; dayOfWeek?: number; hourIndex?: number }
-  | { kind: 'edit'; shift: ShiftRow };
-
 export default function ScheduleClient({
   initialShifts, shopHours, pickupSlots,
   slotsBooked, projectedRevenue, deliveryCount,
   staffUsers,
 }: Props) {
-  const [weekStart, setWeekStart] = useState<Date>(() => getMondayOf(new Date()));
-  const [shifts, setShifts] = useState<ShiftRow[]>(initialShifts);
-  const [loadingShifts, setLoadingShifts] = useState(false);
-  const [drawer, setDrawer] = useState<DrawerState>({ kind: 'closed' });
+  const {
+    weekStart, shifts, loadingShifts, drawer,
+    prevWeek, nextWeek, goToday,
+    openCreate, openEdit, closeDrawer, refetch,
+  } = useScheduleWeek(initialShifts);
 
-  const fetchShifts = useCallback(async (ws: Date) => {
-    setLoadingShifts(true);
-    try {
-      const res = await fetch(`/api/shifts?weekStart=${ws.toISOString()}`);
-      if (!res.ok) throw new Error();
-      const data: ShiftRow[] = await res.json();
-      setShifts(data);
-    } catch {
-      toast.error('Failed to load shifts');
-    } finally {
-      setLoadingShifts(false);
-    }
-  }, []);
+  const now = new Date();
+  const todayMondayIndex = toMondayIndex(now.getDay());
 
-  useEffect(() => {
-    // Defer to a task tick so the setState calls inside fetchShifts land async
-    // (rule-clean) instead of synchronously from the effect body.
-    const id = setTimeout(() => fetchShifts(weekStart), 0);
-    return () => clearTimeout(id);
-  }, [weekStart, fetchShifts]);
-
-  function prevWeek() { setWeekStart((d) => { const n = new Date(d); n.setDate(n.getDate() - 7); return n; }); }
-  function nextWeek() { setWeekStart((d) => { const n = new Date(d); n.setDate(n.getDate() + 7); return n; }); }
-  function goToday()  { setWeekStart(getMondayOf(new Date())); }
-
-  // Build 9×7 GRID from live shifts
-  const GRID: (ShiftRow | null)[][] = Array.from({ length: 9 }, (_, hourIdx) =>
-    Array.from({ length: 7 }, (__, dayIdx) =>
-      shifts.find((s) => s.hourIndex === hourIdx && s.dayOfWeek === dayIdx) ?? null,
-    ),
+  const grid = useMemo(() => buildShiftGrid(shifts), [shifts]);
+  const todayStaff = useMemo(() => buildTodayStaff(shifts, todayMondayIndex), [shifts, todayMondayIndex]);
+  const days = useMemo(
+    () => buildDayCells(weekStart, shopHours, todayMondayIndex),
+    [weekStart, shopHours, todayMondayIndex],
   );
-
-  const today = new Date();
-  const todayDow = (today.getDay() + 6) % 7; // 0=Mon … 6=Sun
-
-  // Derive today's stats for ScheduleTodayCard
-  const todayShiftRows = shifts.filter((s) => s.dayOfWeek === todayDow);
-  // Group by staffName to get unique staff + hour range
-  const staffMap = new Map<string, { min: number; max: number; role: string; color: ShiftColor }>();
-  for (const s of todayShiftRows) {
-    const existing = staffMap.get(s.staffName);
-    if (!existing) {
-      staffMap.set(s.staffName, { min: s.hourIndex, max: s.hourIndex, role: s.role, color: s.color });
-    } else {
-      existing.min = Math.min(existing.min, s.hourIndex);
-      existing.max = Math.max(existing.max, s.hourIndex);
-    }
-  }
-  const todayStaff = Array.from(staffMap.entries()).map(([name, v]) => {
-    const startH = v.min + 8; // hourIndex 0 = 8AM
-    const endH   = v.max + 9; // +1 for end of that slot
-    const fmt = (h: number) => h < 12 ? `${h}AM` : h === 12 ? '12PM' : `${h - 12}PM`;
-    return { name, time: `${fmt(startH)} – ${fmt(endH)}`, role: v.role, color: v.color };
-  });
-  const staffCount = staffMap.size;
-
-  // Today's shop hours label
-  const todayHours = shopHours.find((h) => h.dayOfWeek === todayDow);
-  const openLabel = todayHours?.isClosed
-    ? 'CLOSED TODAY'
-    : todayHours
-    ? `OPEN ${todayHours.opensAt} – ${todayHours.closesAt}`
-    : 'OPEN';
-
-  const DAYS = DAY_LABELS.map((label, i) => {
-    const d = new Date(weekStart);
-    d.setDate(weekStart.getDate() + i);
-    const isClosed = shopHours.find((h) => h.dayOfWeek === i)?.isClosed ?? false;
-    return { label, date: d.getDate(), closed: isClosed, isToday: i === todayDow };
-  });
-
-  const weekEndDate = new Date(weekStart);
-  weekEndDate.setDate(weekStart.getDate() + 6);
-  const weekLabel = `${MONTH_ABBR[weekStart.getMonth()]} ${weekStart.getDate()}`;
-  const weekRangeLabel = `${weekLabel.toUpperCase()} – ${MONTH_ABBR[weekEndDate.getMonth()].toUpperCase()} ${weekEndDate.getDate()}, ${weekEndDate.getFullYear()}`;
+  const openLabel = useMemo(() => buildOpenLabel(shopHours, todayMondayIndex), [shopHours, todayMondayIndex]);
+  const weekRangeLabel = useMemo(() => buildWeekRangeLabel(weekStart), [weekStart]);
 
   return (
     <div className={loadingShifts ? 'opacity-70 pointer-events-none transition-opacity' : ''}>
@@ -161,7 +73,7 @@ export default function ScheduleClient({
               </svg>
               Print
             </button>
-            <button onClick={() => setDrawer({ kind: 'create' })} className="inline-flex items-center gap-2 px-4.5 py-2.5 rounded-full bg-ink text-cream text-[13px] font-medium tracking-[0.02em] hover:bg-oxblood transition-colors">
+            <button onClick={() => openCreate()} className="inline-flex items-center gap-2 px-4.5 py-2.5 rounded-full bg-ink text-cream text-[13px] font-medium tracking-[0.02em] hover:bg-oxblood transition-colors">
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
@@ -195,84 +107,18 @@ export default function ScheduleClient({
         </div>
       </div>
 
-      {/* Schedule Layout */}
       <div className="grid gap-6 xl:grid-cols-[1fr_320px] items-start">
-        {/* Calendar */}
-        <div className="bg-paper border border-line-soft rounded overflow-hidden relative min-w-0">
-          <div className="pointer-events-none absolute top-0 right-0 bottom-0 w-12 bg-linear-to-l from-paper z-20 sm:hidden" />
-          <div className="overflow-x-auto">
-            <div className="min-w-[640px]">
-            {/* Header */}
-            <div className="grid grid-cols-[56px_repeat(7,1fr)] border-b border-line-soft">
-              <div className="bg-cream" />
-              {DAYS.map((day) => (
-                <div key={day.label} className={`px-3 py-3.5 text-center border-l border-line-soft ${day.isToday ? 'bg-ink' : 'bg-cream'}`}>
-                  <div className={`text-[10px] tracking-[0.22em] uppercase mb-1 ${day.isToday ? 'text-camel-soft' : 'text-muted'}`}>{day.label}</div>
-                  <div className={`font-display text-[22px] font-normal leading-none tracking-tight flex items-center justify-center gap-1 ${day.isToday ? 'text-cream' : day.closed ? 'text-muted' : 'text-ink'}`}>
-                    <span className={day.closed ? 'line-through' : ''}>{day.date}</span>
-                    <span className={`inline-block w-[5px] h-[5px] rounded-full mb-[2px] ${day.closed ? 'bg-oxblood' : 'bg-green'}`} />
-                  </div>
-                </div>
-              ))}
-            </div>
+        <ScheduleCalendarGrid
+          days={days}
+          grid={grid}
+          now={now}
+          onShiftClick={openEdit}
+          onEmptyCellClick={(dayIdx, hourIdx) => openCreate(dayIdx, hourIdx)}
+        />
 
-            {/* Body */}
-            <div className="relative">
-              <div className="grid grid-cols-[56px_repeat(7,1fr)]">
-                {HOURS.map((hour, hourIdx) => (
-                  <Fragment key={`row-${hourIdx}`}>
-                    <div className="h-[72px] flex items-start pt-1 pr-2 pl-1 font-mono text-[10px] text-muted tracking-[0.04em] text-right justify-end border-t border-line-soft">
-                      {hour}
-                    </div>
-                    {DAYS.map((day, dayIdx) => {
-                      const shift = GRID[hourIdx][dayIdx];
-                      return (
-                        <div key={`cell-${dayIdx}`}
-                          className={`h-[72px] border-l border-t border-line-soft p-1 relative transition-colors hover:bg-camel/4 ${day.closed ? 'bg-oxblood/5' : ''}`}
-                        >
-                          {shift ? (
-                            <button
-                              type="button"
-                              onClick={() => setDrawer({ kind: 'edit', shift })}
-                              className={`block w-full text-left rounded p-1.5 text-[11px] leading-tight cursor-pointer overflow-hidden transition-transform hover:scale-[1.02] hover:z-2 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-ink focus:ring-offset-1 focus:ring-offset-paper ${SHIFT_STYLES[shift.color]}`}
-                            >
-                              <div className="font-medium mb-px">{shift.staffName}</div>
-                              <div className="opacity-75 text-[10px] tracking-[0.04em]">{shift.role}</div>
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => setDrawer({ kind: 'create', dayOfWeek: dayIdx, hourIndex: hourIdx })}
-                              aria-label={`Add shift on ${day.label} at ${HOURS[hourIdx]}`}
-                              className="group block w-full h-full rounded text-muted/0 hover:text-muted hover:bg-cream-deep/40 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-ink focus:ring-offset-1 focus:ring-offset-paper"
-                            >
-                              <span aria-hidden="true" className="font-mono text-[18px] leading-none opacity-0 group-hover:opacity-40 transition-opacity">+</span>
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </Fragment>
-                ))}
-              </div>
-
-              {/* Now line — only on current week */}
-              {DAYS.some((d) => d.isToday) && (
-                <div className="absolute left-[56px] right-0 h-[2px] bg-oxblood z-10 pointer-events-none"
-                  style={{ top: `calc(72px * ${Math.max(0, today.getHours() - 8)} + ${today.getMinutes() * 72 / 60}px)` }}
-                >
-                  <div className="absolute -left-1 -top-[3px] w-2 h-2 rounded-full bg-oxblood" />
-                </div>
-              )}
-            </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Sidebar */}
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
           <ScheduleTodayCard
-            staffCount={staffCount}
+            staffCount={todayStaff.length}
             slotsBooked={slotsBooked}
             projectedRevenue={projectedRevenue}
             deliveryCount={deliveryCount}
@@ -284,17 +130,16 @@ export default function ScheduleClient({
         </div>
       </div>
 
-      {drawer.kind !== 'closed' && (
-        <ShiftFormDrawer
-          shift={drawer.kind === 'edit' ? drawer.shift : null}
-          defaultDayOfWeek={drawer.kind === 'create' ? (drawer.dayOfWeek ?? todayDow) : undefined}
-          defaultHourIndex={drawer.kind === 'create' ? drawer.hourIndex : undefined}
-          weekStart={weekStart}
-          staffUsers={staffUsers}
-          onClose={() => setDrawer({ kind: 'closed' })}
-          onSaved={() => fetchShifts(weekStart)}
-        />
-      )}
+      <ShiftFormDrawer
+        open={drawer.kind !== 'closed'}
+        shift={drawer.kind === 'edit' ? drawer.shift : null}
+        defaultDayOfWeek={drawer.kind === 'create' ? (drawer.dayOfWeek ?? todayMondayIndex) : undefined}
+        defaultHourIndex={drawer.kind === 'create' ? drawer.hourIndex : undefined}
+        weekStart={weekStart}
+        staffUsers={staffUsers}
+        onClose={closeDrawer}
+        onSaved={refetch}
+      />
     </div>
   );
 }

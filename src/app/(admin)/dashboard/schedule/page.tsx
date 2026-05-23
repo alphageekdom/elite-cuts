@@ -7,13 +7,15 @@ import ShopHoursModel, { DEFAULT_DAYS } from '@/models/ShopHours';
 import ShopSettingsModel from '@/models/ShopSettings';
 import Order from '@/models/Order';
 import DeliveryModel from '@/models/Delivery';
-import StaffMemberModel, { type StaffRoleKey } from '@/models/StaffMember';
-import ScheduleClient, { type ShiftRow, type StaffUserOption } from '@/components/admin/schedule/ScheduleClient';
+import StaffMemberModel from '@/models/StaffMember';
+import type { StaffRoleKey } from '@/lib/staff-display';
+import ScheduleClient from '@/components/admin/schedule/ScheduleClient';
+import type { ShiftRow, StaffUserOption } from '@/lib/admin/schedule';
 import GrillEventSection from '@/components/grill-event/GrillEventSection';
 import type { PickupSlotRow } from '@/components/admin/schedule/SchedulePickupSlots';
-import { SLOT_LABELS } from '@/components/admin/schedule/SchedulePickupSlots';
-import { getMondayOf } from '@/lib/schedule-utils';
+import { getMondayOf, SLOT_LABELS } from '@/lib/schedule-utils';
 import { normalizeWeekStart } from '@/lib/shifts';
+import { bucketPickupSlotCounts } from '@/lib/admin/schedule';
 import { getPastEvents, getUpcomingEvents } from '@/lib/events';
 
 export const dynamic = 'force-dynamic';
@@ -66,14 +68,7 @@ export default async function AdminSchedulePage() {
   const slotsBooked = pickupOrders.length;
   const projectedRevenue = pickupOrders.reduce((sum, o) => sum + ((o.totalCost as number) ?? 0), 0);
 
-  // Count pickups per hour slot (slots 0–7 = 9AM–5PM)
-  const slotCounts = new Array<number>(8).fill(0);
-  for (const order of pickupOrders) {
-    if (!order.pickupSlot) continue;
-    const hour = new Date(order.pickupSlot as string).getHours();
-    const idx = hour - 9; // slot 0 = 9AM
-    if (idx >= 0 && idx < 8) slotCounts[idx]++;
-  }
+  const slotCounts = bucketPickupSlotCounts(pickupOrders.map((o) => o.pickupSlot as string | null));
 
   const pickupSlots: PickupSlotRow[] = SLOT_LABELS.map((label, i) => ({
     label,

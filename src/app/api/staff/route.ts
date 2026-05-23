@@ -18,13 +18,13 @@ export const GET = withAdmin(async () => {
     .sort({ name: 1 })
     .lean();
 
-  return NextResponse.json(
-    docs.map((d) => ({
+  return NextResponse.json({
+    items: docs.map((d) => ({
       _id: d._id.toString(),
       name: d.name,
       roleKey: d.roleKey ?? 'other',
     })),
-  );
+  });
 });
 
 // POST /api/staff — create a new staff member.
@@ -74,7 +74,14 @@ export const POST = withAdmin(async (request: NextRequest) => {
   });
 
   return NextResponse.json(
-    { _id: doc._id.toString(), name: doc.name, role: doc.role, color: doc.color },
+    {
+      data: {
+        _id: doc._id.toString(),
+        name: doc.name,
+        role: doc.role,
+        color: doc.color,
+      },
+    },
     { status: 201 },
   );
 });

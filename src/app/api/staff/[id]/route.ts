@@ -69,11 +69,13 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
   }
 
   return NextResponse.json({
-    _id: doc._id.toString(),
-    name: doc.name,
-    role: doc.role,
-    color: doc.color,
-    status: doc.status,
+    data: {
+      _id: doc._id.toString(),
+      name: doc.name,
+      role: doc.role,
+      color: doc.color,
+      status: doc.status,
+    },
   });
 });
 
@@ -88,5 +90,5 @@ export const DELETE = withAdmin(async (_request: NextRequest, ctx: unknown) => {
     return NextResponse.json({ message: 'Staff member not found' }, { status: 404 });
   }
 
-  return NextResponse.json({ message: 'Staff member deleted' });
+  return NextResponse.json({ data: { id }, message: 'Staff member deleted' });
 });

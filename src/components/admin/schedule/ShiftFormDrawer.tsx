@@ -4,9 +4,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { type ShiftColor } from '@/lib/shift-constants';
-import FormDrawer from '@/components/admin/FormDrawer';
+import SlideDrawer from '@/components/admin/SlideDrawer';
 import FieldLabel from '@/components/admin/FieldLabel';
 import ColorSwatchPicker from '@/components/admin/ColorSwatchPicker';
+import AdminEyebrow from '@/components/admin/AdminEyebrow';
+import { DAY_LABELS_SHORT, HOUR_LABELS } from '@/lib/schedule-utils';
+import {
+  shiftCreateSchema,
+  shiftPatchSchema,
+} from '@/lib/shifts/schema';
 import {
   FORM_FIELD_CLS,
   ROLE_COLOR,
@@ -14,10 +20,7 @@ import {
   STAFF_ROLE_KEYS,
   type StaffRoleKey,
 } from '@/lib/staff-display';
-import type { ShiftRow, StaffUserOption } from './ScheduleClient';
-
-const HOUR_LABELS = ['8 AM', '9 AM', '10 AM', '11 AM', '12 PM', '1 PM', '2 PM', '3 PM', '4 PM'];
-const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+import type { ShiftRow, StaffUserOption } from '@/lib/admin/schedule';
 
 const STAFF_OTHER_VALUE = '__other__';
 const ROLE_OTHER_VALUE = '__other__';
@@ -39,6 +42,7 @@ function findMatchingRoleLabel(role: string): string | null {
 }
 
 type Props = {
+  open: boolean;
   shift: ShiftRow | null;          // null = create mode
   defaultDayOfWeek?: number;       // 0-6, prefilled in create mode (e.g. today)
   defaultHourIndex?: number;       // 0-8, optional prefill (used by Phase D empty-cell click)
@@ -48,7 +52,21 @@ type Props = {
   onSaved: () => void;             // parent re-fetches shifts
 };
 
-export default function ShiftFormDrawer({
+export default function ShiftFormDrawer(props: Props) {
+  const { open, onClose } = props;
+  return (
+    <SlideDrawer
+      open={open}
+      onClose={onClose}
+      widthClass="max-w-md"
+      ariaLabelledBy="shift-form-title"
+    >
+      {open && <ShiftFormBody {...props} />}
+    </SlideDrawer>
+  );
+}
+
+function ShiftFormBody({
   shift,
   defaultDayOfWeek,
   defaultHourIndex,
@@ -68,9 +86,9 @@ export default function ShiftFormDrawer({
     let cancelled = false;
     fetch('/api/staff', { cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (cancelled || !Array.isArray(data)) return;
-        setStaffUsers(data as StaffUserOption[]);
+      .then((payload) => {
+        if (cancelled || !payload || !Array.isArray(payload.items)) return;
+        setStaffUsers(payload.items as StaffUserOption[]);
       })
       .catch(() => {
         // Silent — the server-passed snapshot remains in place.
@@ -175,30 +193,37 @@ export default function ShiftFormDrawer({
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const staffName = resolvedStaffName();
-    if (!staffName) {
-      toast.error('Pick a staff member or type a name');
+    const role = resolvedRole();
+
+    // Pre-submit safeParse through the same Zod schema the API will run so
+    // admins see field-level messages without a round trip.
+    const candidate = isEdit
+      ? { staffName, role, color, dayOfWeek, hourIndex }
+      : { weekStart: weekStart.toISOString(), staffName, role, color, dayOfWeek, hourIndex };
+    const parsed = isEdit
+      ? shiftPatchSchema.safeParse(candidate)
+      : shiftCreateSchema.safeParse(candidate);
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? 'Please fix the form before saving');
       return;
     }
+
     setSaving(true);
     try {
       const url = isEdit ? `/api/shifts/${shift._id}` : '/api/shifts';
       const method = isEdit ? 'PATCH' : 'POST';
-      const role = resolvedRole();
-      const body = isEdit
-        ? { staffName, role, color, dayOfWeek, hourIndex }
-        : { weekStart: weekStart.toISOString(), staffName, role, color, dayOfWeek, hourIndex };
 
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify(parsed.data),
       });
 
       if (res.status === 409) {
-        const data = await res.json().catch(() => null) as
+        const payload = await res.json().catch(() => null) as
           | { conflict?: { staffName?: string } }
           | null;
-        const who = data?.conflict?.staffName;
+        const who = payload?.conflict?.staffName;
         toast.error(who ? `Slot already taken by ${who}` : 'Slot already taken');
         return;
       }
@@ -238,140 +263,161 @@ export default function ShiftFormDrawer({
   }
 
   return (
-    <FormDrawer
-      eyebrow={isEdit ? 'Edit shift' : 'New shift'}
-      title={isEdit ? shift.staffName : 'Schedule a shift'}
-      titleId="shift-form-title"
-      subtitle={isEdit ? 'Update or remove this hour slot' : 'One staff member, one hour slot'}
-      onClose={onClose}
-    >
-      <form onSubmit={handleSubmit} className="flex flex-col px-6 py-5 gap-5">
+    <>
+      <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-line-soft shrink-0">
+        <div className="pr-4">
+          <AdminEyebrow size="drawer" className="mb-1.5">
+            {isEdit ? 'Edit shift' : 'New shift'}
+          </AdminEyebrow>
+          <h2
+            id="shift-form-title"
+            className="font-display text-[20px] font-normal tracking-tight leading-snug"
+          >
+            {isEdit ? shift.staffName : 'Schedule a shift'}
+          </h2>
+          <p className="mt-1 text-[12px] text-muted">
+            {isEdit ? 'Update or remove this hour slot' : 'One staff member, one hour slot'}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="w-8 h-8 rounded-full grid place-items-center text-muted hover:text-ink hover:bg-cream-deep transition-colors shrink-0 mt-1"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <form onSubmit={handleSubmit} className="flex flex-col px-6 py-5 gap-5 overflow-y-auto">
+        <div>
+          <FieldLabel>Staff</FieldLabel>
+          <select
+            value={staffMode}
+            onChange={(e) => handleStaffChange(e.target.value)}
+            className={FORM_FIELD_CLS}
+          >
+            {staffUsers.map((u) => (
+              <option key={u._id} value={u._id}>{u.name}</option>
+            ))}
+            <option value={STAFF_OTHER_VALUE}>Other (type a name)</option>
+          </select>
+          {staffMode === STAFF_OTHER_VALUE && (
+            <input
+              type="text"
+              value={staffNameOther}
+              onChange={(e) => setStaffNameOther(e.target.value)}
+              placeholder="e.g. Casual contractor"
+              maxLength={60}
+              className={`${FORM_FIELD_CLS} mt-2`}
+              autoFocus
+            />
+          )}
+          {staffUsers.length === 0 && staffMode !== STAFF_OTHER_VALUE && (
+            <p className="mt-1.5 text-[11px] text-muted">No staff users yet — add one on the Staff page, or type a name above.</p>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <FieldLabel>Staff</FieldLabel>
+            <FieldLabel>Day</FieldLabel>
             <select
-              value={staffMode}
-              onChange={(e) => handleStaffChange(e.target.value)}
+              value={dayOfWeek}
+              onChange={(e) => setDayOfWeek(Number(e.target.value))}
               className={FORM_FIELD_CLS}
             >
-              {staffUsers.map((u) => (
-                <option key={u._id} value={u._id}>{u.name}</option>
+              {DAY_LABELS_SHORT.map((label, i) => (
+                <option key={label} value={i}>{label}</option>
               ))}
-              <option value={STAFF_OTHER_VALUE}>Other (type a name)</option>
             </select>
-            {staffMode === STAFF_OTHER_VALUE && (
-              <input
-                type="text"
-                value={staffNameOther}
-                onChange={(e) => setStaffNameOther(e.target.value)}
-                placeholder="e.g. Casual contractor"
-                maxLength={60}
-                className={`${FORM_FIELD_CLS} mt-2`}
-                autoFocus
-              />
-            )}
-            {staffUsers.length === 0 && staffMode !== STAFF_OTHER_VALUE && (
-              <p className="mt-1.5 text-[11px] text-muted">No staff users yet — mark a customer as staff from the Customers page, or type a name above.</p>
-            )}
           </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <FieldLabel>Day</FieldLabel>
-              <select
-                value={dayOfWeek}
-                onChange={(e) => setDayOfWeek(Number(e.target.value))}
-                className={FORM_FIELD_CLS}
-              >
-                {DAY_LABELS.map((label, i) => (
-                  <option key={label} value={i}>{label}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <FieldLabel>Hour</FieldLabel>
-              <select
-                value={hourIndex}
-                onChange={(e) => setHourIndex(Number(e.target.value))}
-                className={FORM_FIELD_CLS}
-              >
-                {HOUR_LABELS.map((label, i) => (
-                  <option key={label} value={i}>{label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
           <div>
-            <FieldLabel>Role</FieldLabel>
+            <FieldLabel>Hour</FieldLabel>
             <select
-              value={roleMode}
-              onChange={(e) => handleRoleChange(e.target.value)}
+              value={hourIndex}
+              onChange={(e) => setHourIndex(Number(e.target.value))}
               className={FORM_FIELD_CLS}
             >
-              {ROLE_QUICK_PICKS.map((k) => (
-                <option key={k} value={ROLE_LABEL[k]}>{ROLE_LABEL[k]}</option>
+              {HOUR_LABELS.map((label, i) => (
+                <option key={label} value={i}>{label}</option>
               ))}
-              <option value={ROLE_OTHER_VALUE}>Other (type a role)</option>
             </select>
-            {roleMode === ROLE_OTHER_VALUE && (
-              <input
-                type="text"
-                value={roleOther}
-                onChange={(e) => setRoleOther(e.target.value)}
-                placeholder="e.g. Cleanup, Trainer"
-                maxLength={40}
-                className={`${FORM_FIELD_CLS} mt-2`}
-                autoFocus
-              />
-            )}
           </div>
+        </div>
 
-          <div>
-            <FieldLabel>Color</FieldLabel>
-            <ColorSwatchPicker value={color} onChange={setColor} />
-          </div>
+        <div>
+          <FieldLabel>Role</FieldLabel>
+          <select
+            value={roleMode}
+            onChange={(e) => handleRoleChange(e.target.value)}
+            className={FORM_FIELD_CLS}
+          >
+            {ROLE_QUICK_PICKS.map((k) => (
+              <option key={k} value={ROLE_LABEL[k]}>{ROLE_LABEL[k]}</option>
+            ))}
+            <option value={ROLE_OTHER_VALUE}>Other (type a role)</option>
+          </select>
+          {roleMode === ROLE_OTHER_VALUE && (
+            <input
+              type="text"
+              value={roleOther}
+              onChange={(e) => setRoleOther(e.target.value)}
+              placeholder="e.g. Cleanup, Trainer"
+              maxLength={40}
+              className={`${FORM_FIELD_CLS} mt-2`}
+              autoFocus
+            />
+          )}
+        </div>
 
-          <div className="pt-4 border-t border-line-soft space-y-3">
-            <button
-              type="submit"
-              disabled={submitDisabled}
-              className="w-full bg-ink text-cream text-[13px] font-medium tracking-[0.04em] py-3 rounded-full hover:bg-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Create shift'}
-            </button>
+        <div>
+          <FieldLabel>Color</FieldLabel>
+          <ColorSwatchPicker value={color} onChange={setColor} />
+        </div>
 
-            {isEdit && (
-              confirmDelete ? (
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setConfirmDelete(false)}
-                    disabled={deleting}
-                    className="text-[12px] font-medium tracking-[0.04em] py-2.5 rounded-full border border-line text-ink-soft hover:border-ink hover:text-ink transition-colors disabled:opacity-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleDelete}
-                    disabled={deleting}
-                    className="text-[12px] font-medium tracking-[0.04em] py-2.5 rounded-full bg-oxblood text-cream hover:bg-oxblood/90 transition-colors disabled:opacity-50"
-                  >
-                    {deleting ? 'Deleting…' : 'Confirm delete'}
-                  </button>
-                </div>
-              ) : (
+        <div className="pt-4 border-t border-line-soft space-y-3">
+          <button
+            type="submit"
+            disabled={submitDisabled}
+            className="w-full bg-ink text-cream text-[13px] font-medium tracking-[0.04em] py-3 rounded-full hover:bg-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Create shift'}
+          </button>
+
+          {isEdit && (
+            confirmDelete ? (
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  onClick={() => setConfirmDelete(true)}
-                  className="w-full text-[12px] font-medium tracking-[0.04em] py-2.5 rounded-full border border-oxblood/30 text-oxblood hover:bg-oxblood/5 transition-colors"
+                  onClick={() => setConfirmDelete(false)}
+                  disabled={deleting}
+                  className="text-[12px] font-medium tracking-[0.04em] py-2.5 rounded-full border border-line text-ink-soft hover:border-ink hover:text-ink transition-colors disabled:opacity-50"
                 >
-                  Delete shift
+                  Cancel
                 </button>
-              )
-            )}
-          </div>
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="text-[12px] font-medium tracking-[0.04em] py-2.5 rounded-full bg-oxblood text-cream hover:bg-oxblood/90 transition-colors disabled:opacity-50"
+                >
+                  {deleting ? 'Deleting…' : 'Confirm delete'}
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(true)}
+                className="w-full text-[12px] font-medium tracking-[0.04em] py-2.5 rounded-full border border-oxblood/30 text-oxblood hover:bg-oxblood/5 transition-colors"
+              >
+                Delete shift
+              </button>
+            )
+          )}
+        </div>
       </form>
-    </FormDrawer>
+    </>
   );
 }
