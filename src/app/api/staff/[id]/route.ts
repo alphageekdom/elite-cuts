@@ -1,11 +1,9 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import mongoose from 'mongoose';
-import StaffMemberModel, {
-  STAFF_ROLE_KEYS,
-  STAFF_STATUSES,
-} from '@/models/StaffMember';
-import { SHIFT_COLORS } from '@/lib/shift-constants';
+
+import StaffMemberModel from '@/models/StaffMember';
 import { withAdmin } from '@/lib/api-handler';
+import { staffPatchSchema, type StaffPatchInput } from '@/lib/staff/schema';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -15,50 +13,27 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
     return NextResponse.json({ message: 'Not found' }, { status: 404 });
   }
 
-  const body = (await request.json().catch(() => ({}))) as {
-    name?: string;
-    role?: string;
-    roleKey?: string;
-    station?: string;
-    color?: string;
-    status?: string;
-    email?: string;
-    notes?: string;
-  };
+  const parsed = staffPatchSchema.safeParse(await request.json().catch(() => ({})));
+  if (!parsed.success) {
+    return NextResponse.json(
+      { message: parsed.error.issues[0]?.message ?? 'Invalid input' },
+      { status: 400 },
+    );
+  }
 
-  const update: Record<string, unknown> = {};
-  if (body.name !== undefined) {
-    const trimmed = body.name.trim();
-    if (!trimmed) {
-      return NextResponse.json({ message: 'Name is required' }, { status: 400 });
-    }
-    if (trimmed.length > 80) {
-      return NextResponse.json({ message: 'Name is too long' }, { status: 400 });
-    }
-    update.name = trimmed;
-  }
-  if (body.role !== undefined) update.role = body.role.trim();
-  if (body.roleKey !== undefined) {
-    if (!(STAFF_ROLE_KEYS as readonly string[]).includes(body.roleKey)) {
-      return NextResponse.json({ message: 'Invalid role' }, { status: 400 });
-    }
-    update.roleKey = body.roleKey;
-  }
-  if (body.station !== undefined) update.station = body.station.trim();
-  if (body.color !== undefined) {
-    if (!(SHIFT_COLORS as readonly string[]).includes(body.color)) {
-      return NextResponse.json({ message: 'Invalid color' }, { status: 400 });
-    }
-    update.color = body.color;
-  }
-  if (body.status !== undefined) {
-    if (!(STAFF_STATUSES as readonly string[]).includes(body.status)) {
-      return NextResponse.json({ message: 'Invalid status' }, { status: 400 });
-    }
-    update.status = body.status;
-  }
-  if (body.email !== undefined) update.email = body.email.trim().toLowerCase();
-  if (body.notes !== undefined) update.notes = body.notes.trim();
+  // Strip undefined keys so Mongoose's `$set` doesn't interpret them as
+  // a request to clear those fields. Building a typed partial here keeps
+  // the rest of the handler reading without casts.
+  const data = parsed.data;
+  const update: Partial<StaffPatchInput> = {};
+  if (data.name !== undefined) update.name = data.name;
+  if (data.role !== undefined) update.role = data.role;
+  if (data.roleKey !== undefined) update.roleKey = data.roleKey;
+  if (data.station !== undefined) update.station = data.station;
+  if (data.color !== undefined) update.color = data.color;
+  if (data.status !== undefined) update.status = data.status;
+  if (data.email !== undefined) update.email = data.email;
+  if (data.notes !== undefined) update.notes = data.notes;
 
   const doc = await StaffMemberModel.findByIdAndUpdate(id, { $set: update }, {
     new: true,

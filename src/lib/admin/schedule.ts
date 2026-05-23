@@ -74,30 +74,45 @@ export type TodayStaffEntry = {
   color: ShiftColor;
 };
 
-// Group today's shifts by staffName and turn each into a single "8 AM – 11 AM"
-// time-range row. Two non-contiguous slots collapse into one range (a known
-// quirk that matches the prior behavior).
-export function buildTodayStaff(
-  shifts: ShiftRow[],
-  todayMondayIndex: number,
-): TodayStaffEntry[] {
-  const todayRows = shifts.filter((s) => s.dayOfWeek === todayMondayIndex);
-  const staffMap = new Map<string, { min: number; max: number; role: string; color: ShiftColor }>();
-  for (const s of todayRows) {
-    const existing = staffMap.get(s.staffName);
+// Group shifts by staffName, returning each staff member's min/max hour
+// index. Two non-contiguous slots collapse into one range (a known quirk
+// that matches the prior behavior). The schedule + staff pages both build
+// on this — the schedule layer the `role + color + formatted time`, the
+// staff layer just the formatted time for the "today" column.
+export function buildShiftRangeMap<T extends { staffName: string; hourIndex: number }>(
+  shifts: T[],
+): Map<string, { min: number; max: number }> {
+  const out = new Map<string, { min: number; max: number }>();
+  for (const s of shifts) {
+    const existing = out.get(s.staffName);
     if (!existing) {
-      staffMap.set(s.staffName, { min: s.hourIndex, max: s.hourIndex, role: s.role, color: s.color });
+      out.set(s.staffName, { min: s.hourIndex, max: s.hourIndex });
     } else {
       existing.min = Math.min(existing.min, s.hourIndex);
       existing.max = Math.max(existing.max, s.hourIndex);
     }
   }
-  return Array.from(staffMap.entries()).map(([name, v]) => ({
-    name,
-    time: formatShiftRange(v.min, v.max),
-    role: v.role,
-    color: v.color,
-  }));
+  return out;
+}
+
+export function buildTodayStaff(
+  shifts: ShiftRow[],
+  todayMondayIndex: number,
+): TodayStaffEntry[] {
+  const todayRows = shifts.filter((s) => s.dayOfWeek === todayMondayIndex);
+  const ranges = buildShiftRangeMap(todayRows);
+  // Pair each name's range with the role + color from its first matching row.
+  // Two non-contiguous slots collapse to a single label — the prior
+  // behavior — and the role/color tracks whichever slot was seen first.
+  return Array.from(ranges.entries()).map(([name, v]) => {
+    const first = todayRows.find((r) => r.staffName === name)!;
+    return {
+      name,
+      time: formatShiftRange(v.min, v.max),
+      role: first.role,
+      color: first.color,
+    };
+  });
 }
 
 export function buildOpenLabel(shopHours: ShopHoursDay[], todayMondayIndex: number): string {

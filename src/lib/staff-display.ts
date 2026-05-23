@@ -84,6 +84,7 @@ export const ROLE_GROUPS = {
 
 export type StaffFilterKey =
   | 'all'
+  | 'active'
   | 'working-today'
   | 'off-today'
   | 'butchers'

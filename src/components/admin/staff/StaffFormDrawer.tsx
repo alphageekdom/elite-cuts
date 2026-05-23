@@ -20,6 +20,7 @@ import {
   type StaffRow,
   type StaffStatus,
 } from '@/lib/staff-display';
+import { EMAIL_RE, staffCreateSchema, staffPatchSchema } from '@/lib/staff/schema';
 
 const ROLE_OTHER_VALUE = '__other__';
 
@@ -43,12 +44,11 @@ function roleKeyFromMode(roleMode: string): StaffRoleKey {
   return matchedKey ?? 'other';
 }
 
-// Light email shape check — just ensure it has @ and a dot in the domain if
-// provided. The server-side validation in /api/staff is the real source of
-// truth; this is just a UX nudge that surfaces inline before submit.
+// Light email shape check — UX nudge that surfaces inline before submit.
+// Reads the same regex the Zod schema enforces server-side and at submit.
 function isEmailShapeValid(value: string): boolean {
   if (!value) return true;
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  return EMAIL_RE.test(value);
 }
 
 type Props = {
@@ -166,12 +166,24 @@ function StaffFormBody({ staff, onClose }: Props) {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!name.trim()) {
-      toast.error('Name is required');
-      return;
-    }
-    if (!isEmailShapeValid(email.trim())) {
-      toast.error('Email looks malformed');
+
+    // Pre-submit safeParse through the same Zod schema the API will run so
+    // admins see field-level messages without a round trip.
+    const candidate = {
+      name,
+      role: resolvedRole(),
+      roleKey: resolvedRoleKey(),
+      station,
+      email,
+      status,
+      color,
+      notes,
+    };
+    const parsed = isEdit
+      ? staffPatchSchema.safeParse(candidate)
+      : staffCreateSchema.safeParse(candidate);
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? 'Please fix the form before saving');
       return;
     }
 
@@ -179,21 +191,11 @@ function StaffFormBody({ staff, onClose }: Props) {
     try {
       const url = staff ? `/api/staff/${staff.id}` : '/api/staff';
       const method = staff ? 'PATCH' : 'POST';
-      const body = {
-        name: name.trim(),
-        role: resolvedRole(),
-        roleKey: resolvedRoleKey(),
-        station: station.trim(),
-        email: email.trim(),
-        status,
-        color,
-        notes: notes.trim(),
-      };
 
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify(parsed.data),
       });
 
       if (!res.ok) {

@@ -1,12 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import StaffMemberModel, {
-  STAFF_ROLE_KEYS,
-  STAFF_STATUSES,
-  type StaffRoleKey,
-  type StaffStatus,
-} from '@/models/StaffMember';
-import { SHIFT_COLORS } from '@/lib/shift-constants';
+
+import StaffMemberModel from '@/models/StaffMember';
 import { withAdmin } from '@/lib/api-handler';
+import { staffCreateSchema } from '@/lib/staff/schema';
 
 // GET /api/staff — admin-only roster lookup. Returns assignable staff
 // (anyone not 'inactive') ordered by name for the schedule shift drawer;
@@ -29,48 +25,24 @@ export const GET = withAdmin(async () => {
 
 // POST /api/staff — create a new staff member.
 export const POST = withAdmin(async (request: NextRequest) => {
-  const body = (await request.json().catch(() => ({}))) as {
-    name?: string;
-    role?: string;
-    roleKey?: string;
-    station?: string;
-    color?: string;
-    status?: string;
-    email?: string;
-    notes?: string;
-  };
-
-  const name = body.name?.trim();
-  if (!name) {
-    return NextResponse.json({ message: 'Name is required' }, { status: 400 });
-  }
-  if (name.length > 80) {
-    return NextResponse.json({ message: 'Name is too long' }, { status: 400 });
+  const parsed = staffCreateSchema.safeParse(await request.json().catch(() => ({})));
+  if (!parsed.success) {
+    return NextResponse.json(
+      { message: parsed.error.issues[0]?.message ?? 'Invalid input' },
+      { status: 400 },
+    );
   }
 
-  const color = body.color && (SHIFT_COLORS as readonly string[]).includes(body.color)
-    ? (body.color as (typeof SHIFT_COLORS)[number])
-    : 'marcus';
-
-  const roleKey: StaffRoleKey =
-    body.roleKey && (STAFF_ROLE_KEYS as readonly string[]).includes(body.roleKey)
-      ? (body.roleKey as StaffRoleKey)
-      : 'other';
-
-  const status: StaffStatus =
-    body.status && (STAFF_STATUSES as readonly string[]).includes(body.status)
-      ? (body.status as StaffStatus)
-      : 'active';
-
+  const data = parsed.data;
   const doc = await StaffMemberModel.create({
-    name,
-    role: body.role?.trim() ?? '',
-    roleKey,
-    station: body.station?.trim() ?? '',
-    color,
-    status,
-    email: body.email?.trim() ?? '',
-    notes: body.notes?.trim() ?? '',
+    name: data.name,
+    role: data.role ?? '',
+    roleKey: data.roleKey ?? 'other',
+    station: data.station ?? '',
+    color: data.color ?? 'marcus',
+    status: data.status ?? 'active',
+    email: data.email ?? '',
+    notes: data.notes ?? '',
   });
 
   return NextResponse.json(
