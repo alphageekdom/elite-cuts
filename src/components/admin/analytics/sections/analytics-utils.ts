@@ -8,51 +8,15 @@ export function fmtDollarShort(amount: number): string {
   return `$${amount.toFixed(0)}`;
 }
 
-export function fmtRank(n: number): string {
-  return n.toString().padStart(2, '0');
-}
-
-export function isAbsoluteUrl(url: string): boolean {
-  return url.startsWith('http://') || url.startsWith('https://');
-}
-
-export function toSvgPath(values: number[], maxVal: number, svgW = 550, svgH = 256, pad = 20): string {
-  if (!values.length || maxVal === 0) return '';
-  return values
-    .map((v, i) => {
-      const x = ((i / (values.length - 1)) * svgW).toFixed(1);
-      const y = (svgH - pad - (v / maxVal) * (svgH - 2 * pad)).toFixed(1);
-      return `${i === 0 ? 'M' : 'L'}${x},${y}`;
-    })
-    .join(' ');
-}
-
-export function toSvgArea(values: number[], maxVal: number, svgW = 550, svgH = 256, pad = 20): string {
-  const path = toSvgPath(values, maxVal, svgW, svgH, pad);
-  if (!path) return '';
-  return `${path} L${svgW},${svgH} L0,${svgH} Z`;
-}
-
-export function dotPositions(
-  values: number[],
-  maxVal: number,
-  svgW = 550,
-  svgH = 256,
-  pad = 20,
-): { cx: number; cy: number }[] {
-  if (!values.length || maxVal === 0) return [];
-  return values.map((v, i) => ({
-    cx: (i / (values.length - 1)) * svgW,
-    cy: svgH - pad - (v / maxVal) * (svgH - 2 * pad),
-  }));
-}
-
+// Heatmap intensity steps. The 1–4 stops land on the camel token (rising
+// opacity) and 5 sits on oxblood — chosen so a busy slot draws the eye and
+// quieter slots fade toward the card background.
 export const HEAT_BG = [
   'bg-cream-deep',
-  'bg-[rgba(184,137,90,0.2)]',
-  'bg-[rgba(184,137,90,0.4)]',
-  'bg-[rgba(184,137,90,0.65)]',
-  'bg-[rgba(107,31,31,0.6)]',
+  'bg-camel/20',
+  'bg-camel/40',
+  'bg-camel/65',
+  'bg-oxblood/60',
   'bg-oxblood',
 ];
 

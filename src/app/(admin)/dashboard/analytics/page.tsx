@@ -6,7 +6,6 @@ import User from '@/models/User';
 
 import type { Metadata } from 'next';
 import AnalyticsClient, { type AnalyticsData } from '@/components/admin/analytics/AnalyticsClient';
-import { MONTH_ABBR } from '@/lib/format';
 import { excludeDemoOrders } from '@/lib/demo/exclude';
 import {
   DAY_MS,
@@ -14,8 +13,15 @@ import {
   RANGE_BUCKETS,
   parseRange,
   buildRangeBuckets,
-  type RangeKey,
 } from '@/lib/admin/range-buckets';
+import {
+  computeRepeatRate,
+  computeCategoryBreakdown,
+  computeHeatmap,
+  findTopSellerName,
+  formatPeriodLabel,
+  HERO_PERIOD_LABEL,
+} from '@/lib/admin/analytics';
 
 export const dynamic = 'force-dynamic';
 
@@ -98,22 +104,10 @@ export default async function AdminAnalyticsPage({ searchParams }: Props) {
     previousOrders.length > 0 ? (prevCancelled / previousOrders.length) * 100 : 0;
   const cancelRateChange = prevCancelRate - cancelRate; // positive = rate improved (went down)
 
-  // Repeat purchase rate — current and prior window. Delta is reported in
-  // percentage points (not relative %) since repeat rate is itself a percentage.
-  const repeatRateFor = (orders: typeof currentOrders): number => {
-    const customerOrderMap = new Map<string, number>();
-    for (const o of orders) {
-      if (!o.user) continue; // guest orders have no user identity to repeat-count
-      const uid = o.user.toString();
-      customerOrderMap.set(uid, (customerOrderMap.get(uid) ?? 0) + 1);
-    }
-    const totalUnique = customerOrderMap.size;
-    if (totalUnique === 0) return 0;
-    const repeating = [...customerOrderMap.values()].filter((c) => c >= 2).length;
-    return (repeating / totalUnique) * 100;
-  };
-  const repeatRate = repeatRateFor(currentOrders);
-  const prevRepeatRate = repeatRateFor(previousOrders);
+  // Repeat rate — reported in percentage points (not relative %) since repeat
+  // rate is itself a percentage.
+  const repeatRate = computeRepeatRate(currentOrders);
+  const prevRepeatRate = computeRepeatRate(previousOrders);
   const repeatRateChange = repeatRate - prevRepeatRate;
 
   // Pickup %
@@ -125,117 +119,15 @@ export default async function AdminAnalyticsPage({ searchParams }: Props) {
   const newCustomersChange =
     prevNewCustomers > 0 ? ((newCustomers - prevNewCustomers) / prevNewCustomers) * 100 : 0;
 
-  // Category breakdown
-  const catRevenue: Record<string, number> = {};
-  const catOrders: Record<string, number> = {};
-  for (const order of currentOrders) {
-    for (const item of order.orderItems) {
-      const cat = item.productType in CHART_CATEGORY_COLORS ? item.productType : 'Other';
-      catRevenue[cat] = (catRevenue[cat] ?? 0) + item.price * item.qty;
-      catOrders[cat] = (catOrders[cat] ?? 0) + 1;
-    }
-  }
-  const totalCatRevenue = Object.values(catRevenue).reduce((s, v) => s + v, 0);
-  const maxCatRevenue = Math.max(1, ...Object.values(catRevenue));
-
-  const categories: AnalyticsData['categories'] = Object.keys(CHART_CATEGORY_COLORS)
-    .filter((name) => (catRevenue[name] ?? 0) > 0)
-    .map((name) => ({
-      name,
-      revenue: catRevenue[name] ?? 0,
-      pct: totalCatRevenue > 0 ? Math.round(((catRevenue[name] ?? 0) / totalCatRevenue) * 100) : 0,
-      orders: catOrders[name] ?? 0,
-      color: CHART_CATEGORY_COLORS[name],
-      barW: (catRevenue[name] ?? 0) / maxCatRevenue,
-    }))
-    .sort((a, b) => b.revenue - a.revenue);
-
-  // Best sellers
-  const productMap: Record<
-    string,
-    { revenue: number; sold: number; image: string; category: string }
-  > = {};
-  const prevProductRevenue: Record<string, number> = {};
-
-  for (const order of currentOrders) {
-    for (const item of order.orderItems) {
-      if (!productMap[item.name]) {
-        productMap[item.name] = {
-          revenue: 0,
-          sold: 0,
-          image: item.image,
-          category: item.productType,
-        };
-      }
-      productMap[item.name].revenue += item.price * item.qty;
-      productMap[item.name].sold += item.qty;
-    }
-  }
-  for (const order of previousOrders) {
-    for (const item of order.orderItems) {
-      prevProductRevenue[item.name] =
-        (prevProductRevenue[item.name] ?? 0) + item.price * item.qty;
-    }
-  }
-
-  const bestSellers: AnalyticsData['bestSellers'] = Object.entries(productMap)
-    .sort((a, b) => b[1].revenue - a[1].revenue)
-    .slice(0, 5)
-    .map(([name, d], i) => {
-      const prev = prevProductRevenue[name] ?? 0;
-      const changePct = prev > 0 ? ((d.revenue - prev) / prev) * 100 : 0;
-      return {
-        rank: i + 1,
-        name,
-        image: d.image,
-        category: d.category,
-        sold: d.sold,
-        revenue: d.revenue,
-        changePct: Math.abs(changePct),
-        changeDir: changePct >= 0 ? 'up' : ('down' as const),
-      };
-    });
-
+  const categories = computeCategoryBreakdown(currentOrders, CHART_CATEGORY_COLORS);
+  const topSellerName = findTopSellerName(currentOrders);
   const buckets = buildRangeBuckets(range, now, currentOrders, previousOrders);
-
-  // Heatmap: 7 rows (Mon–Sun) × 12 cols (9A–8P), normalized 0–5 for both volume and revenue
-  const heatmapRaw: number[][] = Array.from({ length: 7 }, () => Array(12).fill(0));
-  const heatmapRevRaw: number[][] = Array.from({ length: 7 }, () => Array(12).fill(0));
-  for (const order of currentOrders) {
-    const d = order.createdAt;
-    const hour = d.getHours();
-    const day = d.getDay();
-    if (hour >= 9 && hour < 21) {
-      const hourIdx = hour - 9;
-      const dayIdx = day === 0 ? 6 : day - 1;
-      heatmapRaw[dayIdx][hourIdx]++;
-      heatmapRevRaw[dayIdx][hourIdx] += order.totalCost;
-    }
-  }
-  const heatmapMax = Math.max(1, ...heatmapRaw.flat());
-  const heatmapRevMax = Math.max(1, ...heatmapRevRaw.flat());
-  const heatmap = heatmapRaw.map((row) =>
-    row.map((v) => Math.min(5, Math.round((v / heatmapMax) * 5))),
-  );
-  const heatmapRevenue = heatmapRevRaw.map((row) =>
-    row.map((v) => Math.min(5, Math.round((v / heatmapRevMax) * 5))),
-  );
-
-  // Period label (page subtitle, full date range)
-  const periodLabel = `${MONTH_ABBR[windowStart.getMonth()]} ${windowStart.getDate()} – ${MONTH_ABBR[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()} · Compared to previous ${days} days`;
-
-  // Hero label sits next to the big net-revenue number and has to read tight.
-  const heroPeriodLabel: Record<RangeKey, string> = {
-    '7D': 'Last 7 days',
-    '30D': 'Last 30 days',
-    '90D': 'Last 90 days',
-    '1Y':  'Last year',
-  };
+  const { volume: heatmap, revenue: heatmapRevenue } = computeHeatmap(currentOrders);
 
   const data: AnalyticsData = {
     range,
-    periodLabel,
-    heroPeriodLabel: heroPeriodLabel[range],
+    periodLabel: formatPeriodLabel(windowStart, now, days),
+    heroPeriodLabel: HERO_PERIOD_LABEL[range],
     revenue,
     revenueChange,
     orderCount: currentOrders.length,
@@ -249,7 +141,7 @@ export default async function AdminAnalyticsPage({ searchParams }: Props) {
     cancelRate,
     cancelRateChange,
     categories,
-    bestSellers,
+    topSellerName,
     buckets,
     bucketUnit: bucketCfg.unit,
     revenueTotal: revenue,

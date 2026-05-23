@@ -4,21 +4,21 @@ import type { AnalyticsData } from '../AnalyticsClient';
 
 // The customer funnel half of this section was removed because it relied on
 // hardcoded visitor / cart / checkout counts. It returns as a real block when
-// the event-tracking subsystem ships (separate spec). The insights card stays
-// — every bullet is computed from real numbers.
+// the event-tracking subsystem ships (separate spec). Only the insights card
+// stays — every bullet is computed from real numbers.
 
 type Insight = { tag: 'up' | 'alert'; body: ReactNode };
 
-export default function AnalyticsFunnelSection({ data }: { data: AnalyticsData }) {
+export default function AnalyticsInsightsCard({ data }: { data: AnalyticsData }) {
   // Bodies render as JSX so React escapes interpolated values — product
   // names in particular are admin-controlled free text and must never reach
   // the DOM as raw HTML.
   const insights: Insight[] = [
     {
       tag: 'up',
-      body: data.bestSellers[0] ? (
+      body: data.topSellerName ? (
         <>
-          <strong>{data.bestSellers[0].name}</strong> is your top earner this period — consider featuring it.
+          <strong>{data.topSellerName}</strong> is your top earner this period — consider featuring it.
         </>
       ) : (
         <>

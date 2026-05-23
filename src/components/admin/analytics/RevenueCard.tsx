@@ -1,6 +1,7 @@
-import { fmtDollarShort, toSvgPath, toSvgArea, dotPositions } from './sections/analytics-utils';
+import { fmtDollarShort } from './sections/analytics-utils';
 import RangeToggle, { type RangeKey } from './RangeToggle';
 import AdminEyebrow from '@/components/admin/AdminEyebrow';
+import { buildSparklinePath } from '@/lib/sparkline';
 
 export type RevenueBucket = { label: string; value: number; prevValue: number };
 export type BucketUnit = 'Day' | 'Week' | 'Biweekly' | 'Monthly';
@@ -19,6 +20,10 @@ type Props = {
   eyebrow?: string;
 };
 
+const SVG_W = 550;
+const SVG_H = 256;
+const SVG_PAD = 20;
+
 export default function RevenueCard({
   range,
   buckets,
@@ -30,12 +35,19 @@ export default function RevenueCard({
 }: Props) {
   const values = buckets.map((b) => b.value);
   const prevValues = buckets.map((b) => b.prevValue);
+  // Shared max so the two overlaid sparklines stay on the same scale; floor at
+  // zero so the y-axis labels run 0 → max linearly, which the legend below
+  // reads against.
   const maxBucket = Math.max(1, ...values, ...prevValues);
-  const currentPath = toSvgPath(values, maxBucket);
-  const currentArea = toSvgArea(values, maxBucket);
-  const prevPath = toSvgPath(prevValues, maxBucket);
-  const prevArea = toSvgArea(prevValues, maxBucket);
-  const dots = dotPositions(values, maxBucket);
+  const sparkOpts = {
+    width: SVG_W,
+    height: SVG_H,
+    padding: SVG_PAD,
+    floor: 'zero' as const,
+    max: maxBucket,
+  };
+  const current = buildSparklinePath(values, sparkOpts);
+  const previous = buildSparklinePath(prevValues, sparkOpts);
 
   const yLabels = [maxBucket, maxBucket * 0.75, maxBucket * 0.5, maxBucket * 0.25, 0].map((v) =>
     fmtDollarShort(v),
@@ -65,47 +77,59 @@ export default function RevenueCard({
         <RangeToggle active={range} basePath={basePath} />
       </div>
 
-      <div className="relative h-[280px]">
-        <div className="absolute top-0 bottom-6 left-0 w-[50px] flex flex-col justify-between font-mono text-[10px] text-muted pointer-events-none">
+      <div className="relative h-70">
+        <div className="absolute top-0 bottom-6 left-0 w-12.5 flex flex-col justify-between font-mono text-[10px] text-muted pointer-events-none">
           {yLabels.map((l, i) => (
             <span key={i}>{l}</span>
           ))}
         </div>
         <svg
-          viewBox="0 0 550 256"
+          viewBox={`0 0 ${SVG_W} ${SVG_H}`}
           preserveAspectRatio="none"
-          className="absolute inset-0 left-[50px] right-0 bottom-6 top-0 w-[calc(100%-50px)] h-[calc(100%-24px)]"
+          className="absolute inset-0 left-12.5 right-0 bottom-6 top-0 w-[calc(100%-50px)] h-[calc(100%-24px)]"
         >
           <defs>
             <linearGradient id="rev1" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#6B1F1F" stopOpacity="0.18" />
-              <stop offset="100%" stopColor="#6B1F1F" stopOpacity="0" />
+              <stop offset="0%" stopColor="var(--color-oxblood)" stopOpacity="0.18" />
+              <stop offset="100%" stopColor="var(--color-oxblood)" stopOpacity="0" />
             </linearGradient>
             <linearGradient id="rev2" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#B8895A" stopOpacity="0.12" />
-              <stop offset="100%" stopColor="#B8895A" stopOpacity="0" />
+              <stop offset="0%" stopColor="var(--color-camel)" stopOpacity="0.12" />
+              <stop offset="100%" stopColor="var(--color-camel)" stopOpacity="0" />
             </linearGradient>
           </defs>
           {[56, 112, 168, 224].map((y) => (
-            <line key={y} x1="0" y1={y} x2="550" y2={y} stroke="rgba(28,24,20,0.06)" strokeDasharray="2 4" />
-          ))}
-          {prevArea && <path d={prevArea} fill="url(#rev2)" />}
-          {prevPath && <path d={prevPath} fill="none" stroke="#B8895A" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.7" />}
-          {currentArea && <path d={currentArea} fill="url(#rev1)" />}
-          {currentPath && <path d={currentPath} fill="none" stroke="#6B1F1F" strokeWidth="2" />}
-          {dots.map((d, i) => (
-            <circle
-              key={i}
-              cx={d.cx}
-              cy={d.cy}
-              r={i === dots.length - 1 ? 5 : 3}
-              fill="#FBF7F0"
-              stroke="#6B1F1F"
-              strokeWidth={i === dots.length - 1 ? 2 : 1.5}
+            <line
+              key={y}
+              x1="0"
+              y1={y}
+              x2={SVG_W}
+              y2={y}
+              stroke="var(--color-ink)"
+              strokeOpacity="0.06"
+              strokeDasharray="2 4"
             />
           ))}
+          {previous.area && <path d={previous.area} fill="url(#rev2)" />}
+          {previous.line && <path d={previous.line} fill="none" stroke="var(--color-camel)" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.7" />}
+          {current.area && <path d={current.area} fill="url(#rev1)" />}
+          {current.line && <path d={current.line} fill="none" stroke="var(--color-oxblood)" strokeWidth="2" />}
+          {current.points.map((p, i) => {
+            const isLast = i === current.points.length - 1;
+            return (
+              <circle
+                key={i}
+                cx={p.x}
+                cy={p.y}
+                r={isLast ? 5 : 3}
+                fill="var(--color-paper)"
+                stroke="var(--color-oxblood)"
+                strokeWidth={isLast ? 2 : 1.5}
+              />
+            );
+          })}
         </svg>
-        <div className="absolute bottom-0 left-[50px] right-0 flex justify-between font-mono text-[10px] text-muted tracking-[0.04em]">
+        <div className="absolute bottom-0 left-12.5 right-0 flex justify-between font-mono text-[10px] text-muted tracking-[0.04em]">
           {buckets.map((b, i) => (
             <span key={`${b.label}-${i}`}>{b.label}</span>
           ))}
@@ -114,11 +138,11 @@ export default function RevenueCard({
 
       <div className="flex gap-6 mt-4.5 pt-4.5 border-t border-line-soft text-[12px] text-muted flex-wrap">
         <span className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-[2px] bg-oxblood" />
+          <span className="w-2.5 h-2.5 rounded-xs bg-oxblood" />
           This period · <strong className="text-ink font-display font-medium text-sm">{fmtDollarShort(revenueTotal)}</strong>
         </span>
         <span className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-[2px] bg-camel" />
+          <span className="w-2.5 h-2.5 rounded-xs bg-camel" />
           Previous · <strong className="text-ink font-display font-medium text-sm">{fmtDollarShort(revenuePrevTotal)}</strong>
         </span>
       </div>
