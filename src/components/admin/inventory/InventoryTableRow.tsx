@@ -1,19 +1,7 @@
 'use client';
 import { productImageSrc } from '@/lib/format';
 import { CATEGORY_COLORS } from '@/lib/admin-constants';
-import { CATEGORY_PAR, DEFAULT_PAR } from '@/lib/inventory';
-import type { InventoryRow } from './InventoryClient';
-
-type StockState = 'healthy' | 'low' | 'critical' | 'out' | 'over';
-
-function getStockState(stockCount: number, par: number): StockState {
-  if (stockCount === 0) return 'out';
-  const ratio = stockCount / par;
-  if (ratio > 1)    return 'over';
-  if (ratio >= 0.7) return 'healthy';
-  if (ratio >= 0.3) return 'low';
-  return 'critical';
-}
+import { CATEGORY_PAR, DEFAULT_PAR, getStockState, type StockState, type InventoryRow } from '@/lib/inventory';
 
 const STOCK_BAR_COLOR: Record<StockState, string> = {
   healthy: 'bg-green',
@@ -109,7 +97,7 @@ export default function InventoryTableRowComponent({
           <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-[0.04em] whitespace-nowrap ${
             row.deliveryStatus === 'confirmed' ? 'bg-green-soft text-green' :
             row.deliveryStatus === 'pending'   ? 'bg-amber-soft text-amber' :
-            'bg-[rgba(28,24,20,0.06)] text-muted'
+            'bg-ink/6 text-muted'
           }`}>
             <span className="w-1.5 h-1.5 rounded-full bg-current" />
             {row.deliveryStatus === 'received' ? 'Received' : row.deliveryStatus.charAt(0).toUpperCase() + row.deliveryStatus.slice(1)}

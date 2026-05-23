@@ -31,7 +31,9 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
       return NextResponse.json({ message: 'Product not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ id: String(product._id), stockCount: product.stockCount });
+    return NextResponse.json({
+      data: { id: String(product._id), stockCount: product.stockCount },
+    });
   } catch (error) {
     console.error('[products/:id/stock PATCH]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
