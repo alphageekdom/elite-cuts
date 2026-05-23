@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 
 import { type ShiftColor } from '@/lib/shift-constants';
 import SlideDrawer from '@/components/admin/SlideDrawer';
-import FieldLabel from '@/components/admin/FieldLabel';
+import { labelCls } from '@/components/admin/AdminForm';
 import ColorSwatchPicker from '@/components/admin/ColorSwatchPicker';
 import AdminEyebrow from '@/components/admin/AdminEyebrow';
 import {
@@ -264,7 +264,7 @@ function StaffFormBody({ staff, onClose }: Props) {
 
       <form onSubmit={handleSubmit} className="flex flex-col flex-1 px-6 py-5 gap-5 overflow-y-auto">
         <div>
-          <FieldLabel>Name</FieldLabel>
+          <label className={labelCls}>Name</label>
           <input
             type="text"
             value={name}
@@ -277,7 +277,7 @@ function StaffFormBody({ staff, onClose }: Props) {
         </div>
 
         <div>
-          <FieldLabel>Role</FieldLabel>
+          <label className={labelCls}>Role</label>
           <select
             value={roleMode}
             onChange={(e) => handleRoleChange(e.target.value)}
@@ -302,7 +302,7 @@ function StaffFormBody({ staff, onClose }: Props) {
         </div>
 
         <div>
-          <FieldLabel>Station</FieldLabel>
+          <label className={labelCls}>Station</label>
           <input
             type="text"
             value={station}
@@ -314,12 +314,12 @@ function StaffFormBody({ staff, onClose }: Props) {
         </div>
 
         <div>
-          <FieldLabel>Color</FieldLabel>
+          <label className={labelCls}>Color</label>
           <ColorSwatchPicker value={color} onChange={setColor} />
         </div>
 
         <div>
-          <FieldLabel>Status</FieldLabel>
+          <label className={labelCls}>Status</label>
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value as StaffStatus)}
@@ -332,7 +332,7 @@ function StaffFormBody({ staff, onClose }: Props) {
         </div>
 
         <div>
-          <FieldLabel>Email</FieldLabel>
+          <label className={labelCls}>Email</label>
           <input
             type="email"
             value={email}
@@ -348,7 +348,7 @@ function StaffFormBody({ staff, onClose }: Props) {
         </div>
 
         <div>
-          <FieldLabel>Notes</FieldLabel>
+          <label className={labelCls}>Notes</label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}

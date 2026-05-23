@@ -2,7 +2,7 @@
 import { toast } from 'sonner';
 import { formatMoney, formatDate, relativeTime } from '@/lib/format';
 import { useDrawerForm } from '@/hooks/useDrawerForm';
-import { inputCls } from '@/components/admin/AdminForm';
+import { inputCls, labelCls } from '@/components/admin/AdminForm';
 import type { CustomerTableRow } from '@/types/admin';
 import { deriveTags } from './customerUtils';
 import CustomerDetailHero from './CustomerDetailHero';
@@ -88,15 +88,15 @@ export default function CustomerDetailDrawer({
           {editing ? (
             <div className="space-y-3">
               <div>
-                <label className="block text-[11px] font-medium tracking-[0.18em] uppercase text-muted mb-1.5">Name</label>
+                <label className={labelCls}>Name</label>
                 <input type="text" value={editName} onChange={(e) => setField('name', e.target.value)} className={inputCls} />
               </div>
               <div>
-                <label className="block text-[11px] font-medium tracking-[0.18em] uppercase text-muted mb-1.5">Email</label>
+                <label className={labelCls}>Email</label>
                 <input type="email" value={editEmail} onChange={(e) => setField('email', e.target.value)} className={inputCls} />
               </div>
               <div>
-                <label className="block text-[11px] font-medium tracking-[0.18em] uppercase text-muted mb-1.5">Phone</label>
+                <label className={labelCls}>Phone</label>
                 <input type="tel" value={editPhone} onChange={(e) => setField('phone', e.target.value)} placeholder="Optional" className={inputCls} />
               </div>
               <div className="flex gap-2 pt-1">

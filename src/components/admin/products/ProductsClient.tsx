@@ -22,6 +22,7 @@ import {
   type ProductSortMode,
 } from '@/lib/admin-products';
 import { formatMoney } from '@/lib/format';
+import { downloadCsvFromUrl } from '@/lib/admin/download';
 import type { ProductTableRow, ProductCounts } from '@/types/admin';
 import ProductFormDrawer from './ProductFormDrawer';
 
@@ -69,26 +70,9 @@ export default function ProductsClient({ products, counts, categoryCounts, heade
       if (search.trim()) params.set('search', search.trim());
       params.set('sort', sortBy);
       const url = `/api/products/export${params.size ? `?${params.toString()}` : ''}`;
-      const res = await fetch(url);
-      if (!res.ok) {
-        toast.error('Export failed');
-        return;
-      }
-      const blob = await res.blob();
-      const disposition = res.headers.get('Content-Disposition') ?? '';
-      const filenameMatch = disposition.match(/filename="([^"]+)"/);
-      const filename = filenameMatch?.[1] ?? 'products.csv';
-      const objectUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = objectUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(objectUrl);
-      toast.success('Products exported');
-    } catch {
-      toast.error('Export failed');
+      const ok = await downloadCsvFromUrl(url, 'products.csv');
+      if (ok) toast.success('Products exported');
+      else toast.error('Export failed');
     } finally {
       setExporting(false);
     }

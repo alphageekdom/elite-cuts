@@ -2,16 +2,13 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-/**
- * Manages the standard drawer edit pattern:
- * - `editing` toggle
- * - Per-field state as a plain object
- * - `saving` flag during async submission
- * - Success/error toasts
- *
- * The caller provides `initialValues`, `onSave(values)`, and optional `successMsg`.
- * Call `reset()` to discard edits and close edit mode.
- */
+// Manages the inline-edit drawer section pattern: editing toggle,
+// per-field values, saving flag, try/catch with toast feedback. Currently
+// consumed only by `CustomerDetailDrawer` (twice — Contact and Note
+// sections), but kept as a shared hook so any future drawer that adds an
+// inline-edit section adopts the same shape rather than re-rolling the
+// try/catch + toast wiring. Pass `successMsg: ''` if the parent already
+// toasts on save.
 export function useDrawerForm<T extends Record<string, unknown>>(
   initialValues: T,
   onSave: (values: T) => Promise<void>,
