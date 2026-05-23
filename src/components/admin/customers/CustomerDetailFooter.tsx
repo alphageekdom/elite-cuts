@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { inputCls } from '@/components/admin/settings/SettingsUI';
+import { inputCls } from '@/components/admin/AdminForm';
 import { getLifecycle } from '@/lib/customer-tier';
 import type { CustomerTableRow } from '@/types/admin';
 

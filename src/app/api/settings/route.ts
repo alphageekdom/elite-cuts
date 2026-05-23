@@ -1,28 +1,17 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import mongoose from 'mongoose';
-import ShopSettings, { type ShopSettings as ShopSettingsType } from '@/models/ShopSettings';
-import { withAdmin } from '@/lib/api-handler';
 
-// Whitelist of fields the admin form binds to. Restricting the GET response to
-// these keys prevents stale fields from old schema versions (e.g. the old
-// stringly-typed weekendMultiplier / redemptionRate) from overwriting the
-// client's typed defaults when they linger in an existing settings doc.
-const SETTINGS_FIELDS: (keyof ShopSettingsType)[] = [
-  'shopName', 'tagline', 'description', 'phone', 'email', 'website',
-  'street', 'suite', 'city', 'state', 'zip', 'timezone', 'opensAt',
-  'slotsPerHour', 'leadTime', 'maxBookingWindow',
-  'notifNewOrder', 'notifLowStock', 'notifNewEvent',
-  'pointsPerDollar', 'weekendMultiplier', 'pointsExpiryMonths',
-  'redemptionPoints', 'redemptionDollars', 'minToRedeem',
-  'maxRedemptionPercent', 'maxRedemptionDollars',
-  'connoisseurThreshold', 'masterCutThreshold', 'tierWindowMonths',
-  'dormancyWarningMonths',
-];
+import ShopSettings, { type ShopSettings as ShopSettingsType } from '@/models/ShopSettings';
+import { SHOP_SETTINGS_KEYS } from '@/lib/shopSettings/defaults';
+import { withAdmin } from '@/lib/api-handler';
+import { getSessionUser } from '@/lib/getSessionUser';
+import { isDemoAdmin } from '@/lib/auth/demo-permissions';
+import { shopSettingsInputSchema } from '@/lib/settings/schema';
 
 function pickSettings(doc: Record<string, unknown> | null): Partial<ShopSettingsType> {
   if (!doc) return {};
   const out: Partial<ShopSettingsType> = {};
-  for (const key of SETTINGS_FIELDS) {
+  for (const key of SHOP_SETTINGS_KEYS) {
     const value = doc[key as string];
     if (value !== undefined && value !== null) {
       (out as Record<string, unknown>)[key] = value;
@@ -46,43 +35,38 @@ export const GET = withAdmin(async () => {
   }
 });
 
-// PUT /api/settings — replaces writable fields on the singleton doc
+// PUT /api/settings — replaces writable fields on the singleton doc. Refuses
+// demo admins (the matching `DemoResetCard` already hides for them, but the
+// rest of the settings form needs the server-side guard too so a tampered
+// request doesn't slip through).
 export const PUT = withAdmin(async (request: NextRequest) => {
-  try {
-    const {
-      shopName, tagline, description, phone, email, website,
-      street, suite, city, state, zip, timezone, opensAt,
-      slotsPerHour, leadTime, maxBookingWindow,
-      notifNewOrder, notifLowStock, notifNewEvent,
-      pointsPerDollar, weekendMultiplier, pointsExpiryMonths,
-      redemptionPoints, redemptionDollars, minToRedeem,
-      maxRedemptionPercent, maxRedemptionDollars,
-      connoisseurThreshold, masterCutThreshold, tierWindowMonths,
-      dormancyWarningMonths,
-    } = await request.json() as Partial<ShopSettingsType>;
-
-    const rawPatch = {
-      shopName, tagline, description, phone, email, website,
-      street, suite, city, state, zip, timezone, opensAt,
-      slotsPerHour, leadTime, maxBookingWindow,
-      notifNewOrder, notifLowStock, notifNewEvent,
-      pointsPerDollar, weekendMultiplier, pointsExpiryMonths,
-      redemptionPoints, redemptionDollars, minToRedeem,
-      maxRedemptionPercent, maxRedemptionDollars,
-      connoisseurThreshold, masterCutThreshold, tierWindowMonths,
-      dormancyWarningMonths,
-    };
-    const patch = Object.fromEntries(
-      Object.entries(rawPatch).filter(([, v]) => v !== undefined),
+  const sessionUser = await getSessionUser();
+  if (isDemoAdmin(sessionUser?.user)) {
+    return NextResponse.json(
+      { message: 'Demo admins cannot modify shop settings.' },
+      { status: 403 },
     );
+  }
+
+  try {
+    const parsed = shopSettingsInputSchema.safeParse(await request.json().catch(() => ({})));
+    if (!parsed.success) {
+      return NextResponse.json(
+        { message: parsed.error.issues[0]?.message ?? 'Invalid settings payload' },
+        { status: 400 },
+      );
+    }
 
     const settings = await ShopSettings.findOneAndUpdate(
       {},
-      { $set: patch },
+      { $set: parsed.data },
       { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true, runValidators: true },
     ).lean();
 
-    return NextResponse.json(pickSettings(settings as Record<string, unknown> | null));
+    return NextResponse.json({
+      data: pickSettings(settings as Record<string, unknown> | null),
+      message: 'Settings saved',
+    });
   } catch (error) {
     // Schema-level validators (e.g. the enum on `dormancyWarningMonths`)
     // throw a ValidationError that's the client's fault — surface it as a

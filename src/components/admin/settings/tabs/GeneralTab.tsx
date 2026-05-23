@@ -1,6 +1,8 @@
-import { SelectField, inputCls, labelCls, sectionTitleCls, sectionSubCls, btnPrimary, btnGhost } from '../SettingsUI';
+import { SelectField, inputCls, labelCls, sectionTitleCls, sectionSubCls, numberFromInput } from '@/components/admin/AdminForm';
 import DemoResetCard from '../DemoResetCard';
-import type { ShopSettings, DormancyThreshold } from '@/models/ShopSettings';
+import SettingsTabFooter from '../SettingsTabFooter';
+import { DORMANCY_OPTIONS, type DormancyThreshold } from '@/lib/shopSettings/constants';
+import type { SettingsTabProps } from '../SettingsClient';
 
 const US_STATES = [
   'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DC', 'DE', 'FL',
@@ -28,15 +30,7 @@ const TIMEZONES = [
   'America/Vancouver (PT)',
 ];
 
-type Props = {
-  values: ShopSettings;
-  onChange: (patch: Partial<ShopSettings>) => void;
-  onSave: () => void;
-  onDiscard: () => void;
-  saving: boolean;
-};
-
-export default function GeneralTab({ values, onChange, onSave, onDiscard, saving }: Props) {
+export default function GeneralTab({ values, onChange, onSave, onDiscard, saving, dirty }: SettingsTabProps) {
   return (
     <div className="space-y-10">
       <section>
@@ -121,8 +115,7 @@ export default function GeneralTab({ values, onChange, onSave, onDiscard, saving
           </div>
         </div>
         <p className="text-xs text-muted">
-          Individual day hours can be adjusted from the{' '}
-          <a href="/dashboard/schedule" className="text-oxblood border-b border-current pb-px">Schedule page</a>.
+          Per-day open and close times come from the shop hours snapshot — editing them per day is on the roadmap.
         </p>
       </section>
 
@@ -134,8 +127,10 @@ export default function GeneralTab({ values, onChange, onSave, onDiscard, saving
             <label className={labelCls}>Slots per hour</label>
             <input
               type="number"
+              min={1}
+              max={60}
               value={values.slotsPerHour}
-              onChange={(e) => onChange({ slotsPerHour: Number(e.target.value) })}
+              onChange={(e) => onChange({ slotsPerHour: numberFromInput(e.target.value, 1) })}
               className={inputCls}
             />
           </div>
@@ -163,13 +158,12 @@ export default function GeneralTab({ values, onChange, onSave, onDiscard, saving
             <SelectField
               value={String(values.dormancyWarningMonths)}
               onChange={(e) =>
-                onChange({ dormancyWarningMonths: Number(e.target.value) as DormancyThreshold })
+                onChange({ dormancyWarningMonths: numberFromInput(e.target.value, 0) as DormancyThreshold })
               }
             >
-              <option value="0">Off</option>
-              <option value="12">12 months</option>
-              <option value="18">18 months</option>
-              <option value="24">24 months</option>
+              {DORMANCY_OPTIONS.map((opt) => (
+                <option key={opt.value} value={String(opt.value)}>{opt.label}</option>
+              ))}
             </SelectField>
             <p className="text-xs text-muted mt-2">
               Customers inactive this long get a 30-day warning before automatic deletion. Set to Off to disable.
@@ -180,15 +174,7 @@ export default function GeneralTab({ values, onChange, onSave, onDiscard, saving
 
       <DemoResetCard />
 
-      <div className="flex gap-2 pt-2">
-        <button type="button" className={btnPrimary} onClick={onSave} disabled={saving}>
-          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-          {saving ? 'Saving…' : 'Save changes'}
-        </button>
-        <button type="button" onClick={onDiscard} className={btnGhost}>Discard</button>
-      </div>
+      <SettingsTabFooter saving={saving} dirty={dirty} onSave={onSave} onDiscard={onDiscard} />
     </div>
   );
 }

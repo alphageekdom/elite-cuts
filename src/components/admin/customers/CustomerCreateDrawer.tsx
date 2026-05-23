@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { EMAIL_RE } from '@/lib/validation';
-import { inputCls } from '@/components/admin/settings/SettingsUI';
+import { inputCls } from '@/components/admin/AdminForm';
 import AdminEyebrow from '@/components/admin/AdminEyebrow';
 import type { CustomerTableRow } from '@/types/admin';
 

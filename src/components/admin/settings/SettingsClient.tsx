@@ -1,29 +1,18 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import GeneralTab from './tabs/GeneralTab';
 import NotificationsTab from './tabs/NotificationsTab';
 import RewardsTab from './tabs/RewardsTab';
 import type { ShopSettings } from '@/models/ShopSettings';
+import { DEFAULT_SHOP_SETTINGS } from '@/lib/shopSettings/defaults';
+import { shopSettingsInputSchema } from '@/lib/settings/schema';
 
 type Tab = 'general' | 'notifications' | 'rewards';
 
-const DEFAULTS: ShopSettings = {
-  shopName: 'EliteCuts', tagline: 'Hand-cut meats, butchered fresh',
-  description: 'Hand-cut meats, butchered fresh in San Diego.',
-  phone: '(619) 555-0142', email: 'hello@elitecuts.com', website: 'https://elitecuts.com',
-  street: '3045 30th Street', suite: '', city: 'San Diego', state: 'CA', zip: '92104',
-  timezone: 'America/Los_Angeles (PT)', opensAt: '9:00 AM',
-  slotsPerHour: 10, leadTime: '30 min', maxBookingWindow: 'Same day',
-  notifNewOrder: true, notifLowStock: true, notifNewEvent: true,
-  pointsPerDollar: 1, weekendMultiplier: 1, pointsExpiryMonths: 6,
-  redemptionPoints: 100, redemptionDollars: 5, minToRedeem: 0,
-  maxRedemptionPercent: 50, maxRedemptionDollars: 50,
-  connoisseurThreshold: 250, masterCutThreshold: 1000, tierWindowMonths: 12,
-  dormancyWarningMonths: 18,
-};
+const DEFAULTS: ShopSettings = DEFAULT_SHOP_SETTINGS;
 
 const MAIN_TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: 'general', label: 'General', icon: (<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>) },
@@ -31,12 +20,24 @@ const MAIN_TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: 'rewards', label: 'Rewards', icon: (<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2l2.39 7.36H22l-6.18 4.49L18.21 21 12 16.51 5.79 21l2.39-7.15L2 9.36h7.61z" /></svg>) },
 ];
 
+export type SettingsTabProps = {
+  values: ShopSettings;
+  onChange: (patch: Partial<ShopSettings>) => void;
+  onSave: () => void;
+  onDiscard: () => void;
+  saving: boolean;
+  dirty: boolean;
+};
+
 export default function SettingsClient() {
   const [tab, setTab] = useState<Tab>('general');
   const [settings, setSettings] = useState<ShopSettings>(DEFAULTS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const savedRef = useRef<ShopSettings>(DEFAULTS);
+  // Snapshot of the last successfully-saved doc. Drives the `dirty` memo +
+  // the Discard handler — state (not ref) so the memo invalidates when a
+  // save lands.
+  const [savedSnapshot, setSavedSnapshot] = useState<ShopSettings>(DEFAULTS);
 
   useEffect(() => {
     fetch('/api/settings')
@@ -44,7 +45,7 @@ export default function SettingsClient() {
       .then((data) => {
         const merged = { ...DEFAULTS, ...data };
         setSettings(merged);
-        savedRef.current = merged;
+        setSavedSnapshot(merged);
       })
       .catch(() => toast.error('Failed to load settings'))
       .finally(() => setLoading(false));
@@ -54,19 +55,42 @@ export default function SettingsClient() {
     setSettings((prev) => ({ ...prev, ...patch }));
   }, []);
 
+  // Cheap deep-compare against the last-saved snapshot. The settings doc has
+  // ~30 primitive fields so stringify is well within the no-noticeable-cost
+  // band, and the dependency on `savedSnapshot` (not the ref) keeps this
+  // honest when a save lands.
+  const dirty = useMemo(
+    () => JSON.stringify(settings) !== JSON.stringify(savedSnapshot),
+    [settings, savedSnapshot],
+  );
+
   async function handleSave() {
+    // Pre-submit safeParse so admins see the first failing field-level
+    // message via toast without a round trip. The PUT endpoint runs the
+    // same schema as defence-in-depth.
+    const parsed = shopSettingsInputSchema.safeParse(settings);
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? 'Please fix the form before saving');
+      return;
+    }
+
     setSaving(true);
     try {
       const res = await fetch('/api/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(settings),
+        body: JSON.stringify(parsed.data),
       });
+      const payload = await res.json().catch(() => ({})) as { data?: Partial<ShopSettings>; message?: string };
       if (!res.ok) {
-        toast.error('Failed to save settings');
+        toast.error(payload.message ?? 'Failed to save settings');
         return;
       }
-      savedRef.current = settings;
+      // Echo the server's settled doc back into local state so any
+      // Mongo-side coercions (e.g. trimming) reflect immediately.
+      const next = { ...DEFAULTS, ...payload.data };
+      setSettings(next);
+      setSavedSnapshot(next);
       toast.success('Settings saved');
     } catch {
       toast.error('Failed to save settings');
@@ -75,8 +99,15 @@ export default function SettingsClient() {
     }
   }
 
-  const onDiscard = useCallback(() => setSettings(savedRef.current), []);
-  const tabProps = { values: settings, onChange: handleChange, onSave: handleSave, onDiscard, saving };
+  const onDiscard = useCallback(() => setSettings(savedSnapshot), [savedSnapshot]);
+  const tabProps: SettingsTabProps = {
+    values: settings,
+    onChange: handleChange,
+    onSave: handleSave,
+    onDiscard,
+    saving,
+    dirty,
+  };
 
   return (
     <>

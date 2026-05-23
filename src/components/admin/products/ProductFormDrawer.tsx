@@ -17,7 +17,7 @@ import {
 } from '@/lib/products/schema';
 import { coerceProductInput } from '@/lib/products/parse-form-input';
 import { checkPriceBand, PRICE_BAND_FIELD } from '@/lib/products/price-bands';
-import { inputCls, SelectField, Toggle, DrawerSection, DrawerField } from '@/components/admin/settings/SettingsUI';
+import { inputCls, SelectField, Toggle, DrawerSection, DrawerField } from '@/components/admin/AdminForm';
 import AdminEyebrow from '@/components/admin/AdminEyebrow';
 import type { ProductTableRow } from '@/types/admin';
 
@@ -34,7 +34,7 @@ function ToggleRow({ label, desc, on, onToggle }: { label: string; desc: string;
         <div className="font-display text-[14px] font-medium tracking-[-0.005em] mb-0.5">{label}</div>
         <div className="text-[12px] text-muted">{desc}</div>
       </div>
-      <Toggle checked={on} onChange={onToggle} />
+      <Toggle checked={on} onChange={onToggle} ariaLabel={label} />
     </div>
   );
 }

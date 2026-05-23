@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 import { enablePromo, disablePromo } from '@/actions/promos';
-import { btnPrimary } from '@/components/admin/settings/SettingsUI';
+import { btnPrimary } from '@/components/admin/AdminForm';
 import AdminStatStrip, { type StatCell } from '@/components/admin/AdminStatStrip';
 import SlideDrawer from '@/components/admin/SlideDrawer';
 import PromoFormDrawer, { type PromoFormRow } from '@/components/admin/promos/PromoFormDrawer';

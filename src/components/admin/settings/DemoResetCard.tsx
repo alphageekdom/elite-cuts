@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 
 import { isDemoAdmin } from '@/lib/auth/demo-permissions';
 import type { DemoResetCounts } from '@/lib/demo/reset';
-import { sectionTitleCls, sectionSubCls } from './SettingsUI';
+import { sectionTitleCls, sectionSubCls } from '@/components/admin/AdminForm';
 
 // "Reset demo data" card that sits on the Settings → General tab. Calls
 // `/api/admin/demo/reset` which shares the wipe orchestrator with the

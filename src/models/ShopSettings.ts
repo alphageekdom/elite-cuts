@@ -1,9 +1,15 @@
 import { Schema, model, models, type Model } from 'mongoose';
+import { DEFAULT_SHOP_SETTINGS } from '@/lib/shopSettings/defaults';
+import {
+  DORMANCY_THRESHOLD_VALUES,
+  DORMANCY_OPTIONS,
+  type DormancyThreshold,
+} from '@/lib/shopSettings/constants';
 
-// Months an inactive customer can sit before the dormancy scan picks them up.
-// `0` disables the entire scan for shops that don't want auto-cleanup.
-export const DORMANCY_THRESHOLD_VALUES = [0, 12, 18, 24] as const;
-export type DormancyThreshold = (typeof DORMANCY_THRESHOLD_VALUES)[number];
+// Re-export so existing server-side imports (`from '@/models/ShopSettings'`)
+// keep working without each consumer chasing the constants file.
+export { DORMANCY_THRESHOLD_VALUES, DORMANCY_OPTIONS };
+export type { DormancyThreshold };
 
 export type ShopSettings = {
   // General
@@ -44,39 +50,44 @@ export type ShopSettings = {
   dormancyWarningMonths: DormancyThreshold; // 0 disables the dormancy scan entirely
 };
 
+// Schema field defaults read from the shared `DEFAULT_SHOP_SETTINGS` snapshot
+// so the model, the lib fallback, the demo seed, and the client pre-resolve
+// state can't drift apart on the same value.
+const D = DEFAULT_SHOP_SETTINGS;
+
 const ShopSettingsSchema = new Schema<ShopSettings>(
   {
-    shopName:             { type: String, default: 'EliteCuts' },
-    tagline:              { type: String, default: 'Hand-cut meats, butchered fresh' },
-    description:          { type: String, default: 'Hand-cut meats, butchered fresh in San Diego. Order online for same-day pickup.' },
-    phone:                { type: String, default: '(619) 555-0142' },
-    email:                { type: String, default: 'hello@elitecuts.com' },
-    website:              { type: String, default: 'https://elitecuts.com' },
-    street:               { type: String, default: '3045 30th Street' },
-    suite:                { type: String, default: '' },
-    city:                 { type: String, default: 'San Diego' },
-    state:                { type: String, default: 'CA' },
-    zip:                  { type: String, default: '92104' },
-    timezone:             { type: String, default: 'America/Los_Angeles (PT)' },
-    opensAt:              { type: String, default: '9:00 AM' },
-    slotsPerHour:         { type: Number, default: 10 },
-    leadTime:             { type: String, default: '30 min' },
-    maxBookingWindow:     { type: String, default: 'Same day' },
-    notifNewOrder:        { type: Boolean, default: true },
-    notifLowStock:        { type: Boolean, default: true },
-    notifNewEvent:        { type: Boolean, default: true },
-    pointsPerDollar:      { type: Number, default: 1, min: 0 },
-    weekendMultiplier:    { type: Number, default: 1, min: 1, max: 10 },
-    pointsExpiryMonths:   { type: Number, default: 6, min: 0 },
-    redemptionPoints:     { type: Number, default: 100, min: 1 },
-    redemptionDollars:    { type: Number, default: 5, min: 0 },
-    minToRedeem:          { type: Number, default: 0, min: 0 },
-    maxRedemptionPercent: { type: Number, default: 50, min: 1, max: 100 },
-    maxRedemptionDollars: { type: Number, default: 50, min: 0 },
-    connoisseurThreshold: { type: Number, default: 250, min: 0 },
-    masterCutThreshold:   { type: Number, default: 1000, min: 0 },
-    tierWindowMonths:     { type: Number, default: 12, min: 0 },
-    dormancyWarningMonths:{ type: Number, default: 18, enum: [...DORMANCY_THRESHOLD_VALUES] },
+    shopName:             { type: String, default: D.shopName },
+    tagline:              { type: String, default: D.tagline },
+    description:          { type: String, default: D.description },
+    phone:                { type: String, default: D.phone },
+    email:                { type: String, default: D.email },
+    website:              { type: String, default: D.website },
+    street:               { type: String, default: D.street },
+    suite:                { type: String, default: D.suite },
+    city:                 { type: String, default: D.city },
+    state:                { type: String, default: D.state },
+    zip:                  { type: String, default: D.zip },
+    timezone:             { type: String, default: D.timezone },
+    opensAt:              { type: String, default: D.opensAt },
+    slotsPerHour:         { type: Number, default: D.slotsPerHour, min: 1, max: 60 },
+    leadTime:             { type: String, default: D.leadTime },
+    maxBookingWindow:     { type: String, default: D.maxBookingWindow },
+    notifNewOrder:        { type: Boolean, default: D.notifNewOrder },
+    notifLowStock:        { type: Boolean, default: D.notifLowStock },
+    notifNewEvent:        { type: Boolean, default: D.notifNewEvent },
+    pointsPerDollar:      { type: Number, default: D.pointsPerDollar, min: 0 },
+    weekendMultiplier:    { type: Number, default: D.weekendMultiplier, min: 1, max: 10 },
+    pointsExpiryMonths:   { type: Number, default: D.pointsExpiryMonths, min: 0 },
+    redemptionPoints:     { type: Number, default: D.redemptionPoints, min: 1 },
+    redemptionDollars:    { type: Number, default: D.redemptionDollars, min: 0 },
+    minToRedeem:          { type: Number, default: D.minToRedeem, min: 0 },
+    maxRedemptionPercent: { type: Number, default: D.maxRedemptionPercent, min: 1, max: 100 },
+    maxRedemptionDollars: { type: Number, default: D.maxRedemptionDollars, min: 0 },
+    connoisseurThreshold: { type: Number, default: D.connoisseurThreshold, min: 0 },
+    masterCutThreshold:   { type: Number, default: D.masterCutThreshold, min: 0 },
+    tierWindowMonths:     { type: Number, default: D.tierWindowMonths, min: 0, max: 120 },
+    dormancyWarningMonths:{ type: Number, default: D.dormancyWarningMonths, enum: [...DORMANCY_THRESHOLD_VALUES] },
   },
   { timestamps: true },
 );
