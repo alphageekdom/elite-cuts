@@ -7,6 +7,7 @@ import {
   STATUS_BADGE,
   STATUS_LABEL,
 } from '@/lib/staff-display';
+import StaffWorkingTodayBadge from './StaffWorkingTodayBadge';
 import type { StaffRow } from '@/lib/staff-display';
 
 type Props = {
@@ -48,14 +49,8 @@ export default function StaffMobileCards({ rows, onOpenProfile }: Props) {
                 {s.role && s.station && <span className="text-muted">·</span>}
                 {s.station && <span className="text-muted">{s.station}</span>}
               </div>
-              <div className="mt-2 text-[11px] tracking-[0.04em]">
-                {s.workingToday ? (
-                  <span className="text-green font-medium">
-                    Working today{s.todayShift ? ` · ${s.todayShift}` : ''}
-                  </span>
-                ) : (
-                  <span className="font-mono text-muted uppercase">Off today</span>
-                )}
+              <div className="mt-2">
+                <StaffWorkingTodayBadge workingToday={s.workingToday} shift={s.todayShift} layout="inline" />
               </div>
             </div>
           </div>

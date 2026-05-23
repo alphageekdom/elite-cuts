@@ -10,6 +10,7 @@ import {
   STATUS_LABEL,
 } from '@/lib/staff-display';
 import AdminRowActionsMenu, { type RowActionsMenuItem } from '@/components/admin/AdminRowActionsMenu';
+import StaffWorkingTodayBadge from './StaffWorkingTodayBadge';
 import type { StaffRow } from '@/lib/staff-display';
 
 // SVG icons reused by every staff row — defined module-scope so React doesn't
@@ -108,23 +109,7 @@ export default function StaffTable({ rows, onOpenProfile, onEdit }: Props) {
                 </span>
               </td>
               <td className="px-4 py-4">
-                {s.workingToday ? (
-                  <div className="flex flex-col">
-                    <span className="inline-flex items-center gap-1.5 text-[11px] font-medium tracking-[0.04em] text-green">
-                      <span className="w-1.5 h-1.5 rounded-full bg-green" aria-hidden="true" />
-                      Working today
-                    </span>
-                    {s.todayShift && (
-                      <span className="font-mono text-[11px] text-muted tracking-[0.04em] mt-0.5">
-                        {s.todayShift}
-                      </span>
-                    )}
-                  </div>
-                ) : (
-                  <span className="font-mono text-[11px] text-muted tracking-[0.04em] uppercase">
-                    Off today
-                  </span>
-                )}
+                <StaffWorkingTodayBadge workingToday={s.workingToday} shift={s.todayShift} />
               </td>
               <td className="px-6 py-4 text-right">
                 <AdminRowActionsMenu
