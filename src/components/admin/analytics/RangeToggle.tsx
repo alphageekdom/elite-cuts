@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { RangeKey } from '@/lib/admin/range-buckets';
+import PillToggleGroup, { pillToggleItemClass } from '@/components/admin/PillToggleGroup';
 
 export type { RangeKey };
 
@@ -12,8 +13,9 @@ type Props = {
   // the canonical URL is the bare path.
   basePath: string;
   // Visual variant: chart-card lives inside a `bg-paper` chart card and uses
-  // `bg-cream-deep` for the pill background; standalone uses `bg-paper` with
-  // a border for use in page headers or open backgrounds.
+  // `bg-cream-deep` for the pill background (the shared PillToggleGroup);
+  // standalone uses `bg-paper` with a border for use in page headers or open
+  // backgrounds.
   variant?: 'chart-card' | 'standalone';
   // Extra query params to preserve when navigating between ranges. Used by
   // the orders dashboard to keep `?includeDemo=true` alive when the admin
@@ -30,11 +32,6 @@ export default function RangeToggle({
   extraParams,
   className = '',
 }: Props) {
-  const wrapClasses =
-    variant === 'chart-card'
-      ? 'inline-flex bg-cream-deep rounded-full p-0.75'
-      : 'inline-flex bg-paper border border-line rounded-full p-0.75';
-
   const buildHref = (range: RangeKey): string => {
     const params = new URLSearchParams(extraParams);
 
@@ -47,25 +44,28 @@ export default function RangeToggle({
     return qs ? `${basePath}?${qs}` : basePath;
   };
 
-  return (
-    <div className={`${wrapClasses} ${className}`.trim()}>
-      {OPTIONS.map((range) => {
-        const isActive = active === range;
+  const items = OPTIONS.map((range) => {
+    const isActive = active === range;
+    return (
+      <Link
+        key={range}
+        href={buildHref(range)}
+        scroll={false}
+        aria-current={isActive ? 'page' : undefined}
+        className={pillToggleItemClass(isActive, 'wide')}
+      >
+        {range}
+      </Link>
+    );
+  });
 
-        return (
-          <Link
-            key={range}
-            href={buildHref(range)}
-            scroll={false}
-            aria-current={isActive ? 'page' : undefined}
-            className={`rounded-full px-3.5 py-1.5 text-[12px] font-medium transition-colors ${
-              isActive ? 'bg-ink text-cream' : 'text-ink-soft hover:text-ink'
-            }`}
-          >
-            {range}
-          </Link>
-        );
-      })}
-    </div>
-  );
+  if (variant === 'standalone') {
+    return (
+      <div className={`inline-flex bg-paper border border-line rounded-full p-0.75 ${className}`.trim()}>
+        {items}
+      </div>
+    );
+  }
+
+  return <PillToggleGroup className={className}>{items}</PillToggleGroup>;
 }

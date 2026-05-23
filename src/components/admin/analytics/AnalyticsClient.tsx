@@ -4,7 +4,7 @@ import { fmtDollars } from './sections/analytics-utils';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import AnalyticsKpiGrid from './sections/AnalyticsKpiGrid';
 import AnalyticsRevenueChart from './sections/AnalyticsRevenueChart';
-import AnalyticsFunnelSection from './sections/AnalyticsFunnelSection';
+import AnalyticsInsightsCard from './sections/AnalyticsInsightsCard';
 import AnalyticsHeatmap from './sections/AnalyticsHeatmap';
 import { buildSparklinePath } from '@/lib/sparkline';
 import type { RangeKey } from '@/lib/admin/range-buckets';
@@ -35,16 +35,7 @@ export type AnalyticsData = {
     color: string;
     barW: number;
   }[];
-  bestSellers: {
-    rank: number;
-    name: string;
-    image: string;
-    category: string;
-    sold: number;
-    revenue: number;
-    changePct: number;
-    changeDir: 'up' | 'down';
-  }[];
+  topSellerName: string | null;
   buckets: { label: string; value: number; prevValue: number }[];
   bucketUnit: 'Day' | 'Week' | 'Biweekly' | 'Monthly';
   revenueTotal: number;
@@ -74,14 +65,14 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
         actions={
           <button
             onClick={() => window.print()}
-            className="inline-flex items-center gap-2 px-4.5 py-2.5 rounded-full bg-paper border border-line text-ink-soft text-[13px] font-medium tracking-[0.02em] hover:border-ink hover:text-ink transition-colors"
+            className="hidden sm:inline-flex items-center gap-2 px-4.5 py-2.5 rounded-full bg-paper border border-line text-ink-soft text-[13px] font-medium tracking-[0.02em] hover:border-ink hover:text-ink transition-colors"
           >
             <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
+              <polyline points="6 9 6 2 18 2 18 9" />
+              <path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" />
+              <rect x="6" y="14" width="12" height="8" />
             </svg>
-            Export PDF
+            Print
           </button>
         }
       />
@@ -100,7 +91,7 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
               {revWhole}
               <em className="italic text-camel text-[0.42em] -ml-1.5 font-normal">.{revFrac}</em>
             </div>
-            <span className="inline-flex items-center gap-1.5 bg-[rgba(74,107,58,0.22)] text-[#B8DBA8] px-3 py-1 rounded-full text-[13px] font-medium tracking-[0.02em] font-mono">
+            <span className="inline-flex items-center gap-1.5 bg-green/25 text-green-bright px-3 py-1 rounded-full text-[13px] font-medium tracking-[0.02em] font-mono">
               <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                 <polyline points="18 15 12 9 6 15" />
               </svg>
@@ -116,24 +107,33 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
             <svg viewBox="0 0 600 180" preserveAspectRatio="none" className="w-full h-full">
               <defs>
                 <linearGradient id="sparkArea" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#B8895A" stopOpacity="0.4" />
-                  <stop offset="100%" stopColor="#B8895A" stopOpacity="0" />
+                  <stop offset="0%" stopColor="var(--color-camel)" stopOpacity="0.4" />
+                  <stop offset="100%" stopColor="var(--color-camel)" stopOpacity="0" />
                 </linearGradient>
               </defs>
-              <line x1="0" y1="45" x2="600" y2="45" stroke="rgba(244,238,228,0.08)" strokeDasharray="2 4" />
-              <line x1="0" y1="90" x2="600" y2="90" stroke="rgba(244,238,228,0.08)" strokeDasharray="2 4" />
-              <line x1="0" y1="135" x2="600" y2="135" stroke="rgba(244,238,228,0.08)" strokeDasharray="2 4" />
+              {[45, 90, 135].map((y) => (
+                <line
+                  key={y}
+                  x1="0"
+                  y1={y}
+                  x2="600"
+                  y2={y}
+                  stroke="var(--color-cream)"
+                  strokeOpacity="0.08"
+                  strokeDasharray="2 4"
+                />
+              ))}
               {hasSpark && (
                 <>
                   <path d={sparkPaths.area} fill="url(#sparkArea)" />
-                  <path d={sparkPaths.line} fill="none" stroke="#F4EEE4" strokeWidth="2" />
+                  <path d={sparkPaths.line} fill="none" stroke="var(--color-cream)" strokeWidth="2" />
                   {sparkPaths.endpoint && (
                     <circle
                       cx={sparkPaths.endpoint.x}
                       cy={sparkPaths.endpoint.y}
                       r="5"
-                      fill="#F4EEE4"
-                      stroke="#6B1F1F"
+                      fill="var(--color-cream)"
+                      stroke="var(--color-oxblood)"
                       strokeWidth="2"
                     />
                   )}
@@ -151,7 +151,7 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
 
       <AnalyticsKpiGrid data={data} />
       <AnalyticsRevenueChart data={data} />
-      <AnalyticsFunnelSection data={data} />
+      <AnalyticsInsightsCard data={data} />
       <AnalyticsHeatmap heatmap={data.heatmap} heatmapRevenue={data.heatmapRevenue} />
     </>
   );

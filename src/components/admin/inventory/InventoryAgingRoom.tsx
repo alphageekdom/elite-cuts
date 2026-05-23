@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { MONTH_ABBR } from '@/lib/format';
+import PillToggleGroup, { pillToggleItemClass } from '@/components/admin/PillToggleGroup';
 
 type AgingPhase = 'early' | 'mid' | 'ready' | 'past';
 
@@ -65,17 +66,19 @@ export default function InventoryAgingRoom({ cuts }: Props) {
             28-day climate-controlled cabinet · {cuts.filter((c) => c.isActive).length} cuts active
           </div>
         </div>
-        <div className="inline-flex bg-cream-deep rounded-full p-0.5 shrink-0">
+        <PillToggleGroup size="sm">
           {(['active', 'history'] as const).map((tab) => (
             <button
               key={tab}
+              type="button"
               onClick={() => setAgingTab(tab)}
-              className={`px-3 py-1.5 rounded-full text-[12px] font-medium capitalize transition-colors ${agingTab === tab ? 'bg-ink text-cream' : 'text-ink-soft hover:text-ink'}`}
+              aria-pressed={agingTab === tab}
+              className={pillToggleItemClass(agingTab === tab)}
             >
               {tab === 'active' ? 'Active' : 'History'}
             </button>
           ))}
-        </div>
+        </PillToggleGroup>
       </div>
 
       {rows.length === 0 ? (

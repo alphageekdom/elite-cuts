@@ -2,6 +2,7 @@
 import { Fragment, useState } from 'react';
 import { HEAT_BG, DAY_LABELS, HOUR_LABELS } from './analytics-utils';
 import AdminEyebrow from '@/components/admin/AdminEyebrow';
+import PillToggleGroup, { pillToggleItemClass } from '@/components/admin/PillToggleGroup';
 
 export default function AnalyticsHeatmap({
   heatmap,
@@ -28,21 +29,19 @@ export default function AnalyticsHeatmap({
               : 'Volume by day and hour'}
           </div>
         </div>
-        <div className='bg-cream-deep inline-flex shrink-0 rounded-full p-0.75'>
+        <PillToggleGroup>
           {(['Volume', 'Revenue'] as const).map((v) => (
             <button
               key={v}
+              type='button'
               onClick={() => setHeatView(v)}
-              className={`rounded-full px-3 py-1.5 text-[12px] font-medium transition-colors ${
-                heatView === v
-                  ? 'bg-ink text-cream'
-                  : 'text-ink-soft hover:text-ink'
-              }`}
+              aria-pressed={heatView === v}
+              className={pillToggleItemClass(heatView === v)}
             >
               {v}
             </button>
           ))}
-        </div>
+        </PillToggleGroup>
       </div>
 
       {/* Hour cells shrink to ~12px on iPhone SE when forced to fit; scroll
@@ -59,7 +58,7 @@ export default function AnalyticsHeatmap({
                   <span
                     key={`${dayIdx}-${hourIdx}`}
                     title={`${DAY_LABELS[dayIdx]} ${HOUR_LABELS[hourIdx]} · ${val > 0 ? `${val} (intensity)` : '0 orders'}`}
-                    className={`relative aspect-square cursor-pointer rounded-xs transition-transform hover:z-10 hover:scale-115 ${HEAT_BG[val] ?? 'bg-cream-deep'}`}
+                    className={`relative aspect-square rounded-xs ${HEAT_BG[val] ?? 'bg-cream-deep'}`}
                   />
                 ))}
               </Fragment>
