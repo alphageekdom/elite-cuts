@@ -1,69 +1,64 @@
 'use client';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAdminDrawer } from '@/hooks/useAdminDrawer';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { avatarColorForId, relativeTime, statCellBorderClasses, getInitials, formatDate } from '@/lib/format';
-import { AVATAR_COLORS } from '@/lib/admin-constants';
+
 import AdminSearchInput from '@/components/admin/AdminSearchInput';
+import AdminStatStrip, { type StatCell } from '@/components/admin/AdminStatStrip';
+import SlideDrawer from '@/components/admin/SlideDrawer';
+import { useAdminDrawer } from '@/hooks/useAdminDrawer';
+import { useStatFilter } from '@/hooks/useStatFilter';
 
-import type { MessageStatus } from '@/models/Message';
+import type { MessageStatus } from '@/lib/messages/constants';
+import { type MessageRow } from '@/lib/admin/messages';
+import MessageCard from './MessageCard';
+import MessageDrawer from './MessageDrawer';
+import MessageTableRow from './MessageTableRow';
 
-export type MessageRow = {
-  id: string;
-  customerName: string;
-  customerEmail: string;
-  subject: string;
-  body: string;
-  orderRef?: string;
-  status: MessageStatus;
-  createdAt: string;
-};
-
-export type MessageCounts = {
-  all: number;
-  open: number;
-  closed: number;
-};
+// Re-export so existing sibling imports (MessageCard, MessageTableRow,
+// MessageDrawer, the server page) keep their paths stable.
+export type { MessageRow };
 
 type Filter = 'all' | 'open' | 'closed';
-
-function statusPill(status: MessageStatus) {
-  return status === 'open'
-    ? 'bg-camel/15 text-camel'
-    : 'bg-cream-deep text-muted';
-}
-
-
-const STAT_CELLS: { key: Filter; label: string }[] = [
-  { key: 'all',    label: 'All' },
-  { key: 'open',   label: 'Open' },
-  { key: 'closed', label: 'Closed' },
-];
 
 export default function MessagesClient({
   messages: initialMessages,
 }: {
   messages: MessageRow[];
 }) {
-  const router = useRouter();
   const [messages, setMessages] = useState(initialMessages);
-  const [filter, setFilter] = useState<Filter>('all');
+  const { activeKey: filter, selectKey: setFilter } = useStatFilter<Filter>('all');
   const [search, setSearch] = useState('');
-  const { item: drawer, open: openDrawer, close: closeDrawer, setItem: setDrawerItem } = useAdminDrawer<MessageRow>({ scrollLock: false });
+  const drawer = useAdminDrawer<MessageRow>({ scrollLock: false });
   const [toggling, setToggling] = useState(false);
 
-  const filtered = messages.filter((m) => {
-    const matchesFilter = filter === 'all' || m.status === filter;
+  const liveCounts = useMemo(
+    () => ({
+      all: messages.length,
+      open: messages.filter((m) => m.status === 'open').length,
+      closed: messages.filter((m) => m.status === 'closed').length,
+    }),
+    [messages],
+  );
+
+  const statCells: StatCell[] = [
+    { key: 'all', label: 'All', value: liveCounts.all, meta: 'MESSAGES', dotClass: 'bg-muted' },
+    { key: 'open', label: 'Open', value: liveCounts.open, meta: 'AWAITING', dotClass: 'bg-camel' },
+    { key: 'closed', label: 'Closed', value: liveCounts.closed, meta: 'RESOLVED', dotClass: 'bg-muted' },
+  ];
+
+  const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    const matchesSearch =
-      !q ||
-      m.customerName.toLowerCase().includes(q) ||
-      m.customerEmail.toLowerCase().includes(q) ||
-      m.subject.toLowerCase().includes(q) ||
-      (m.orderRef?.toLowerCase().includes(q) ?? false);
-    return matchesFilter && matchesSearch;
-  });
+    return messages.filter((m) => {
+      const matchesFilter = filter === 'all' || m.status === filter;
+      const matchesSearch =
+        !q ||
+        m.customerName.toLowerCase().includes(q) ||
+        m.customerEmail.toLowerCase().includes(q) ||
+        m.subject.toLowerCase().includes(q) ||
+        (m.orderRef?.toLowerCase().includes(q) ?? false);
+      return matchesFilter && matchesSearch;
+    });
+  }, [messages, filter, search]);
 
   async function toggleStatus(msg: MessageRow) {
     const next: MessageStatus = msg.status === 'open' ? 'closed' : 'open';
@@ -76,11 +71,15 @@ export default function MessagesClient({
       });
       if (!res.ok) throw new Error();
 
+      // Optimistic update — the open-count in the page subtitle is stale
+      // until the next navigation, which is acceptable since the row
+      // visibly moves between the Open and Closed filters immediately.
       setMessages((prev) =>
         prev.map((m) => (m.id === msg.id ? { ...m, status: next } : m)),
       );
-      if (drawer?.id === msg.id) setDrawerItem((prev) => prev ? { ...prev, status: next } : prev);
-      router.refresh();
+      if (drawer.item?.id === msg.id) {
+        drawer.setItem((prev) => (prev ? { ...prev, status: next } : prev));
+      }
       toast.success(`Marked as ${next}`);
     } catch {
       toast.error('Failed to update status');
@@ -89,35 +88,16 @@ export default function MessagesClient({
     }
   }
 
-  const liveCounts = {
-    all: messages.length,
-    open: messages.filter((m) => m.status === 'open').length,
-    closed: messages.filter((m) => m.status === 'closed').length,
-  };
-
   return (
     <div>
-      {/* Stat strip */}
-      <div className="grid grid-cols-3 border border-line-soft rounded-xl overflow-hidden mb-6">
-        {STAT_CELLS.map(({ key, label }, idx) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setFilter(key)}
-            className={`px-5 py-4 text-left transition-colors hover:bg-cream-deep ${statCellBorderClasses(idx, 3)} ${filter === key ? 'bg-cream-deep' : ''}`}
-          >
-            <div className="text-[26px] font-display font-normal tabular-nums leading-none mb-1">
-              {liveCounts[key]}
-            </div>
-            <div className="text-[11px] tracking-widest uppercase text-muted flex items-center gap-2">
-              {label}
-              {filter === key && <span className="w-5 h-0.5 bg-oxblood rounded-full inline-block" />}
-            </div>
-          </button>
-        ))}
-      </div>
+      <AdminStatStrip
+        cells={statCells}
+        activeKey={filter}
+        onSelect={(key) => setFilter(key as Filter)}
+        cols="grid-cols-3"
+        wideBreakpoint="lg"
+      />
 
-      {/* Search */}
       <div className="mb-5">
         <AdminSearchInput
           value={search}
@@ -127,7 +107,6 @@ export default function MessagesClient({
         />
       </div>
 
-      {/* Listing */}
       {filtered.length === 0 ? (
         <div className="bg-paper border border-dashed border-line rounded-xl p-16 text-center">
           <p className="text-muted text-sm">No messages found.</p>
@@ -137,57 +116,13 @@ export default function MessagesClient({
           {/* Mobile card list — below sm: the table overflows iPhone widths */}
           <div className="space-y-3 sm:hidden">
             {filtered.map((msg) => (
-              <div
+              <MessageCard
                 key={msg.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => openDrawer(msg)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    openDrawer(msg);
-                  }
-                }}
-                className={`group flex w-full cursor-pointer flex-col gap-2 rounded-sm border border-line-soft bg-paper px-4 py-4 text-left transition-colors hover:border-line hover:bg-cream focus:outline-none focus-visible:border-ink ${
-                  msg.status === 'closed' ? 'opacity-60 hover:opacity-100' : ''
-                }`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 flex-1 items-center gap-3">
-                    <div className={`w-9 h-9 rounded-full grid place-items-center text-[12px] font-semibold shrink-0 ${avatarColorForId(msg.id, AVATAR_COLORS)}`}>
-                      {getInitials(msg.customerName)}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="truncate text-[13px] font-medium text-ink">{msg.customerName}</div>
-                      <div className="truncate text-[11px] text-muted">{msg.customerEmail}</div>
-                    </div>
-                  </div>
-                  <span className={`inline-flex shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-[0.04em] whitespace-nowrap ${statusPill(msg.status)}`}>
-                    <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                    {msg.status === 'open' ? 'Open' : 'Closed'}
-                  </span>
-                </div>
-                <div className="line-clamp-2 text-[13px] text-ink">{msg.subject}</div>
-                <div className="mt-1 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 text-[11px] text-muted">
-                    <span>{relativeTime(msg.createdAt)}</span>
-                    {msg.orderRef && (
-                      <>
-                        <span className="text-muted/50">·</span>
-                        <span className="font-mono">#{msg.orderRef}</span>
-                      </>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); toggleStatus(msg); }}
-                    disabled={toggling}
-                    className="rounded-full border border-line px-3 py-1 text-[11px] text-muted transition-colors hover:border-ink/30 hover:text-ink whitespace-nowrap disabled:opacity-50"
-                  >
-                    {msg.status === 'open' ? 'Close' : 'Re-open'}
-                  </button>
-                </div>
-              </div>
+                msg={msg}
+                toggling={toggling}
+                onOpen={drawer.open}
+                onToggleStatus={toggleStatus}
+              />
             ))}
           </div>
 
@@ -208,83 +143,13 @@ export default function MessagesClient({
                 </thead>
                 <tbody className="divide-y divide-line-soft">
                   {filtered.map((msg) => (
-                    <tr
+                    <MessageTableRow
                       key={msg.id}
-                      className={`group cursor-pointer transition-colors ${
-                        msg.status === 'closed'
-                          ? 'bg-cream-deep/30 opacity-60 hover:opacity-100 hover:bg-cream-deep/50'
-                          : 'hover:bg-cream-deep/40'
-                      }`}
-                      onClick={() => openDrawer(msg)}
-                    >
-                      {/* Customer */}
-                      <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-full grid place-items-center text-[11px] font-semibold shrink-0 ${avatarColorForId(msg.id, AVATAR_COLORS)}`}>
-                            {getInitials(msg.customerName)}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="truncate text-[13px] font-medium text-ink max-w-40 md:max-w-50 lg:max-w-none">{msg.customerName}</div>
-                            <div className="truncate text-[11px] text-muted max-w-40 md:max-w-50 lg:max-w-none">{msg.customerEmail}</div>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Subject */}
-                      <td className="px-4 py-3.5 max-w-50 md:max-w-80">
-                        <span className="block truncate text-[13px] text-ink">{msg.subject}</span>
-                      </td>
-
-                      {/* Order ref */}
-                      <td className="px-4 py-3.5 hidden md:table-cell whitespace-nowrap">
-                        {msg.orderRef ? (
-                          <span className="font-mono text-[11px] text-ink-soft bg-cream-deep px-2 py-0.5 rounded">
-                            #{msg.orderRef}
-                          </span>
-                        ) : (
-                          <span className="text-muted text-[12px]">—</span>
-                        )}
-                      </td>
-
-                      {/* Date */}
-                      <td className="px-4 py-3.5 hidden lg:table-cell text-[12px] text-muted whitespace-nowrap">
-                        {relativeTime(msg.createdAt)}
-                      </td>
-
-                      {/* Status */}
-                      <td className="px-4 py-3.5 whitespace-nowrap">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-[0.04em] whitespace-nowrap ${statusPill(msg.status)}`}>
-                          <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                          {msg.status === 'open' ? 'Open' : 'Closed'}
-                        </span>
-                      </td>
-
-                      {/* Actions */}
-                      <td className="px-4 py-3.5 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                        <div className="inline-flex items-center gap-3">
-                          <button
-                            type="button"
-                            onClick={() => toggleStatus(msg)}
-                            disabled={toggling}
-                            className="text-[12px] text-muted hover:text-ink border border-line hover:border-ink/30 px-3 py-1.5 rounded-full transition-colors whitespace-nowrap disabled:opacity-50"
-                          >
-                            {msg.status === 'open' ? 'Close' : 'Re-open'}
-                          </button>
-                          <svg
-                            aria-hidden="true"
-                            className="h-3.5 w-3.5 shrink-0 text-muted/40 transition-colors group-hover:text-oxblood"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <polyline points="9 18 15 12 9 6" />
-                          </svg>
-                        </div>
-                      </td>
-                    </tr>
+                      msg={msg}
+                      toggling={toggling}
+                      onOpen={drawer.open}
+                      onToggleStatus={toggleStatus}
+                    />
                   ))}
                 </tbody>
               </table>
@@ -293,87 +158,21 @@ export default function MessagesClient({
         </>
       )}
 
-      {/* Drawer */}
-      {drawer && (
-        <div className="fixed inset-0 z-50 flex justify-end">
-          <div className="absolute inset-0 bg-ink/40" onClick={() => closeDrawer()} aria-hidden="true" />
-          <aside className="relative bg-paper w-full max-w-md h-full overflow-y-auto shadow-2xl flex flex-col">
-            {/* Header */}
-            <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-line-soft shrink-0">
-              <div className="pr-4">
-                <div className="text-[11px] tracking-widest uppercase text-muted mb-1.5">Message</div>
-                <h2 className="font-display text-[20px] font-normal tracking-tight leading-snug">
-                  {drawer.subject}
-                </h2>
-              </div>
-              <button
-                onClick={() => closeDrawer()}
-                aria-label="Close"
-                className="w-8 h-8 rounded-full grid place-items-center text-muted hover:text-ink hover:bg-cream-deep transition-colors shrink-0 mt-1"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 6L6 18M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Meta */}
-            <div className="px-6 py-4 border-b border-line-soft shrink-0 space-y-2">
-              <div className="flex items-center gap-3">
-                <div className={`w-9 h-9 rounded-full grid place-items-center text-[12px] font-semibold shrink-0 ${avatarColorForId(drawer.id, AVATAR_COLORS)}`}>
-                  {getInitials(drawer.customerName)}
-                </div>
-                <div>
-                  <div className="text-[14px] font-medium text-ink">{drawer.customerName}</div>
-                  <a
-                    href={`mailto:${drawer.customerEmail}?subject=Re: ${encodeURIComponent(drawer.subject)}`}
-                    className="text-[12px] text-muted hover:text-oxblood transition-colors"
-                  >
-                    {drawer.customerEmail}
-                  </a>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4 text-[12px] text-muted pt-1">
-                <span>{formatDate(drawer.createdAt)}</span>
-                {drawer.orderRef && (
-                  <span className="font-mono bg-cream-deep text-ink-soft px-2 py-0.5 rounded">
-                    #{drawer.orderRef}
-                  </span>
-                )}
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium ${statusPill(drawer.status)}`}>
-                  <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                  {drawer.status === 'open' ? 'Open' : 'Closed'}
-                </span>
-              </div>
-            </div>
-
-            {/* Body */}
-            <div className="px-6 py-5 flex-1">
-              <div className="text-[11px] tracking-widest uppercase text-muted mb-2">Message</div>
-              <p className="text-[14px] text-ink leading-relaxed whitespace-pre-wrap">{drawer.body}</p>
-            </div>
-
-            {/* Footer actions */}
-            <div className="px-6 py-5 border-t border-line-soft shrink-0 flex flex-col gap-3">
-              <button
-                type="button"
-                onClick={() => toggleStatus(drawer)}
-                disabled={toggling}
-                className="w-full py-2.5 text-[13px] font-medium rounded-full border border-ink text-ink hover:bg-ink hover:text-cream transition-colors disabled:opacity-50"
-              >
-                {toggling ? 'Updating…' : drawer.status === 'open' ? 'Mark as closed' : 'Re-open inquiry'}
-              </button>
-              <a
-                href={`mailto:${drawer.customerEmail}?subject=Re: ${encodeURIComponent(drawer.subject)}`}
-                className="w-full py-2.5 text-[13px] font-medium rounded-full bg-ink text-cream text-center hover:bg-oxblood transition-colors"
-              >
-                Reply via email
-              </a>
-            </div>
-          </aside>
-        </div>
-      )}
+      <SlideDrawer
+        open={drawer.isOpen}
+        onClose={drawer.close}
+        widthClass="max-w-md"
+        ariaLabelledBy="message-drawer-title"
+      >
+        {drawer.item && (
+          <MessageDrawer
+            message={drawer.item}
+            toggling={toggling}
+            onClose={drawer.close}
+            onToggleStatus={toggleStatus}
+          />
+        )}
+      </SlideDrawer>
     </div>
   );
 }
