@@ -42,8 +42,7 @@ export default function DemoResetCard() {
         const customerPart = counts.userReset
           ? `${counts.ordersDeleted} order${counts.ordersDeleted === 1 ? '' : 's'} cleared`
           : 'no demo customer found';
-        const catalogPart = `${counts.productsRestored} products · ${counts.promosRestored} promos · ${counts.staffRestored} staff · ${counts.shiftsRestored} shifts restored`;
-        toast.success(`Demo data reset · ${customerPart} · ${catalogPart}.`);
+        toast.success(`Demo data reset · ${customerPart}.`);
       }
       setConfirming(false);
     } catch (error) {
@@ -61,10 +60,10 @@ export default function DemoResetCard() {
       </h2>
       <p className={sectionSubCls}>
         Wipes the demo customer&apos;s orders, cart, bookmarks, addresses,
-        saved cards, notifications, and rewards balance — and restores
-        products, promos, staff, shifts, and shop settings from the seed
-        snapshot. Runs automatically every night at 3am ET; this button
-        lets you re-prep the demo on demand.
+        saved cards, notifications, and rewards balance. Seeded products,
+        reviews, promos, staff, and shifts are left in place so the rest
+        of the shop stays populated. Runs automatically every night at
+        3am ET; this button lets you re-prep the demo on demand.
       </p>
       {!confirming ? (
         <button

@@ -209,11 +209,31 @@ export async function restoreDemoCatalog(): Promise<CatalogCounts> {
 }
 
 // Top-level orchestrator for the nightly cron + admin "Reset demo data"
-// button. Wipes the demo customer's owned state and restores the shared
-// catalog / config from seed in one pass. The cron and admin route both
-// call this one function so they can't drift on what they reset.
+// button. Wipes the demo customer's owned state only — the catalog
+// restore is deliberately skipped so seeded products, reviews, ratings,
+// promos, staff, and shifts persist across resets (otherwise a curated
+// demo population would silently revert to the bare seed snapshot every
+// night). `restoreDemoCatalog` is still exported above if a future
+// caller needs to opt in to the destructive reset behavior — but the
+// cron + admin button no longer trigger it.
+//
+// The returned envelope keeps the union shape so existing consumers
+// (cron route, admin card toast, tests) don't need to change their
+// type expectations — catalog counts always read zero on this path.
 export async function resetDemoData(): Promise<DemoResetCounts> {
   const customer = await resetDemoCustomerState();
-  const catalog = await restoreDemoCatalog();
-  return { ...customer, ...catalog };
+  return {
+    ...customer,
+    productsDeleted: 0,
+    productsRestored: 0,
+    promosDeleted: 0,
+    promosRestored: 0,
+    staffDeleted: 0,
+    staffRestored: 0,
+    shiftsDeleted: 0,
+    shiftsRestored: 0,
+    eventsDeleted: 0,
+    eventsRestored: 0,
+    settingsRestored: false,
+  };
 }

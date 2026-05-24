@@ -26,6 +26,15 @@ vi.mock('@/config/database', () => ({
   default: vi.fn(async () => undefined),
 }));
 
+// Cloudinary cleanup is invoked by restoreDemoCatalog before its bulk
+// product delete. The underlying SDK module throws at import time when
+// CLOUDINARY_* env vars aren't set, so the cleanup module is stubbed
+// here rather than relying on env presence in CI. Tests never assert on
+// it — they only need it to not blow up.
+vi.mock('@/lib/products/cloudinary-cleanup', () => ({
+  deleteCloudinaryImages: vi.fn(async () => undefined),
+}));
+
 const mocks = vi.hoisted(() => ({
   userFindOne: vi.fn(),
   userUpdateOne: vi.fn(),
@@ -33,6 +42,7 @@ const mocks = vi.hoisted(() => ({
   cartDeleteMany: vi.fn(),
   savedCardDeleteMany: vi.fn(),
   notificationDeleteMany: vi.fn(),
+  productFind: vi.fn(),
   productDeleteMany: vi.fn(),
   productCreate: vi.fn(),
   promoDeleteMany: vi.fn(),
@@ -70,6 +80,7 @@ vi.mock('@/models/Notification', () => ({
 
 vi.mock('@/models/Product', () => ({
   default: {
+    find: mocks.productFind,
     deleteMany: mocks.productDeleteMany,
     create: mocks.productCreate,
   },
@@ -217,6 +228,13 @@ describe('resetDemoCustomerState — demo customer found', () => {
 // the current week's start.
 
 function stubCatalogHappyPath(): void {
+  // `restoreDemoCatalog` walks existing products to collect Cloudinary
+  // images before the bulk delete. Stub the chained `.select(...).lean()`
+  // so the call resolves to an empty image list (the cloudinary cleanup
+  // is itself mocked above).
+  mocks.productFind.mockReturnValue({
+    select: () => ({ lean: async () => [] }),
+  });
   mocks.productDeleteMany.mockResolvedValue({ deletedCount: 12 });
   mocks.productCreate.mockResolvedValue(
     new Array(DEMO_PRODUCTS.length).fill({}),
@@ -340,24 +358,44 @@ describe('resetDemoData', () => {
     stubCatalogHappyPath();
   });
 
-  it('merges customer + catalog counts into one envelope', async () => {
+  it('runs the customer wipe and skips the catalog restore', async () => {
     const { resetDemoData } = await import('./reset');
     const counts = await resetDemoData();
 
+    // Customer wipe ran.
     expect(counts).toMatchObject({
-      // Customer wipe
       ordersDeleted: 3,
       cartDeleted: 1,
       savedCardsDeleted: 2,
       notificationsDeleted: 5,
       userReset: true,
-      // Catalog restore
-      productsRestored: DEMO_PRODUCTS.length,
-      promosRestored: DEMO_PROMOS.length,
-      staffRestored: DEMO_STAFF.length,
-      shiftsRestored: DEMO_SHIFTS.length,
-      settingsRestored: true,
+      // Catalog counts read zero — the orchestrator no longer calls
+      // restoreDemoCatalog so seeded products / reviews / promos /
+      // staff / shifts persist across resets.
+      productsDeleted: 0,
+      productsRestored: 0,
+      promosDeleted: 0,
+      promosRestored: 0,
+      staffDeleted: 0,
+      staffRestored: 0,
+      shiftsDeleted: 0,
+      shiftsRestored: 0,
+      eventsDeleted: 0,
+      eventsRestored: 0,
+      settingsRestored: false,
     });
+
+    // No catalog-side write should have fired.
+    expect(mocks.productDeleteMany).not.toHaveBeenCalled();
+    expect(mocks.productCreate).not.toHaveBeenCalled();
+    expect(mocks.promoDeleteMany).not.toHaveBeenCalled();
+    expect(mocks.promoInsertMany).not.toHaveBeenCalled();
+    expect(mocks.staffDeleteMany).not.toHaveBeenCalled();
+    expect(mocks.staffInsertMany).not.toHaveBeenCalled();
+    expect(mocks.shiftDeleteMany).not.toHaveBeenCalled();
+    expect(mocks.shiftInsertMany).not.toHaveBeenCalled();
+    expect(mocks.eventDeleteMany).not.toHaveBeenCalled();
+    expect(mocks.settingsFindOneAndUpdate).not.toHaveBeenCalled();
   });
 
   it('produces the same end state when run twice in a row (idempotency)', async () => {
