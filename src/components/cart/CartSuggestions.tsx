@@ -5,6 +5,7 @@ import Link from 'next/link';
 
 import useHandleAddToCart from '@/hooks/useHandleAddToCart';
 import { useCartContext } from '@/context/CartContext';
+import { productImageSrc } from '@/lib/format';
 import { fmtPrice } from '@/lib/pricing';
 import type { SerializedProduct } from '@/models/Product';
 
@@ -41,7 +42,7 @@ const SuggestionCard = ({ product }: SuggestProps) => {
         className='relative h-12 w-12 shrink-0 overflow-hidden rounded-sm bg-cream-deep'
       >
         <Image
-          src={`/images/products/${product.images?.[0] ?? ''}`}
+          src={productImageSrc(product.images?.[0]) ?? ''}
           alt=''
           fill
           sizes='48px'

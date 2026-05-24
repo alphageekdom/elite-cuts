@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { formatMoney } from '@/lib/format';
+import { formatMoney, productImageSrc } from '@/lib/format';
 import type { SerializedProduct } from '@/models/Product';
 import useHandleAddToCart from '@/hooks/useHandleAddToCart';
 
@@ -48,7 +48,7 @@ function BookmarkCard({
       <Link href={`/products/${bookmark._id}`} aria-label={`View ${bookmark.name}`} className="block">
         <div className="relative aspect-4/3 overflow-hidden">
           <Image
-            src={`/images/products/${bookmark.images[0]}`}
+            src={productImageSrc(bookmark.images[0]) ?? ''}
             alt={bookmark.name}
             fill
             sizes="(min-width: 1024px) 220px, (min-width: 640px) 33vw, 100vw"

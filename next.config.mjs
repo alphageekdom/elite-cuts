@@ -1,6 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   devIndicators: false,
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        pathname: '/**',
+      },
+    ],
+  },
   // Baseline security headers applied to every response. CSP is intentionally
   // deferred — meaningful scoping needs a pass over inline scripts, Stripe.js,
   // and Cloudinary image hosts; that's its own feature.

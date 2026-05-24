@@ -1,5 +1,7 @@
 import Image from 'next/image';
 
+import { productImageSrc } from '@/lib/format';
+
 type Props = {
   image: string;
   name: string;
@@ -42,7 +44,7 @@ export default function ProductGallery({
       )}
 
       <Image
-        src={`/images/products/${image}`}
+        src={productImageSrc(image) ?? ''}
         alt={name}
         fill
         sizes='(min-width: 1280px) 680px, (min-width: 768px) 55vw, 100vw'

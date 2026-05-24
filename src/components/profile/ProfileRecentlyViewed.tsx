@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { formatMoney } from '@/lib/format';
+import { formatMoney, productImageSrc } from '@/lib/format';
 import type { SerializedProduct } from '@/models/Product';
 import useHandleAddToCart from '@/hooks/useHandleAddToCart';
 
@@ -25,7 +25,7 @@ function RecentItem({ product }: { product: SerializedProduct }) {
       <Link href={`/products/${product._id}`} className="relative w-12 h-12 rounded shrink-0 overflow-hidden bg-cream-deep block">
         {product.images[0] && (
           <Image
-            src={`/images/products/${product.images[0]}`}
+            src={productImageSrc(product.images[0]) ?? ''}
             alt=""
             fill
             sizes="48px"

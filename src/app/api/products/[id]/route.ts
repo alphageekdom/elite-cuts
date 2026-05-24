@@ -12,6 +12,7 @@ import {
   zodBadRequest,
   type RouteContext,
 } from '@/lib/api-handler';
+import { deleteCloudinaryImages } from '@/lib/products/cloudinary-cleanup';
 import {
   coerceProductInput,
   productRecordFromFormData,
@@ -98,6 +99,11 @@ export const DELETE = withAdminNonDemo<{ id: string }>(async (_request, ctx) => 
     if (!existingProduct) {
       return NextResponse.json({ message: 'Product not found' }, { status: 404 });
     }
+
+    // Fire-and-log Cloudinary cleanup before the Mongo delete. Local seeded
+    // filenames are skipped by the helper; failures are logged but never
+    // thrown, so a Cloudinary outage can't block product management.
+    await deleteCloudinaryImages(existingProduct.images);
 
     await Product.findByIdAndDelete(id);
     return NextResponse.json({ data: { id }, message: 'Product deleted successfully' });

@@ -7,6 +7,7 @@ import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 
 import { useCartContext, type CartLine } from '@/context/CartContext';
+import { productImageSrc } from '@/lib/format';
 import { fmtPrice } from '@/lib/pricing';
 import { MAX_PER_LINE } from '@/lib/shopConfig';
 
@@ -123,7 +124,7 @@ const CartItemRow = ({ line }: Props) => {
     <article className='grid grid-cols-[80px_1fr] items-start gap-4 border-b border-line-soft px-6 py-5 transition-colors duration-300 last:border-0 hover:bg-camel/4 sm:grid-cols-[96px_1fr_auto] sm:gap-6 sm:px-8 sm:py-6'>
       <div className='relative aspect-4/5 h-30 w-20 overflow-hidden rounded-sm bg-cream-deep sm:h-30 sm:w-24'>
         <Image
-          src={`/images/products/${line.product.images?.[0] ?? ''}`}
+          src={productImageSrc(line.product.images?.[0]) ?? ''}
           alt=''
           fill
           sizes='96px'
