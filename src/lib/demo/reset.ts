@@ -13,6 +13,8 @@ import Shift from '@/models/Shift';
 import ShopSettings from '@/models/ShopSettings';
 import Event from '@/models/Event';
 
+import { deleteCloudinaryImages } from '@/lib/products/cloudinary-cleanup';
+
 import { DEMO_PRODUCTS } from './seed/products';
 import { DEMO_PROMOS } from './seed/promos';
 import { DEMO_STAFF } from './seed/staff';
@@ -146,7 +148,14 @@ export async function resetDemoCustomerState(): Promise<ResetCounts> {
 export async function restoreDemoCatalog(): Promise<CatalogCounts> {
   await connectDB();
 
-  // Products — pre-validate hook stamps slug + display labels.
+  // Products — pre-validate hook stamps slug + display labels. Collect every
+  // image URL before the bulk delete so admin-uploaded Cloudinary assets get
+  // purged alongside the Mongo docs; seeded local filenames return null from
+  // the extractor and are silently skipped.
+  const existingProducts = await Product.find({}).select('images').lean<{ images: string[] }[]>();
+  const allImageUrls = existingProducts.flatMap((p) => p.images ?? []);
+  await deleteCloudinaryImages(allImageUrls);
+
   const productsDelRes = await Product.deleteMany({});
   const insertedProducts = await Product.create(DEMO_PRODUCTS);
 
