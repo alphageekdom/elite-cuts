@@ -1,10 +1,19 @@
 import ChangePill from '@/components/admin/ChangePill';
 import { formatMoney } from '@/lib/format';
+import { fmtDollarCompact } from '@/components/admin/analytics/sections/analytics-utils';
 
 type Stat = {
   label: string;
+  // The full value (e.g. "$6,759") shown at sm: and above where the
+  // card has room. May still split into main + cents suffix via
+  // `valueSuffix` so the cents render in the smaller italic style.
   value: string;
   valueSuffix?: string;
+  // Compact value (e.g. "$6.8K") shown below sm: where the full
+  // formatter would bleed past the card edge — set only for money
+  // stats. Count stats (orders, customers) skip it since "63" fits
+  // at any width.
+  valueCompact?: string;
   change: number | null;
   changeMeta: string;
   icon: React.ReactNode;
@@ -42,10 +51,27 @@ function StatCard({ stat }: { stat: Stat }) {
         </span>
       </div>
 
-      <div className="font-display text-[40px] font-normal leading-none tracking-tight mb-3">
-        {stat.value}
+      <div className="font-display text-[32px] xl:text-[40px] font-normal leading-none tracking-tight mb-3">
+        {/* Compact form (e.g. "$6.8K") wherever the card is narrow:
+              - Phones (2-col grid below lg:): card ≈ 150-170px wide
+              - iPad landscape + small laptop (lg:grid-cols-4 below xl):
+                card ≈ 140-180px wide, also too tight for full notation
+            Full form ("$6,759.64") returns at xl: where the 4-col card
+            finally gets wide enough (~210px+) for the cents suffix to
+            sit inside the card border. Below xl the suffix is hidden
+            so the compact form stands on its own. Count stats with no
+            compact form (Orders/Customers) render the same value at
+            every viewport because their digits always fit. */}
+        {stat.valueCompact ? (
+          <>
+            <span className="xl:hidden">{stat.valueCompact}</span>
+            <span className="hidden xl:inline">{stat.value}</span>
+          </>
+        ) : (
+          stat.value
+        )}
         {stat.valueSuffix && (
-          <em className="italic text-oxblood text-[22px] ml-1">
+          <em className="hidden xl:inline italic text-oxblood text-[22px] ml-1">
             {stat.valueSuffix}
           </em>
         )}
@@ -82,6 +108,7 @@ export default function DashboardStatGrid({
       label: 'Revenue',
       value: revMain,
       valueSuffix: `.${revCents}`,
+      valueCompact: fmtDollarCompact(currentRevenue),
       change: revChange,
       changeMeta: revChange !== null ? 'vs prior 30 days' : 'no prior data',
       delay: '0.05s',
@@ -124,6 +151,7 @@ export default function DashboardStatGrid({
       label: 'Avg. Order',
       value: avgMain,
       valueSuffix: `.${avgCents}`,
+      valueCompact: fmtDollarCompact(currentAvg),
       change: avgChange,
       changeMeta: avgChange !== null ? 'vs prior 30 days' : 'no prior data',
       delay: '0.26s',

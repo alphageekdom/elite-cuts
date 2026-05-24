@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
+import SortPopover, { type SortOption } from '@/components/ui/SortPopover';
+
 import {
   CATEGORY_FILTERS,
   SORT_OPTIONS,
@@ -11,6 +13,13 @@ import {
   type CategoryFilter,
   type SortValue,
 } from './catalogConfig';
+
+// SortPopover options for the responsive Category dropdown (shown
+// below the small-screen breakpoint where the pill row would otherwise
+// scroll out of view). Built once at module scope since CATEGORY_FILTERS
+// is a literal const tuple — no per-render reduce needed.
+const CATEGORY_POPOVER_OPTIONS: readonly SortOption<CategoryFilter>[] =
+  CATEGORY_FILTERS.map((c) => ({ value: c, label: c }));
 
 const SEARCH_DEBOUNCE_MS = 350;
 
@@ -91,17 +100,29 @@ const CatalogFilterBar = () => {
     setQuery(e.target.value);
   };
 
-  const onSortChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    if (isSortValue(e.target.value)) pushSort(e.target.value);
-  };
-
   return (
     <div className='sticky top-0 z-30 border-y border-line-soft bg-cream/95 py-4 backdrop-blur-md'>
       <div className='mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-4 px-6 md:px-8'>
+        {/* Category — pill row at lg+ (where all 10 pills + search + sort
+            fit cleanly in the max-w-7xl container), SortPopover dropdown
+            below lg. The first pass used `sm:` (640px) as the breakpoint
+            but pills still scrolled out of view on iPad portrait — "Other"
+            fell off the trailing edge. lg: (1024px) is the first viewport
+            where the pill row reliably fits without horizontal scroll. */}
+        <div className='lg:hidden'>
+          <SortPopover<CategoryFilter>
+            value={activeCategory}
+            options={CATEGORY_POPOVER_OPTIONS}
+            onChange={pushCategory}
+            prefix='Category:'
+            panelLabel='Category'
+            align='left'
+          />
+        </div>
         <div
           role='tablist'
           aria-label='Filter by category'
-          className='flex gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
+          className='hidden gap-1 overflow-x-auto lg:flex [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
         >
           {CATEGORY_FILTERS.map((category) => {
             const on = category === activeCategory;
@@ -155,33 +176,11 @@ const CatalogFilterBar = () => {
             />
           </form>
 
-          <div className='relative inline-flex items-center'>
-            <label htmlFor='catalog-sort' className='sr-only'>
-              Sort products
-            </label>
-            <select
-              id='catalog-sort'
-              value={activeSort}
-              onChange={onSortChange}
-              className='appearance-none rounded-full border border-line bg-paper py-2 pr-9 pl-4 text-[13px] font-medium text-ink-soft transition-colors duration-300 hover:border-ink focus:border-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-cream'
-            >
-              {SORT_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {`Sort: ${opt.label}`}
-                </option>
-              ))}
-            </select>
-            <svg
-              viewBox='0 0 24 24'
-              fill='none'
-              stroke='currentColor'
-              strokeWidth={2}
-              aria-hidden='true'
-              className='pointer-events-none absolute right-3.5 h-2.5 w-2.5 text-ink-soft'
-            >
-              <polyline points='6 9 12 15 18 9' />
-            </svg>
-          </div>
+          <SortPopover<SortValue>
+            value={activeSort}
+            options={SORT_OPTIONS}
+            onChange={pushSort}
+          />
         </div>
       </div>
     </div>

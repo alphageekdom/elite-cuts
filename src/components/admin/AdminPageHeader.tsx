@@ -31,9 +31,9 @@ export default function AdminPageHeader({
         <span className="text-ink">{breadcrumb}</span>
       </div>
 
-      <div>
+      <div className="min-w-0">
         <AdminEyebrow size="page" className="mb-1.5">{eyebrow}</AdminEyebrow>
-        <h1 className="font-display font-normal text-[clamp(36px,4vw,52px)] leading-none tracking-tight mb-1">
+        <h1 className="font-display font-normal text-[clamp(30px,5vw,52px)] leading-none tracking-tight mb-1 wrap-break-word">
           {title} <em className="italic text-oxblood">{titleAccent}</em>
         </h1>
         <p className="text-muted text-sm tracking-[0.02em]">{subtitle}</p>

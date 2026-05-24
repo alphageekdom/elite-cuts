@@ -11,7 +11,7 @@ import { useProductsTable } from '@/hooks/useProductsTable';
 import AdminSearchInput from '@/components/admin/AdminSearchInput';
 import AdminPagination from '@/components/admin/AdminPagination';
 import AdminStatStrip from '@/components/admin/AdminStatStrip';
-import AdminSortPopover from '@/components/admin/AdminSortPopover';
+import SortPopover from '@/components/ui/SortPopover';
 import SlideDrawer from '@/components/admin/SlideDrawer';
 import { PRODUCT_CATEGORIES } from '@/lib/admin-constants';
 import {
@@ -166,7 +166,7 @@ export default function ProductsClient({ products, counts, categoryCounts, heade
 
         {/* Row 2: category dropdown left, sort + add right */}
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <AdminSortPopover
+          <SortPopover
             value={activeCategory}
             options={categoryOptions}
             onChange={handleCategoryFilter}
@@ -176,7 +176,7 @@ export default function ProductsClient({ products, counts, categoryCounts, heade
           />
 
           <div className="flex items-center gap-2">
-            <AdminSortPopover
+            <SortPopover
               value={sortBy}
               options={PRODUCT_SORT_OPTIONS}
               onChange={(v) => { setSortBy(v); setPage(1); }}

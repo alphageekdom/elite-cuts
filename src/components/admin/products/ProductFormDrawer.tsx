@@ -17,7 +17,8 @@ import {
 } from '@/lib/products/schema';
 import { coerceProductInput } from '@/lib/products/parse-form-input';
 import { checkPriceBand, PRICE_BAND_FIELD } from '@/lib/products/price-bands';
-import { inputCls, SelectField, Toggle, DrawerSection, DrawerField } from '@/components/admin/AdminForm';
+import { inputCls, Toggle, DrawerSection, DrawerField } from '@/components/admin/AdminForm';
+import { SelectField } from '@/components/ui/SelectField';
 import AdminEyebrow from '@/components/admin/AdminEyebrow';
 import type { ProductTableRow } from '@/types/admin';
 

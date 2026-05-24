@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { CATEGORY_PAR, DEFAULT_PAR, getStockState, type InventoryRow } from '@/lib/inventory';
 import AdminSearchInput from '@/components/admin/AdminSearchInput';
 import AdminPagination from '@/components/admin/AdminPagination';
-import AdminSortPopover from '@/components/admin/AdminSortPopover';
+import SortPopover from '@/components/ui/SortPopover';
 import AdminStatStrip from '@/components/admin/AdminStatStrip';
 import SlideDrawer from '@/components/admin/SlideDrawer';
 import { PRODUCT_CATEGORIES } from '@/lib/admin-constants';
@@ -143,9 +143,21 @@ export default function InventoryClient({
   }
 
   function handleCategory(cat: string) {
-    setActiveCategory((prev) => (prev === cat ? '' : cat));
+    setActiveCategory(cat);
     setPage(1);
   }
+
+  // Category dropdown options — '' is the no-filter "All categories"
+  // entry; each category carries its current count so the menu reads
+  // the same as the prior pill row without dominating the toolbar
+  // (matches the admin products tab pattern).
+  const categoryOptions = [
+    { value: '', label: `All categories (${rows.length})` },
+    ...PRODUCT_CATEGORIES.filter((c) => (categoryCounts[c] ?? 0) > 0).map((cat) => ({
+      value: cat,
+      label: `${cat} (${categoryCounts[cat]})`,
+    })),
+  ];
 
   function handleSort(s: SortBy) {
     setSortBy(s);
@@ -202,50 +214,32 @@ export default function InventoryClient({
         lastCellExtraClass="col-span-2 border-r-0 sm:border-r-0 lg:col-span-1"
       />
 
-      {/* Toolbar — search + sort on row 1, category chips on row 2.
-          A single flex-wrap row was crowding the chips off iPad and SE. */}
-      <div className="flex flex-col gap-3 mb-4">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <AdminSearchInput
-            value={search}
-            onChange={(v) => { setSearch(v); setPage(1); }}
-            placeholder="Search by cut, SKU, supplier…"
-            className="w-full sm:max-w-sm"
+      {/* Toolbar — search on the left, category + sort dropdowns on the
+          right. Used to be a 2-row layout with category pills wrapping
+          unevenly across 2 rows on phone + tablet; matching the admin
+          products tab pattern collapses everything into one row of
+          popover triggers that fit at every viewport. */}
+      <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+        <AdminSearchInput
+          value={search}
+          onChange={(v) => { setSearch(v); setPage(1); }}
+          placeholder="Search by cut, SKU, supplier…"
+          className="w-full sm:max-w-sm"
+        />
+        <div className="flex items-center gap-2 flex-wrap">
+          <SortPopover
+            value={activeCategory}
+            options={categoryOptions}
+            onChange={handleCategory}
+            prefix="Category:"
+            panelLabel="Category"
+            align="left"
           />
-          <AdminSortPopover
+          <SortPopover
             value={sortBy}
             options={SORT_OPTIONS}
             onChange={handleSort}
           />
-        </div>
-
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={() => handleCategory('')}
-            className={`inline-flex items-center gap-1.5 border rounded-full px-3.5 py-2 text-[13px] font-medium transition-colors ${
-              activeCategory === ''
-                ? 'bg-ink border-ink text-cream'
-                : 'bg-paper border-line text-ink-soft hover:border-ink hover:text-ink'
-            }`}
-          >
-            All categories
-          </button>
-          {PRODUCT_CATEGORIES.filter((c) => (categoryCounts[c] ?? 0) > 0).map((cat) => (
-            <button
-              key={cat}
-              onClick={() => handleCategory(cat)}
-              className={`inline-flex items-center gap-1.5 border rounded-full px-3.5 py-2 text-[13px] font-medium transition-colors ${
-                activeCategory === cat
-                  ? 'bg-ink border-ink text-cream'
-                  : 'bg-paper border-line text-ink-soft hover:border-ink hover:text-ink'
-              }`}
-            >
-              {cat}
-              <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${activeCategory === cat ? 'bg-cream/20 text-cream' : 'bg-cream-deep text-muted'}`}>
-                {categoryCounts[cat]}
-              </span>
-            </button>
-          ))}
         </div>
       </div>
 

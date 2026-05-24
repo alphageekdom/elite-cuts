@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { addAddress, updateAddress } from '@/actions/addresses';
 import type { SerializedAddress, AddressFormData } from '@/types/address';
+import { SelectField } from '@/components/ui/SelectField';
 
 const FIELD_CLASS =
   'w-full bg-cream border border-line rounded px-4 py-3 text-[14px] text-ink placeholder:text-muted focus:outline-none focus:border-ink transition-colors';
@@ -136,9 +137,8 @@ export default function AddressForm({ editing, onDone }: Props) {
         </div>
         <div>
           <label htmlFor="addr-state" className={LABEL_CLASS}>State</label>
-          <select
+          <SelectField
             id="addr-state"
-            className={FIELD_CLASS}
             value={form.state}
             onChange={(e) => set('state', e.target.value)}
             required
@@ -147,7 +147,7 @@ export default function AddressForm({ editing, onDone }: Props) {
             {US_STATES.map((s) => (
               <option key={s} value={s}>{s}</option>
             ))}
-          </select>
+          </SelectField>
         </div>
         <div>
           <label htmlFor="addr-zip" className={LABEL_CLASS}>ZIP</label>

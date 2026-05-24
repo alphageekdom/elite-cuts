@@ -9,7 +9,7 @@ import OrderTableRowComponent from './OrderTableRow';
 import OrdersPageHeader from './OrdersPageHeader';
 import OrdersFilterPanel from './OrdersFilterPanel';
 import OrdersColumnsPopover from './OrdersColumnsPopover';
-import AdminSortPopover from '@/components/admin/AdminSortPopover';
+import SortPopover from '@/components/ui/SortPopover';
 import OrderCreateDrawer, {
   type AdminOrderCustomer,
   type AdminOrderProduct,
@@ -214,7 +214,7 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
           </div>
 
           <div className="flex items-center gap-2">
-            <AdminSortPopover
+            <SortPopover
               value={sortBy}
               options={ORDER_SORT_OPTIONS}
               onChange={(v) => { setSortBy(v); setPage(1); }}

@@ -33,30 +33,10 @@ export function Toggle({ checked, onChange, ariaLabel }: ToggleProps) {
   );
 }
 
-export function SelectField({
-  children,
-  ...props
-}: React.SelectHTMLAttributes<HTMLSelectElement>) {
-  return (
-    <div className="relative">
-      <select
-        className="appearance-none w-full border border-line bg-paper font-sans text-sm text-ink px-4 py-3 rounded-lg outline-none focus:border-ink transition-colors cursor-pointer pr-9"
-        {...props}
-      >
-        {children}
-      </select>
-      <svg
-        className="absolute right-3.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted pointer-events-none"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-      >
-        <polyline points="6 9 12 15 18 9" />
-      </svg>
-    </div>
-  );
-}
+// `SelectField` moved to `@/components/ui/SelectField` so customer-side
+// forms (address form, catalog filter bar) can consume it without a
+// cross-context import. Pull it from there directly — there is no
+// re-export here to keep imports honest.
 
 export const inputCls =
   'w-full border border-line bg-paper text-sm text-ink px-4 py-3 rounded-lg outline-none focus:border-ink transition-colors placeholder:text-muted/60';

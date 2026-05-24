@@ -6,7 +6,7 @@ import { useCustomersTable } from '@/hooks/useCustomersTable';
 import AdminSearchInput from '@/components/admin/AdminSearchInput';
 import AdminPagination from '@/components/admin/AdminPagination';
 import AdminStatStrip from '@/components/admin/AdminStatStrip';
-import AdminSortPopover from '@/components/admin/AdminSortPopover';
+import SortPopover from '@/components/ui/SortPopover';
 import SlideDrawer from '@/components/admin/SlideDrawer';
 import type { CustomerTableRow, CustomerCounts } from '@/types/admin';
 import CustomerDetailDrawer from './CustomerDetailDrawer';
@@ -180,7 +180,7 @@ export default function CustomersClient({ customers, counts, total, newThisWeek 
             )}
           </div>
 
-          <AdminSortPopover
+          <SortPopover
             value={sortBy}
             options={SORT_OPTIONS}
             onChange={(v) => { setSortBy(v); setPage(1); }}

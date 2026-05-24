@@ -63,9 +63,18 @@ export default function RevenueCard({
           : 'Weekly totals · this period vs previous';
 
   return (
-    <div className="bg-paper border border-line-soft rounded-sm p-7">
-      <div className="flex items-end justify-between mb-6 gap-5">
-        <div>
+    <div className="@container bg-paper border border-line-soft rounded-sm p-5 sm:p-7">
+      {/* Header layout is driven by a container query, not viewport
+          width. The card sits in a 1.7fr column on the dashboard
+          (~350px at iPad landscape, even though the viewport is
+          1024px+), and in a full-width column on the analytics page
+          (~1100px at the same viewport). A viewport-based breakpoint
+          can't tell those two cases apart, so the title used to wrap
+          onto 3 lines in the dashboard's narrow column even at lg+.
+          @md: (≥28rem ≈ 448px of card width) is the threshold where
+          the title + RangeToggle reliably fit side-by-side. */}
+      <div className="flex flex-col @md:flex-row @md:items-end @md:justify-between gap-4 @md:gap-5 mb-6">
+        <div className="min-w-0">
           {eyebrow && (
             <AdminEyebrow size="card" className="mb-1">{eyebrow}</AdminEyebrow>
           )}

@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { type ShiftColor } from '@/lib/shift-constants';
 import SlideDrawer from '@/components/admin/SlideDrawer';
 import { labelCls } from '@/components/admin/AdminForm';
+import { SelectField } from '@/components/ui/SelectField';
 import ColorSwatchPicker from '@/components/admin/ColorSwatchPicker';
 import AdminEyebrow from '@/components/admin/AdminEyebrow';
 import {
@@ -278,16 +279,15 @@ function StaffFormBody({ staff, onClose }: Props) {
 
         <div>
           <label className={labelCls}>Role</label>
-          <select
+          <SelectField
             value={roleMode}
             onChange={(e) => handleRoleChange(e.target.value)}
-            className={FORM_FIELD_CLS}
           >
             {ROLE_QUICK_PICKS.map((k) => (
               <option key={k} value={ROLE_LABEL[k]}>{ROLE_LABEL[k]}</option>
             ))}
             <option value={ROLE_OTHER_VALUE}>Other (type a role)</option>
-          </select>
+          </SelectField>
           {roleMode === ROLE_OTHER_VALUE && (
             <input
               type="text"
@@ -320,15 +320,14 @@ function StaffFormBody({ staff, onClose }: Props) {
 
         <div>
           <label className={labelCls}>Status</label>
-          <select
+          <SelectField
             value={status}
             onChange={(e) => setStatus(e.target.value as StaffStatus)}
-            className={FORM_FIELD_CLS}
           >
             {STAFF_STATUSES.map((s) => (
               <option key={s} value={s}>{STATUS_LABEL[s]}</option>
             ))}
-          </select>
+          </SelectField>
         </div>
 
         <div>
