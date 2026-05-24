@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 
 import ShopSettings, { type ShopSettings as ShopSettingsType } from '@/models/ShopSettings';
 import { SHOP_SETTINGS_KEYS } from '@/lib/shopSettings/defaults';
-import { withAdmin, withAdminNonDemo } from '@/lib/api-handler';
+import { withAdmin, withAdminNonDemo, zodBadRequest } from '@/lib/api-handler';
 import { shopSettingsInputSchema } from '@/lib/settings/schema';
 
 function pickSettings(doc: Record<string, unknown> | null): Partial<ShopSettingsType> {
@@ -39,12 +39,7 @@ export const GET = withAdmin(async () => {
 export const PUT = withAdminNonDemo(async (request: NextRequest) => {
   try {
     const parsed = shopSettingsInputSchema.safeParse(await request.json().catch(() => ({})));
-    if (!parsed.success) {
-      return NextResponse.json(
-        { message: parsed.error.issues[0]?.message ?? 'Invalid settings payload' },
-        { status: 400 },
-      );
-    }
+    if (!parsed.success) return zodBadRequest(parsed.error, 'Invalid settings payload');
 
     const settings = await ShopSettings.findOneAndUpdate(
       {},

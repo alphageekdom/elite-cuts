@@ -1,15 +1,19 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import mongoose from 'mongoose';
 import MessageModel from '@/models/Message';
 import connectDB from '@/config/database';
 import { getSessionUser } from '@/lib/getSessionUser';
-import { unauthorized } from '@/lib/api-handler';
+import {
+  parseObjectId,
+  unauthorized,
+  zodBadRequest,
+  type RouteContext,
+} from '@/lib/api-handler';
 import {
   messageStatusUpdateSchema,
   messageOwnerEditSchema,
 } from '@/lib/messages/schema';
 
-type RouteContext = { params: Promise<{ id: string }> };
+type Ctx = RouteContext<{ id: string }>;
 
 const notFound = () =>
   NextResponse.json({ message: 'Message not found' }, { status: 404 });
@@ -17,20 +21,18 @@ const notFound = () =>
 const forbidden = () =>
   NextResponse.json({ message: 'Forbidden' }, { status: 403 });
 
-const badRequest = (message: string) =>
-  NextResponse.json({ message }, { status: 400 });
-
 // PATCH /api/messages/[id]
 // Admin → status toggle (open ↔ closed)
 // Owner → subject + body edit while still 'open'
-export const PATCH = async (request: NextRequest, ctx: unknown) => {
+export const PATCH = async (request: NextRequest, ctx: Ctx) => {
   try {
     await connectDB();
     const sessionUser = await getSessionUser();
     if (!sessionUser?.userId) return unauthorized();
 
-    const { id } = await (ctx as RouteContext).params;
-    if (!mongoose.isValidObjectId(id)) return notFound();
+    const { id } = await ctx.params;
+    const invalid = parseObjectId(id);
+    if (invalid) return invalid;
 
     const body = (await request.json()) as { status?: unknown };
     const isAdmin = Boolean(sessionUser.user?.isAdmin);
@@ -40,9 +42,7 @@ export const PATCH = async (request: NextRequest, ctx: unknown) => {
     // admin dashboard while gaining a separate owner-edit branch below.
     if (isAdmin && typeof body.status === 'string') {
       const parsed = messageStatusUpdateSchema.safeParse(body);
-      if (!parsed.success) {
-        return badRequest(parsed.error.issues[0]?.message ?? 'Invalid status');
-      }
+      if (!parsed.success) return zodBadRequest(parsed.error, 'Invalid status');
       const updated = await MessageModel.findByIdAndUpdate(
         id,
         { status: parsed.data.status },
@@ -66,9 +66,7 @@ export const PATCH = async (request: NextRequest, ctx: unknown) => {
     }
 
     const parsed = messageOwnerEditSchema.safeParse(body);
-    if (!parsed.success) {
-      return badRequest(parsed.error.issues[0]?.message ?? 'Invalid message');
-    }
+    if (!parsed.success) return zodBadRequest(parsed.error, 'Invalid message');
 
     existing.subject = parsed.data.subject;
     existing.body = parsed.data.body;
@@ -85,14 +83,15 @@ export const PATCH = async (request: NextRequest, ctx: unknown) => {
 // Owner can delete their own message at any status; admins can also delete
 // for moderation. The conversation history disappears entirely — there is no
 // soft-delete, since the message body is the only content.
-export const DELETE = async (_request: NextRequest, ctx: unknown) => {
+export const DELETE = async (_request: NextRequest, ctx: Ctx) => {
   try {
     await connectDB();
     const sessionUser = await getSessionUser();
     if (!sessionUser?.userId) return unauthorized();
 
-    const { id } = await (ctx as RouteContext).params;
-    if (!mongoose.isValidObjectId(id)) return notFound();
+    const { id } = await ctx.params;
+    const invalid = parseObjectId(id);
+    if (invalid) return invalid;
 
     const existing = await MessageModel.findById(id);
     if (!existing) return notFound();
@@ -102,7 +101,7 @@ export const DELETE = async (_request: NextRequest, ctx: unknown) => {
     if (!isOwner && !isAdmin) return forbidden();
 
     await existing.deleteOne();
-    return NextResponse.json({ data: { id } });
+    return NextResponse.json({ data: { id }, message: 'Message deleted' });
   } catch (error) {
     console.error('[messages DELETE]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });

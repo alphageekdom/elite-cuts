@@ -8,7 +8,12 @@ import Order, { PAYMENT_METHODS, type PaymentMethod } from '@/models/Order';
 import Product from '@/models/Product';
 import User from '@/models/User';
 import { getSessionUser } from '@/lib/getSessionUser';
-import { unauthorized, parsePagination, withAdminNonDemo } from '@/lib/api-handler';
+import {
+  unauthorized,
+  parsePagination,
+  withAdminNonDemo,
+  zodBadRequest,
+} from '@/lib/api-handler';
 import { isIn } from '@/lib/validation';
 import { awardOrderCompletion } from '@/lib/order-completion';
 import { recordCustomerActivity } from '@/lib/accountDeletion';
@@ -106,12 +111,7 @@ export const GET = async (request: NextRequest) => {
 export const POST = withAdminNonDemo(async (request: NextRequest, _ctx, adminUserId) => {
   try {
     const parsed = adminCreateOrderSchema.safeParse(await request.json().catch(() => ({})));
-    if (!parsed.success) {
-      return NextResponse.json(
-        { message: parsed.error.issues[0]?.message ?? 'Invalid order input' },
-        { status: 400 },
-      );
-    }
+    if (!parsed.success) return zodBadRequest(parsed.error, 'Invalid order input');
     const body = parsed.data;
 
     const [customer, products] = await Promise.all([

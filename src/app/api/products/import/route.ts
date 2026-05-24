@@ -4,6 +4,8 @@ import mongoose from 'mongoose';
 import ProductModel from '@/models/Product';
 import { withAdminNonDemo } from '@/lib/api-handler';
 import { parseCsv, csvRowsToRecords } from '@/lib/csv-parse';
+import { withOptionalTransaction } from '@/lib/db/transaction';
+import { escapeRegex } from '@/lib/regex-escape';
 import { productInputSchema, flattenProductIssues, type ProductInput } from '@/lib/products/schema';
 import { coerceProductInput } from '@/lib/products/parse-form-input';
 import {
@@ -114,8 +116,7 @@ export const POST = withAdminNonDemo(async (req) => {
     // insensitive name match so the import can re-key them in place.
     const slugList = deduped.map((v) => v.data.slug ?? slugify(v.data.name));
     const nameList = deduped.map((v) => v.data.name);
-    const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const namePatterns = nameList.map((n) => new RegExp(`^${escapeRe(n)}$`, 'i'));
+    const namePatterns = nameList.map((n) => new RegExp(`^${escapeRegex(n)}$`, 'i'));
     const existingDocs = (await ProductModel.find(
       {
         $or: [
@@ -194,36 +195,19 @@ export const POST = withAdminNonDemo(async (req) => {
 
     // Try a real transaction first — production deployments on Atlas (or any
     // replica set) get true atomicity. Local single-node Mongo lacks
-    // transaction support, so we catch the specific failure and fall back to
-    // an ordered bulkWrite. The fallback is still safe to retry: slug-keyed
-    // upsert + per-row diff means re-importing the same CSV is a no-op for
-    // rows that were already applied.
+    // transaction support, so the shared helper falls back to an ordered
+    // bulkWrite without a session. The fallback is still safe to retry:
+    // slug-keyed upsert + per-row diff means re-importing the same CSV is a
+    // no-op for rows that were already applied.
     let committedCount = 0;
     if (writes.length) {
-      let usedTransaction = false;
-      try {
-        const session = await mongoose.startSession();
-        try {
-          await session.withTransaction(async () => {
-            const result = await ProductModel.bulkWrite(writes, { session, ordered: true });
-            committedCount = (result.insertedCount ?? 0) + (result.modifiedCount ?? 0);
-          });
-          usedTransaction = true;
-        } finally {
-          session.endSession();
-        }
-      } catch (txErr) {
-        const msg = txErr instanceof Error ? txErr.message : '';
-        const isReplicaSetLimit =
-          msg.includes('replica set') ||
-          msg.includes('Transaction numbers') ||
-          msg.includes('IllegalOperation');
-        if (!isReplicaSetLimit) throw txErr;
-      }
-      if (!usedTransaction) {
-        const result = await ProductModel.bulkWrite(writes, { ordered: true });
-        committedCount = (result.insertedCount ?? 0) + (result.modifiedCount ?? 0);
-      }
+      committedCount = await withOptionalTransaction(async (session) => {
+        const result = await ProductModel.bulkWrite(
+          writes,
+          session ? { session, ordered: true } : { ordered: true },
+        );
+        return (result.insertedCount ?? 0) + (result.modifiedCount ?? 0);
+      });
     }
 
     return NextResponse.json({ rows: results, summary, committedCount });

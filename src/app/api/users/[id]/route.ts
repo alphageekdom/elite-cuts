@@ -1,20 +1,25 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import bcrypt from 'bcryptjs';
-import mongoose from 'mongoose';
 
 import connectDB from '@/config/database';
 import User from '@/models/User';
 import { getSessionUser } from '@/lib/getSessionUser';
-import { withAdminNonDemo } from '@/lib/api-handler';
+import {
+  parseObjectId,
+  withAdminNonDemo,
+  type RouteContext,
+} from '@/lib/api-handler';
 import { EMAIL_RE } from '@/lib/validation';
 import { clientIpFromHeaders, rateLimit } from '@/lib/rateLimit';
 import { clearDormancyWarning, hardDeleteUser, restoreUser, softDeleteUser } from '@/lib/accountDeletion';
 import { refuseDemoActor, refuseDemoTarget } from '@/lib/auth/demo-responses';
+import {
+  PASSWORD_LENGTH_MESSAGE,
+  isPasswordLengthValid,
+} from '@/lib/auth/password';
 
-type RouteContext = { params: Promise<{ id: string }> };
+type Ctx = RouteContext<{ id: string }>;
 
-const MIN_PASSWORD_LENGTH = 8;
-const MAX_PASSWORD_LENGTH = 128;
 // IP-keyed throttle on the password-change branch below. The credentials
 // `authorize()` per-account lockout doesn't cover this path, so an
 // authenticated attacker who lost their password (or stole a session) could
@@ -22,7 +27,7 @@ const MAX_PASSWORD_LENGTH = 128;
 const PASSWORD_CHANGE_IP_MAX_PER_MIN = 5;
 
 // GET /api/users/:id — self or admin only
-export const GET = async (_request: NextRequest, { params }: RouteContext) => {
+export const GET = async (_request: NextRequest, { params }: Ctx) => {
   const sessionUser = await getSessionUser();
 
   if (!sessionUser?.userId) {
@@ -31,9 +36,8 @@ export const GET = async (_request: NextRequest, { params }: RouteContext) => {
 
   try {
     const { id } = await params;
-    if (!mongoose.isValidObjectId(id)) {
-      return NextResponse.json({ message: 'Not found' }, { status: 404 });
-    }
+    const invalid = parseObjectId(id);
+    if (invalid) return invalid;
 
     if (sessionUser.userId !== id && !sessionUser.user?.isAdmin) {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
@@ -61,7 +65,7 @@ export const GET = async (_request: NextRequest, { params }: RouteContext) => {
 };
 
 // PUT /api/users/:id — profile info or password update, self only
-export const PUT = async (request: NextRequest, { params }: RouteContext) => {
+export const PUT = async (request: NextRequest, { params }: Ctx) => {
   try {
     const sessionUser = await getSessionUser();
 
@@ -70,9 +74,8 @@ export const PUT = async (request: NextRequest, { params }: RouteContext) => {
     }
 
     const { id } = await params;
-    if (!mongoose.isValidObjectId(id)) {
-      return NextResponse.json({ message: 'Not found' }, { status: 404 });
-    }
+    const invalid = parseObjectId(id);
+    if (invalid) return invalid;
     const isAdmin = sessionUser.user?.isAdmin ?? false;
 
     if (sessionUser.userId !== id && !isAdmin) {
@@ -174,12 +177,9 @@ export const PUT = async (request: NextRequest, { params }: RouteContext) => {
       return NextResponse.json({ message: 'New password is required' }, { status: 400 });
     }
 
-    if (
-      newPassword.length < MIN_PASSWORD_LENGTH ||
-      newPassword.length > MAX_PASSWORD_LENGTH
-    ) {
+    if (!isPasswordLengthValid(newPassword)) {
       return NextResponse.json(
-        { message: `Password must be between ${MIN_PASSWORD_LENGTH} and ${MAX_PASSWORD_LENGTH} characters` },
+        { message: PASSWORD_LENGTH_MESSAGE },
         { status: 400 },
       );
     }
@@ -218,12 +218,11 @@ export const PUT = async (request: NextRequest, { params }: RouteContext) => {
 //     required (abuse cases, spam) and the request 400s without it.
 //
 // Refuses to delete admin accounts or the requesting admin's own row.
-export const DELETE = withAdminNonDemo(async (request: NextRequest, ctx: unknown, performedBy) => {
+export const DELETE = withAdminNonDemo<{ id: string }>(async (request, ctx, performedBy) => {
   try {
-    const { id } = await (ctx as RouteContext).params;
-    if (!mongoose.isValidObjectId(id)) {
-      return NextResponse.json({ message: 'Not found' }, { status: 404 });
-    }
+    const { id } = await ctx.params;
+    const invalid = parseObjectId(id);
+    if (invalid) return invalid;
     if (id === performedBy) {
       return NextResponse.json({ message: 'Admins cannot delete themselves' }, { status: 403 });
     }
@@ -278,12 +277,11 @@ export const DELETE = withAdminNonDemo(async (request: NextRequest, ctx: unknown
 // exposes one additional admin-only verb on this resource — cancel deletion —
 // through PATCH so the customer detail drawer's "Cancel deletion" action has
 // a single endpoint to hit without a deeper nested route.
-export const PATCH = withAdminNonDemo(async (request: NextRequest, ctx: unknown, performedBy) => {
+export const PATCH = withAdminNonDemo<{ id: string }>(async (request, ctx, performedBy) => {
   try {
-    const { id } = await (ctx as RouteContext).params;
-    if (!mongoose.isValidObjectId(id)) {
-      return NextResponse.json({ message: 'Not found' }, { status: 404 });
-    }
+    const { id } = await ctx.params;
+    const invalid = parseObjectId(id);
+    if (invalid) return invalid;
 
     const body = (await request.json().catch(() => ({}))) as {
       action?: string;

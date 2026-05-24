@@ -4,6 +4,7 @@ import ProductModel, { type Product } from '@/models/Product';
 import { withAdmin } from '@/lib/api-handler';
 import { toCsv, csvFilename } from '@/lib/csv';
 import { CATEGORY_PAR, DEFAULT_PAR, getStockState } from '@/lib/inventory';
+import { escapeRegex } from '@/lib/regex-escape';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,8 +43,7 @@ export const GET = withAdmin(async (req) => {
     const query: Record<string, unknown> = { isActive: { $ne: false } };
     if (category) query.category = category;
     if (search) {
-      const safe = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const rx = new RegExp(safe, 'i');
+      const rx = new RegExp(escapeRegex(search), 'i');
       query.$or = [{ name: rx }, { sku: rx }, { supplier: rx }];
     }
 

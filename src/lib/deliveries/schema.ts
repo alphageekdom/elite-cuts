@@ -59,7 +59,11 @@ const receivedQtyField = z
   .number({ message: 'receivedQty must be a non-negative integer' })
   .finite('receivedQty must be a non-negative integer')
   .min(0, 'receivedQty must be a non-negative integer')
-  .max(RECEIVED_QTY_MAX, `receivedQty must be ${RECEIVED_QTY_MAX} or fewer`);
+  .max(RECEIVED_QTY_MAX, `receivedQty must be ${RECEIVED_QTY_MAX} or fewer`)
+  // Floor to integer at the schema boundary so neither the POST nor the
+  // PATCH path can land a fractional unit in the audit trail. Both routes
+  // used to call `Math.floor` separately — easy to drift.
+  .transform((n) => Math.floor(n));
 
 export const deliveryCreateSchema = z.object({
   deliveryDate: deliveryDateField,

@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import MessageModel from '@/models/Message';
 import User from '@/models/User';
-import { withAuth } from '@/lib/api-handler';
+import { withAuth, zodBadRequest } from '@/lib/api-handler';
 import { messageInputSchema } from '@/lib/messages/schema';
 
 export const dynamic = 'force-dynamic';
@@ -12,12 +12,7 @@ export const dynamic = 'force-dynamic';
 export const POST = withAuth(async (request: NextRequest, _ctx, userId) => {
   try {
     const parsed = messageInputSchema.safeParse(await request.json());
-    if (!parsed.success) {
-      return NextResponse.json(
-        { message: parsed.error.issues[0]?.message ?? 'Invalid message' },
-        { status: 400 },
-      );
-    }
+    if (!parsed.success) return zodBadRequest(parsed.error, 'Invalid message');
     const { subject, body, orderId, orderRef } = parsed.data;
 
     const author = await User.findById(userId).select('name').lean<{ name?: string }>();

@@ -1,39 +1,36 @@
-import { NextResponse, type NextRequest } from 'next/server';
-import mongoose from 'mongoose';
+import { NextResponse } from 'next/server';
 
 import StaffMemberModel from '@/models/StaffMember';
-import { withAdminNonDemo } from '@/lib/api-handler';
+import {
+  parseObjectId,
+  pickDefined,
+  withAdminNonDemo,
+  zodBadRequest,
+} from '@/lib/api-handler';
 import { staffPatchSchema, type StaffPatchInput } from '@/lib/staff/schema';
 
-type RouteContext = { params: Promise<{ id: string }> };
+const STAFF_PATCH_KEYS = [
+  'name',
+  'role',
+  'roleKey',
+  'station',
+  'color',
+  'status',
+  'email',
+  'notes',
+] as const satisfies readonly (keyof StaffPatchInput)[];
 
-export const PATCH = withAdminNonDemo(async (request: NextRequest, ctx: unknown) => {
-  const { id } = await (ctx as RouteContext).params;
-  if (!mongoose.isValidObjectId(id)) {
-    return NextResponse.json({ message: 'Not found' }, { status: 404 });
-  }
+export const PATCH = withAdminNonDemo<{ id: string }>(async (request, ctx) => {
+  const { id } = await ctx.params;
+  const invalid = parseObjectId(id);
+  if (invalid) return invalid;
 
   const parsed = staffPatchSchema.safeParse(await request.json().catch(() => ({})));
-  if (!parsed.success) {
-    return NextResponse.json(
-      { message: parsed.error.issues[0]?.message ?? 'Invalid input' },
-      { status: 400 },
-    );
-  }
+  if (!parsed.success) return zodBadRequest(parsed.error);
 
-  // Strip undefined keys so Mongoose's `$set` doesn't interpret them as
-  // a request to clear those fields. Building a typed partial here keeps
-  // the rest of the handler reading without casts.
-  const data = parsed.data;
-  const update: Partial<StaffPatchInput> = {};
-  if (data.name !== undefined) update.name = data.name;
-  if (data.role !== undefined) update.role = data.role;
-  if (data.roleKey !== undefined) update.roleKey = data.roleKey;
-  if (data.station !== undefined) update.station = data.station;
-  if (data.color !== undefined) update.color = data.color;
-  if (data.status !== undefined) update.status = data.status;
-  if (data.email !== undefined) update.email = data.email;
-  if (data.notes !== undefined) update.notes = data.notes;
+  // pickDefined strips `undefined` keys so Mongoose's `$set` doesn't interpret
+  // them as a request to clear those fields.
+  const update = pickDefined(parsed.data, STAFF_PATCH_KEYS);
 
   const doc = await StaffMemberModel.findByIdAndUpdate(id, { $set: update }, {
     new: true,
@@ -54,11 +51,10 @@ export const PATCH = withAdminNonDemo(async (request: NextRequest, ctx: unknown)
   });
 });
 
-export const DELETE = withAdminNonDemo(async (_request: NextRequest, ctx: unknown) => {
-  const { id } = await (ctx as RouteContext).params;
-  if (!mongoose.isValidObjectId(id)) {
-    return NextResponse.json({ message: 'Not found' }, { status: 404 });
-  }
+export const DELETE = withAdminNonDemo<{ id: string }>(async (_request, ctx) => {
+  const { id } = await ctx.params;
+  const invalid = parseObjectId(id);
+  if (invalid) return invalid;
 
   const result = await StaffMemberModel.findByIdAndDelete(id);
   if (!result) {

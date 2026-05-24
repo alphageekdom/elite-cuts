@@ -1,15 +1,38 @@
 import { timingSafeEqual } from 'crypto';
+import mongoose from 'mongoose';
+import type { ZodError } from 'zod';
 import { NextResponse, type NextRequest } from 'next/server';
 import connectDB from '@/config/database';
 import { getSessionUser } from '@/lib/getSessionUser';
 import { isDemoAdmin } from '@/lib/auth/demo-permissions';
 
+// `ctx` is Next.js's per-request route context — `{ params: Promise<...> }` for
+// dynamic segments. Wrappers are generic over `TParams` so dynamic-segment
+// routes get a typed `ctx.params` without an inline `ctx as RouteContext` cast
+// at every callsite. Non-dynamic routes leave the type parameter as its
+// default (an empty object) and ignore `ctx`.
+export type RouteContext<TParams = Record<string, string>> = {
+  params: Promise<TParams>;
+};
+
 type RouteHandler = (req: NextRequest, ctx?: unknown) => Promise<NextResponse>;
-// Handler receives (req, ctx, userId) — ctx is the Next.js route context (params, etc.).
-// Functions with fewer params are assignable in TypeScript, so handlers that
-// don't need ctx or userId can simply omit them.
-type AdminHandler = (req: NextRequest, ctx: unknown, userId: string) => Promise<NextResponse>;
-type AuthHandler  = (req: NextRequest, ctx: unknown, userId: string) => Promise<NextResponse>;
+
+// Handler receives (req, ctx, userId) — ctx is the Next.js route context
+// (params, etc.). Functions with fewer params are assignable in TypeScript,
+// so handlers that don't need ctx or userId can simply omit them. The wrapper
+// signatures below pass the runtime ctx through as `RouteContext<TParams>`;
+// at the wrapper boundary `ctx` arrives as `unknown` because Next.js doesn't
+// give us a typed handle on the dynamic-segment shape.
+type AdminHandler<TParams = Record<string, string>> = (
+  req: NextRequest,
+  ctx: RouteContext<TParams>,
+  userId: string,
+) => Promise<NextResponse>;
+type AuthHandler<TParams = Record<string, string>> = (
+  req: NextRequest,
+  ctx: RouteContext<TParams>,
+  userId: string,
+) => Promise<NextResponse>;
 
 export const unauthorized = () =>
   NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -19,7 +42,9 @@ export const unauthorized = () =>
  * Passes the route context (params) and verified userId to the handler so it
  * does not need to call connectDB() or getSessionUser() again.
  */
-export function withAdmin(handler: AdminHandler): RouteHandler {
+export function withAdmin<TParams = Record<string, string>>(
+  handler: AdminHandler<TParams>,
+): RouteHandler {
   return async (req, ctx) => {
     await connectDB();
 
@@ -31,7 +56,7 @@ export function withAdmin(handler: AdminHandler): RouteHandler {
       return NextResponse.json({ message: 'Admin access required' }, { status: 403 });
     }
 
-    return handler(req, ctx, sessionUser.userId);
+    return handler(req, ctx as RouteContext<TParams>, sessionUser.userId);
   };
 }
 
@@ -43,7 +68,9 @@ export function withAdmin(handler: AdminHandler): RouteHandler {
  * what the next visitor sees. Read-only `GET` admin routes can stay on plain
  * `withAdmin`.
  */
-export function withAdminNonDemo(handler: AdminHandler): RouteHandler {
+export function withAdminNonDemo<TParams = Record<string, string>>(
+  handler: AdminHandler<TParams>,
+): RouteHandler {
   return async (req, ctx) => {
     await connectDB();
 
@@ -61,7 +88,7 @@ export function withAdminNonDemo(handler: AdminHandler): RouteHandler {
       );
     }
 
-    return handler(req, ctx, sessionUser.userId);
+    return handler(req, ctx as RouteContext<TParams>, sessionUser.userId);
   };
 }
 
@@ -70,14 +97,16 @@ export function withAdminNonDemo(handler: AdminHandler): RouteHandler {
  * Passes the verified userId as the third argument so the handler does not
  * need to call connectDB() or getSessionUser() again.
  */
-export function withAuth(handler: AuthHandler): RouteHandler {
+export function withAuth<TParams = Record<string, string>>(
+  handler: AuthHandler<TParams>,
+): RouteHandler {
   return async (req, ctx) => {
     await connectDB();
 
     const sessionUser = await getSessionUser();
     if (!sessionUser?.userId) return unauthorized();
 
-    return handler(req, ctx, sessionUser.userId);
+    return handler(req, ctx as RouteContext<TParams>, sessionUser.userId);
   };
 }
 
@@ -126,6 +155,52 @@ export function withCronSecret<TResult extends Record<string, unknown>>(
       return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
     }
   };
+}
+
+/**
+ * Validates a candidate Mongo ObjectId. Returns a 404 response when the id is
+ * malformed, or `null` when it's a valid ObjectId — the canonical shape every
+ * `[id]` route used to inline. Sample usage:
+ *
+ *   const invalid = parseObjectId(id);
+ *   if (invalid) return invalid;
+ *   // …continue using `id`…
+ */
+export function parseObjectId(id: string): NextResponse | null {
+  if (!mongoose.isValidObjectId(id)) {
+    return NextResponse.json({ message: 'Not found' }, { status: 404 });
+  }
+  return null;
+}
+
+/**
+ * Standard Zod-error → 400 response. Picks the first issue message off the
+ * error for the customer-facing toast and falls back to the supplied default
+ * when the issue list is unexpectedly empty.
+ */
+export function zodBadRequest(error: ZodError, fallback = 'Invalid input'): NextResponse {
+  return NextResponse.json(
+    { message: error.issues[0]?.message ?? fallback },
+    { status: 400 },
+  );
+}
+
+/**
+ * Returns a Partial<T> containing only the keys whose values are not
+ * `undefined`. Designed for building Mongoose `$set` payloads off a parsed
+ * Zod object so optional fields don't accidentally get cleared.
+ */
+export function pickDefined<T extends object>(
+  source: Partial<T>,
+  keys: readonly (keyof T)[],
+): Partial<T> {
+  const out: Partial<T> = {};
+  for (const key of keys) {
+    if (source[key] !== undefined) {
+      out[key] = source[key];
+    }
+  }
+  return out;
 }
 
 /**

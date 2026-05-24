@@ -49,8 +49,8 @@ export default function AdminTopbar({ openMessageCount = 0 }: AdminTopbarProps) 
     try {
       const res = await fetch('/api/notifications');
       if (!res.ok) return;
-      const data = await res.json() as { notifications: NotificationRow[]; unreadCount: number };
-      setNotifications(data.notifications);
+      const data = await res.json() as { items: NotificationRow[]; unreadCount: number };
+      setNotifications(data.items);
       setUnreadCount(data.unreadCount);
     } catch {
       // silently ignore — non-critical background poll

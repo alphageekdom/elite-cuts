@@ -76,7 +76,7 @@ export const GET = withAuth(async (_req, _ctx, userId) => {
     const json = cart.toJSON() as { items: CartLineWire[]; updatedAt: Date };
     return respond(json.items, json.updatedAt);
   } catch (error) {
-    console.error(error);
+    console.error('[cart GET]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
 });
@@ -136,7 +136,7 @@ export const POST = withAuth(async (request: NextRequest, _ctx, userId) => {
     const json = cart.toJSON() as { items: CartLineWire[]; updatedAt: Date };
     return respond(json.items, json.updatedAt);
   } catch (error) {
-    console.error(error);
+    console.error('[cart POST]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
 });
@@ -181,7 +181,7 @@ export const PATCH = withAuth(async (request: NextRequest, _ctx, userId) => {
     const json = cart.toJSON() as { items: CartLineWire[]; updatedAt: Date };
     return respond(json.items, json.updatedAt);
   } catch (error) {
-    console.error(error);
+    console.error('[cart PATCH]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
 });
@@ -213,7 +213,7 @@ export const DELETE = withAuth(async (request: NextRequest, _ctx, userId) => {
     const json = cart.toJSON() as { items: CartLineWire[]; updatedAt: Date };
     return respond(json.items, json.updatedAt);
   } catch (error) {
-    console.error(error);
+    console.error('[cart DELETE]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
 });

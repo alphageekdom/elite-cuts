@@ -1,39 +1,36 @@
-import { NextResponse, type NextRequest } from 'next/server';
-import mongoose from 'mongoose';
+import { NextResponse } from 'next/server';
 
 import Shift from '@/models/Shift';
-import { withAdminNonDemo } from '@/lib/api-handler';
+import {
+  parseObjectId,
+  pickDefined,
+  withAdminNonDemo,
+  zodBadRequest,
+} from '@/lib/api-handler';
 import { findShiftCollision } from '@/lib/shifts';
 import { shiftPatchSchema, type ShiftPatchInput } from '@/lib/shifts/schema';
 
-type RouteContext = { params: Promise<{ id: string }> };
+const SHIFT_PATCH_KEYS = [
+  'staffName',
+  'role',
+  'color',
+  'dayOfWeek',
+  'hourIndex',
+] as const satisfies readonly (keyof ShiftPatchInput)[];
 
-export const PATCH = withAdminNonDemo(async (request: NextRequest, ctx: unknown) => {
+export const PATCH = withAdminNonDemo<{ id: string }>(async (request, ctx) => {
   try {
-    const { id } = await (ctx as RouteContext).params;
-    if (!mongoose.isValidObjectId(id)) {
-      return NextResponse.json({ message: 'Not found' }, { status: 404 });
-    }
+    const { id } = await ctx.params;
+    const invalid = parseObjectId(id);
+    if (invalid) return invalid;
 
     const body = await request.json().catch(() => ({}));
     const parsed = shiftPatchSchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json(
-        { message: parsed.error.issues[0]?.message ?? 'Invalid input' },
-        { status: 400 },
-      );
-    }
+    if (!parsed.success) return zodBadRequest(parsed.error);
 
-    // Strip undefined keys so Mongoose's `$set` doesn't interpret them as
-    // a request to clear those fields. Building a typed partial here means
-    // the collision check below reads the fields without casts.
-    const data = parsed.data;
-    const update: Partial<ShiftPatchInput> = {};
-    if (data.staffName !== undefined) update.staffName = data.staffName;
-    if (data.role !== undefined) update.role = data.role;
-    if (data.color !== undefined) update.color = data.color;
-    if (data.dayOfWeek !== undefined) update.dayOfWeek = data.dayOfWeek;
-    if (data.hourIndex !== undefined) update.hourIndex = data.hourIndex;
+    // pickDefined strips `undefined` keys so Mongoose's `$set` doesn't
+    // interpret them as a request to clear those fields.
+    const update = pickDefined(parsed.data, SHIFT_PATCH_KEYS);
 
     // If the cell address (dayOfWeek / hourIndex) is moving, check the
     // destination is free. The shift's weekStart never changes here — moving
@@ -72,12 +69,11 @@ export const PATCH = withAdminNonDemo(async (request: NextRequest, ctx: unknown)
   }
 });
 
-export const DELETE = withAdminNonDemo(async (_request: NextRequest, ctx: unknown) => {
+export const DELETE = withAdminNonDemo<{ id: string }>(async (_request, ctx) => {
   try {
-    const { id } = await (ctx as RouteContext).params;
-    if (!mongoose.isValidObjectId(id)) {
-      return NextResponse.json({ message: 'Not found' }, { status: 404 });
-    }
+    const { id } = await ctx.params;
+    const invalid = parseObjectId(id);
+    if (invalid) return invalid;
 
     const removed = await Shift.findByIdAndDelete(id);
     if (!removed) {

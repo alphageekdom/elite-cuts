@@ -1,16 +1,17 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import mongoose, { type ClientSession } from 'mongoose';
+import { type ClientSession } from 'mongoose';
 import Delivery from '@/models/Delivery';
 import Product from '@/models/Product';
-import { withAdmin, withAdminNonDemo } from '@/lib/api-handler';
+import { withAdmin, withAdminNonDemo, zodBadRequest } from '@/lib/api-handler';
+import { withOptionalTransaction } from '@/lib/db/transaction';
 import { deliveryCreateSchema } from '@/lib/deliveries/schema';
 
 export const GET = withAdmin(async () => {
   try {
-    const upcoming = await Delivery.find({
+    const items = await Delivery.find({
       deliveryDate: { $gte: new Date() },
     }).sort({ deliveryDate: 1 }).limit(10).lean();
-    return NextResponse.json({ items: upcoming, total: upcoming.length });
+    return NextResponse.json({ items, total: items.length });
   } catch (error) {
     console.error('[deliveries GET]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
@@ -40,12 +41,7 @@ async function commitDelivery(
 export const POST = withAdminNonDemo(async (request: NextRequest) => {
   try {
     const parsed = deliveryCreateSchema.safeParse(await request.json().catch(() => ({})));
-    if (!parsed.success) {
-      return NextResponse.json(
-        { message: parsed.error.issues[0]?.message ?? 'Invalid delivery input' },
-        { status: 400 },
-      );
-    }
+    if (!parsed.success) return zodBadRequest(parsed.error, 'Invalid delivery input');
     const data = parsed.data;
 
     if (data.productId) {
@@ -55,10 +51,10 @@ export const POST = withAdminNonDemo(async (request: NextRequest) => {
       }
     }
 
-    // Floor to integers — the schema accepts non-negative numbers but the
-    // model field is unit-counted. Matches the PATCH companion.
-    const parsedReceivedQty =
-      typeof data.receivedQty === 'number' ? Math.floor(data.receivedQty) : null;
+    // `receivedQty` is already floored by the schema's `.transform`. We just
+    // need the typed alias here to keep the optional check clean.
+    const receivedQty =
+      typeof data.receivedQty === 'number' ? data.receivedQty : null;
 
     const payload: Record<string, unknown> = {
       deliveryDate: data.deliveryDate,
@@ -67,34 +63,21 @@ export const POST = withAdminNonDemo(async (request: NextRequest) => {
       ...(data.detail !== undefined ? { detail: data.detail } : {}),
       ...(data.status !== undefined ? { status: data.status } : {}),
       ...(data.productId ? { productId: data.productId } : {}),
-      ...(parsedReceivedQty !== null ? { receivedQty: parsedReceivedQty } : {}),
+      ...(receivedQty !== null ? { receivedQty } : {}),
     };
 
     // Only auto-apply to stock when this is a real received delivery linked
     // to a product, with a positive received qty.
     const applyStock =
-      data.status === 'received' && data.productId && parsedReceivedQty && parsedReceivedQty > 0
-        ? { productId: data.productId, qty: parsedReceivedQty }
+      data.status === 'received' && data.productId && receivedQty && receivedQty > 0
+        ? { productId: data.productId, qty: receivedQty }
         : null;
 
-    let delivery;
-    let session: ClientSession | null = null;
-    try {
-      if (applyStock) {
-        session = await mongoose.startSession();
-        delivery = await session.withTransaction(() => commitDelivery(payload, applyStock, session));
-      } else {
-        delivery = await commitDelivery(payload, null, null);
-      }
-    } catch (txErr) {
-      const message = txErr instanceof Error ? txErr.message : '';
-      const isStandalone = /replica set|Transaction numbers|standalone/i.test(message);
-      if (!isStandalone) throw txErr;
-      // Best-effort sequential commit on standalone dev Mongo.
-      delivery = await commitDelivery(payload, applyStock, null);
-    } finally {
-      if (session) await session.endSession();
-    }
+    const delivery = applyStock
+      ? await withOptionalTransaction((session) =>
+          commitDelivery(payload, applyStock, session),
+        )
+      : await commitDelivery(payload, null, null);
 
     return NextResponse.json({ data: delivery }, { status: 201 });
   } catch (error) {

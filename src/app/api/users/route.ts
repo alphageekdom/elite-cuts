@@ -38,12 +38,12 @@ export const GET = withAdmin(async (request: NextRequest) => {
       'isAdmin',
     ].join(' ');
 
-    const [total, users] = await Promise.all([
+    const [total, items] = await Promise.all([
       User.countDocuments({}),
       User.find({}).sort(sort).skip(skip).limit(pageSize).select(LIST_PROJECTION),
     ]);
 
-    return NextResponse.json({ total, users });
+    return NextResponse.json({ items, total });
   } catch (error) {
     console.error('[users GET]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });

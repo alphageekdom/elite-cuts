@@ -1,24 +1,20 @@
-import { NextResponse, type NextRequest } from 'next/server';
-import mongoose from 'mongoose';
+import { NextResponse } from 'next/server';
 
 import connectDB from '@/config/database';
-import { withAdminNonDemo } from '@/lib/api-handler';
+import { parseObjectId, withAdminNonDemo } from '@/lib/api-handler';
 import { runOrderSettlement } from '@/lib/payments/orderSettlement';
 import { notifyAdminsOfSettlementFailure } from '@/lib/order-notifications';
-
-type RouteContext = { params: Promise<{ id: string }> };
 
 // POST /api/orders/:id/settle — admin-triggered retry of the Phase 4
 // auto-settle step. Re-fires the same off-session charge / refund path the
 // completion handler used; idempotent against `settlementStatus: 'settled'`
 // (the helper short-circuits with `already_settled`). Returns the
 // settlement result so the admin drawer can refresh in place.
-export const POST = withAdminNonDemo(async (_request: NextRequest, ctx: unknown) => {
+export const POST = withAdminNonDemo<{ id: string }>(async (_request, ctx) => {
   try {
-    const { id } = await (ctx as RouteContext).params;
-    if (!mongoose.isValidObjectId(id)) {
-      return NextResponse.json({ message: 'Not found' }, { status: 404 });
-    }
+    const { id } = await ctx.params;
+    const invalid = parseObjectId(id);
+    if (invalid) return invalid;
 
     await connectDB();
     const result = await runOrderSettlement(id);

@@ -1,31 +1,26 @@
-import { NextResponse, type NextRequest } from 'next/server';
-import mongoose from 'mongoose';
+import { NextResponse } from 'next/server';
 
 import EventModel from '@/models/Event';
-import { withAdminNonDemo } from '@/lib/api-handler';
+import {
+  parseObjectId,
+  withAdminNonDemo,
+  zodBadRequest,
+} from '@/lib/api-handler';
 import { serializeEvent } from '@/lib/events';
 import { parseLaDayString } from '@/lib/event-config';
 import { eventPatchSchema, makeEventInputSchema } from '@/lib/events/schema';
 
-type RouteContext = { params: Promise<{ id: string }> };
-
-export const PATCH = withAdminNonDemo(async (request: NextRequest, ctx: unknown) => {
+export const PATCH = withAdminNonDemo<{ id: string }>(async (request, ctx) => {
   try {
-    const { id } = await (ctx as RouteContext).params;
-    if (!mongoose.isValidObjectId(id)) {
-      return NextResponse.json({ message: 'Not found' }, { status: 404 });
-    }
+    const { id } = await ctx.params;
+    const invalid = parseObjectId(id);
+    if (invalid) return invalid;
 
     const existing = await EventModel.findById(id);
     if (!existing) return NextResponse.json({ message: 'Not found' }, { status: 404 });
 
     const parsedShape = eventPatchSchema.safeParse(await request.json().catch(() => ({})));
-    if (!parsedShape.success) {
-      return NextResponse.json(
-        { message: parsedShape.error.issues[0]?.message ?? 'Invalid event input' },
-        { status: 400 },
-      );
-    }
+    if (!parsedShape.success) return zodBadRequest(parsedShape.error, 'Invalid event input');
     const body = parsedShape.data;
     const update: Record<string, unknown> = {};
 
@@ -42,12 +37,7 @@ export const PATCH = withAdminNonDemo(async (request: NextRequest, ctx: unknown)
       };
       const editSchema = makeEventInputSchema({ allowPast: existing.status !== 'scheduled' });
       const validated = editSchema.safeParse(merged);
-      if (!validated.success) {
-        return NextResponse.json(
-          { message: validated.error.issues[0]?.message ?? 'Invalid event input' },
-          { status: 400 },
-        );
-      }
+      if (!validated.success) return zodBadRequest(validated.error, 'Invalid event input');
       if (body.date !== undefined) update.date = parseLaDayString(merged.date)!;
       if (body.startHour !== undefined) update.startHour = merged.startHour;
       if (body.endHour !== undefined) update.endHour = merged.endHour;
@@ -73,22 +63,25 @@ export const PATCH = withAdminNonDemo(async (request: NextRequest, ctx: unknown)
     }).lean();
     if (!updated) return NextResponse.json({ message: 'Not found' }, { status: 404 });
 
-    return NextResponse.json(serializeEvent({ ...updated, _id: updated._id }));
+    return NextResponse.json({
+      data: serializeEvent({ ...updated, _id: updated._id }),
+      message: 'Event updated',
+    });
   } catch (error) {
     console.error('[events/:id PATCH]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
 });
 
-export const DELETE = withAdminNonDemo(async (_request: NextRequest, ctx: unknown) => {
+export const DELETE = withAdminNonDemo<{ id: string }>(async (_request, ctx) => {
   try {
-    const { id } = await (ctx as RouteContext).params;
-    if (!mongoose.isValidObjectId(id)) {
-      return NextResponse.json({ message: 'Not found' }, { status: 404 });
-    }
+    const { id } = await ctx.params;
+    const invalid = parseObjectId(id);
+    if (invalid) return invalid;
+
     const deleted = await EventModel.findByIdAndDelete(id);
     if (!deleted) return NextResponse.json({ message: 'Not found' }, { status: 404 });
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ data: { id }, message: 'Event deleted' });
   } catch (error) {
     console.error('[events/:id DELETE]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });

@@ -6,24 +6,28 @@ import Product from '@/models/Product';
 import Review from '@/models/Review';
 import User from '@/models/User';
 import { getSessionUser } from '@/lib/getSessionUser';
-import { withAdminNonDemo } from '@/lib/api-handler';
+import {
+  parseObjectId,
+  withAdminNonDemo,
+  zodBadRequest,
+  type RouteContext,
+} from '@/lib/api-handler';
 import {
   coerceProductInput,
   productRecordFromFormData,
 } from '@/lib/products/parse-form-input';
 import { productInputSchema } from '@/lib/products/schema';
+import { recomputeProductRating } from '@/lib/reviews/recompute';
 
-// Next 15+ params are async — must be awaited inside the handler.
-type RouteContext = { params: Promise<{ id: string }> };
+type Ctx = RouteContext<{ id: string }>;
 
 // GET /api/products/:id — product detail with attached reviews.
-export const GET = async (_request: NextRequest, { params }: RouteContext) => {
+export const GET = async (_request: NextRequest, { params }: Ctx) => {
   try {
     await connectDB();
     const { id } = await params;
-    if (!mongoose.isValidObjectId(id)) {
-      return NextResponse.json({ message: 'Not found' }, { status: 404 });
-    }
+    const invalid = parseObjectId(id);
+    if (invalid) return invalid;
 
     const product = await Product.findById(id);
     if (!product) {
@@ -34,7 +38,7 @@ export const GET = async (_request: NextRequest, { params }: RouteContext) => {
 
     return NextResponse.json({ ...product.toJSON(), reviews });
   } catch (error) {
-    console.error(error);
+    console.error('[products/:id GET]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
 };
@@ -45,12 +49,12 @@ export const GET = async (_request: NextRequest, { params }: RouteContext) => {
 // canonical pricing fields — a direct PATCH would persist briefly and then
 // get clobbered on the next full save. Admins edit price through the full
 // PUT form going forward.
-export const PATCH = withAdminNonDemo(async (request: NextRequest, ctx: unknown) => {
+export const PATCH = withAdminNonDemo<{ id: string }>(async (request, ctx) => {
   try {
-    const { id } = await (ctx as RouteContext).params;
-    if (!mongoose.isValidObjectId(id)) {
-      return NextResponse.json({ message: 'Not found' }, { status: 404 });
-    }
+    const { id } = await ctx.params;
+    const invalid = parseObjectId(id);
+    if (invalid) return invalid;
+
     const body = (await request.json()) as {
       isActive?: boolean;
       isFeatured?: boolean;
@@ -76,12 +80,11 @@ export const PATCH = withAdminNonDemo(async (request: NextRequest, ctx: unknown)
 });
 
 // DELETE /api/products/:id — admin-only.
-export const DELETE = withAdminNonDemo(async (_request: NextRequest, ctx: unknown) => {
+export const DELETE = withAdminNonDemo<{ id: string }>(async (_request, ctx) => {
   try {
-    const { id } = await (ctx as RouteContext).params;
-    if (!mongoose.isValidObjectId(id)) {
-      return NextResponse.json({ message: 'Not found' }, { status: 404 });
-    }
+    const { id } = await ctx.params;
+    const invalid = parseObjectId(id);
+    if (invalid) return invalid;
 
     const existingProduct = await Product.findById(id);
     if (!existingProduct) {
@@ -91,7 +94,7 @@ export const DELETE = withAdminNonDemo(async (_request: NextRequest, ctx: unknow
     await Product.findByIdAndDelete(id);
     return NextResponse.json({ data: { id }, message: 'Product deleted successfully' });
   } catch (error) {
-    console.error(error);
+    console.error('[products/:id DELETE]', error);
     return NextResponse.json({ message: 'Failed to delete product' }, { status: 500 });
   }
 });
@@ -100,12 +103,11 @@ export const DELETE = withAdminNonDemo(async (_request: NextRequest, ctx: unknow
 // through the same Zod schema as POST, then preserves rating + images from
 // the persisted doc (those aren't form-editable) and falls back to existing
 // boolean toggle values when the form doesn't submit them.
-export const PUT = withAdminNonDemo(async (request: NextRequest, ctx: unknown) => {
+export const PUT = withAdminNonDemo<{ id: string }>(async (request, ctx) => {
   try {
-    const { id } = await (ctx as RouteContext).params;
-    if (!mongoose.isValidObjectId(id)) {
-      return NextResponse.json({ message: 'Not found' }, { status: 404 });
-    }
+    const { id } = await ctx.params;
+    const invalid = parseObjectId(id);
+    if (invalid) return invalid;
     const formData = await request.formData();
 
     const existingProduct = await Product.findById(id).lean();
@@ -120,10 +122,7 @@ export const PUT = withAdminNonDemo(async (request: NextRequest, ctx: unknown) =
     if (!record.slug?.trim()) record.slug = existingProduct.slug;
 
     const parsed = productInputSchema.safeParse(coerceProductInput(record));
-    if (!parsed.success) {
-      const first = parsed.error.issues[0];
-      return NextResponse.json({ message: first?.message ?? 'Invalid input' }, { status: 400 });
-    }
+    if (!parsed.success) return zodBadRequest(parsed.error);
 
     // Preserve existing toggle values when the form didn't submit them
     // (separate toggles, not part of the main form payload).
@@ -144,14 +143,15 @@ export const PUT = withAdminNonDemo(async (request: NextRequest, ctx: unknown) =
     );
     return NextResponse.json({ data: updatedProduct });
   } catch (error) {
-    console.error(error);
+    console.error('[products/:id PUT]', error);
     return NextResponse.json({ message: 'Failed to update product' }, { status: 500 });
   }
 });
 
-// POST /api/products/:id — submit a review. Updates product.rating using a
-// proper running mean: (stored_avg * existing_count + new_rating) / (existing_count + 1).
-export const POST = async (request: NextRequest, { params }: RouteContext) => {
+// POST /api/products/:id — submit a review. Rating recompute goes through the
+// shared `recomputeProductRating` so the create path can't drift from the
+// edit/delete path.
+export const POST = async (request: NextRequest, { params }: Ctx) => {
   try {
     const sessionUser = await getSessionUser();
     if (!sessionUser?.userId) {
@@ -159,9 +159,8 @@ export const POST = async (request: NextRequest, { params }: RouteContext) => {
     }
     const { userId } = sessionUser;
     const { id } = await params;
-    if (!mongoose.isValidObjectId(id)) {
-      return NextResponse.json({ message: 'Not found' }, { status: 404 });
-    }
+    const invalid = parseObjectId(id);
+    if (invalid) return invalid;
 
     const { rating, comment } = (await request.json()) as {
       rating?: number | string;
@@ -194,16 +193,6 @@ export const POST = async (request: NextRequest, { params }: RouteContext) => {
       return NextResponse.json({ message: 'Invalid rating value' }, { status: 400 });
     }
 
-    // Running mean: (old_avg × n + new_rating) / (n + 1)
-    const existingCount = await Review.countDocuments({ product: id });
-    const newRating =
-      existingCount > 0
-        ? Math.round(((product.rating * existingCount + parsedRating) / (existingCount + 1)) * 100) / 100
-        : parsedRating;
-
-    product.rating = newRating;
-    await product.save();
-
     const reviewer = await User.findById(userId).select('name').lean<{ name?: string }>();
     const review = new Review({
       user: userId,
@@ -214,7 +203,12 @@ export const POST = async (request: NextRequest, { params }: RouteContext) => {
     });
     await review.save();
 
-    return NextResponse.json({ data: product }, { status: 201 });
+    // Recompute after the review is persisted so the aggregate sees it.
+    await recomputeProductRating(product._id as mongoose.Types.ObjectId);
+
+    // Re-read the product so the response reflects the new rating.
+    const refreshed = await Product.findById(id);
+    return NextResponse.json({ data: refreshed }, { status: 201 });
   } catch (error) {
     if (
       error !== null &&
@@ -227,7 +221,7 @@ export const POST = async (request: NextRequest, { params }: RouteContext) => {
         { status: 409 },
       );
     }
-    console.error(error);
+    console.error('[products/:id POST review]', error);
     return NextResponse.json({ message: 'Failed to create review' }, { status: 500 });
   }
 };

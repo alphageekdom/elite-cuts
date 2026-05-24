@@ -6,16 +6,17 @@ import {
   updateSavedCardExpiry,
 } from '@/lib/payments/savedCards';
 import { refuseDemoActor } from '@/lib/auth/demo-responses';
+import type { RouteContext } from '@/lib/api-handler';
 
 export const dynamic = 'force-dynamic';
 
-type RouteContext = { params: Promise<{ id: string }> };
+type Ctx = RouteContext<{ id: string }>;
 
 // DELETE /api/me/payment-methods/[id] — detach a saved card. Real Stripe mode
 // hits `stripe.paymentMethods.detach`; stub mode removes the local SavedCard
 // row. Ownership is re-validated inside the helper on both paths so a tampered
 // id can't detach another customer's card.
-export const DELETE = async (_request: Request, ctx: RouteContext) => {
+export const DELETE = async (_request: Request, ctx: Ctx) => {
   const sessionUser = await getSessionUser();
   if (!sessionUser?.userId) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -33,7 +34,7 @@ export const DELETE = async (_request: Request, ctx: RouteContext) => {
     if (!removed) {
       return NextResponse.json({ message: 'Card not found' }, { status: 404 });
     }
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ data: { id }, message: 'Card removed' });
   } catch (error) {
     console.error('[me/payment-methods DELETE]', error);
     return NextResponse.json(
@@ -46,7 +47,7 @@ export const DELETE = async (_request: Request, ctx: RouteContext) => {
 // PATCH /api/me/payment-methods/[id] — update expiry on a saved card. The
 // only field that can change without re-tokenizing; brand/last4 are baked
 // into the card itself. Used when an expiring card needs its YY/MM bumped.
-export const PATCH = async (request: NextRequest, ctx: RouteContext) => {
+export const PATCH = async (request: NextRequest, ctx: Ctx) => {
   const sessionUser = await getSessionUser();
   if (!sessionUser?.userId) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -77,7 +78,10 @@ export const PATCH = async (request: NextRequest, ctx: RouteContext) => {
         { status: 404 },
       );
     }
-    return NextResponse.json({ success: true });
+    return NextResponse.json({
+      data: { id, expMonth, expYear },
+      message: 'Expiry updated',
+    });
   } catch (error) {
     console.error('[me/payment-methods PATCH]', error);
     return NextResponse.json(

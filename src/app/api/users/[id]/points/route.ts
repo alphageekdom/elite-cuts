@@ -1,10 +1,7 @@
-import { NextResponse, type NextRequest } from 'next/server';
-import mongoose from 'mongoose';
+import { NextResponse } from 'next/server';
 import User from '@/models/User';
-import { withAdminNonDemo } from '@/lib/api-handler';
+import { parseObjectId, withAdminNonDemo } from '@/lib/api-handler';
 import { refuseDemoTarget } from '@/lib/auth/demo-responses';
-
-type RouteContext = { params: Promise<{ id: string }> };
 
 // Sized to a clearly-not-real ceiling so a typo or tampered request can't
 // silently inflate a balance to "comp an unlimited series of orders" levels.
@@ -15,12 +12,12 @@ const POINTS_DELTA_LIMIT = 1_000_000;
 // PATCH /api/users/:id/points — admin-only reward points adjustment.
 // Body: { delta: number } — positive to add, negative to subtract.
 // Points floor at 0; delta is capped at ±POINTS_DELTA_LIMIT.
-export const PATCH = withAdminNonDemo(async (request: NextRequest, ctx: unknown) => {
+export const PATCH = withAdminNonDemo<{ id: string }>(async (request, ctx) => {
   try {
-    const { id } = await (ctx as RouteContext).params;
-    if (!mongoose.isValidObjectId(id)) {
-      return NextResponse.json({ message: 'Not found' }, { status: 404 });
-    }
+    const { id } = await ctx.params;
+    const invalid = parseObjectId(id);
+    if (invalid) return invalid;
+
     const { delta } = (await request.json()) as { delta?: number };
 
     if (delta === undefined || typeof delta !== 'number' || !Number.isFinite(delta)) {
@@ -43,7 +40,7 @@ export const PATCH = withAdminNonDemo(async (request: NextRequest, ctx: unknown)
     const newPoints = Math.max(0, (user.rewardPoints ?? 0) + delta);
     await User.findByIdAndUpdate(id, { rewardPoints: newPoints }, { runValidators: true });
 
-    return NextResponse.json({ id, rewardPoints: newPoints });
+    return NextResponse.json({ data: { id, rewardPoints: newPoints } });
   } catch (error) {
     console.error('[users/:id/points PATCH]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });

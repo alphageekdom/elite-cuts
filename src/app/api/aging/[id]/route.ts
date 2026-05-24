@@ -1,24 +1,21 @@
-import { NextResponse, type NextRequest } from 'next/server';
-import mongoose from 'mongoose';
+import { NextResponse } from 'next/server';
 import AgingCut from '@/models/AgingCut';
-import { withAdminNonDemo } from '@/lib/api-handler';
+import {
+  parseObjectId,
+  withAdminNonDemo,
+  zodBadRequest,
+} from '@/lib/api-handler';
 import { agingPatchSchema } from '@/lib/aging/schema';
 
-type RouteContext = { params: Promise<{ id: string }> };
-
-export const PATCH = withAdminNonDemo(async (request: NextRequest, ctx: unknown) => {
+export const PATCH = withAdminNonDemo<{ id: string }>(async (request, ctx) => {
   try {
-    const { id } = await (ctx as RouteContext).params;
-    if (!mongoose.isValidObjectId(id)) {
-      return NextResponse.json({ message: 'Not found' }, { status: 404 });
-    }
+    const { id } = await ctx.params;
+    const invalid = parseObjectId(id);
+    if (invalid) return invalid;
+
     const parsed = agingPatchSchema.safeParse(await request.json().catch(() => ({})));
-    if (!parsed.success) {
-      return NextResponse.json(
-        { message: parsed.error.issues[0]?.message ?? 'Invalid aging input' },
-        { status: 400 },
-      );
-    }
+    if (!parsed.success) return zodBadRequest(parsed.error, 'Invalid aging input');
+
     const cut = await AgingCut.findByIdAndUpdate(
       id,
       { $set: parsed.data },
@@ -32,14 +29,17 @@ export const PATCH = withAdminNonDemo(async (request: NextRequest, ctx: unknown)
   }
 });
 
-export const DELETE = withAdminNonDemo(async (_request: NextRequest, ctx: unknown) => {
+export const DELETE = withAdminNonDemo<{ id: string }>(async (_request, ctx) => {
   try {
-    const { id } = await (ctx as RouteContext).params;
-    if (!mongoose.isValidObjectId(id)) {
+    const { id } = await ctx.params;
+    const invalid = parseObjectId(id);
+    if (invalid) return invalid;
+
+    const removed = await AgingCut.findByIdAndDelete(id);
+    if (!removed) {
       return NextResponse.json({ message: 'Not found' }, { status: 404 });
     }
-    await AgingCut.findByIdAndDelete(id);
-    return NextResponse.json({ message: 'Deleted' });
+    return NextResponse.json({ data: { id }, message: 'Aging cut deleted' });
   } catch (error) {
     console.error('[aging/:id DELETE]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });

@@ -3,7 +3,8 @@ import mongoose, { type ClientSession } from 'mongoose';
 
 import StocktakeModel, { type StocktakeEntry } from '@/models/Stocktake';
 import ProductModel from '@/models/Product';
-import { withAdmin, withAdminNonDemo } from '@/lib/api-handler';
+import { withAdmin, withAdminNonDemo, zodBadRequest } from '@/lib/api-handler';
+import { withOptionalTransaction } from '@/lib/db/transaction';
 import { stocktakeCreateSchema, type StocktakeCreateInput } from '@/lib/stocktakes/schema';
 
 export const dynamic = 'force-dynamic';
@@ -64,12 +65,7 @@ async function commitStocktake(
 export const POST = withAdminNonDemo(async (req, _ctx, userId) => {
   try {
     const parsed = stocktakeCreateSchema.safeParse(await req.json().catch(() => ({})));
-    if (!parsed.success) {
-      return NextResponse.json(
-        { message: parsed.error.issues[0]?.message ?? 'Invalid stocktake input' },
-        { status: 400 },
-      );
-    }
+    if (!parsed.success) return zodBadRequest(parsed.error, 'Invalid stocktake input');
     const { entries, note } = parsed.data;
 
     // Verify every productId resolves to a real, active catalog row before
@@ -90,25 +86,9 @@ export const POST = withAdminNonDemo(async (req, _ctx, userId) => {
       );
     }
 
-    // Try a transaction; gracefully fall back if the deployment doesn't
-    // support one (standalone Mongo throws "Transaction numbers are only
-    // allowed on a replica set member or mongos").
-    let result;
-    let session: ClientSession | null = null;
-    try {
-      session = await mongoose.startSession();
-      result = await session.withTransaction(() =>
-        commitStocktake(userId, entries, note, session),
-      );
-    } catch (txErr) {
-      const message = txErr instanceof Error ? txErr.message : '';
-      const isStandalone = /replica set|Transaction numbers|standalone/i.test(message);
-      if (!isStandalone) throw txErr;
-      // Best-effort sequential commit on standalone Mongo.
-      result = await commitStocktake(userId, entries, note, null);
-    } finally {
-      if (session) await session.endSession();
-    }
+    const result = await withOptionalTransaction((session) =>
+      commitStocktake(userId, entries, note, session),
+    );
 
     return NextResponse.json({ data: result.stocktake }, { status: 201 });
   } catch (error) {
