@@ -11,6 +11,7 @@ This repository is a **TypeScript redesign** of the original JavaScript app — 
 ## Table of Contents
 
 - [Features](#features)
+- [Screenshots](#screenshots)
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
 - [Data Models](#data-models)
@@ -25,10 +26,11 @@ This repository is a **TypeScript redesign** of the original JavaScript app — 
 ## Features
 
 **Customer**
-- Browse products by category (Beef, Pork, Poultry, Lamb, Charcuterie)
+- Browse products by category (Beef, Chicken, Pork, Charcuterie, Sausage, Prepared, Bundles, Other)
 - View product detail with image gallery (PhotoSwipe)
-- Authenticated-only cart and checkout
-- Stripe Checkout with pickup time selection
+- Guest checkout or authenticated cart with rewards
+- Stripe Checkout with pickup time selection (test mode only — this is a portfolio demo)
+- Promo codes, points-based rewards, and tier retention
 - Save/unsave cuts to a personal favorites list
 - Profile management: name, email, password, addresses, order history
 
@@ -47,6 +49,34 @@ This repository is a **TypeScript redesign** of the original JavaScript app — 
 
 ---
 
+## Screenshots
+
+**Editorial homepage**
+
+<img src="docs/screenshots/homepage.jpeg" alt="EliteCuts homepage with hero, featured cuts, and shop story" width="800" />
+
+**Product detail — realistic per-pound and bundle pricing**
+
+<img src="docs/screenshots/product-detail.jpeg" alt="Steakhouse Beef Sampler Bundle detail page with cooking notes" width="800" />
+
+**Cart drawer — subtotal, estimated tax, total, free pickup ETA**
+
+<img src="docs/screenshots/cart-drawer.jpeg" alt="Cart drawer open over the products listing" width="800" />
+
+**Admin dashboard — KPIs, revenue chart, top cuts, recent orders**
+
+<img src="docs/screenshots/admin-dashboard.jpeg" alt="Admin dashboard home with month-to-date KPIs and recent orders" width="800" />
+
+**Admin orders — filter, search, sort, column visibility**
+
+<img src="docs/screenshots/admin-orders.jpeg" alt="Admin orders table with stat strip, range toggle, and column controls" width="800" />
+
+**Mobile catalog (iPhone 12 Pro)**
+
+<img src="docs/screenshots/mobile-products.jpeg" alt="Mobile-first catalog stack with category chips and featured tags" width="320" />
+
+---
+
 ## Tech Stack
 
 | Layer | Choice | Version |
@@ -61,7 +91,8 @@ This repository is a **TypeScript redesign** of the original JavaScript app — 
 | Auth | NextAuth.js | ^4.24.14 |
 | Image Hosting | Cloudinary | ^2.10.0 |
 | Payments | Stripe | — |
-| Validation | express-validator | ^7.3.2 |
+| Validation | Zod | ^4.4.3 |
+| Testing | Vitest | ^4.1.6 |
 | Notifications | Sonner | ^2.0.7 |
 | Image Gallery | react-photoswipe-gallery | ^4.0.0 |
 | Deployment | Vercel | — |
@@ -74,15 +105,19 @@ This repository is a **TypeScript redesign** of the original JavaScript app — 
 src/
 ├── app/
 │   ├── (auth)/             # Login, Register pages
-│   ├── (main)/             # All authenticated/public app pages
+│   ├── (main)/             # Customer-facing pages
 │   │   ├── page.tsx        # Home
-│   │   ├── products/       # Catalog, detail, add, list, saved
+│   │   ├── products/       # Catalog + detail
 │   │   ├── cart/
 │   │   ├── checkout/
 │   │   ├── profile/
-│   │   ├── dashboard/      # Admin
 │   │   ├── rewards/
-│   │   └── users/          # Admin user management
+│   │   ├── demo/           # Demo account landing
+│   │   ├── privacy/
+│   │   └── terms/
+│   ├── (admin)/dashboard/  # Admin shell — orders, products, customers,
+│   │                       # inventory, promos, analytics, messages,
+│   │                       # schedule, staff, settings
 │   └── api/                # API route handlers
 ├── components/             # Feature-organized React components
 ├── models/                 # Mongoose schemas (User, Product, Order, Cart, Review)
@@ -115,14 +150,19 @@ src/
 ```ts
 {
   name: string
-  category: 'Beef' | 'Pork' | 'Poultry' | 'Lamb' | 'Charcuterie' | 'Other'
+  slug: string            // stable URL key, survives renames
+  category: 'Beef' | 'Chicken' | 'Pork' | 'Charcuterie' | 'Sausage' | 'Prepared' | 'Bundles' | 'Other'
   description: string
-  price: number           // cents
-  images: string[]        // Cloudinary URLs
+  pricingType: 'fixed' | 'per_lb' | 'whole' | 'individual' | 'bundle'
+  price: number           // cents (estimate for per_lb / whole)
+  displayPriceLabel: string   // e.g. "$24.99/lb"
+  displayWeightLabel: string  // e.g. "Typically 12-14 oz"
+  images: string[]        // Cloudinary URLs (admin uploads) or seeded filenames
   stockCount: number
   isFeatured: boolean
   isAged: boolean
   isNewArrival: boolean
+  isActive: boolean       // soft-delete flag
   rating: number          // 0–5
 }
 ```
@@ -148,7 +188,7 @@ src/
   tax: number
   totalCost: number
   orderStatus: 'Pending' | 'Ready for Pickup' | 'Completed' | 'Cancelled'
-  paymentMethod: 'Credit Card' | 'Debit Card' | 'Apple Pay' | 'PayPal' | 'Crypto'
+  paymentMethod: 'Credit Card' | 'Stripe'  // Credit Card = no-charge demo tile
   paymentResult: { status, transactionId?, amountPaid, currency, paymentDate }
   pickupLocation: string
   isPaid: boolean
@@ -241,6 +281,8 @@ npm run dev       # http://localhost:3000
 npm run build     # production build
 npm run start     # start production server
 npm run lint      # ESLint
+npm run typecheck # TypeScript
+npm test          # Vitest suite
 npm run format    # Prettier
 ```
 
@@ -263,11 +305,15 @@ CLOUDINARY_CLOUD_NAME=
 CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=
 
-STRIPE_SECRET_KEY=
+STRIPE_SECRET_KEY=                  # test-mode only (sk_test_...); unset = local stub
 STRIPE_WEBHOOK_SECRET=
+
+CRON_SECRET=                        # shared bearer for dormancy + purge cron endpoints
 
 NEXT_PUBLIC_API_URL=
 NEXT_PUBLIC_SITE_URL=
+
+ENABLE_DEMO_CARD_TILE=              # 'true' enables the no-charge demo checkout tile
 ```
 
 ---
