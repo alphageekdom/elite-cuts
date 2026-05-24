@@ -5,12 +5,8 @@ import Notification from '@/models/Notification';
 import User from '@/models/User';
 import { withAdmin, withAdminNonDemo } from '@/lib/api-handler';
 import { serializeEvent } from '@/lib/events';
-import {
-  DEFAULT_EVENT_MESSAGE,
-  EVENT_MESSAGE_MAX,
-  parseLaDayString,
-  validateEventInput,
-} from '@/lib/event-config';
+import { DEFAULT_EVENT_MESSAGE, parseLaDayString } from '@/lib/event-config';
+import { eventCreateSchema } from '@/lib/events/schema';
 import { getShopSettings } from '@/lib/shopSettings';
 
 export const GET = withAdmin(async (request: NextRequest) => {
@@ -35,32 +31,16 @@ export const GET = withAdmin(async (request: NextRequest) => {
 
 export const POST = withAdminNonDemo(async (request: NextRequest) => {
   try {
-    const body = (await request.json()) as {
-      date?: string;
-      startHour?: number;
-      endHour?: number;
-      message?: string;
-    };
-
-    if (
-      typeof body.date !== 'string' ||
-      typeof body.startHour !== 'number' ||
-      typeof body.endHour !== 'number'
-    ) {
-      return NextResponse.json({ message: 'date, startHour, and endHour are required' }, { status: 400 });
+    const parsed = eventCreateSchema.safeParse(await request.json().catch(() => ({})));
+    if (!parsed.success) {
+      return NextResponse.json(
+        { message: parsed.error.issues[0]?.message ?? 'Invalid event input' },
+        { status: 400 },
+      );
     }
+    const { date: dateStr, startHour, endHour, message } = parsed.data;
 
-    const errors = validateEventInput({
-      date: body.date,
-      startHour: body.startHour,
-      endHour: body.endHour,
-      message: body.message,
-    });
-    if (errors.length) {
-      return NextResponse.json({ message: errors[0].message, errors }, { status: 400 });
-    }
-
-    const day = parseLaDayString(body.date)!;
+    const day = parseLaDayString(dateStr)!;
     const dayStart = new Date(day.getTime() - 86400000);
     const dayEnd = new Date(day.getTime() + 86400000);
 
@@ -78,9 +58,9 @@ export const POST = withAdminNonDemo(async (request: NextRequest) => {
     const event = await EventModel.create({
       kind: 'grill',
       date: day,
-      startHour: body.startHour,
-      endHour: body.endHour,
-      message: body.message?.trim() ? body.message.trim().slice(0, EVENT_MESSAGE_MAX) : DEFAULT_EVENT_MESSAGE,
+      startHour,
+      endHour,
+      message: message || DEFAULT_EVENT_MESSAGE,
       status: 'scheduled',
     });
 
@@ -95,7 +75,7 @@ export const POST = withAdminNonDemo(async (request: NextRequest) => {
       const docs = admins.map((a) => ({
         type: 'new_event' as const,
         title: 'Grill event scheduled',
-        body: `${isoDate} · ${body.startHour}:00–${body.endHour}:00`,
+        body: `${isoDate} · ${startHour}:00–${endHour}:00`,
         userId: a._id,
         readAt: null,
       }));
