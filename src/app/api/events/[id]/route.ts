@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import mongoose from 'mongoose';
 
 import EventModel from '@/models/Event';
-import { withAdmin } from '@/lib/api-handler';
+import { withAdminNonDemo } from '@/lib/api-handler';
 import { isIn } from '@/lib/validation';
 import { serializeEvent } from '@/lib/events';
 import {
@@ -15,7 +15,7 @@ import {
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
+export const PATCH = withAdminNonDemo(async (request: NextRequest, ctx: unknown) => {
   try {
     const { id } = await (ctx as RouteContext).params;
     if (!mongoose.isValidObjectId(id)) {
@@ -83,7 +83,7 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
   }
 });
 
-export const DELETE = withAdmin(async (_request: NextRequest, ctx: unknown) => {
+export const DELETE = withAdminNonDemo(async (_request: NextRequest, ctx: unknown) => {
   try {
     const { id } = await (ctx as RouteContext).params;
     if (!mongoose.isValidObjectId(id)) {

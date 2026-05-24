@@ -5,7 +5,7 @@ import connectDB from '@/config/database';
 import Order, { ORDER_STATUSES, CANCELLATION_REASONS } from '@/models/Order';
 import Product from '@/models/Product';
 import { getSessionUser } from '@/lib/getSessionUser';
-import { withAdmin } from '@/lib/api-handler';
+import { withAdminNonDemo } from '@/lib/api-handler';
 import { isIn } from '@/lib/validation';
 import { refundSummary, paymentStatusFor } from '@/lib/order-refunds';
 import { awardOrderCompletion, reverseOrderAward, reverseOrderRedemption } from '@/lib/order-completion';
@@ -15,6 +15,11 @@ import { runOrderSettlement } from '@/lib/payments/orderSettlement';
 import { notifyAdminsOfSettlementFailure } from '@/lib/order-notifications';
 
 type RouteContext = { params: Promise<{ id: string }> };
+
+// Sized to a clear retail ceiling — a whole hindquarter trends under 200 lb.
+// Without it the downstream receipt and refund math in dollars would accept
+// a 1e10 typo as-is.
+const REALIZED_WEIGHT_MAX_LB = 500;
 
 // GET /api/orders/:id — self or admin only
 export const GET = async (_request: NextRequest, { params }: RouteContext) => {
@@ -46,6 +51,22 @@ export const GET = async (_request: NextRequest, { params }: RouteContext) => {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
 
+    // Strip Stripe-side identifiers from the customer-self branch. They're
+    // not rendered by the customer-facing receipt or profile pages and a
+    // raw checkoutSessionId / paymentIntentId is enough to make abuse easier
+    // (support-channel impersonation, brute-force probing). Admins still
+    // see the full payment envelope for refund triage.
+    if (!sessionUser.user?.isAdmin) {
+      const serialized = order.toObject();
+      if (serialized.paymentResult) {
+        delete serialized.paymentResult.checkoutSessionId;
+        delete serialized.paymentResult.paymentIntentId;
+        delete serialized.paymentResult.settlementPaymentIntents;
+        delete serialized.paymentResult.settlementError;
+      }
+      return NextResponse.json(serialized);
+    }
+
     return NextResponse.json(order);
   } catch (error) {
     console.error('[orders/:id GET]', error);
@@ -54,7 +75,7 @@ export const GET = async (_request: NextRequest, { params }: RouteContext) => {
 };
 
 // DELETE /api/orders/:id — admin only
-export const DELETE = withAdmin(async (_request: NextRequest, ctx: unknown) => {
+export const DELETE = withAdminNonDemo(async (_request: NextRequest, ctx: unknown) => {
   try {
     const { id } = await (ctx as RouteContext).params;
     if (!mongoose.isValidObjectId(id)) {
@@ -72,7 +93,7 @@ export const DELETE = withAdmin(async (_request: NextRequest, ctx: unknown) => {
 });
 
 // PATCH /api/orders/:id — admin updates order status and/or refunds line items
-export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
+export const PATCH = withAdminNonDemo(async (request: NextRequest, ctx: unknown) => {
   try {
     const { id } = await (ctx as RouteContext).params;
     if (!mongoose.isValidObjectId(id)) {
@@ -235,12 +256,15 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
             },
           });
         } catch (err) {
+          // Don't echo Stripe's raw error message to the client — it can
+          // reveal masked PAN tails, declined-reason hints, and account
+          // names that have no business on an admin toast. The server log
+          // keeps the full error for triage.
           console.error('[orders PATCH] stripe.refunds.create failed', err);
-          const message =
-            err instanceof Error
-              ? `Stripe refund failed: ${err.message}`
-              : 'Stripe refund failed — please try again.';
-          return NextResponse.json({ message }, { status: 502 });
+          return NextResponse.json(
+            { message: 'Refund could not be processed — please try again or contact support.' },
+            { status: 502 },
+          );
         }
       }
 
@@ -340,6 +364,12 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
         ) {
           return NextResponse.json(
             { message: 'Realized weight must be a positive number' },
+            { status: 400 },
+          );
+        }
+        if (entry.weightLb > REALIZED_WEIGHT_MAX_LB) {
+          return NextResponse.json(
+            { message: `Realized weight must be ${REALIZED_WEIGHT_MAX_LB} lb or fewer` },
             { status: 400 },
           );
         }

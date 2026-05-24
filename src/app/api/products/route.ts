@@ -10,7 +10,7 @@ import {
   productRecordFromFormData,
 } from '@/lib/products/parse-form-input';
 import { productInputSchema } from '@/lib/products/schema';
-import { withAdmin, parsePagination } from '@/lib/api-handler';
+import { withAdminNonDemo, parsePagination } from '@/lib/api-handler';
 
 const ALLOWED_PRODUCT_SORT_FIELDS = new Set(['_id', 'name', 'price', 'createdAt', 'stockCount']);
 
@@ -46,7 +46,7 @@ export const GET = async (request: NextRequest) => {
 // the Mongo doc references the secure URLs. Validation runs through the
 // Zod schema at src/lib/products/schema.ts (same schema the admin form
 // uses pre-submit for inline errors).
-export const POST = withAdmin(async (request: NextRequest) => {
+export const POST = withAdminNonDemo(async (request: NextRequest) => {
   try {
     const formData = await request.formData();
 

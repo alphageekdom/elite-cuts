@@ -1,12 +1,12 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import mongoose from 'mongoose';
 import Product from '@/models/Product';
-import { withAdmin } from '@/lib/api-handler';
+import { withAdminNonDemo } from '@/lib/api-handler';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 // PATCH /api/products/:id/stock — admin-only stock count adjustment
-export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
+export const PATCH = withAdminNonDemo(async (request: NextRequest, ctx: unknown) => {
   try {
     const { id } = await (ctx as RouteContext).params;
     if (!mongoose.isValidObjectId(id)) {

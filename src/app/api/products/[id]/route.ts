@@ -6,7 +6,7 @@ import Product from '@/models/Product';
 import Review from '@/models/Review';
 import User from '@/models/User';
 import { getSessionUser } from '@/lib/getSessionUser';
-import { withAdmin } from '@/lib/api-handler';
+import { withAdminNonDemo } from '@/lib/api-handler';
 import {
   coerceProductInput,
   productRecordFromFormData,
@@ -45,7 +45,7 @@ export const GET = async (_request: NextRequest, { params }: RouteContext) => {
 // canonical pricing fields — a direct PATCH would persist briefly and then
 // get clobbered on the next full save. Admins edit price through the full
 // PUT form going forward.
-export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
+export const PATCH = withAdminNonDemo(async (request: NextRequest, ctx: unknown) => {
   try {
     const { id } = await (ctx as RouteContext).params;
     if (!mongoose.isValidObjectId(id)) {
@@ -76,7 +76,7 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
 });
 
 // DELETE /api/products/:id — admin-only.
-export const DELETE = withAdmin(async (_request: NextRequest, ctx: unknown) => {
+export const DELETE = withAdminNonDemo(async (_request: NextRequest, ctx: unknown) => {
   try {
     const { id } = await (ctx as RouteContext).params;
     if (!mongoose.isValidObjectId(id)) {
@@ -100,7 +100,7 @@ export const DELETE = withAdmin(async (_request: NextRequest, ctx: unknown) => {
 // through the same Zod schema as POST, then preserves rating + images from
 // the persisted doc (those aren't form-editable) and falls back to existing
 // boolean toggle values when the form doesn't submit them.
-export const PUT = withAdmin(async (request: NextRequest, ctx: unknown) => {
+export const PUT = withAdminNonDemo(async (request: NextRequest, ctx: unknown) => {
   try {
     const { id } = await (ctx as RouteContext).params;
     if (!mongoose.isValidObjectId(id)) {

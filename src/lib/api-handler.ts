@@ -2,6 +2,7 @@ import { timingSafeEqual } from 'crypto';
 import { NextResponse, type NextRequest } from 'next/server';
 import connectDB from '@/config/database';
 import { getSessionUser } from '@/lib/getSessionUser';
+import { isDemoAdmin } from '@/lib/auth/demo-permissions';
 
 type RouteHandler = (req: NextRequest, ctx?: unknown) => Promise<NextResponse>;
 // Handler receives (req, ctx, userId) — ctx is the Next.js route context (params, etc.).
@@ -28,6 +29,36 @@ export function withAdmin(handler: AdminHandler): RouteHandler {
     }
     if (!sessionUser.user?.isAdmin) {
       return NextResponse.json({ message: 'Admin access required' }, { status: 403 });
+    }
+
+    return handler(req, ctx, sessionUser.userId);
+  };
+}
+
+/**
+ * Same as `withAdmin` but additionally refuses demo-admin sessions with a
+ * 403. Use this on every admin *mutation* that touches shop-wide state —
+ * settings, catalog, orders, schedule, etc. — so a recruiter signed in as the
+ * seeded demo admin can browse the dashboards without being able to change
+ * what the next visitor sees. Read-only `GET` admin routes can stay on plain
+ * `withAdmin`.
+ */
+export function withAdminNonDemo(handler: AdminHandler): RouteHandler {
+  return async (req, ctx) => {
+    await connectDB();
+
+    const sessionUser = await getSessionUser();
+    if (!sessionUser?.userId) {
+      return NextResponse.json({ message: 'Authentication required' }, { status: 401 });
+    }
+    if (!sessionUser.user?.isAdmin) {
+      return NextResponse.json({ message: 'Admin access required' }, { status: 403 });
+    }
+    if (isDemoAdmin(sessionUser.user)) {
+      return NextResponse.json(
+        { message: 'This action is disabled for demo accounts.' },
+        { status: 403 },
+      );
     }
 
     return handler(req, ctx, sessionUser.userId);

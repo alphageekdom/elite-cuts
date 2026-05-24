@@ -2,13 +2,13 @@ import { NextResponse, type NextRequest } from 'next/server';
 import mongoose from 'mongoose';
 
 import Shift from '@/models/Shift';
-import { withAdmin } from '@/lib/api-handler';
+import { withAdminNonDemo } from '@/lib/api-handler';
 import { findShiftCollision } from '@/lib/shifts';
 import { shiftPatchSchema, type ShiftPatchInput } from '@/lib/shifts/schema';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
+export const PATCH = withAdminNonDemo(async (request: NextRequest, ctx: unknown) => {
   try {
     const { id } = await (ctx as RouteContext).params;
     if (!mongoose.isValidObjectId(id)) {
@@ -72,7 +72,7 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
   }
 });
 
-export const DELETE = withAdmin(async (_request: NextRequest, ctx: unknown) => {
+export const DELETE = withAdminNonDemo(async (_request: NextRequest, ctx: unknown) => {
   try {
     const { id } = await (ctx as RouteContext).params;
     if (!mongoose.isValidObjectId(id)) {

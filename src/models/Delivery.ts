@@ -1,7 +1,11 @@
 import { Schema, model, models, type Model, type Types } from 'mongoose';
 
-export const DELIVERY_STATUSES = ['confirmed', 'pending', 'scheduled', 'received'] as const;
-export type DeliveryStatus = (typeof DELIVERY_STATUSES)[number];
+import { DELIVERY_STATUSES, type DeliveryStatus } from '@/lib/deliveries/constants';
+
+// Re-exported for back-compat with anything still importing the enum from
+// the model path. New code should import from `@/lib/deliveries/constants`
+// directly to stay out of the client bundle.
+export { DELIVERY_STATUSES, type DeliveryStatus };
 
 export type Delivery = {
   deliveryDate: Date;

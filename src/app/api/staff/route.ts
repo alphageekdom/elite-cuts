@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 import StaffMemberModel from '@/models/StaffMember';
-import { withAdmin } from '@/lib/api-handler';
+import { withAdmin, withAdminNonDemo } from '@/lib/api-handler';
 import { staffCreateSchema } from '@/lib/staff/schema';
 
 // GET /api/staff — admin-only roster lookup. Returns assignable staff
@@ -24,7 +24,7 @@ export const GET = withAdmin(async () => {
 });
 
 // POST /api/staff — create a new staff member.
-export const POST = withAdmin(async (request: NextRequest) => {
+export const POST = withAdminNonDemo(async (request: NextRequest) => {
   const parsed = staffCreateSchema.safeParse(await request.json().catch(() => ({})));
   if (!parsed.success) {
     return NextResponse.json(
