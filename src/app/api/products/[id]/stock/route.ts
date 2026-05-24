@@ -1,17 +1,14 @@
-import { NextResponse, type NextRequest } from 'next/server';
-import mongoose from 'mongoose';
+import { NextResponse } from 'next/server';
 import Product from '@/models/Product';
-import { withAdminNonDemo } from '@/lib/api-handler';
-
-type RouteContext = { params: Promise<{ id: string }> };
+import { parseObjectId, withAdminNonDemo } from '@/lib/api-handler';
 
 // PATCH /api/products/:id/stock — admin-only stock count adjustment
-export const PATCH = withAdminNonDemo(async (request: NextRequest, ctx: unknown) => {
+export const PATCH = withAdminNonDemo<{ id: string }>(async (request, ctx) => {
   try {
-    const { id } = await (ctx as RouteContext).params;
-    if (!mongoose.isValidObjectId(id)) {
-      return NextResponse.json({ message: 'Product not found' }, { status: 404 });
-    }
+    const { id } = await ctx.params;
+    const invalid = parseObjectId(id);
+    if (invalid) return invalid;
+
     const { stockCount } = (await request.json()) as { stockCount?: number };
 
     if (stockCount === undefined || !Number.isInteger(stockCount) || stockCount < 0) {

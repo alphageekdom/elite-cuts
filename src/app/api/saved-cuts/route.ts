@@ -15,9 +15,9 @@ export const GET = withAuth(async (_req, _ctx, userId) => {
       return NextResponse.json({ message: 'User not found' }, { status: 404 });
     }
 
-    const savedCuts = await Product.find({ _id: { $in: user.savedCuts } });
+    const items = await Product.find({ _id: { $in: user.savedCuts } });
 
-    return NextResponse.json(savedCuts);
+    return NextResponse.json({ items });
   } catch (error) {
     console.error('[saved-cuts GET]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });

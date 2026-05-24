@@ -45,9 +45,9 @@ export function useSavedCards({ enabled = true }: { enabled?: boolean } = {}): U
       try {
         const res = await fetch('/api/me/payment-methods');
         if (!res.ok) throw new Error('load failed');
-        const data = (await res.json()) as { cards: SavedCardSummary[] };
+        const data = (await res.json()) as { items: SavedCardSummary[] };
         if (cancelled) return;
-        setCards(data.cards);
+        setCards(data.items);
       } catch (err) {
         console.error('[useSavedCards] load failed', err);
         if (cancelled) return;
@@ -65,8 +65,8 @@ export function useSavedCards({ enabled = true }: { enabled?: boolean } = {}): U
     try {
       const res = await fetch('/api/me/payment-methods');
       if (!res.ok) return;
-      const data = (await res.json()) as { cards: SavedCardSummary[] };
-      setCards(data.cards);
+      const data = (await res.json()) as { items: SavedCardSummary[] };
+      setCards(data.items);
     } catch (err) {
       console.error('[useSavedCards] refresh failed', err);
     }

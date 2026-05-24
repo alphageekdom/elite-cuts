@@ -20,8 +20,8 @@ export const GET = async () => {
   }
 
   try {
-    const cards = await listSavedCards(sessionUser.userId);
-    return NextResponse.json({ cards });
+    const items = await listSavedCards(sessionUser.userId);
+    return NextResponse.json({ items });
   } catch (error) {
     console.error('[me/payment-methods GET]', error);
     return NextResponse.json(
@@ -73,7 +73,10 @@ export const POST = async (request: NextRequest) => {
         { status: 409 },
       );
     }
-    return NextResponse.json({ success: true });
+    // Existing consumer (useSavedCards) refetches via GET after a successful
+    // POST, so the response body just needs to advertise success. The
+    // `recordTypedCardSave` helper doesn't return the inserted row's id today.
+    return NextResponse.json({ data: { saved: true }, message: 'Card saved' });
   } catch (error) {
     console.error('[me/payment-methods POST]', error);
     return NextResponse.json(

@@ -5,6 +5,7 @@ import connectDB from '@/config/database';
 import Order from '@/models/Order';
 import { getStripe, isStubMode } from '@/lib/payments/stripe';
 import { completeSessionForOrder } from '@/lib/payments/completeSession';
+import { roundMoney } from '@/lib/money';
 
 export const dynamic = 'force-dynamic';
 
@@ -171,7 +172,7 @@ const handleChargeRefunded = async (charge: Stripe.Charge): Promise<void> => {
   order.paymentResult.paymentDate = new Date();
   order.paymentResult.amountPaid = Math.max(
     0,
-    Math.round((order.totalCost - amountRefundedDollars) * 100) / 100,
+    roundMoney(order.totalCost - amountRefundedDollars),
   );
   order.paymentResult.refundedExternally = true;
   await order.save();

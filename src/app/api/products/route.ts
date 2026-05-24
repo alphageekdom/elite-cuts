@@ -36,7 +36,7 @@ export const GET = async (request: NextRequest) => {
 
     return NextResponse.json({ items, total });
   } catch (error) {
-    console.error(error);
+    console.error('[products GET]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
 };
@@ -100,7 +100,7 @@ export const POST = withAdminNonDemo(async (request: NextRequest) => {
       { status: 201 },
     );
   } catch (error) {
-    console.error(error);
+    console.error('[products POST]', error);
     return NextResponse.json({ message: 'Failed to add product' }, { status: 500 });
   }
 });

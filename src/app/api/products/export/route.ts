@@ -11,6 +11,7 @@ import {
   type ProductSortMode,
 } from '@/lib/admin-products';
 import { slugify } from '@/lib/slugify';
+import { escapeRegex } from '@/lib/regex-escape';
 import { CSV_COLUMNS } from '@/lib/products/import';
 
 export const dynamic = 'force-dynamic';
@@ -88,8 +89,8 @@ export const GET = withAdmin(async (req) => {
       query.category = category;
     }
     if (search) {
-      const safe = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      query.$or = [{ name: new RegExp(safe, 'i') }, { category: new RegExp(safe, 'i') }];
+      const rx = new RegExp(escapeRegex(search), 'i');
+      query.$or = [{ name: rx }, { category: rx }];
     }
 
     // Map the shared sort union onto Mongo sort. Every member of

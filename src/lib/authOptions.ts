@@ -6,8 +6,12 @@ import AccountDeletionAudit from '@/models/AccountDeletionAudit';
 import bcrypt from 'bcryptjs';
 import { clientIpFromHeaders, rateLimit } from '@/lib/rateLimit';
 import { demoLoginInputSchema } from '@/lib/auth/demo-login-schema';
+import { MAX_PASSWORD_LENGTH } from '@/lib/auth/password';
 
-const MAX_PASSWORD_LENGTH = 128;
+// Sign-in deliberately enforces MAX only — a too-long password would otherwise
+// run a slow bcrypt.compare and become a DoS vector. MIN is enforced at
+// register / password-change so a grandfathered short password from a pre-MIN
+// signup still works here.
 const MAX_FAILED_ATTEMPTS = 3;
 const LOCKOUT_DURATION_MS = 60 * 60 * 1000;
 const DELETION_RECHECK_MS = 60_000;

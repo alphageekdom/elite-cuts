@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import Shift from '@/models/Shift';
-import { withAdmin, withAdminNonDemo } from '@/lib/api-handler';
+import { withAdmin, withAdminNonDemo, zodBadRequest } from '@/lib/api-handler';
 import { getMondayOf } from '@/lib/schedule-utils';
 import { findShiftCollision, normalizeWeekStart } from '@/lib/shifts';
 import { shiftCreateSchema } from '@/lib/shifts/schema';
@@ -23,12 +23,7 @@ export const POST = withAdminNonDemo(async (request) => {
   try {
     const body = await request.json().catch(() => ({}));
     const parsed = shiftCreateSchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json(
-        { message: parsed.error.issues[0]?.message ?? 'Invalid input' },
-        { status: 400 },
-      );
-    }
+    if (!parsed.success) return zodBadRequest(parsed.error);
 
     const { weekStart, dayOfWeek, hourIndex, staffName, role, color } = parsed.data;
     const weekStartDate = normalizeWeekStart(new Date(weekStart));

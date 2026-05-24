@@ -7,6 +7,7 @@ import {
   realizedOrderTotal,
 } from '@/lib/order-line';
 import { DELIVERY_FEE } from '@/lib/pricing';
+import { roundMoney } from '@/lib/money';
 
 // Phase 4 — auto-settle at pickup. When an admin marks an order `Completed`
 // AND it opted in to auto-settle at checkout AND every variable-weight
@@ -88,7 +89,7 @@ function computeSettlementDelta(order: Pick<
     pointsRedemptionValueCents: order.pointsRedemptionValueCents,
     deliveryFee: order.fulfillmentType === 'delivery' ? DELIVERY_FEE : 0,
   });
-  return Math.round((realizedTotal - order.totalCost) * 100) / 100;
+  return roundMoney(realizedTotal - order.totalCost);
 }
 
 // Main entry point. Atomically loads the order, applies the settlement

@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import EventModel from '@/models/Event';
 import Notification from '@/models/Notification';
 import User from '@/models/User';
-import { withAdmin, withAdminNonDemo } from '@/lib/api-handler';
+import { withAdmin, withAdminNonDemo, zodBadRequest } from '@/lib/api-handler';
 import { serializeEvent } from '@/lib/events';
 import { DEFAULT_EVENT_MESSAGE, parseLaDayString } from '@/lib/event-config';
 import { eventCreateSchema } from '@/lib/events/schema';
@@ -22,7 +22,8 @@ export const GET = withAdmin(async (request: NextRequest) => {
       .limit(100)
       .lean();
 
-    return NextResponse.json(docs.map((d) => serializeEvent({ ...d, _id: d._id })));
+    const items = docs.map((d) => serializeEvent({ ...d, _id: d._id }));
+    return NextResponse.json({ items });
   } catch (error) {
     console.error('[events GET]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
@@ -32,12 +33,7 @@ export const GET = withAdmin(async (request: NextRequest) => {
 export const POST = withAdminNonDemo(async (request: NextRequest) => {
   try {
     const parsed = eventCreateSchema.safeParse(await request.json().catch(() => ({})));
-    if (!parsed.success) {
-      return NextResponse.json(
-        { message: parsed.error.issues[0]?.message ?? 'Invalid event input' },
-        { status: 400 },
-      );
-    }
+    if (!parsed.success) return zodBadRequest(parsed.error, 'Invalid event input');
     const { date: dateStr, startHour, endHour, message } = parsed.data;
 
     const day = parseLaDayString(dateStr)!;
@@ -82,7 +78,10 @@ export const POST = withAdminNonDemo(async (request: NextRequest) => {
       await Notification.insertMany(docs);
     })().catch((err) => console.error('[events POST] notification error', err));
 
-    return NextResponse.json(serializeEvent({ ...event.toObject(), _id: event._id }), { status: 201 });
+    return NextResponse.json(
+      { data: serializeEvent({ ...event.toObject(), _id: event._id }), message: 'Grill event scheduled' },
+      { status: 201 },
+    );
   } catch (error) {
     console.error('[events POST]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });

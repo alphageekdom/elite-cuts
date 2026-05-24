@@ -1,5 +1,6 @@
 import type { OrderItem, PaymentStatus } from '@/models/Order';
 import { realizedLineTotal } from '@/lib/order-line';
+import { roundMoney as round2 } from '@/lib/money';
 
 export type RefundSummary = {
   /** Sum of refunded line totals (realized when weighed, else estimate). */
@@ -27,8 +28,6 @@ export type RefundContext = {
    */
   totalCost?: number;
 };
-
-const round2 = (n: number) => Math.round(n * 100) / 100;
 
 export function refundSummary(
   items: Pick<

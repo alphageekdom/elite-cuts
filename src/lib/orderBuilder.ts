@@ -3,6 +3,7 @@ import type { Types } from 'mongoose';
 import Cart from '@/models/Cart';
 import Product from '@/models/Product';
 import { MEMBER_DISCOUNT_RATE, DELIVERY_FEE, TAX_RATE } from '@/lib/pricing';
+import { roundMoney } from '@/lib/money';
 import { unitPrice } from '@/lib/products/pricing';
 import type { PricingType } from '@/lib/products/constants';
 import { MAX_PER_LINE } from '@/lib/shopConfig';
@@ -204,9 +205,7 @@ export function computeMemberDiscount(
   subtotal: number,
   isSignedIn: boolean,
 ): number {
-  return isSignedIn
-    ? Math.round(subtotal * MEMBER_DISCOUNT_RATE * 100) / 100
-    : 0;
+  return isSignedIn ? roundMoney(subtotal * MEMBER_DISCOUNT_RATE) : 0;
 }
 
 // Final totals from already-computed building blocks. The route validates
@@ -232,7 +231,7 @@ export function computeOrderTotals(args: {
     0,
     args.subtotal - args.memberDiscount - promoDiscount - pointsDiscount,
   );
-  const tax = Math.round((afterDiscounts + deliveryFee) * TAX_RATE * 100) / 100;
-  const totalCost = Math.round((afterDiscounts + deliveryFee + tax) * 100) / 100;
+  const tax = roundMoney((afterDiscounts + deliveryFee) * TAX_RATE);
+  const totalCost = roundMoney(afterDiscounts + deliveryFee + tax);
   return { afterDiscounts, deliveryFee, tax, totalCost };
 }

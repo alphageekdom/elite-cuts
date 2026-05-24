@@ -6,9 +6,10 @@ import User from '@/models/User';
 import { EMAIL_RE } from '@/lib/validation';
 import { claimGuestOrdersForUser } from '@/lib/claimGuestOrders';
 import { clientIpFromHeaders, rateLimit } from '@/lib/rateLimit';
-
-const MIN_PASSWORD_LENGTH = 8;
-const MAX_PASSWORD_LENGTH = 128;
+import {
+  PASSWORD_LENGTH_MESSAGE,
+  isPasswordLengthValid,
+} from '@/lib/auth/password';
 
 // Per-IP cap. Register is high-value abuse surface (mass account creation,
 // bcrypt-compare CPU drain, password-spray against the soft-delete restore
@@ -58,14 +59,9 @@ export const POST = async (request: NextRequest) => {
       return NextResponse.json({ message: 'Invalid email address' }, { status: 400 });
     }
 
-    if (
-      password.length < MIN_PASSWORD_LENGTH ||
-      password.length > MAX_PASSWORD_LENGTH
-    ) {
+    if (!isPasswordLengthValid(password)) {
       return NextResponse.json(
-        {
-          message: `Password must be between ${MIN_PASSWORD_LENGTH} and ${MAX_PASSWORD_LENGTH} characters`,
-        },
+        { message: PASSWORD_LENGTH_MESSAGE },
         { status: 400 },
       );
     }
