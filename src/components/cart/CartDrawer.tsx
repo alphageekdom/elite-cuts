@@ -60,13 +60,20 @@ const DrawerLine = ({ line }: { line: CartLine }) => {
       </div>
 
       <div className='min-w-0'>
-        <div className='truncate font-display text-[15px] font-medium tracking-tight'>
+        <div className='line-clamp-2 font-display text-[15px] font-medium leading-snug tracking-tight'>
           {line.product.name}
         </div>
-        <div className='mb-2 text-[11px] tracking-[0.04em] uppercase text-muted'>
-          {line.product.category ?? ''}
-        </div>
-        <div className='flex items-center gap-2.5'>
+        {line.product.category && (
+          <div className='mt-1 text-[11px] tracking-[0.04em] uppercase text-muted'>
+            {line.product.category}
+          </div>
+        )}
+        {line.product.displayWeightLabel && (
+          <div className='mt-1 line-clamp-2 text-[11px] text-ink-soft'>
+            {line.product.displayWeightLabel}
+          </div>
+        )}
+        <div className='mt-2 flex items-center gap-2.5'>
           <div className='inline-flex h-[26px] items-center overflow-hidden rounded-full border border-line bg-paper'>
             <button
               type='button'

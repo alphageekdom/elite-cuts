@@ -142,9 +142,15 @@ const CartItemRow = ({ line }: Props) => {
           {line.product.name}
         </h3>
 
-        <p className='mb-3.5 text-[13px] text-ink-soft'>Hand-cut to order</p>
+        <p className='text-[13px] text-ink-soft'>Hand-cut to order</p>
 
-        <div className='flex flex-wrap items-center gap-3 sm:gap-4'>
+        {line.product.displayWeightLabel && (
+          <p className='mt-1 text-[12px] text-muted'>
+            {line.product.displayWeightLabel}
+          </p>
+        )}
+
+        <div className='mt-3.5 flex flex-wrap items-center gap-3 sm:gap-4'>
           <div className='inline-flex items-center overflow-hidden rounded-full border border-line bg-cream'>
             <button
               type='button'
@@ -224,15 +230,10 @@ const CartItemRow = ({ line }: Props) => {
         </div>
       </div>
 
-      <div className='col-span-2 flex items-baseline gap-3 sm:col-span-1 sm:block sm:min-w-30 sm:text-right'>
+      <div className='col-span-2 flex items-baseline justify-between gap-3 sm:col-span-1 sm:block sm:min-w-30 sm:text-right'>
         <div className='text-[12px] text-muted'>
           {line.product.displayPriceLabel ?? `$${fmtPrice(line.price)}/lb`}
         </div>
-        {line.product.displayWeightLabel && (
-          <div className='text-[11px] text-muted/80 sm:mt-0.5'>
-            {line.product.displayWeightLabel}
-          </div>
-        )}
         <div className='font-display text-xl font-medium tracking-tight sm:mt-1.5 sm:text-2xl'>
           ${lineTotal}
         </div>
