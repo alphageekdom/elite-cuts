@@ -29,6 +29,13 @@ import {
   recordTypedCardSave,
   validateTypedCardDetails,
 } from '@/lib/payments/savedCards';
+import { clientIpFromHeaders, rateLimit } from '@/lib/rateLimit';
+
+// Highest-cost public POST in the API — one call can create a Stripe Customer,
+// a pending Order, and a Stripe Checkout Session. Rate-limit per (userId or
+// IP) so a script can't drain Stripe's API quota or bloat the Order collection
+// with abandoned Pending rows.
+const CHECKOUT_MAX_PER_MIN = 10;
 
 // POST /api/checkout/session — customer-facing checkout entry point.
 // Creates a pending Order (no stock decrement, no points deduction, no
@@ -40,6 +47,20 @@ export const POST = async (request: NextRequest) => {
   const sessionUser = await getSessionUser();
 
   try {
+    const ip = clientIpFromHeaders(request.headers);
+    const rateKey = sessionUser?.userId ?? `ip:${ip}`;
+    const limit = rateLimit({
+      key: `checkout:${rateKey}`,
+      max: CHECKOUT_MAX_PER_MIN,
+      windowMs: 60_000,
+    });
+    if (!limit.ok) {
+      return NextResponse.json(
+        { message: 'Too many checkout attempts, please try again shortly' },
+        { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } },
+      );
+    }
+
     await connectDB();
 
     const body = (await request.json()) as {

@@ -29,6 +29,14 @@ const isLocalCardId = (id: string): boolean => id.startsWith('card_');
 // Returns the user's Stripe Customer id, creating one on Stripe and persisting
 // it on the User document if missing. Stub mode never needs a real customer —
 // returns null so callers can omit `customer` from the Checkout Session.
+//
+// Concurrent first-checkouts (double-click, two tabs, retry) used to both
+// create a Stripe Customer and race the `user.save()` write — the loser would
+// be orphaned on Stripe's side while still attached to the in-flight Checkout
+// Session, so the customer's first saved card silently vanished from their
+// profile. We now claim the slot atomically via `findOneAndUpdate` against a
+// null `stripeCustomerId` after creating the Stripe Customer; if we lose the
+// race, the just-created Customer gets deleted and we re-read the winner's id.
 export const getOrCreateStripeCustomer = async (
   userId: string,
 ): Promise<string | null> => {
@@ -48,9 +56,26 @@ export const getOrCreateStripeCustomer = async (
     metadata: { userId: String(user._id) },
   });
 
-  user.stripeCustomerId = customer.id;
-  await user.save();
-  return customer.id;
+  const claimed = await User.findOneAndUpdate(
+    { _id: userId, $or: [{ stripeCustomerId: { $exists: false } }, { stripeCustomerId: null }, { stripeCustomerId: '' }] },
+    { $set: { stripeCustomerId: customer.id } },
+    { new: true },
+  ).select('stripeCustomerId');
+
+  if (claimed?.stripeCustomerId === customer.id) {
+    return customer.id;
+  }
+
+  // Lost the race — another request already persisted a Stripe Customer for
+  // this user. Delete our orphan so no payment methods can attach to it, then
+  // return the winner's id.
+  try {
+    await stripe.customers.del(customer.id);
+  } catch (err) {
+    console.error('[savedCards] failed to delete orphan Stripe Customer', err);
+  }
+  const winner = await User.findById(userId).select('stripeCustomerId').lean();
+  return winner?.stripeCustomerId ?? null;
 };
 
 const mapLocalRow = (row: {

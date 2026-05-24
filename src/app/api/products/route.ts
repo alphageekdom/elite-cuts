@@ -67,7 +67,7 @@ export const POST = withAdminNonDemo(async (request: NextRequest) => {
     // Reject SVG, oversized files, and unexpected MIME types before any
     // Cloudinary round-trip — Cloudinary trusts what we hand it, so this is
     // the only gate between an admin upload and our trusted image domain.
-    const imagesCheck = validateProductImages(images);
+    const imagesCheck = await validateProductImages(images);
     if (!imagesCheck.ok) {
       return NextResponse.json({ message: imagesCheck.error }, { status: 400 });
     }

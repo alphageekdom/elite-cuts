@@ -82,12 +82,13 @@ export const PUT = async (request: NextRequest, { params }: Ctx) => {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
 
-    // Demo customer: refuse identity-bearing self-edits (email, password,
-    // profile-info). The whole profile-info branch goes since the existing UI
-    // submits name/email/phone together — splitting per-field would give a
-    // confusing partial-success on the demo. Phase B's spec.
+    // Refuse any mutation by a demo actor — covers both the demo customer
+    // editing their own row (name/email/phone/password) and the demo admin
+    // editing another customer's row (which would otherwise persist past the
+    // nightly demo reset, since the User collection's identity fields aren't
+    // restored on non-demo accounts).
     const actorBlocked = refuseDemoActor(sessionUser.user);
-    if (actorBlocked && sessionUser.userId === id) return actorBlocked;
+    if (actorBlocked) return actorBlocked;
 
     await connectDB();
 

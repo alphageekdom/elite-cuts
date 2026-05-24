@@ -52,9 +52,14 @@ export async function GET() {
     console.error('[promos/public GET]', error);
     // Return a 5xx so Next's full-route cache (revalidate = 60) skips this
     // response — a transient DB blip would otherwise memoize an empty chip
-    // strip for the next 60 seconds for every visitor. The client falls
-    // back to an empty list on a non-2xx, same visible outcome as the old
-    // 200-with-empty-items but without poisoning the cache.
-    return NextResponse.json({ items: [] }, { status: 500 });
+    // strip for the next 60 seconds for every visitor. The explicit
+    // `Cache-Control: no-store` also keeps Vercel's CDN edge from caching
+    // the failure ahead of Next's data cache. The client falls back to an
+    // empty list on a non-2xx, same visible outcome as the old
+    // 200-with-empty-items but without poisoning either cache layer.
+    return NextResponse.json(
+      { items: [] },
+      { status: 500, headers: { 'Cache-Control': 'no-store' } },
+    );
   }
 }

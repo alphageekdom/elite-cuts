@@ -8,6 +8,7 @@ import {
   zodBadRequest,
   type RouteContext,
 } from '@/lib/api-handler';
+import { refuseDemoActor } from '@/lib/auth/demo-responses';
 import {
   messageStatusUpdateSchema,
   messageOwnerEditSchema,
@@ -33,6 +34,11 @@ export const PATCH = async (request: NextRequest, ctx: Ctx) => {
     const { id } = await ctx.params;
     const invalid = parseObjectId(id);
     if (invalid) return invalid;
+
+    // The Message collection isn't in the nightly demo-reset scope, so any
+    // mutation by a demo actor would persist into the next visitor's view.
+    const actorBlocked = refuseDemoActor(sessionUser.user);
+    if (actorBlocked) return actorBlocked;
 
     const body = (await request.json()) as { status?: unknown };
     const isAdmin = Boolean(sessionUser.user?.isAdmin);
@@ -92,6 +98,11 @@ export const DELETE = async (_request: NextRequest, ctx: Ctx) => {
     const { id } = await ctx.params;
     const invalid = parseObjectId(id);
     if (invalid) return invalid;
+
+    // Same demo-reset coverage gap as PATCH — a demo actor's delete would
+    // outlive the nightly reset.
+    const actorBlocked = refuseDemoActor(sessionUser.user);
+    if (actorBlocked) return actorBlocked;
 
     const existing = await MessageModel.findById(id);
     if (!existing) return notFound();
