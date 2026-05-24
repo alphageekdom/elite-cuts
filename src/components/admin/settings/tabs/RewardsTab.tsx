@@ -1,4 +1,5 @@
-import { SelectField, inputCls, labelCls, sectionTitleCls, sectionSubCls, numberFromInput } from '@/components/admin/AdminForm';
+import { inputCls, labelCls, sectionTitleCls, sectionSubCls, numberFromInput } from '@/components/admin/AdminForm';
+import { SelectField } from '@/components/ui/SelectField';
 import SettingsTabFooter from '../SettingsTabFooter';
 import { computeRedemptionCap } from '@/lib/rewards';
 import { formatMoney } from '@/lib/format';

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import type { InventoryRow } from '@/lib/inventory';
 import { deliveryCreateSchema } from '@/lib/deliveries/schema';
+import { SelectField } from '@/components/ui/SelectField';
 
 export type ReorderDrawerMode = 'reorder' | 'log-delivery';
 
@@ -168,12 +169,11 @@ export default function InventoryReorderDrawer({ row, mode = 'reorder', rows = [
             <label htmlFor="reorder-cut" className="block text-[12px] font-medium text-ink-soft tracking-widest uppercase mb-1.5">
               Cut
             </label>
-            <select
+            <SelectField
               id="reorder-cut"
               value={productId}
               onChange={(e) => handleProductPick(e.target.value)}
               required
-              className={fieldCls}
             >
               <option value="" disabled>Pick a cut…</option>
               {rows
@@ -184,7 +184,7 @@ export default function InventoryReorderDrawer({ row, mode = 'reorder', rows = [
                     {r.category} · {r.name}
                   </option>
                 ))}
-            </select>
+            </SelectField>
           </div>
         )}
 
@@ -235,17 +235,16 @@ export default function InventoryReorderDrawer({ row, mode = 'reorder', rows = [
           <label htmlFor="reorder-status" className="block text-[12px] font-medium text-ink-soft tracking-widest uppercase mb-1.5">
             Status
           </label>
-          <select
+          <SelectField
             id="reorder-status"
             value={status}
             onChange={(e) => setStatus(e.target.value as DeliveryStatus)}
-            className={fieldCls}
           >
             <option value="scheduled">Scheduled</option>
             <option value="pending">Pending</option>
             <option value="confirmed">Confirmed</option>
             <option value="received">Received</option>
-          </select>
+          </SelectField>
         </div>
 
         {status === 'received' && (

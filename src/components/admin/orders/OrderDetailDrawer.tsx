@@ -13,7 +13,16 @@ import {
 } from '@/lib/order-line';
 import { DELIVERY_FEE } from '@/lib/pricing';
 import AdminEyebrow from '@/components/admin/AdminEyebrow';
+import SortPopover, { type SortOption } from '@/components/ui/SortPopover';
 import type { OrderTableRow } from '@/types/admin';
+
+// Cancellation reasons never vary by order — build once at module scope
+// so each render reuses the same array reference. The status options
+// have to be derived per-order (fulfillment type toggles the middle
+// entry between "Ready for Pickup" and "Out for Delivery") and stay
+// inside the component body.
+const CANCELLATION_REASON_OPTIONS: readonly SortOption<string>[] =
+  CANCELLATION_REASONS.map((r) => ({ value: r, label: r }));
 
 type TimelineStep = {
   label: string;
@@ -70,6 +79,21 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
   const [pendingAction, setPendingAction] = useState<'refund' | 'unrefund' | 'realized' | null>(null);
   const [cancellationReason, setCancellationReason] = useState(order.cancellationReason ?? '');
   const [retryingSettlement, setRetryingSettlement] = useState(false);
+
+  // Status options swap the middle entry between "Ready for Pickup" and
+  // "Out for Delivery" based on this order's fulfillment type — pickup
+  // orders never go "Out for Delivery", delivery orders never go "Ready
+  // for Pickup". Derived per-render off `order.fulfillmentType` so a
+  // future drawer that opens a delivery order sees the right options.
+  const statusOptions: SortOption<string>[] = [
+    { value: 'Order Placed',     label: 'Order Placed' },
+    { value: 'Preparing',        label: 'Preparing' },
+    order.fulfillmentType === 'delivery'
+      ? { value: 'Out for Delivery', label: 'Out for Delivery' }
+      : { value: 'Ready for Pickup', label: 'Ready for Pickup' },
+    { value: 'Completed',        label: 'Completed' },
+    { value: 'Cancelled',        label: 'Cancelled' },
+  ];
   // Per-line draft of the realized-weight input. Indexed by line, holds the
   // raw typed string so empty / non-numeric input doesn't crash the math
   // before the admin tabs out of the field.
@@ -219,19 +243,18 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
           </div>
 
           <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-line-soft">
-            <div className="flex gap-2">
-              <select
+            <div className="flex items-center justify-between gap-2">
+              <SortPopover<string>
                 value={statusUpdate}
-                onChange={(e) => { setStatusUpdate(e.target.value); if (e.target.value !== 'Cancelled') setCancellationReason(''); }}
-                className="flex-1 appearance-none bg-paper border border-line rounded-full px-4 py-2.5 text-[13px] text-ink font-sans outline-none focus:border-ink cursor-pointer"
-              >
-                <option value="Order Placed">Order Placed</option>
-                <option value="Preparing">Preparing</option>
-                {order.fulfillmentType !== 'delivery' && <option value="Ready for Pickup">Ready for Pickup</option>}
-                {order.fulfillmentType === 'delivery' && <option value="Out for Delivery">Out for Delivery</option>}
-                <option value="Completed">Completed</option>
-                <option value="Cancelled">Cancelled</option>
-              </select>
+                options={statusOptions}
+                onChange={(next) => {
+                  setStatusUpdate(next);
+                  if (next !== 'Cancelled') setCancellationReason('');
+                }}
+                prefix="Status:"
+                panelLabel="Status"
+                align="left"
+              />
               <button
                 onClick={handleUpdate}
                 disabled={updating || (statusUpdate === order.status && cancellationReason === (order.cancellationReason ?? ''))}
@@ -241,16 +264,15 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
               </button>
             </div>
             {statusUpdate === 'Cancelled' && (
-              <select
+              <SortPopover<string>
                 value={cancellationReason}
-                onChange={(e) => setCancellationReason(e.target.value)}
-                className="appearance-none bg-paper border border-line rounded-full px-4 py-2.5 text-[13px] text-ink font-sans outline-none focus:border-ink cursor-pointer"
-              >
-                <option value="">Select reason…</option>
-                {CANCELLATION_REASONS.map((r) => (
-                  <option key={r} value={r}>{r}</option>
-                ))}
-              </select>
+                options={CANCELLATION_REASON_OPTIONS}
+                onChange={setCancellationReason}
+                prefix="Reason:"
+                panelLabel="Reason"
+                align="left"
+                placeholderLabel="Select reason…"
+              />
             )}
           </div>
         </div>

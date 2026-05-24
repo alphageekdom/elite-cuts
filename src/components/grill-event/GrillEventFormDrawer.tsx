@@ -18,6 +18,7 @@ import {
 } from '@/lib/event-config';
 import SlideDrawer from '@/components/admin/SlideDrawer';
 import { labelCls } from '@/components/admin/AdminForm';
+import { SelectField } from '@/components/ui/SelectField';
 
 type Props = {
   open: boolean;
@@ -171,27 +172,25 @@ function GrillEventFormBody({ event, defaultDate, onClose }: Props) {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className={labelCls}>Start</label>
-            <select
+            <SelectField
               value={startHour}
               onChange={(e) => setStartHour(Number(e.target.value))}
-              className={fieldCls}
             >
               {hourOptions.map((h) => (
                 <option key={h} value={h}>{formatGrillHour(h)}</option>
               ))}
-            </select>
+            </SelectField>
           </div>
           <div>
             <label className={labelCls}>End</label>
-            <select
+            <SelectField
               value={endHour}
               onChange={(e) => setEndHour(Number(e.target.value))}
-              className={fieldCls}
             >
               {hourOptions.map((h) => (
                 <option key={h} value={h}>{formatGrillHour(h)}</option>
               ))}
-            </select>
+            </SelectField>
           </div>
         </div>
 

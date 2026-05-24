@@ -1,4 +1,5 @@
-import { SelectField, inputCls, labelCls, sectionTitleCls, sectionSubCls, numberFromInput } from '@/components/admin/AdminForm';
+import { inputCls, labelCls, sectionTitleCls, sectionSubCls, numberFromInput } from '@/components/admin/AdminForm';
+import { SelectField } from '@/components/ui/SelectField';
 import DemoResetCard from '../DemoResetCard';
 import SettingsTabFooter from '../SettingsTabFooter';
 import { DORMANCY_OPTIONS, type DormancyThreshold } from '@/lib/shopSettings/constants';

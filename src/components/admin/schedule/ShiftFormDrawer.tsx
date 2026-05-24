@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { type ShiftColor } from '@/lib/shift-constants';
 import SlideDrawer from '@/components/admin/SlideDrawer';
 import { labelCls } from '@/components/admin/AdminForm';
+import { SelectField } from '@/components/ui/SelectField';
 import ColorSwatchPicker from '@/components/admin/ColorSwatchPicker';
 import AdminEyebrow from '@/components/admin/AdminEyebrow';
 import { DAY_LABELS_SHORT, HOUR_LABELS } from '@/lib/schedule-utils';
@@ -294,16 +295,15 @@ function ShiftFormBody({
       <form onSubmit={handleSubmit} className="flex flex-col px-6 py-5 gap-5 overflow-y-auto">
         <div>
           <label className={labelCls}>Staff</label>
-          <select
+          <SelectField
             value={staffMode}
             onChange={(e) => handleStaffChange(e.target.value)}
-            className={FORM_FIELD_CLS}
           >
             {staffUsers.map((u) => (
               <option key={u._id} value={u._id}>{u.name}</option>
             ))}
             <option value={STAFF_OTHER_VALUE}>Other (type a name)</option>
-          </select>
+          </SelectField>
           {staffMode === STAFF_OTHER_VALUE && (
             <input
               type="text"
@@ -323,42 +323,39 @@ function ShiftFormBody({
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className={labelCls}>Day</label>
-            <select
+            <SelectField
               value={dayOfWeek}
               onChange={(e) => setDayOfWeek(Number(e.target.value))}
-              className={FORM_FIELD_CLS}
             >
               {DAY_LABELS_SHORT.map((label, i) => (
                 <option key={label} value={i}>{label}</option>
               ))}
-            </select>
+            </SelectField>
           </div>
           <div>
             <label className={labelCls}>Hour</label>
-            <select
+            <SelectField
               value={hourIndex}
               onChange={(e) => setHourIndex(Number(e.target.value))}
-              className={FORM_FIELD_CLS}
             >
               {HOUR_LABELS.map((label, i) => (
                 <option key={label} value={i}>{label}</option>
               ))}
-            </select>
+            </SelectField>
           </div>
         </div>
 
         <div>
           <label className={labelCls}>Role</label>
-          <select
+          <SelectField
             value={roleMode}
             onChange={(e) => handleRoleChange(e.target.value)}
-            className={FORM_FIELD_CLS}
           >
             {ROLE_QUICK_PICKS.map((k) => (
               <option key={k} value={ROLE_LABEL[k]}>{ROLE_LABEL[k]}</option>
             ))}
             <option value={ROLE_OTHER_VALUE}>Other (type a role)</option>
-          </select>
+          </SelectField>
           {roleMode === ROLE_OTHER_VALUE && (
             <input
               type="text"
