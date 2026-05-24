@@ -99,9 +99,22 @@ const handleSessionCompleted = async (
 
   // paymentMethod stays 'Stripe' (stamped at session creation). The only
   // thing the webhook records is the real PaymentIntent id so admin
-  // refunds can target it.
+  // refunds can target it. `session.payment_intent` is `string | PaymentIntent
+  // | null` — handle the object form too so an expanded payload still saves
+  // the id. Without this, downstream refunds silently skip the Stripe call
+  // because the gate in apply-refund.ts requires paymentIntentId.
   const paymentIntentId =
-    typeof session.payment_intent === 'string' ? session.payment_intent : undefined;
+    typeof session.payment_intent === 'string'
+      ? session.payment_intent
+      : session.payment_intent?.id;
+
+  if (!paymentIntentId) {
+    console.warn('[stripe webhook] session.completed without payment_intent', {
+      sessionId: session.id,
+      orderId,
+      paymentIntentType: typeof session.payment_intent,
+    });
+  }
 
   await completeSessionForOrder({
     orderId,
