@@ -9,6 +9,7 @@ import { useSession } from 'next-auth/react';
 
 import { useCartContext, type CartLine } from '@/context/CartContext';
 import { useIsMounted } from '@/hooks/useIsMounted';
+import { productImageSrc } from '@/lib/format';
 import { computeTotals, fmtPrice } from '@/lib/pricing';
 
 type Props = {
@@ -51,7 +52,7 @@ const DrawerLine = ({ line }: { line: CartLine }) => {
     <article className='grid grid-cols-[64px_1fr_auto] items-center gap-3.5 border-b border-line-soft py-4 last:border-0'>
       <div className='relative h-20 w-16 overflow-hidden rounded-sm bg-cream-deep'>
         <Image
-          src={`/images/products/${line.product.images?.[0] ?? ''}`}
+          src={productImageSrc(line.product.images?.[0]) ?? ''}
           alt=''
           fill
           sizes='64px'

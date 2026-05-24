@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { formatMoney } from '@/lib/format';
+import { formatMoney, productImageSrc } from '@/lib/format';
 import type { ProfileOrder } from '@/app/(main)/profile/page';
 import type { OrderStatus } from '@/models/Order';
 import { hasRealizedWeight, realizedLineTotal, estimatedLineTotal } from '@/lib/order-line';
@@ -93,7 +93,7 @@ export default function ProfileOrderList({ orders, showAll = false }: Props) {
             {first?.image ? (
               <div className="relative w-16 h-16 rounded shrink-0 overflow-hidden">
                 <Image
-                  src={`/images/products/${first.image}`}
+                  src={productImageSrc(first.image) ?? ''}
                   alt={first.name}
                   fill
                   sizes="64px"
