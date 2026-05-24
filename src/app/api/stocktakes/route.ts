@@ -4,33 +4,11 @@ import mongoose, { type ClientSession } from 'mongoose';
 import StocktakeModel, { type StocktakeEntry } from '@/models/Stocktake';
 import ProductModel from '@/models/Product';
 import { withAdmin, withAdminNonDemo } from '@/lib/api-handler';
+import { stocktakeCreateSchema, type StocktakeCreateInput } from '@/lib/stocktakes/schema';
 
 export const dynamic = 'force-dynamic';
 
-type InputEntry = {
-  productId: string;
-  countedStock: number;
-};
-
-function parseEntries(raw: unknown): InputEntry[] | { error: string } {
-  if (!Array.isArray(raw) || raw.length === 0) {
-    return { error: 'At least one entry is required' };
-  }
-  const out: InputEntry[] = [];
-  for (const e of raw) {
-    if (!e || typeof e !== 'object') return { error: 'Invalid entry shape' };
-    const productId = (e as { productId?: unknown }).productId;
-    const countedStock = (e as { countedStock?: unknown }).countedStock;
-    if (typeof productId !== 'string' || !mongoose.isValidObjectId(productId)) {
-      return { error: 'Invalid productId' };
-    }
-    if (typeof countedStock !== 'number' || !Number.isInteger(countedStock) || countedStock < 0) {
-      return { error: 'countedStock must be a non-negative integer' };
-    }
-    out.push({ productId, countedStock });
-  }
-  return out;
-}
+type InputEntry = StocktakeCreateInput['entries'][number];
 
 // Apply the stock deltas and persist the stocktake. Uses a Mongo transaction
 // when the deployment supports it (replica set / Atlas); falls back to
@@ -85,25 +63,27 @@ async function commitStocktake(
 
 export const POST = withAdminNonDemo(async (req, _ctx, userId) => {
   try {
-    const body = await req.json();
-    const parsed = parseEntries(body?.entries);
-    if (!Array.isArray(parsed)) {
-      return NextResponse.json({ message: parsed.error }, { status: 400 });
+    const parsed = stocktakeCreateSchema.safeParse(await req.json().catch(() => ({})));
+    if (!parsed.success) {
+      return NextResponse.json(
+        { message: parsed.error.issues[0]?.message ?? 'Invalid stocktake input' },
+        { status: 400 },
+      );
     }
-    const note = typeof body?.note === 'string' ? body.note.trim().slice(0, 500) : '';
+    const { entries, note } = parsed.data;
 
     // Verify every productId resolves to a real, active catalog row before
     // recording the stocktake — keeps orphan entries and soft-deleted
     // products out of the audit trail, and stays aligned with the inventory
     // page's `isActive: { $ne: false }` filter.
-    const productObjectIds = parsed.map((e) => new mongoose.Types.ObjectId(e.productId));
+    const productObjectIds = entries.map((e) => new mongoose.Types.ObjectId(e.productId));
     const existing = await ProductModel.find(
       { _id: { $in: productObjectIds }, isActive: { $ne: false } },
       '_id',
     ).lean();
     if (existing.length !== productObjectIds.length) {
       const known = new Set(existing.map((p) => p._id.toString()));
-      const missing = parsed.find((e) => !known.has(e.productId))?.productId;
+      const missing = entries.find((e) => !known.has(e.productId))?.productId;
       return NextResponse.json(
         { message: `Unknown or inactive product${missing ? `: ${missing}` : ''}` },
         { status: 400 },
@@ -118,14 +98,14 @@ export const POST = withAdminNonDemo(async (req, _ctx, userId) => {
     try {
       session = await mongoose.startSession();
       result = await session.withTransaction(() =>
-        commitStocktake(userId, parsed, note, session),
+        commitStocktake(userId, entries, note, session),
       );
     } catch (txErr) {
       const message = txErr instanceof Error ? txErr.message : '';
       const isStandalone = /replica set|Transaction numbers|standalone/i.test(message);
       if (!isStandalone) throw txErr;
       // Best-effort sequential commit on standalone Mongo.
-      result = await commitStocktake(userId, parsed, note, null);
+      result = await commitStocktake(userId, entries, note, null);
     } finally {
       if (session) await session.endSession();
     }

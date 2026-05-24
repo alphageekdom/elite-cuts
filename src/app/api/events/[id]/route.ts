@@ -3,15 +3,9 @@ import mongoose from 'mongoose';
 
 import EventModel from '@/models/Event';
 import { withAdminNonDemo } from '@/lib/api-handler';
-import { isIn } from '@/lib/validation';
 import { serializeEvent } from '@/lib/events';
-import {
-  EVENT_MESSAGE_MAX,
-  EVENT_STATUSES,
-  parseLaDayString,
-  validateEventInput,
-  type EventStatus,
-} from '@/lib/event-config';
+import { parseLaDayString } from '@/lib/event-config';
+import { eventPatchSchema, makeEventInputSchema } from '@/lib/events/schema';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -25,49 +19,52 @@ export const PATCH = withAdminNonDemo(async (request: NextRequest, ctx: unknown)
     const existing = await EventModel.findById(id);
     if (!existing) return NextResponse.json({ message: 'Not found' }, { status: 404 });
 
-    const body = (await request.json()) as {
-      date?: string;
-      startHour?: number;
-      endHour?: number;
-      message?: string;
-      status?: string;
-      cancellationReason?: string;
-    };
-
+    const parsedShape = eventPatchSchema.safeParse(await request.json().catch(() => ({})));
+    if (!parsedShape.success) {
+      return NextResponse.json(
+        { message: parsedShape.error.issues[0]?.message ?? 'Invalid event input' },
+        { status: 400 },
+      );
+    }
+    const body = parsedShape.data;
     const update: Record<string, unknown> = {};
 
-    // Schedule edits — only allowed while event hasn't run yet
+    // Schedule edits — merge body against existing, then re-run the full
+    // cross-field check via the create schema with the right past-date
+    // policy. An event past 'scheduled' (live / cancelled / completed) can
+    // be edited even when its date sits in the past.
     if (body.date !== undefined || body.startHour !== undefined || body.endHour !== undefined) {
-      const date = body.date ?? existing.date.toISOString().slice(0, 10);
-      const startHour = body.startHour ?? existing.startHour;
-      const endHour = body.endHour ?? existing.endHour;
-      const errors = validateEventInput({ date, startHour, endHour, message: body.message }, { allowPastForEdit: existing.status !== 'scheduled' });
-      if (errors.length) {
-        return NextResponse.json({ message: errors[0].message, errors }, { status: 400 });
+      const merged = {
+        date: body.date ?? existing.date.toISOString().slice(0, 10),
+        startHour: body.startHour ?? existing.startHour,
+        endHour: body.endHour ?? existing.endHour,
+        message: body.message,
+      };
+      const editSchema = makeEventInputSchema({ allowPast: existing.status !== 'scheduled' });
+      const validated = editSchema.safeParse(merged);
+      if (!validated.success) {
+        return NextResponse.json(
+          { message: validated.error.issues[0]?.message ?? 'Invalid event input' },
+          { status: 400 },
+        );
       }
-      if (body.date !== undefined) update.date = parseLaDayString(date)!;
-      if (body.startHour !== undefined) update.startHour = startHour;
-      if (body.endHour !== undefined) update.endHour = endHour;
+      if (body.date !== undefined) update.date = parseLaDayString(merged.date)!;
+      if (body.startHour !== undefined) update.startHour = merged.startHour;
+      if (body.endHour !== undefined) update.endHour = merged.endHour;
     }
 
     if (body.message !== undefined) {
-      const trimmed = body.message.trim();
-      if (trimmed.length > EVENT_MESSAGE_MAX) {
-        return NextResponse.json({ message: `Message must be ${EVENT_MESSAGE_MAX} characters or fewer.` }, { status: 400 });
-      }
-      update.message = trimmed || existing.message;
+      // Empty after trim falls back to existing rather than blanking the row.
+      update.message = body.message || existing.message;
     }
 
     if (body.status !== undefined) {
-      if (!isIn(EVENT_STATUSES, body.status)) {
-        return NextResponse.json({ message: `status must be one of: ${EVENT_STATUSES.join(', ')}` }, { status: 400 });
-      }
-      update.status = body.status as EventStatus;
+      update.status = body.status;
       if (body.status === 'cancelled' && body.cancellationReason !== undefined) {
-        update.cancellationReason = body.cancellationReason.trim().slice(0, 120);
+        update.cancellationReason = body.cancellationReason;
       }
     } else if (body.cancellationReason !== undefined) {
-      update.cancellationReason = body.cancellationReason.trim().slice(0, 120);
+      update.cancellationReason = body.cancellationReason;
     }
 
     const updated = await EventModel.findByIdAndUpdate(id, update, {

@@ -6,7 +6,7 @@ import { agingCreateSchema } from '@/lib/aging/schema';
 export const GET = withAdmin(async () => {
   try {
     const cuts = await AgingCut.find({}).sort({ startedAt: 1 }).lean();
-    return NextResponse.json(cuts);
+    return NextResponse.json({ items: cuts });
   } catch (error) {
     console.error('[aging GET]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });

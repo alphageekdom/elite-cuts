@@ -41,12 +41,13 @@ export const GET = async (_request: NextRequest, { params }: RouteContext) => {
 
     await connectDB();
 
-    // `adminNote` is admin-private. The customer self-read branch projects it
-    // out so a tampered client can't grep its own raw profile blob to read
-    // back what a staff member wrote about them.
+    // `adminNote` is admin-private. The customer self-read branch also strips
+    // `stripeCustomerId` (parallel to the order self-read's Stripe-id strip)
+    // and the internal dormancy bookkeeping fields, none of which any
+    // customer-facing surface reads back via this endpoint.
     const projection = sessionUser.user?.isAdmin
       ? '-password'
-      : '-password -adminNote';
+      : '-password -adminNote -stripeCustomerId -dormancyWarnedAt -lastActiveAt';
     const user = await User.findById(id).select(projection);
     if (!user) {
       return NextResponse.json({ message: 'User not found' }, { status: 404 });
