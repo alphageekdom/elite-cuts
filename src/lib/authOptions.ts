@@ -48,10 +48,17 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.password || credentials.password.length > MAX_PASSWORD_LENGTH) {
           throw new Error('Invalid credentials');
         }
+        // Defense-in-depth — `strictQuery: true` already makes Mongoose drop
+        // undefined values, but a future `ignoreUndefined: true` flip on the
+        // driver would turn `findOne({ email: undefined })` into `findOne({})`
+        // and hand the attacker the first user in the collection.
+        if (typeof credentials.email !== 'string' || credentials.email.length === 0) {
+          throw new Error('Invalid credentials');
+        }
 
         await connectDB();
 
-        const email = credentials.email?.toLowerCase().trim();
+        const email = credentials.email.toLowerCase().trim();
         const user = await User.findOne({ email }).select(
           '+password +failedLoginAttempts +lockoutUntil'
         );

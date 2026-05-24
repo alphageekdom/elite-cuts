@@ -18,6 +18,14 @@ import {
 } from '@/lib/products/parse-form-input';
 import { productInputSchema } from '@/lib/products/schema';
 import { recomputeProductRating } from '@/lib/reviews/recompute';
+import { clientIpFromHeaders, rateLimit } from '@/lib/rateLimit';
+
+// The unique compound index on (user, product) caps reviews per product, but a
+// signed-in customer can still walk the catalog and review every cut in a
+// loop — each create runs `recomputeProductRating` aggregation. Throttle on
+// userId and IP so a script can plant at most a handful per hour.
+const REVIEW_USER_MAX_PER_HOUR = 5;
+const REVIEW_IP_MAX_PER_HOUR = 10;
 
 type Ctx = RouteContext<{ id: string }>;
 
@@ -161,6 +169,25 @@ export const POST = async (request: NextRequest, { params }: Ctx) => {
     const { id } = await params;
     const invalid = parseObjectId(id);
     if (invalid) return invalid;
+
+    const ip = clientIpFromHeaders(request.headers);
+    const userLimit = rateLimit({
+      key: `review:user:${userId}`,
+      max: REVIEW_USER_MAX_PER_HOUR,
+      windowMs: 60 * 60 * 1000,
+    });
+    const ipLimit = rateLimit({
+      key: `review:ip:${ip}`,
+      max: REVIEW_IP_MAX_PER_HOUR,
+      windowMs: 60 * 60 * 1000,
+    });
+    if (!userLimit.ok || !ipLimit.ok) {
+      const retryAfterSec = Math.max(userLimit.retryAfterSec, ipLimit.retryAfterSec);
+      return NextResponse.json(
+        { message: 'Too many reviews, please try again later' },
+        { status: 429, headers: { 'Retry-After': String(retryAfterSec) } },
+      );
+    }
 
     const { rating, comment } = (await request.json()) as {
       rating?: number | string;

@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import mongoose from 'mongoose';
 import type Stripe from 'stripe';
 
 import connectDB from '@/config/database';
@@ -179,6 +180,14 @@ const handleChargeRefunded = async (charge: Stripe.Charge): Promise<void> => {
 };
 
 const cancelPendingOrder = async (orderId: string): Promise<void> => {
+  // Malformed metadata (a manual Stripe Dashboard test event, an old
+  // half-deleted draft, etc.) would otherwise CastError into the 500 branch
+  // and bake itself into Stripe's 24-hour retry queue. Ignore quietly so the
+  // outer 200 response stays clean.
+  if (!mongoose.isValidObjectId(orderId)) {
+    console.warn('[stripe webhook] ignoring cancel with malformed orderId', { orderId });
+    return;
+  }
   // Only cancel Pending orders. Stripe sometimes sends session.expired after
   // a successful payment has already moved the order to Completed (rare race
   // around long-running sessions) — we must not undo that.

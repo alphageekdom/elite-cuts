@@ -90,7 +90,11 @@ export async function applyRefund({
   }
 
   // Atomic restock — mirror the order-creation bulkWrite pattern in reverse.
-  await Product.bulkWrite(
+  // A hard-deleted product (admin-only path) silently no-ops the matching
+  // `updateOne`, so we log the mismatch instead of pretending every line
+  // restocked. We don't reverse the Stripe refund — the customer is owed
+  // regardless — but the audit log shouldn't claim a clean restock.
+  const stockResult = await Product.bulkWrite(
     Array.from(indicesToRefund).map((idx) => ({
       updateOne: {
         filter: { _id: existing.orderItems[idx].product },
@@ -98,6 +102,13 @@ export async function applyRefund({
       },
     })),
   );
+  if (stockResult.modifiedCount !== indicesToRefund.size) {
+    console.warn(
+      '[orders PATCH] applyRefund restocked %d of %d lines — likely a missing product reference',
+      stockResult.modifiedCount,
+      indicesToRefund.size,
+    );
+  }
 
   const updateFields: Record<string, unknown> = {
     orderItems: projectedItems,
