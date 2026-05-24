@@ -1,30 +1,27 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import mongoose from 'mongoose';
 import Delivery from '@/models/Delivery';
-import { withAdmin } from '@/lib/api-handler';
-import { isIn } from '@/lib/validation';
-import { DELIVERY_STATUSES } from '@/models/Delivery';
+import { withAdminNonDemo } from '@/lib/api-handler';
+import { deliveryPatchSchema } from '@/lib/deliveries/schema';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
+export const PATCH = withAdminNonDemo(async (request: NextRequest, ctx: unknown) => {
   try {
     const { id } = await (ctx as RouteContext).params;
     if (!mongoose.isValidObjectId(id)) {
       return NextResponse.json({ message: 'Not found' }, { status: 404 });
     }
-    const body = (await request.json()) as { status?: string; receivedQty?: unknown };
-    const { status, receivedQty } = body;
-    if (!status || !isIn(DELIVERY_STATUSES, status)) {
-      return NextResponse.json({ message: `status must be one of: ${DELIVERY_STATUSES.join(', ')}` }, { status: 400 });
+    const parsed = deliveryPatchSchema.safeParse(await request.json().catch(() => ({})));
+    if (!parsed.success) {
+      return NextResponse.json(
+        { message: parsed.error.issues[0]?.message ?? 'Invalid delivery input' },
+        { status: 400 },
+      );
     }
+    const { status, receivedQty } = parsed.data;
     const update: Record<string, unknown> = { status };
-    if (
-      status === 'received' &&
-      typeof receivedQty === 'number' &&
-      Number.isFinite(receivedQty) &&
-      receivedQty >= 0
-    ) {
+    if (status === 'received' && typeof receivedQty === 'number') {
       // Match the POST companion's `Math.floor` so a float qty can't sneak in
       // through the receive-existing-delivery path.
       update.receivedQty = Math.floor(receivedQty);

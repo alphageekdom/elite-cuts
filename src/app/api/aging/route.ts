@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import AgingCut from '@/models/AgingCut';
-import { withAdmin } from '@/lib/api-handler';
+import { withAdmin, withAdminNonDemo } from '@/lib/api-handler';
+import { agingCreateSchema } from '@/lib/aging/schema';
 
 export const GET = withAdmin(async () => {
   try {
@@ -12,19 +13,17 @@ export const GET = withAdmin(async () => {
   }
 });
 
-export const POST = withAdmin(async (request) => {
+export const POST = withAdminNonDemo(async (request) => {
   try {
-    const { cut: cutName, targetDays, rack, weightLb, startedAt, isActive } = await request.json();
-
-    if (!cutName || typeof cutName !== 'string' || cutName.trim().length === 0 || cutName.length > 100) {
-      return NextResponse.json({ message: 'cut name is required (max 100 chars)' }, { status: 400 });
+    const parsed = agingCreateSchema.safeParse(await request.json().catch(() => ({})));
+    if (!parsed.success) {
+      return NextResponse.json(
+        { message: parsed.error.issues[0]?.message ?? 'Invalid aging input' },
+        { status: 400 },
+      );
     }
-    if (!startedAt || isNaN(new Date(startedAt).getTime())) {
-      return NextResponse.json({ message: 'startedAt must be a valid date' }, { status: 400 });
-    }
-
-    const cut = await AgingCut.create({ cut: cutName.trim(), targetDays, rack, weightLb, startedAt, isActive });
-    return NextResponse.json(cut, { status: 201 });
+    const cut = await AgingCut.create(parsed.data);
+    return NextResponse.json({ data: cut }, { status: 201 });
   } catch (error) {
     console.error('[aging POST]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });

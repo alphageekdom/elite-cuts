@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import type { InventoryRow } from '@/lib/inventory';
+import { deliveryCreateSchema } from '@/lib/deliveries/schema';
 
 export type ReorderDrawerMode = 'reorder' | 'log-delivery';
 
@@ -59,20 +60,32 @@ export default function InventoryReorderDrawer({ row, mode = 'reorder', rows = [
     e.preventDefault();
     const effectiveProductId = row?.id ?? productId;
     if (!date || !supplier.trim() || !effectiveProductId) return;
+
+    const qty = receivedQty.trim() ? Number.parseInt(receivedQty, 10) : null;
+    const payload = {
+      deliveryDate: date,
+      supplier: supplier.trim(),
+      detail: detail.trim(),
+      status,
+      productId: effectiveProductId,
+      ...(status === 'received' && qty !== null && qty >= 0 ? { receivedQty: qty } : {}),
+    };
+
+    // Pre-submit `safeParse` mirrors the server-side parse in
+    // `/api/deliveries` POST so the admin sees a field-level error
+    // (length, status enum, qty cap) before the round trip.
+    const parsed = deliveryCreateSchema.safeParse(payload);
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? 'Invalid delivery input');
+      return;
+    }
+
     setSaving(true);
     try {
-      const qty = receivedQty.trim() ? Number.parseInt(receivedQty, 10) : null;
       const res = await fetch('/api/deliveries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          deliveryDate: date,
-          supplier: supplier.trim(),
-          detail: detail.trim(),
-          status,
-          productId: effectiveProductId,
-          ...(status === 'received' && qty !== null && qty >= 0 ? { receivedQty: qty } : {}),
-        }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const { message } = await res.json();

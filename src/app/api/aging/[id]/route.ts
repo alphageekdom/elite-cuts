@@ -1,28 +1,38 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import mongoose from 'mongoose';
 import AgingCut from '@/models/AgingCut';
-import { withAdmin } from '@/lib/api-handler';
+import { withAdminNonDemo } from '@/lib/api-handler';
+import { agingPatchSchema } from '@/lib/aging/schema';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
+export const PATCH = withAdminNonDemo(async (request: NextRequest, ctx: unknown) => {
   try {
     const { id } = await (ctx as RouteContext).params;
     if (!mongoose.isValidObjectId(id)) {
       return NextResponse.json({ message: 'Not found' }, { status: 404 });
     }
-    const { cut: cutName, targetDays, rack, weightLb, startedAt, isActive } = await request.json();
-    const patch = { cut: cutName, targetDays, rack, weightLb, startedAt, isActive };
-    const cut = await AgingCut.findByIdAndUpdate(id, { $set: patch }, { returnDocument: 'after', runValidators: true });
+    const parsed = agingPatchSchema.safeParse(await request.json().catch(() => ({})));
+    if (!parsed.success) {
+      return NextResponse.json(
+        { message: parsed.error.issues[0]?.message ?? 'Invalid aging input' },
+        { status: 400 },
+      );
+    }
+    const cut = await AgingCut.findByIdAndUpdate(
+      id,
+      { $set: parsed.data },
+      { returnDocument: 'after', runValidators: true },
+    );
     if (!cut) return NextResponse.json({ message: 'Not found' }, { status: 404 });
-    return NextResponse.json(cut);
+    return NextResponse.json({ data: cut });
   } catch (error) {
     console.error('[aging/:id PATCH]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
   }
 });
 
-export const DELETE = withAdmin(async (_request: NextRequest, ctx: unknown) => {
+export const DELETE = withAdminNonDemo(async (_request: NextRequest, ctx: unknown) => {
   try {
     const { id } = await (ctx as RouteContext).params;
     if (!mongoose.isValidObjectId(id)) {

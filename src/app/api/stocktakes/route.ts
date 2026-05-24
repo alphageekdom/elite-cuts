@@ -3,7 +3,7 @@ import mongoose, { type ClientSession } from 'mongoose';
 
 import StocktakeModel, { type StocktakeEntry } from '@/models/Stocktake';
 import ProductModel from '@/models/Product';
-import { withAdmin } from '@/lib/api-handler';
+import { withAdmin, withAdminNonDemo } from '@/lib/api-handler';
 
 export const dynamic = 'force-dynamic';
 
@@ -83,7 +83,7 @@ async function commitStocktake(
   return { stocktake };
 }
 
-export const POST = withAdmin(async (req, _ctx, userId) => {
+export const POST = withAdminNonDemo(async (req, _ctx, userId) => {
   try {
     const body = await req.json();
     const parsed = parseEntries(body?.entries);

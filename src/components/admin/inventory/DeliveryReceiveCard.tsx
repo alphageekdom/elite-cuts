@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { formatDeliveryDateParts, getStockState, type StockState } from '@/lib/inventory';
+import { deliveryPatchSchema } from '@/lib/deliveries/schema';
 import type { DeliveryRow } from './InventoryUpcomingDeliveries';
 
 const DELIVERY_PILL_STYLE: Record<DeliveryRow['status'], string> = {
@@ -71,18 +72,28 @@ export default function DeliveryReceiveCard({ delivery: d, isFirst }: Props) {
   }
 
   async function handleConfirm() {
+    const receivedQty = d.productId ? parseInt(stockInput, 10) : NaN;
+    const patchPayload = {
+      status: 'received' as const,
+      ...(!isNaN(receivedQty) ? { receivedQty } : {}),
+    };
+
+    // Pre-submit `safeParse` mirrors the server-side parse in
+    // `/api/deliveries/[id]` PATCH so the admin sees a field-level error
+    // (qty cap, status enum) before the round trip.
+    const parsed = deliveryPatchSchema.safeParse(patchPayload);
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? 'Invalid delivery input');
+      return;
+    }
+
     setSaving(true);
     try {
-      const receivedQty = d.productId ? parseInt(stockInput, 10) : NaN;
-
       // Step 1 — mark delivery received (include receivedQty for history tracking)
       const deliveryRes = await fetch(`/api/deliveries/${d._id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          status: 'received',
-          ...(!isNaN(receivedQty) ? { receivedQty } : {}),
-        }),
+        body: JSON.stringify(patchPayload),
       });
       if (!deliveryRes.ok) {
         const { message } = await deliveryRes.json().catch(() => ({}));

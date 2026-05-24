@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
 
 import User from '@/models/User';
-import { withAdmin, parsePagination } from '@/lib/api-handler';
+import { withAdmin, withAdminNonDemo, parsePagination } from '@/lib/api-handler';
 import { EMAIL_RE } from '@/lib/validation';
 
 const ALLOWED_USER_SORT_FIELDS = new Set(['_id', 'name', 'email', 'createdAt', 'role']);
@@ -18,9 +18,29 @@ export const GET = withAdmin(async (request: NextRequest) => {
     const sortOrder: SortOrder = params.get('sortOrder') === 'desc' ? -1 : 1;
     const sort: Record<string, SortOrder> = { [sortField]: sortOrder };
 
+    // Whitelist the fields a list consumer (admin dashboard, future
+    // CLI/mobile clients) actually renders. The old `-password` shape
+    // returned everything else — stripeCustomerId, pointsHistory, full
+    // addresses, failedLoginAttempts, lockoutUntil — on every list row.
+    const LIST_PROJECTION = [
+      'name',
+      'email',
+      'phone',
+      'createdAt',
+      'addresses',
+      'savedCuts',
+      'adminNote',
+      'deletedAt',
+      'deletionScheduledFor',
+      'dormancyWarnedAt',
+      'lastActiveAt',
+      'isDemo',
+      'isAdmin',
+    ].join(' ');
+
     const [total, users] = await Promise.all([
       User.countDocuments({}),
-      User.find({}).sort(sort).skip(skip).limit(pageSize).select('-password'),
+      User.find({}).sort(sort).skip(skip).limit(pageSize).select(LIST_PROJECTION),
     ]);
 
     return NextResponse.json({ total, users });
@@ -35,7 +55,7 @@ export const GET = withAdmin(async (request: NextRequest) => {
 // plaintext to the admin once so they can hand it to the customer. The
 // customer changes it on first sign-in. Self-service registration still lives
 // at /api/auth/register and is untouched.
-export const POST = withAdmin(async (request: NextRequest) => {
+export const POST = withAdminNonDemo(async (request: NextRequest) => {
   try {
     const body = (await request.json()) as {
       name?: string;

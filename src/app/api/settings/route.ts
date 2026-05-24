@@ -3,9 +3,7 @@ import mongoose from 'mongoose';
 
 import ShopSettings, { type ShopSettings as ShopSettingsType } from '@/models/ShopSettings';
 import { SHOP_SETTINGS_KEYS } from '@/lib/shopSettings/defaults';
-import { withAdmin } from '@/lib/api-handler';
-import { getSessionUser } from '@/lib/getSessionUser';
-import { isDemoAdmin } from '@/lib/auth/demo-permissions';
+import { withAdmin, withAdminNonDemo } from '@/lib/api-handler';
 import { shopSettingsInputSchema } from '@/lib/settings/schema';
 
 function pickSettings(doc: Record<string, unknown> | null): Partial<ShopSettingsType> {
@@ -35,19 +33,10 @@ export const GET = withAdmin(async () => {
   }
 });
 
-// PUT /api/settings — replaces writable fields on the singleton doc. Refuses
-// demo admins (the matching `DemoResetCard` already hides for them, but the
-// rest of the settings form needs the server-side guard too so a tampered
-// request doesn't slip through).
-export const PUT = withAdmin(async (request: NextRequest) => {
-  const sessionUser = await getSessionUser();
-  if (isDemoAdmin(sessionUser?.user)) {
-    return NextResponse.json(
-      { message: 'Demo admins cannot modify shop settings.' },
-      { status: 403 },
-    );
-  }
-
+// PUT /api/settings — replaces writable fields on the singleton doc.
+// `withAdminNonDemo` rejects demo-admin sessions with a 403 before the
+// handler runs.
+export const PUT = withAdminNonDemo(async (request: NextRequest) => {
   try {
     const parsed = shopSettingsInputSchema.safeParse(await request.json().catch(() => ({})));
     if (!parsed.success) {

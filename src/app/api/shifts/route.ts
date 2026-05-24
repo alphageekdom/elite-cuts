@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import Shift from '@/models/Shift';
-import { withAdmin } from '@/lib/api-handler';
+import { withAdmin, withAdminNonDemo } from '@/lib/api-handler';
 import { getMondayOf } from '@/lib/schedule-utils';
 import { findShiftCollision, normalizeWeekStart } from '@/lib/shifts';
 import { shiftCreateSchema } from '@/lib/shifts/schema';
@@ -19,7 +19,7 @@ export const GET = withAdmin(async (request) => {
   }
 });
 
-export const POST = withAdmin(async (request) => {
+export const POST = withAdminNonDemo(async (request) => {
   try {
     const body = await request.json().catch(() => ({}));
     const parsed = shiftCreateSchema.safeParse(body);

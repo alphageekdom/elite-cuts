@@ -6,16 +6,22 @@ import { Types } from 'mongoose';
 import connectDB from '@/config/database';
 import Promo from '@/models/Promo';
 import { getSessionUser } from '@/lib/getSessionUser';
+import { isDemoAdmin } from '@/lib/auth/demo-permissions';
 import { promoInputSchema } from '@/lib/promos/schema';
 
 type ActionResult = { success: boolean; error?: string };
 
+// Mutating promo actions refuse demo-admin sessions — same posture as the
+// `withAdminNonDemo` wrapper on the admin API routes.
 async function requireAdmin(): Promise<
   { ok: true; userId: string } | { ok: false; error: string }
 > {
   const session = await getSessionUser();
   if (!session?.userId) return { ok: false, error: 'Authentication required' };
   if (!session.user?.isAdmin) return { ok: false, error: 'Admin access required' };
+  if (isDemoAdmin(session.user)) {
+    return { ok: false, error: 'This action is disabled for demo accounts.' };
+  }
   return { ok: true, userId: session.userId };
 }
 

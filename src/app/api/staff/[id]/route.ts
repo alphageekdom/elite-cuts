@@ -2,12 +2,12 @@ import { NextResponse, type NextRequest } from 'next/server';
 import mongoose from 'mongoose';
 
 import StaffMemberModel from '@/models/StaffMember';
-import { withAdmin } from '@/lib/api-handler';
+import { withAdminNonDemo } from '@/lib/api-handler';
 import { staffPatchSchema, type StaffPatchInput } from '@/lib/staff/schema';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
+export const PATCH = withAdminNonDemo(async (request: NextRequest, ctx: unknown) => {
   const { id } = await (ctx as RouteContext).params;
   if (!mongoose.isValidObjectId(id)) {
     return NextResponse.json({ message: 'Not found' }, { status: 404 });
@@ -54,7 +54,7 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown) => {
   });
 });
 
-export const DELETE = withAdmin(async (_request: NextRequest, ctx: unknown) => {
+export const DELETE = withAdminNonDemo(async (_request: NextRequest, ctx: unknown) => {
   const { id } = await (ctx as RouteContext).params;
   if (!mongoose.isValidObjectId(id)) {
     return NextResponse.json({ message: 'Not found' }, { status: 404 });

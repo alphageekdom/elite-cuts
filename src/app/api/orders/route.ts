@@ -1,16 +1,15 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import mongoose, { type Types } from 'mongoose';
+import { type Types } from 'mongoose';
 
 export const dynamic = 'force-dynamic';
 
 import connectDB from '@/config/database';
-import Order, { PAYMENT_METHODS, type PaymentMethod, type DeliveryAddressData } from '@/models/Order';
+import Order, { PAYMENT_METHODS, type PaymentMethod } from '@/models/Order';
 import Product from '@/models/Product';
 import User from '@/models/User';
 import { getSessionUser } from '@/lib/getSessionUser';
-import { unauthorized, parsePagination, withAdmin } from '@/lib/api-handler';
+import { unauthorized, parsePagination, withAdminNonDemo } from '@/lib/api-handler';
 import { isIn } from '@/lib/validation';
-import { MAX_PER_LINE } from '@/lib/shopConfig';
 import { awardOrderCompletion } from '@/lib/order-completion';
 import { recordCustomerActivity } from '@/lib/accountDeletion';
 import { notifyAdminsOfNewOrder } from '@/lib/order-notifications';
@@ -19,12 +18,10 @@ import {
   computeOrderTotals,
   type OrderProductLean,
 } from '@/lib/orderBuilder';
-
-// Status values an admin is allowed to set when creating an order on behalf of
-// a customer. Order Placed is the default flow; Completed records an
-// offline-paid pickup that's already been handed over the counter.
-const ADMIN_INITIAL_STATUSES = ['Order Placed', 'Completed'] as const;
-type AdminInitialStatus = (typeof ADMIN_INITIAL_STATUSES)[number];
+import {
+  adminCreateOrderSchema,
+  type AdminInitialStatus,
+} from '@/lib/orders/admin-create-schema';
 
 // Atomic per-item decrement with TOCTOU guard. Returns the list of decremented
 // products on success; throws a structured error on insufficient stock so the
@@ -106,49 +103,16 @@ export const GET = async (request: NextRequest) => {
 // Admin passes `userId` and `items[]` to record an order on behalf of a
 // customer (in-store pickup recording). Customer and guest order placement
 // runs through /api/checkout/session → Stripe webhook instead.
-export const POST = withAdmin(async (request: NextRequest, _ctx, adminUserId) => {
+export const POST = withAdminNonDemo(async (request: NextRequest, _ctx, adminUserId) => {
   try {
-    const body = (await request.json()) as {
-      userId?: string;
-      items?: Array<{ productId: string; qty: number }>;
-      orderStatus?: AdminInitialStatus;
-      paymentMethod?: string;
-      pickupLocation?: string;
-      contactPhone?: string;
-      fulfillmentType?: 'pickup' | 'delivery';
-      pickupSlot?: string;
-      deliveryAddress?: DeliveryAddressData;
-      orderNotes?: string;
-    };
-
-    if (!body.userId || !mongoose.isValidObjectId(body.userId)) {
-      return NextResponse.json({ message: 'Valid userId is required' }, { status: 400 });
-    }
-    if (!Array.isArray(body.items) || body.items.length === 0) {
-      return NextResponse.json({ message: 'items must be a non-empty array' }, { status: 400 });
-    }
-    if (!body.pickupLocation?.trim()) {
-      return NextResponse.json({ message: 'Pickup location is required' }, { status: 400 });
-    }
-    if (body.orderStatus && !isIn(ADMIN_INITIAL_STATUSES, body.orderStatus)) {
+    const parsed = adminCreateOrderSchema.safeParse(await request.json().catch(() => ({})));
+    if (!parsed.success) {
       return NextResponse.json(
-        { message: `orderStatus must be one of: ${ADMIN_INITIAL_STATUSES.join(', ')}` },
+        { message: parsed.error.issues[0]?.message ?? 'Invalid order input' },
         { status: 400 },
       );
     }
-
-    // Validate item shapes + per-line cap before any DB work.
-    for (const it of body.items) {
-      if (!mongoose.isValidObjectId(it.productId)) {
-        return NextResponse.json({ message: 'Invalid productId in items' }, { status: 400 });
-      }
-      if (!Number.isInteger(it.qty) || it.qty < 1 || it.qty > MAX_PER_LINE) {
-        return NextResponse.json(
-          { message: `Quantity must be between 1 and ${MAX_PER_LINE}` },
-          { status: 400 },
-        );
-      }
-    }
+    const body = parsed.data;
 
     const [customer, products] = await Promise.all([
       User.findById(body.userId, '_id name email deletedAt').lean<{
@@ -257,7 +221,7 @@ export const POST = withAdmin(async (request: NextRequest, _ctx, adminUserId) =>
           currency: 'USD',
           paymentDate: now,
         },
-        pickupLocation: body.pickupLocation.trim(),
+        pickupLocation: body.pickupLocation,
         pickedUp: isCompletedNow,
         contactName: customer.name,
         contactEmail: customer.email,

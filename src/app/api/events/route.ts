@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import EventModel from '@/models/Event';
 import Notification from '@/models/Notification';
 import User from '@/models/User';
-import { withAdmin } from '@/lib/api-handler';
+import { withAdmin, withAdminNonDemo } from '@/lib/api-handler';
 import { serializeEvent } from '@/lib/events';
 import {
   DEFAULT_EVENT_MESSAGE,
@@ -33,7 +33,7 @@ export const GET = withAdmin(async (request: NextRequest) => {
   }
 });
 
-export const POST = withAdmin(async (request: NextRequest) => {
+export const POST = withAdminNonDemo(async (request: NextRequest) => {
   try {
     const body = (await request.json()) as {
       date?: string;

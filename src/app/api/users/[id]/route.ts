@@ -5,7 +5,7 @@ import mongoose from 'mongoose';
 import connectDB from '@/config/database';
 import User from '@/models/User';
 import { getSessionUser } from '@/lib/getSessionUser';
-import { withAdmin } from '@/lib/api-handler';
+import { withAdminNonDemo } from '@/lib/api-handler';
 import { EMAIL_RE } from '@/lib/validation';
 import { clientIpFromHeaders, rateLimit } from '@/lib/rateLimit';
 import { clearDormancyWarning, hardDeleteUser, restoreUser, softDeleteUser } from '@/lib/accountDeletion';
@@ -41,7 +41,13 @@ export const GET = async (_request: NextRequest, { params }: RouteContext) => {
 
     await connectDB();
 
-    const user = await User.findById(id).select('-password');
+    // `adminNote` is admin-private. The customer self-read branch projects it
+    // out so a tampered client can't grep its own raw profile blob to read
+    // back what a staff member wrote about them.
+    const projection = sessionUser.user?.isAdmin
+      ? '-password'
+      : '-password -adminNote';
+    const user = await User.findById(id).select(projection);
     if (!user) {
       return NextResponse.json({ message: 'User not found' }, { status: 404 });
     }
@@ -211,7 +217,7 @@ export const PUT = async (request: NextRequest, { params }: RouteContext) => {
 //     required (abuse cases, spam) and the request 400s without it.
 //
 // Refuses to delete admin accounts or the requesting admin's own row.
-export const DELETE = withAdmin(async (request: NextRequest, ctx: unknown, performedBy) => {
+export const DELETE = withAdminNonDemo(async (request: NextRequest, ctx: unknown, performedBy) => {
   try {
     const { id } = await (ctx as RouteContext).params;
     if (!mongoose.isValidObjectId(id)) {
@@ -271,7 +277,7 @@ export const DELETE = withAdmin(async (request: NextRequest, ctx: unknown, perfo
 // exposes one additional admin-only verb on this resource — cancel deletion —
 // through PATCH so the customer detail drawer's "Cancel deletion" action has
 // a single endpoint to hit without a deeper nested route.
-export const PATCH = withAdmin(async (request: NextRequest, ctx: unknown, performedBy) => {
+export const PATCH = withAdminNonDemo(async (request: NextRequest, ctx: unknown, performedBy) => {
   try {
     const { id } = await (ctx as RouteContext).params;
     if (!mongoose.isValidObjectId(id)) {

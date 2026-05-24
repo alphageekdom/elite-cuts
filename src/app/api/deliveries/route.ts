@@ -2,7 +2,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 import mongoose, { type ClientSession } from 'mongoose';
 import Delivery from '@/models/Delivery';
 import Product from '@/models/Product';
-import { withAdmin } from '@/lib/api-handler';
+import { withAdmin, withAdminNonDemo } from '@/lib/api-handler';
+import { deliveryCreateSchema } from '@/lib/deliveries/schema';
 
 export const GET = withAdmin(async () => {
   try {
@@ -36,41 +37,44 @@ async function commitDelivery(
   return delivery;
 }
 
-export const POST = withAdmin(async (request: NextRequest) => {
+export const POST = withAdminNonDemo(async (request: NextRequest) => {
   try {
-    const { deliveryDate, supplier, supplierSuffix, detail, status, productId, receivedQty } =
-      (await request.json()) as Record<string, unknown>;
+    const parsed = deliveryCreateSchema.safeParse(await request.json().catch(() => ({})));
+    if (!parsed.success) {
+      return NextResponse.json(
+        { message: parsed.error.issues[0]?.message ?? 'Invalid delivery input' },
+        { status: 400 },
+      );
+    }
+    const data = parsed.data;
 
-    if (productId !== undefined) {
-      if (typeof productId !== 'string' || !mongoose.isValidObjectId(productId)) {
-        return NextResponse.json({ message: 'Product not found' }, { status: 404 });
-      }
-      const exists = await Product.exists({ _id: productId });
+    if (data.productId) {
+      const exists = await Product.exists({ _id: data.productId });
       if (!exists) {
         return NextResponse.json({ message: 'Product not found' }, { status: 404 });
       }
     }
 
+    // Floor to integers — the schema accepts non-negative numbers but the
+    // model field is unit-counted. Matches the PATCH companion.
     const parsedReceivedQty =
-      typeof receivedQty === 'number' && Number.isFinite(receivedQty) && receivedQty >= 0
-        ? Math.floor(receivedQty)
-        : null;
+      typeof data.receivedQty === 'number' ? Math.floor(data.receivedQty) : null;
 
     const payload: Record<string, unknown> = {
-      deliveryDate,
-      supplier,
-      supplierSuffix,
-      detail,
-      status,
-      ...(productId ? { productId } : {}),
+      deliveryDate: data.deliveryDate,
+      supplier: data.supplier,
+      ...(data.supplierSuffix !== undefined ? { supplierSuffix: data.supplierSuffix } : {}),
+      ...(data.detail !== undefined ? { detail: data.detail } : {}),
+      ...(data.status !== undefined ? { status: data.status } : {}),
+      ...(data.productId ? { productId: data.productId } : {}),
       ...(parsedReceivedQty !== null ? { receivedQty: parsedReceivedQty } : {}),
     };
 
     // Only auto-apply to stock when this is a real received delivery linked
     // to a product, with a positive received qty.
     const applyStock =
-      status === 'received' && typeof productId === 'string' && parsedReceivedQty && parsedReceivedQty > 0
-        ? { productId, qty: parsedReceivedQty }
+      data.status === 'received' && data.productId && parsedReceivedQty && parsedReceivedQty > 0
+        ? { productId: data.productId, qty: parsedReceivedQty }
         : null;
 
     let delivery;

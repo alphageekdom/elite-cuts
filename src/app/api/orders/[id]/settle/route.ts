@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import mongoose from 'mongoose';
 
 import connectDB from '@/config/database';
-import { withAdmin } from '@/lib/api-handler';
+import { withAdminNonDemo } from '@/lib/api-handler';
 import { runOrderSettlement } from '@/lib/payments/orderSettlement';
 import { notifyAdminsOfSettlementFailure } from '@/lib/order-notifications';
 
@@ -13,7 +13,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 // completion handler used; idempotent against `settlementStatus: 'settled'`
 // (the helper short-circuits with `already_settled`). Returns the
 // settlement result so the admin drawer can refresh in place.
-export const POST = withAdmin(async (_request: NextRequest, ctx: unknown) => {
+export const POST = withAdminNonDemo(async (_request: NextRequest, ctx: unknown) => {
   try {
     const { id } = await (ctx as RouteContext).params;
     if (!mongoose.isValidObjectId(id)) {

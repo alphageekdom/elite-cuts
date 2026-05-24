@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 
 import ProductModel from '@/models/Product';
-import { withAdmin } from '@/lib/api-handler';
+import { withAdminNonDemo } from '@/lib/api-handler';
 import { parseCsv, csvRowsToRecords } from '@/lib/csv-parse';
 import { productInputSchema, flattenProductIssues, type ProductInput } from '@/lib/products/schema';
 import { coerceProductInput } from '@/lib/products/parse-form-input';
@@ -48,7 +48,7 @@ async function readCsvFromRequest(req: Request): Promise<{ csv?: string; error?:
   return { error: 'Unsupported Content-Type — use multipart/form-data or application/json' };
 }
 
-export const POST = withAdmin(async (req) => {
+export const POST = withAdminNonDemo(async (req) => {
   try {
     const { csv, error } = await readCsvFromRequest(req);
     if (error) return NextResponse.json({ message: error }, { status: 400 });
