@@ -1,6 +1,6 @@
 'use client';
 import { avatarColorForId, relativeTime, getInitials } from '@/lib/format';
-import { AVATAR_COLORS } from '@/lib/admin-constants';
+import { AVATAR_COLORS } from '@/lib/admin/constants';
 import MessageStatusPill from './MessageStatusPill';
 import type { MessageRow } from './MessagesClient';
 

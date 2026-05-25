@@ -5,7 +5,7 @@ import {
   models,
   type Model,
 } from 'mongoose';
-import { PRODUCT_CATEGORIES, type ProductCategory } from '@/lib/admin-constants';
+import { PRODUCT_CATEGORIES, type ProductCategory } from '@/lib/admin/constants';
 import {
   MEAT_QUALITY_TIERS,
   PRICING_TYPES,

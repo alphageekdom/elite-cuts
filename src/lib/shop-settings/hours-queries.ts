@@ -33,10 +33,10 @@ export const getShopHours = cache(async (): Promise<ShopHoursDay[]> => {
 });
 
 // Re-exported so server consumers can pull the helper + formatter from one
-// place. Client consumers must import from `shopHoursFormat` directly,
+// place. Client consumers must import from `hours-format` directly,
 // since this module is `server-only`.
 export {
   DAY_NAMES,
   formatShopHoursRows,
   type ShopHoursRow,
-} from './shopHoursFormat';
+} from './hours-format';

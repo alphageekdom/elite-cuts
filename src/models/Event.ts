@@ -9,7 +9,7 @@ import {
   EVENT_STATUSES,
   type EventKind,
   type EventStatus,
-} from '@/lib/event-config';
+} from '@/lib/events/config';
 
 export type Event = {
   kind: EventKind;

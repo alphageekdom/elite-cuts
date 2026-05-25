@@ -1,4 +1,4 @@
-import type { ProductCategory } from '@/lib/admin-constants';
+import type { ProductCategory } from '@/lib/admin/constants';
 
 // The shape of one row in the admin inventory table. Built server-side in
 // the inventory page and consumed by InventoryClient, useInventoryTable, the

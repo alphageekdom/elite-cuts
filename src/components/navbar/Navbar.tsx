@@ -16,7 +16,7 @@ import CartExpiryBanner from '../cart/CartExpiryBanner';
 import DemoModeChip from '../demo/DemoModeChip';
 import Logo from './Logo';
 import { FOCUS_RING } from '@/lib/styles';
-import type { Announcement } from '@/lib/announcements';
+import type { Announcement } from '@/lib/announcements/data';
 
 const SCROLL_THRESHOLD = 60;
 const LG_BREAKPOINT_PX = 1024;

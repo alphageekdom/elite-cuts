@@ -5,7 +5,7 @@ import {
   formatPhoneHref,
   formatShopCityStateZip,
   getShopSettings,
-} from '@/lib/shopSettings';
+} from '@/lib/shop-settings/queries';
 import { splitWordmark } from '@/lib/wordmark';
 
 const FacebookIcon = () => (

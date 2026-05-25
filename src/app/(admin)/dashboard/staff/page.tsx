@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { getSessionUser } from '@/lib/getSessionUser';
+import { getSessionUser } from '@/lib/auth/session';
 import connectDB from '@/config/database';
 import StaffMemberModel from '@/models/StaffMember';
 import ShiftModel from '@/models/Shift';
-import { getMondayOf } from '@/lib/schedule-utils';
-import { normalizeWeekStart } from '@/lib/shifts';
+import { getMondayOf } from '@/lib/shifts/schedule';
+import { normalizeWeekStart } from '@/lib/shifts/queries';
 import { buildStaffRows } from '@/lib/admin/staff';
 import StaffPageClient from '@/components/admin/staff/StaffPageClient';
 

@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react';
 import GrillEventFormDrawer from './GrillEventFormDrawer';
 import { useAdminDrawer } from '@/hooks/useAdminDrawer';
 import { MONTH_ABBR } from '@/lib/format';
-import { formatGrillHour, type SerializedEvent } from '@/lib/event-config';
+import { formatGrillHour, type SerializedEvent } from '@/lib/events/config';
 
 type Props = {
   upcoming: SerializedEvent[];

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { getMondayOf } from '@/lib/schedule-utils';
+import { getMondayOf } from '@/lib/shifts/schedule';
 import type { ShiftRow } from '@/lib/admin/schedule';
 
 type DrawerState =

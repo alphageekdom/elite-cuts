@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { ShopHoursDay } from '@/models/ShopHours';
 
-import { formatShopHoursRows } from './shopHoursFormat';
+import { formatShopHoursRows } from './hours-format';
 
 // Tiny constructor so the fixtures read like English instead of a wall of
 // braces. dayOfWeek follows the model's 0=Mon … 6=Sun convention.

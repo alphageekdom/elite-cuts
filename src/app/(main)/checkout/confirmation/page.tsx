@@ -5,14 +5,14 @@ import { redirect } from 'next/navigation';
 
 import connectDB from '@/config/database';
 import OrderModel from '@/models/Order';
-import { getSessionUser } from '@/lib/getSessionUser';
+import { getSessionUser } from '@/lib/auth/session';
 import { formatMoney, productImageSrc } from '@/lib/format';
 import { DELIVERY_FEE } from '@/lib/pricing';
-import { getShopSettings, formatShopAddress } from '@/lib/shopSettings';
+import { getShopSettings, formatShopAddress } from '@/lib/shop-settings/queries';
 import {
   orderHasRealizedDifference,
   realizedOrderTotal,
-} from '@/lib/order-line';
+} from '@/lib/orders/line';
 import CheckoutStepRail from '@/components/checkout/CheckoutStepRail';
 import ConfirmationCartReset from '@/components/checkout/ConfirmationCartReset';
 

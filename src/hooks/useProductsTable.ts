@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-import type { ProductCategory } from '@/lib/admin-constants';
+import type { ProductCategory } from '@/lib/admin/constants';
 import type { ProductTableRow } from '@/types/admin';
 import { useAdminDrawer } from './useAdminDrawer';
 

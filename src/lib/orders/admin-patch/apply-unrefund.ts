@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 import type { OrderItem, Order } from '@/models/Order';
 import Product from '@/models/Product';
-import { refundSummary, paymentStatusFor } from '@/lib/order-refunds';
+import { refundSummary, paymentStatusFor } from '@/lib/orders/refunds';
 import { roundMoney } from '@/lib/money';
 import type { BranchResult } from './types';
 

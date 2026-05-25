@@ -2,7 +2,7 @@
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { TAX_RATE } from '@/lib/pricing';
-import { MAX_PER_LINE } from '@/lib/shopConfig';
+import { MAX_PER_LINE } from '@/lib/shop-settings/config';
 import { fmtPrice } from '@/lib/pricing';
 import { getInitials } from '@/lib/format';
 

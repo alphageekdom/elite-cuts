@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
-import { SHIFT_COLORS } from '@/lib/shift-constants';
-import { STAFF_ROLE_KEYS, STAFF_STATUSES } from '@/lib/staff-display';
+import { SHIFT_COLORS } from '@/lib/shifts/constants';
+import { STAFF_ROLE_KEYS, STAFF_STATUSES } from '@/lib/staff/display';
 
 // Single source of truth for staff POST/PATCH input. Consumed by:
 //   - `src/app/api/staff/route.ts` (POST) — create staff

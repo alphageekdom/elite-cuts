@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { getSessionUser } from '@/lib/getSessionUser';
+import { getSessionUser } from '@/lib/auth/session';
 import connectDB from '@/config/database';
 import ShiftModel from '@/models/Shift';
 import ShopHoursModel, { DEFAULT_DAYS } from '@/models/ShopHours';
@@ -8,15 +8,15 @@ import ShopSettingsModel from '@/models/ShopSettings';
 import Order from '@/models/Order';
 import DeliveryModel from '@/models/Delivery';
 import StaffMemberModel from '@/models/StaffMember';
-import type { StaffRoleKey } from '@/lib/staff-display';
+import type { StaffRoleKey } from '@/lib/staff/display';
 import ScheduleClient from '@/components/admin/schedule/ScheduleClient';
 import type { ShiftRow, StaffUserOption } from '@/lib/admin/schedule';
 import GrillEventSection from '@/components/grill-event/GrillEventSection';
 import type { PickupSlotRow } from '@/components/admin/schedule/SchedulePickupSlots';
-import { getMondayOf, SLOT_LABELS } from '@/lib/schedule-utils';
-import { normalizeWeekStart } from '@/lib/shifts';
+import { getMondayOf, SLOT_LABELS } from '@/lib/shifts/schedule';
+import { normalizeWeekStart } from '@/lib/shifts/queries';
 import { bucketPickupSlotCounts } from '@/lib/admin/schedule';
-import { getPastEvents, getUpcomingEvents } from '@/lib/events';
+import { getPastEvents, getUpcomingEvents } from '@/lib/events/queries';
 
 export const dynamic = 'force-dynamic';
 

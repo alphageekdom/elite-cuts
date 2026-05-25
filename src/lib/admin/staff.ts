@@ -1,6 +1,6 @@
 import type { Types } from 'mongoose';
 
-import type { ShiftColor } from '@/lib/shift-constants';
+import type { ShiftColor } from '@/lib/shifts/constants';
 import {
   ROLE_GROUPS,
   formatShiftRange,
@@ -8,7 +8,7 @@ import {
   type StaffRoleKey,
   type StaffRow,
   type StaffStatus,
-} from '@/lib/staff-display';
+} from '@/lib/staff/display';
 import { buildShiftRangeMap } from '@/lib/admin/schedule';
 
 // Pure derivations the staff page uses. Lifted out so the page reads as

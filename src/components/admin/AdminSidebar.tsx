@@ -1,5 +1,5 @@
-import { getSessionUser } from '@/lib/getSessionUser';
-import { fetchNavBadges } from '@/lib/nav-data';
+import { getSessionUser } from '@/lib/auth/session';
+import { fetchNavBadges } from '@/lib/admin/nav-data';
 import AdminSidebarClient from './AdminSidebarClient';
 
 export default async function AdminSidebar() {

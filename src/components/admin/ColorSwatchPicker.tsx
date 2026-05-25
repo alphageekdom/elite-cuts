@@ -1,7 +1,7 @@
 'use client';
 
-import { SHIFT_COLORS, type ShiftColor } from '@/lib/shift-constants';
-import { COLOR_SWATCH } from '@/lib/staff-display';
+import { SHIFT_COLORS, type ShiftColor } from '@/lib/shifts/constants';
+import { COLOR_SWATCH } from '@/lib/staff/display';
 
 type Props = {
   value: ShiftColor;

@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { useCartContext, type CartLine } from '@/context/CartContext';
 import { productImageSrc } from '@/lib/format';
 import { fmtPrice } from '@/lib/pricing';
-import { MAX_PER_LINE } from '@/lib/shopConfig';
+import { MAX_PER_LINE } from '@/lib/shop-settings/config';
 
 import CheckIcon from '@/components/uielements/CheckIcon';
 import XIcon from '@/components/uielements/XIcon';

@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server';
 
 import connectDB from '@/config/database';
 import User from '@/models/User';
-import { getSessionUser } from '@/lib/getSessionUser';
-import { getShopSettings } from '@/lib/shopSettings';
-import { getEffectiveBalance } from '@/lib/rewards';
+import { getSessionUser } from '@/lib/auth/session';
+import { getShopSettings } from '@/lib/shop-settings/queries';
+import { getEffectiveBalance } from '@/lib/rewards/calculator';
 
 // GET /api/me/rewards — returns the signed-in customer's effective rewards
 // balance plus the public-facing redemption settings the checkout block

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 import ProductModel, { type Product } from '@/models/Product';
 import { withAdmin } from '@/lib/api-handler';
-import { toCsv, csvFilename } from '@/lib/csv';
+import { toCsv, csvFilename } from '@/lib/csv/build';
 import { CATEGORY_PAR, DEFAULT_PAR, getStockState } from '@/lib/inventory';
 import { escapeRegex } from '@/lib/regex-escape';
 

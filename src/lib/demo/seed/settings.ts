@@ -1,4 +1,4 @@
-import { DEFAULT_SHOP_SETTINGS } from '@/lib/shopSettings/defaults';
+import { DEFAULT_SHOP_SETTINGS } from '@/lib/shop-settings/defaults';
 import type { ShopSettings } from '@/models/ShopSettings';
 
 // Snapshot for the nightly demo reset. Reads from the single canonical

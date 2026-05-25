@@ -1,7 +1,7 @@
 import Reveal from '@/components/uielements/Reveal';
 import SectionHead from '@/components/ui/SectionHead';
 import type { ShopSettings } from '@/models/ShopSettings';
-import { formatRedemptionRate } from '@/lib/rewards';
+import { formatRedemptionRate } from '@/lib/rewards/calculator';
 
 type Props = { settings: ShopSettings };
 

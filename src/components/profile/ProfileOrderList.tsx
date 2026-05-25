@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { formatMoney, productImageSrc } from '@/lib/format';
 import type { ProfileOrder } from '@/app/(main)/profile/page';
 import type { OrderStatus } from '@/models/Order';
-import { hasRealizedWeight, realizedLineTotal, estimatedLineTotal } from '@/lib/order-line';
+import { hasRealizedWeight, realizedLineTotal, estimatedLineTotal } from '@/lib/orders/line';
 import OrderHelpButton from './OrderHelpButton';
 
 type Props = {

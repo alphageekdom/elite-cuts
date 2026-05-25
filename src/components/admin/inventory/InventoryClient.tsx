@@ -9,7 +9,7 @@ import AdminPagination from '@/components/admin/AdminPagination';
 import SortPopover from '@/components/ui/SortPopover';
 import AdminStatStrip from '@/components/admin/AdminStatStrip';
 import SlideDrawer from '@/components/admin/SlideDrawer';
-import { PRODUCT_CATEGORIES } from '@/lib/admin-constants';
+import { PRODUCT_CATEGORIES } from '@/lib/admin/constants';
 import InventoryAgingRoom, { type AgingCutRow } from './InventoryAgingRoom';
 import InventoryUpcomingDeliveries, { type DeliveryRow, type ReceivedDeliveryRow } from './InventoryUpcomingDeliveries';
 import InventoryReorderDrawer from './InventoryReorderDrawer';

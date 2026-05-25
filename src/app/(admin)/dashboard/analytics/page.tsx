@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { getSessionUser } from '@/lib/getSessionUser';
+import { getSessionUser } from '@/lib/auth/session';
 import connectDB from '@/config/database';
 import OrderModel from '@/models/Order';
 import User from '@/models/User';

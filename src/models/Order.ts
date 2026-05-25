@@ -7,7 +7,7 @@ import {
   type Types,
 } from 'mongoose';
 
-import { ORDER_STATUSES, CANCELLATION_REASONS } from '@/lib/order-constants';
+import { ORDER_STATUSES, CANCELLATION_REASONS } from '@/lib/orders/constants';
 import { PRICING_TYPES, type PricingType } from '@/lib/products/constants';
 export { ORDER_STATUSES, CANCELLATION_REASONS };
 export { PRICING_TYPES };

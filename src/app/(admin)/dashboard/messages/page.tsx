@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { getSessionUser } from '@/lib/getSessionUser';
+import { getSessionUser } from '@/lib/auth/session';
 import connectDB from '@/config/database';
 import MessageModel from '@/models/Message';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';

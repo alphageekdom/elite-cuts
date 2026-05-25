@@ -15,7 +15,7 @@ import {
   nextSaturdayInSummer,
   validateEventInput,
   type SerializedEvent,
-} from '@/lib/event-config';
+} from '@/lib/events/config';
 import SlideDrawer from '@/components/admin/SlideDrawer';
 import { labelCls } from '@/components/admin/AdminForm';
 import { SelectField } from '@/components/ui/SelectField';

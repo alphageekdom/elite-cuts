@@ -2,9 +2,9 @@ import 'server-only';
 
 import { cache } from 'react';
 
-import { getActiveEvent } from '@/lib/events';
-import { getActiveHoliday, formatDaysUntil } from '@/lib/holidays';
-import { formatGrillHour } from '@/lib/event-config';
+import { getActiveEvent } from '@/lib/events/queries';
+import { getActiveHoliday, formatDaysUntil } from '@/lib/announcements/holidays';
+import { formatGrillHour } from '@/lib/events/config';
 
 export type AnnouncementAccent = 'oxblood' | 'amber';
 

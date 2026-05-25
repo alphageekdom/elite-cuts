@@ -6,9 +6,9 @@ import {
   AVATAR_FG,
   STATUS_BADGE,
   STATUS_LABEL,
-} from '@/lib/staff-display';
+} from '@/lib/staff/display';
 import StaffWorkingTodayBadge from './StaffWorkingTodayBadge';
-import type { StaffRow } from '@/lib/staff-display';
+import type { StaffRow } from '@/lib/staff/display';
 
 type Props = {
   rows: StaffRow[];

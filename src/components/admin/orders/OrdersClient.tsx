@@ -19,7 +19,7 @@ import AdminSearchInput from '@/components/admin/AdminSearchInput';
 import AdminPagination from '@/components/admin/AdminPagination';
 import SlideDrawer from '@/components/admin/SlideDrawer';
 import RangeToggle, { type RangeKey } from '@/components/admin/analytics/RangeToggle';
-import { AVATAR_COLORS } from '@/lib/admin-constants';
+import { AVATAR_COLORS } from '@/lib/admin/constants';
 import { downloadCsvFromUrl } from '@/lib/admin/download';
 import type { OrderTableRow, StatusCounts } from '@/types/admin';
 import {
@@ -32,7 +32,7 @@ import {
   type OrderSortMode,
   type PaymentFilter,
   type FulfillmentFilter,
-} from '@/lib/admin-orders';
+} from '@/lib/admin/orders';
 import OrderDetailDrawer from './OrderDetailDrawer';
 
 export type { OrderTableRow, StatusCounts, AdminOrderCustomer, AdminOrderProduct };

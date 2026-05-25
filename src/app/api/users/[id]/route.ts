@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 
 import connectDB from '@/config/database';
 import User from '@/models/User';
-import { getSessionUser } from '@/lib/getSessionUser';
+import { getSessionUser } from '@/lib/auth/session';
 import {
   parseObjectId,
   withAdminNonDemo,
@@ -11,7 +11,7 @@ import {
 } from '@/lib/api-handler';
 import { EMAIL_RE } from '@/lib/validation';
 import { clientIpFromHeaders, rateLimit } from '@/lib/rateLimit';
-import { clearDormancyWarning, hardDeleteUser, restoreUser, softDeleteUser } from '@/lib/accountDeletion';
+import { clearDormancyWarning, hardDeleteUser, restoreUser, softDeleteUser } from '@/lib/auth/account-deletion';
 import { refuseDemoActor, refuseDemoTarget } from '@/lib/auth/demo-responses';
 import {
   PASSWORD_LENGTH_MESSAGE,

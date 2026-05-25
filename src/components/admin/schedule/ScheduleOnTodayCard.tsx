@@ -1,6 +1,6 @@
 import { getInitials } from '@/lib/format';
-import type { ShiftColor } from '@/lib/shift-constants';
-import { AVATAR_BG, AVATAR_FG } from '@/lib/staff-display';
+import type { ShiftColor } from '@/lib/shifts/constants';
+import { AVATAR_BG, AVATAR_FG } from '@/lib/staff/display';
 import ScheduleCardHeader from './ScheduleCardHeader';
 
 type StaffEntry = {

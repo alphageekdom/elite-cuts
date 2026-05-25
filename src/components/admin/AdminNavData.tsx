@@ -1,5 +1,5 @@
-import { getSessionUser } from '@/lib/getSessionUser';
-import type { NavBadges } from '@/lib/nav-data';
+import { getSessionUser } from '@/lib/auth/session';
+import type { NavBadges } from '@/lib/admin/nav-data';
 import AdminTabletRail from './AdminTabletRail';
 import AdminMobileBottomNav from './AdminMobileBottomNav';
 

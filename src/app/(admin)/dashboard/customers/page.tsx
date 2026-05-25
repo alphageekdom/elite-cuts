@@ -1,13 +1,13 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { getSessionUser } from '@/lib/getSessionUser';
+import { getSessionUser } from '@/lib/auth/session';
 import connectDB from '@/config/database';
 import UserModel from '@/models/User';
 import OrderModel from '@/models/Order';
 import type { Types } from 'mongoose';
 
-import { serializeCustomerRow, type OrderStats } from '@/lib/serializers';
-import { countByStat } from '@/lib/customer-status';
+import { serializeCustomerRow, type OrderStats } from '@/lib/admin/serializers';
+import { countByStat } from '@/lib/admin/customer-status';
 import CustomersClient, {
   type CustomerTableRow,
 } from '@/components/admin/customers/CustomersClient';

@@ -3,13 +3,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
-import { type ShiftColor } from '@/lib/shift-constants';
+import { type ShiftColor } from '@/lib/shifts/constants';
 import SlideDrawer from '@/components/admin/SlideDrawer';
 import { labelCls } from '@/components/admin/AdminForm';
 import { SelectField } from '@/components/ui/SelectField';
 import ColorSwatchPicker from '@/components/admin/ColorSwatchPicker';
 import AdminEyebrow from '@/components/admin/AdminEyebrow';
-import { DAY_LABELS_SHORT, HOUR_LABELS } from '@/lib/schedule-utils';
+import { DAY_LABELS_SHORT, HOUR_LABELS } from '@/lib/shifts/schedule';
 import {
   shiftCreateSchema,
   shiftPatchSchema,
@@ -20,7 +20,7 @@ import {
   ROLE_LABEL,
   STAFF_ROLE_KEYS,
   type StaffRoleKey,
-} from '@/lib/staff-display';
+} from '@/lib/staff/display';
 import type { ShiftRow, StaffUserOption } from '@/lib/admin/schedule';
 
 const STAFF_OTHER_VALUE = '__other__';

@@ -4,10 +4,10 @@ import EventModel from '@/models/Event';
 import Notification from '@/models/Notification';
 import User from '@/models/User';
 import { withAdmin, withAdminNonDemo, zodBadRequest } from '@/lib/api-handler';
-import { serializeEvent } from '@/lib/events';
-import { DEFAULT_EVENT_MESSAGE, parseLaDayString } from '@/lib/event-config';
+import { serializeEvent } from '@/lib/events/queries';
+import { DEFAULT_EVENT_MESSAGE, parseLaDayString } from '@/lib/events/config';
 import { eventCreateSchema } from '@/lib/events/schema';
-import { getShopSettings } from '@/lib/shopSettings';
+import { getShopSettings } from '@/lib/shop-settings/queries';
 
 export const GET = withAdmin(async (request: NextRequest) => {
   try {

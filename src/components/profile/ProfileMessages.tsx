@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import NewMessageModal from './NewMessageModal';
-import { AVATAR_COLORS, MEMBER_AVATAR_COLORS } from '@/lib/admin-constants';
+import { AVATAR_COLORS, MEMBER_AVATAR_COLORS } from '@/lib/admin/constants';
 import { avatarColorForId, getInitials } from '@/lib/format';
 import type { MessageStatus } from '@/models/Message';
 

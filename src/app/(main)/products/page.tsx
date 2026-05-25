@@ -12,7 +12,7 @@ import ProductCard from '@/components/product/ProductCard';
 import ResultsBar from '@/components/product/ResultsBar';
 import HolidayBanner from '@/components/holiday/HolidayBanner';
 import GrillEventBanner from '@/components/grill-event/GrillEventBanner';
-import { getActiveEvent } from '@/lib/events';
+import { getActiveEvent } from '@/lib/events/queries';
 import {
   PAGE_SIZE,
   isCategoryFilter,

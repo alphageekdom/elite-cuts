@@ -2,7 +2,7 @@ import 'server-only';
 
 import connectDB from '@/config/database';
 import EventModel, { type Event } from '@/models/Event';
-import { nowInLA, type SerializedEvent } from '@/lib/event-config';
+import { nowInLA, type SerializedEvent } from '@/lib/events/config';
 
 function isSameLaDay(eventDate: Date, now: Date): boolean {
   const la = nowInLA(now);

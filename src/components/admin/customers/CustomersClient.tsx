@@ -18,7 +18,7 @@ import CustomersFilterPanel, {
   activeFilterCount,
   type CustomerFilters,
 } from './CustomersFilterPanel';
-import { matchesStatFilter, type StatFilter } from '@/lib/customer-status';
+import { matchesStatFilter, type StatFilter } from '@/lib/admin/customer-status';
 import { downloadCsvFromUrl } from '@/lib/admin/download';
 import {
   matchesAdvancedFilters,
@@ -26,7 +26,7 @@ import {
   sortCustomers,
   countForStat,
   type CustomerSortMode,
-} from '@/lib/admin-customers';
+} from '@/lib/admin/customers';
 
 export type { CustomerTableRow, CustomerCounts };
 

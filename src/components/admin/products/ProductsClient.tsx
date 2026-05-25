@@ -13,14 +13,14 @@ import AdminPagination from '@/components/admin/AdminPagination';
 import AdminStatStrip from '@/components/admin/AdminStatStrip';
 import SortPopover from '@/components/ui/SortPopover';
 import SlideDrawer from '@/components/admin/SlideDrawer';
-import { PRODUCT_CATEGORIES } from '@/lib/admin-constants';
+import { PRODUCT_CATEGORIES } from '@/lib/admin/constants';
 import {
   PRODUCT_SORT_OPTIONS,
   applyProductsFilter,
   parseProductStatus,
   sortProducts,
   type ProductSortMode,
-} from '@/lib/admin-products';
+} from '@/lib/admin/products';
 import { formatMoney } from '@/lib/format';
 import { downloadCsvFromUrl } from '@/lib/admin/download';
 import type { ProductTableRow, ProductCounts } from '@/types/admin';

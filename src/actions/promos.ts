@@ -5,7 +5,7 @@ import { Types } from 'mongoose';
 
 import connectDB from '@/config/database';
 import Promo from '@/models/Promo';
-import { getSessionUser } from '@/lib/getSessionUser';
+import { getSessionUser } from '@/lib/auth/session';
 import { isDemoAdmin } from '@/lib/auth/demo-permissions';
 import { promoInputSchema } from '@/lib/promos/schema';
 

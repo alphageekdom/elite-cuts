@@ -4,7 +4,7 @@
 // `@/lib/admin-orders` so the in-memory filter helpers and this UI panel
 // share one source of truth. Re-exported here for back-compat with any
 // existing imports (OrdersClient already pulls them from lib).
-import type { PaymentFilter, FulfillmentFilter } from '@/lib/admin-orders';
+import type { PaymentFilter, FulfillmentFilter } from '@/lib/admin/orders';
 export type { PaymentFilter, FulfillmentFilter };
 
 const PAYMENT_OPTIONS: { value: PaymentFilter; label: string }[] = [

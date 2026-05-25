@@ -1,5 +1,5 @@
 import { Schema, model, models, type Model } from 'mongoose';
-import { SHIFT_COLORS, type ShiftColor } from '@/lib/shift-constants';
+import { SHIFT_COLORS, type ShiftColor } from '@/lib/shifts/constants';
 
 // Re-export so existing server-side imports (`from '@/models/Shift'`) keep working.
 export { SHIFT_COLORS, type ShiftColor };

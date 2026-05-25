@@ -2,7 +2,7 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 
-import { PRODUCT_CATEGORIES } from '@/lib/admin-constants';
+import { PRODUCT_CATEGORIES } from '@/lib/admin/constants';
 import {
   MEAT_QUALITY_TIERS,
   PRICING_TYPES,

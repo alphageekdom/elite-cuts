@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { FaBell } from 'react-icons/fa';
 
-import type { Announcement } from '@/lib/announcements';
-import { ANNOUNCEMENT_DOT_BG } from '@/lib/announcement-display';
+import type { Announcement } from '@/lib/announcements/data';
+import { ANNOUNCEMENT_DOT_BG } from '@/lib/announcements/display';
 import { FOCUS_RING, scrollAwareTone } from '@/lib/styles';
 import { useIsMounted } from '@/hooks/useIsMounted';
 import AnnouncementBellPopover from './AnnouncementBellPopover';

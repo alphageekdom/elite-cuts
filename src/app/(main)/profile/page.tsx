@@ -3,18 +3,18 @@ import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 import connectDB from '@/config/database';
-import { getSessionUser } from '@/lib/getSessionUser';
+import { getSessionUser } from '@/lib/auth/session';
 import User, { type PointsHistoryEntry, type TierValue } from '@/models/User';
 import Product from '@/models/Product';
 import Order from '@/models/Order';
 import { convertToSerializableObject } from '@/lib/convertToObject';
-import { getShopSettings } from '@/lib/shopSettings';
+import { getShopSettings } from '@/lib/shop-settings/queries';
 import {
   getEffectiveBalance,
   getTierView,
   type TierView,
   type TierInfo,
-} from '@/lib/rewards';
+} from '@/lib/rewards/calculator';
 import type { SerializedProduct } from '@/models/Product';
 import type { OrderStatus, PaymentMethod } from '@/models/Order';
 import type { PricingType } from '@/lib/products/constants';

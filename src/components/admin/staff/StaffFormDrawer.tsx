@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
-import { type ShiftColor } from '@/lib/shift-constants';
+import { type ShiftColor } from '@/lib/shifts/constants';
 import SlideDrawer from '@/components/admin/SlideDrawer';
 import { labelCls } from '@/components/admin/AdminForm';
 import { SelectField } from '@/components/ui/SelectField';
@@ -20,7 +20,7 @@ import {
   type StaffRoleKey,
   type StaffRow,
   type StaffStatus,
-} from '@/lib/staff-display';
+} from '@/lib/staff/display';
 import { EMAIL_RE, staffCreateSchema, staffPatchSchema } from '@/lib/staff/schema';
 
 const ROLE_OTHER_VALUE = '__other__';

@@ -1,4 +1,4 @@
-import type { ShiftColor } from '@/lib/shift-constants';
+import type { ShiftColor } from '@/lib/shifts/constants';
 
 // Shape used everywhere the staff dashboard renders rows. Lives in the
 // display lib (rather than in StaffPageClient) so the import direction

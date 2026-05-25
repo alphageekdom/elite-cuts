@@ -5,7 +5,7 @@ import RewardsHowItWorks from '@/components/rewards/RewardsHowItWorks';
 import RewardsTiers from '@/components/rewards/RewardsTiers';
 import RewardsFaqSection from '@/components/rewards/RewardsFaqSection';
 import RewardsCtaStrip from '@/components/rewards/RewardsCtaStrip';
-import { getShopSettings } from '@/lib/shopSettings';
+import { getShopSettings } from '@/lib/shop-settings/queries';
 
 export const metadata: Metadata = {
   title: 'Rewards — EliteCuts',

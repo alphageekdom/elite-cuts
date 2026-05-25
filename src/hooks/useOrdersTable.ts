@@ -4,7 +4,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 
 import type { OrderTableRow } from '@/types/admin';
-import { refundSummary } from '@/lib/order-refunds';
+import { refundSummary } from '@/lib/orders/refunds';
 import { useAdminDrawer } from './useAdminDrawer';
 
 // Owns the order list state, the detail drawer + its status-update mirror,

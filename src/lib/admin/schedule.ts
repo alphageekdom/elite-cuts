@@ -1,11 +1,11 @@
 import type { ShopHoursDay } from '@/models/ShopHours';
-import type { ShiftColor } from '@/lib/shift-constants';
+import type { ShiftColor } from '@/lib/shifts/constants';
 import { MONTH_ABBR } from '@/lib/format';
 import {
   DAY_LABELS_SHORT,
   DAY_NAMES_FULL_SUN_INDEXED,
-} from '@/lib/schedule-utils';
-import { formatShiftRange, type StaffRoleKey } from '@/lib/staff-display';
+} from '@/lib/shifts/schedule';
+import { formatShiftRange, type StaffRoleKey } from '@/lib/staff/display';
 
 // Pure derivations the schedule page + client component use to turn raw
 // shifts + shop hours into the shapes the JSX renders. Lifted out so the

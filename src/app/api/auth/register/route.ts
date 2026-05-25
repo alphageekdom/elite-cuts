@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import connectDB from '@/config/database';
 import User from '@/models/User';
 import { EMAIL_RE } from '@/lib/validation';
-import { claimGuestOrdersForUser } from '@/lib/claimGuestOrders';
+import { claimGuestOrdersForUser } from '@/lib/orders/claim-guest';
 import { clientIpFromHeaders, rateLimit } from '@/lib/rateLimit';
 import {
   PASSWORD_LENGTH_MESSAGE,

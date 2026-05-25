@@ -6,20 +6,20 @@ export const dynamic = 'force-dynamic';
 import connectDB from '@/config/database';
 import Order, { type DeliveryAddressData } from '@/models/Order';
 import User from '@/models/User';
-import { getSessionUser } from '@/lib/getSessionUser';
+import { getSessionUser } from '@/lib/auth/session';
 import { EMAIL_RE } from '@/lib/validation';
 import { validatePromo } from '@/lib/promos/validate';
-import { MAX_PER_LINE } from '@/lib/shopConfig';
-import { getShopSettings } from '@/lib/shopSettings';
-import { applyRedemption } from '@/lib/rewards';
+import { MAX_PER_LINE } from '@/lib/shop-settings/config';
+import { getShopSettings } from '@/lib/shop-settings/queries';
+import { applyRedemption } from '@/lib/rewards/calculator';
 import {
   buildOrderItemsFromCart,
   buildOrderItemsFromGuestItems,
   computeSubtotal,
   computeMemberDiscount,
   computeOrderTotals,
-} from '@/lib/orderBuilder';
-import { isVariableWeightLine } from '@/lib/order-line';
+} from '@/lib/orders/builder';
+import { isVariableWeightLine } from '@/lib/orders/line';
 import { getStripe, dollarsToCents, isStubMode } from '@/lib/payments/stripe';
 import { completeSessionForOrder } from '@/lib/payments/completeSession';
 import { isDemoCardTileEnabled } from '@/lib/features';

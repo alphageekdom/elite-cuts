@@ -2,7 +2,7 @@ import 'server-only';
 
 import Notification from '@/models/Notification';
 import User from '@/models/User';
-import { getShopSettings } from '@/lib/shopSettings';
+import { getShopSettings } from '@/lib/shop-settings/queries';
 import { formatMoney } from '@/lib/format';
 
 // Fire-and-forget admin alert when a new order lands. Gated on the

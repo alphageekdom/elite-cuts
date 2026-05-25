@@ -8,7 +8,7 @@ import {
   LegalParagraph,
   LegalSection,
 } from '@/components/legal/LegalSection';
-import { getShopSettings } from '@/lib/shopSettings';
+import { getShopSettings } from '@/lib/shop-settings/queries';
 
 const LAST_UPDATED = '2026-05-20';
 

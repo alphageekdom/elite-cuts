@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore, type ReactNode } from 'react';
 
-import type { HolidaySlug } from '@/lib/holidays';
+import type { HolidaySlug } from '@/lib/announcements/holidays';
 
 type Props = {
   slug: HolidaySlug;

@@ -1,7 +1,7 @@
 import type { ProductTableRow, OrderTableRow, CustomerTableRow } from '@/types/admin';
-import type { ProductCategory } from '@/lib/admin-constants';
+import type { ProductCategory } from '@/lib/admin/constants';
 import type { MeatQualityTier, PricingType } from '@/lib/products/constants';
-import { refundSummary } from '@/lib/order-refunds';
+import { refundSummary } from '@/lib/orders/refunds';
 
 // Minimal shape of a lean Product document returned from ProductModel.find().lean()
 type RawProduct = {

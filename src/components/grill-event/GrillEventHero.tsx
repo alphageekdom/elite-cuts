@@ -4,7 +4,7 @@ import Link from 'next/link';
 import StoreInfoModal from '@/components/ui/StoreInfoModal';
 import Reveal from '@/components/uielements/Reveal';
 import GrillHeroBg from '@/assets/images/grill-hero.jpg';
-import { formatGrillHour, type SerializedEvent } from '@/lib/event-config';
+import { formatGrillHour, type SerializedEvent } from '@/lib/events/config';
 
 type Props = {
   event: SerializedEvent;
