@@ -1,4 +1,4 @@
-import type { ProductCategory } from '@/lib/admin-constants';
+import type { ProductCategory } from '@/lib/admin/constants';
 import type { MeatQualityTier, PricingType } from '@/lib/products/constants';
 
 export type ProductTableRow = {

@@ -2,8 +2,8 @@
 
 import { useEffect, useRef } from 'react';
 
-import type { Announcement } from '@/lib/announcements';
-import { ANNOUNCEMENT_DOT_BG } from '@/lib/announcement-display';
+import type { Announcement } from '@/lib/announcements/data';
+import { ANNOUNCEMENT_DOT_BG } from '@/lib/announcements/display';
 import StoreInfoModal from '@/components/ui/StoreInfoModal';
 
 type AnnouncementBellPopoverProps = {

@@ -17,7 +17,7 @@ import { slugify } from '@/lib/slugify';
 import { stampPricingDerivedFields, unitPrice } from '@/lib/products/pricing';
 import type { ProductInput } from '@/lib/products/schema';
 import type { PricingType, MeatQualityTier } from '@/lib/products/constants';
-import type { ProductCategory } from '@/lib/admin-constants';
+import type { ProductCategory } from '@/lib/admin/constants';
 
 // Authorable fields across every pricingType, in the order the CSV emits
 // them. Both the import REQUIRED_HEADERS and export EXPORT_COLUMNS read

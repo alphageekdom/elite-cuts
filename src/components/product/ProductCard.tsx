@@ -13,7 +13,7 @@ import { useCartContext } from '@/context/CartContext';
 import useHandleAddToCart from '@/hooks/useHandleAddToCart';
 import useHandleBookmark from '@/hooks/useHandleBookmark';
 import { productImageSrc, formatMoney } from '@/lib/format';
-import { MAX_PER_LINE } from '@/lib/shopConfig';
+import { MAX_PER_LINE } from '@/lib/shop-settings/config';
 
 import { type SerializedProduct } from '@/models/Product';
 

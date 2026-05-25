@@ -1,4 +1,4 @@
-import { SHOP_LAT, SHOP_LNG, DELIVERY_RADIUS_MILES, NOMINATIM_USER_AGENT } from '@/lib/shopConfig';
+import { SHOP_LAT, SHOP_LNG, DELIVERY_RADIUS_MILES, NOMINATIM_USER_AGENT } from '@/lib/shop-settings/config';
 
 export type PhotonFeature = {
   properties: {

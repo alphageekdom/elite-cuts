@@ -1,6 +1,6 @@
 'use client';
 import { getInitials, formatMoney, formatDate, relativeTime, avatarColorForId } from '@/lib/format';
-import { AVATAR_COLORS } from '@/lib/admin-constants';
+import { AVATAR_COLORS } from '@/lib/admin/constants';
 import { getTier, deriveTags, TIER_CONFIG } from './customerUtils';
 import type { CustomerTableRow } from '@/types/admin';
 import DemoPill from '@/components/demo/DemoPill';

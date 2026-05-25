@@ -8,7 +8,7 @@ import './globals.css';
 import AuthProvider from '@/components/AuthProvider';
 import { CartProvider } from '@/context/CartContext';
 import { ShopSettingsProvider } from '@/context/ShopSettingsContext';
-import { getShopSettings } from '@/lib/shopSettings';
+import { getShopSettings } from '@/lib/shop-settings/queries';
 
 import { Toaster } from 'sonner';
 

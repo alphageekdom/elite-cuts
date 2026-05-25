@@ -1,9 +1,9 @@
 'use client';
 
 import { Fragment } from 'react';
-import { HOUR_BASE, HOUR_LABELS } from '@/lib/schedule-utils';
-import type { ShiftColor } from '@/lib/shift-constants';
-import { AVATAR_BG, AVATAR_FG, COLOR_SWATCH } from '@/lib/staff-display';
+import { HOUR_BASE, HOUR_LABELS } from '@/lib/shifts/schedule';
+import type { ShiftColor } from '@/lib/shifts/constants';
+import { AVATAR_BG, AVATAR_FG, COLOR_SWATCH } from '@/lib/staff/display';
 import type { DayCell, ShiftRow } from '@/lib/admin/schedule';
 
 type Props = {

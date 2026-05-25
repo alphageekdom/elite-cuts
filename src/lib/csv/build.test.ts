@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { csvFilename, toCsv } from './csv';
+import { csvFilename, toCsv } from './build';
 
 const stripBom = (s: string): string => (s.charCodeAt(0) === 0xfeff ? s.slice(1) : s);
 

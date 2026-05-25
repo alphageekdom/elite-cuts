@@ -1,6 +1,6 @@
 'use client';
 
-import type { StaffFilterKey, StaffRow } from '@/lib/staff-display';
+import type { StaffFilterKey, StaffRow } from '@/lib/staff/display';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import AdminStatStrip, { type StatCell } from '@/components/admin/AdminStatStrip';
 import SlideDrawer from '@/components/admin/SlideDrawer';

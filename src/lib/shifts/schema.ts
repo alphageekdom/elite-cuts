@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { SHIFT_COLORS } from '@/lib/shift-constants';
+import { SHIFT_COLORS } from '@/lib/shifts/constants';
 
 // Single source of truth for shift POST/PATCH input. Consumed by:
 //   - `src/app/api/shifts/route.ts` (POST) — create a shift

@@ -2,7 +2,7 @@
 // the server page (to translate URL params → Mongo query) and the client
 // filter bar (to render the controls).
 
-import { PRODUCT_CATEGORIES } from '@/lib/admin-constants';
+import { PRODUCT_CATEGORIES } from '@/lib/admin/constants';
 
 // Derived from PRODUCT_CATEGORIES so the customer filter list can't drift
 // from the admin/data set — adding a category in admin-constants

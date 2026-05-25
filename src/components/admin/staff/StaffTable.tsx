@@ -8,10 +8,10 @@ import {
   AVATAR_FG,
   STATUS_BADGE,
   STATUS_LABEL,
-} from '@/lib/staff-display';
+} from '@/lib/staff/display';
 import AdminRowActionsMenu, { type RowActionsMenuItem } from '@/components/admin/AdminRowActionsMenu';
 import StaffWorkingTodayBadge from './StaffWorkingTodayBadge';
-import type { StaffRow } from '@/lib/staff-display';
+import type { StaffRow } from '@/lib/staff/display';
 
 // SVG icons reused by every staff row — defined module-scope so React doesn't
 // re-create them on every render.

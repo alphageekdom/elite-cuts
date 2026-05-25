@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 
-import { getSessionUser } from '@/lib/getSessionUser';
+import { getSessionUser } from '@/lib/auth/session';
 import DemoCards from '@/components/demo/DemoCards';
 import EditorialEyebrow from '@/components/ui/EditorialEyebrow';
 

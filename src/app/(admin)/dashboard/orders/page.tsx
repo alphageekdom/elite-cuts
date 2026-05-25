@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { getSessionUser } from '@/lib/getSessionUser';
+import { getSessionUser } from '@/lib/auth/session';
 import connectDB from '@/config/database';
 import OrderModel from '@/models/Order';
 import type { Types } from 'mongoose';
@@ -8,8 +8,8 @@ import type { Types } from 'mongoose';
 import UserModel from '@/models/User';
 import ProductModel from '@/models/Product';
 
-import { getShopSettings } from '@/lib/shopSettings';
-import { serializeOrderRow } from '@/lib/serializers';
+import { getShopSettings } from '@/lib/shop-settings/queries';
+import { serializeOrderRow } from '@/lib/admin/serializers';
 import OrdersClient, {
   type OrderTableRow,
   type StatusCounts,

@@ -5,8 +5,8 @@ import {
   formatShopAddress,
   formatShopCityStateZip,
   getShopSettings,
-} from '@/lib/shopSettings';
-import { formatShopHoursRows, getShopHours } from '@/lib/shopHours';
+} from '@/lib/shop-settings/queries';
+import { formatShopHoursRows, getShopHours } from '@/lib/shop-settings/hours-queries';
 import SectionLabel from '@/components/ui/SectionLabel';
 
 export async function generateMetadata(): Promise<Metadata> {

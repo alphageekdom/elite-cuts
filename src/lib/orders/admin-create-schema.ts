@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { MAX_PER_LINE } from '@/lib/shopConfig';
+import { MAX_PER_LINE } from '@/lib/shop-settings/config';
 
 // Single source of truth for the admin walk-in order POST body. Consumed by:
 //   - `src/app/api/orders/route.ts` (POST) — admin creates an order on a

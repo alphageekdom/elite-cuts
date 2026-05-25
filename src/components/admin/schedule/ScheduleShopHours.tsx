@@ -1,5 +1,5 @@
 import type { ShopHoursDay } from '@/models/ShopHours';
-import { DAY_NAMES } from '@/lib/shopHoursFormat';
+import { DAY_NAMES } from '@/lib/shop-settings/hours-format';
 import { toMondayIndex } from '@/lib/admin/schedule';
 import ScheduleCardHeader from './ScheduleCardHeader';
 

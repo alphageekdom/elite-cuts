@@ -1,7 +1,7 @@
 'use client';
 import { getInitials, formatDateTime } from '@/lib/format';
-import { printReceipt } from '@/lib/print-receipt';
-import { TABLE_ORDER_STATUS_PILL } from '@/lib/order-status';
+import { printReceipt } from '@/lib/orders/print-receipt';
+import { TABLE_ORDER_STATUS_PILL } from '@/lib/orders/status';
 import type { OrderTableRow } from '@/types/admin';
 import type { OrderColumnVisibility } from '@/hooks/useOrderColumns';
 import DemoPill from '@/components/demo/DemoPill';

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { FOCUS_RING } from '@/lib/styles';
-import type { TierInfo } from '@/lib/rewards';
+import type { TierInfo } from '@/lib/rewards/calculator';
 import type { PointsHistoryReason } from '@/models/User';
 
 const UNLOCKED_PERKS: { bold: string; body: string }[] = [

@@ -5,7 +5,7 @@ import connectDB from '@/config/database';
 import Reveal from '@/components/uielements/Reveal';
 import Product, { type SerializedProduct } from '@/models/Product';
 import { convertToSerializableObject } from '@/lib/convertToObject';
-import { PRODUCT_CATEGORIES } from '@/lib/admin-constants';
+import { PRODUCT_CATEGORIES } from '@/lib/admin/constants';
 
 import ProductCard from '@/components/product/ProductCard';
 

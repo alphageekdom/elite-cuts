@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { withAuth } from '@/lib/api-handler';
-import { restoreUser } from '@/lib/accountDeletion';
+import { restoreUser } from '@/lib/auth/account-deletion';
 
 // POST /api/users/me/restore — explicit self-restore. Largely redundant with
 // the sign-in restore path (authorize() auto-clears deletion fields), but

@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 
 import Shift from '@/models/Shift';
 import { withAdmin, withAdminNonDemo, zodBadRequest } from '@/lib/api-handler';
-import { getMondayOf } from '@/lib/schedule-utils';
-import { findShiftCollision, normalizeWeekStart } from '@/lib/shifts';
+import { getMondayOf } from '@/lib/shifts/schedule';
+import { findShiftCollision, normalizeWeekStart } from '@/lib/shifts/queries';
 import { shiftCreateSchema } from '@/lib/shifts/schema';
 
 export const GET = withAdmin(async (request) => {

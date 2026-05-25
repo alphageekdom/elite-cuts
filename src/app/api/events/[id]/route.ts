@@ -6,8 +6,8 @@ import {
   withAdminNonDemo,
   zodBadRequest,
 } from '@/lib/api-handler';
-import { serializeEvent } from '@/lib/events';
-import { parseLaDayString } from '@/lib/event-config';
+import { serializeEvent } from '@/lib/events/queries';
+import { parseLaDayString } from '@/lib/events/config';
 import { eventPatchSchema, makeEventInputSchema } from '@/lib/events/schema';
 
 export const PATCH = withAdminNonDemo<{ id: string }>(async (request, ctx) => {

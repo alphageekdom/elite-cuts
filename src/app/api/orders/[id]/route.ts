@@ -3,16 +3,16 @@ import { type Types } from 'mongoose';
 
 import connectDB from '@/config/database';
 import Order, { ORDER_STATUSES, type OrderItem } from '@/models/Order';
-import { getSessionUser } from '@/lib/getSessionUser';
+import { getSessionUser } from '@/lib/auth/session';
 import {
   parseObjectId,
   withAdminNonDemo,
   type RouteContext,
 } from '@/lib/api-handler';
 import { isIn } from '@/lib/validation';
-import { awardOrderCompletion } from '@/lib/order-completion';
+import { awardOrderCompletion } from '@/lib/orders/completion';
 import { runOrderSettlement } from '@/lib/payments/orderSettlement';
-import { notifyAdminsOfSettlementFailure } from '@/lib/order-notifications';
+import { notifyAdminsOfSettlementFailure } from '@/lib/orders/notifications';
 import {
   applyRealizedWeights,
   applyRefund,

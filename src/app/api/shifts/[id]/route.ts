@@ -7,7 +7,7 @@ import {
   withAdminNonDemo,
   zodBadRequest,
 } from '@/lib/api-handler';
-import { findShiftCollision } from '@/lib/shifts';
+import { findShiftCollision } from '@/lib/shifts/queries';
 import { shiftPatchSchema, type ShiftPatchInput } from '@/lib/shifts/schema';
 
 const SHIFT_PATCH_KEYS = [

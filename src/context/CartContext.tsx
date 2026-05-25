@@ -14,7 +14,7 @@ import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 
 import type { SerializedProduct } from '@/models/Product';
-import { MAX_PER_LINE } from '@/lib/shopConfig';
+import { MAX_PER_LINE } from '@/lib/shop-settings/config';
 import { unitPrice } from '@/lib/products/pricing';
 
 // Minimum product fields a cart line needs to render. `_id` keys the line,

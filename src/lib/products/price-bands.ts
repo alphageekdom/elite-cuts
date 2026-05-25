@@ -1,4 +1,4 @@
-import type { ProductCategory } from '@/lib/admin-constants';
+import type { ProductCategory } from '@/lib/admin/constants';
 import type { PricingType } from '@/lib/products/constants';
 
 // Realistic per-category, per-pricingType price ranges drawn from the

@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/config/database';
 import { parseObjectId, withAdminNonDemo } from '@/lib/api-handler';
 import { runOrderSettlement } from '@/lib/payments/orderSettlement';
-import { notifyAdminsOfSettlementFailure } from '@/lib/order-notifications';
+import { notifyAdminsOfSettlementFailure } from '@/lib/orders/notifications';
 
 // POST /api/orders/:id/settle — admin-triggered retry of the Phase 4
 // auto-settle step. Re-fires the same off-session charge / refund path the

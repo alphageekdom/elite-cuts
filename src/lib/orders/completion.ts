@@ -5,8 +5,8 @@ import User from '@/models/User';
 import Order from '@/models/Order';
 import Product from '@/models/Product';
 import Notification from '@/models/Notification';
-import { getShopSettings } from '@/lib/shopSettings';
-import { computeAward, getQualifyingPoints, getTier, tierRank } from '@/lib/rewards';
+import { getShopSettings } from '@/lib/shop-settings/queries';
+import { computeAward, getQualifyingPoints, getTier, tierRank } from '@/lib/rewards/calculator';
 
 // Side-effects to run whenever an order first transitions into Completed:
 // award reward points to the customer, then fire low_stock alerts to admins

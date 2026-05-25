@@ -4,10 +4,10 @@ import { useEffect, useMemo } from 'react';
 
 import { useCheckoutContext } from '@/context/CheckoutContext';
 import { useShopSettings } from '@/context/ShopSettingsContext';
-import { formatShopAddress } from '@/lib/shopSettingsFormat';
+import { formatShopAddress } from '@/lib/shop-settings/format';
 import { BLOCK_LABEL_CLASS } from '@/components/checkout/checkoutStyles';
 import DeliveryAddressForm from '@/components/checkout/DeliveryAddressForm';
-import { DELIVERY_RADIUS_MILES } from '@/lib/shopConfig';
+import { DELIVERY_RADIUS_MILES } from '@/lib/shop-settings/config';
 
 const SLOT_DEFINITIONS = [
   { id: '10-11a', label: '10–11a', startHour: 10 },

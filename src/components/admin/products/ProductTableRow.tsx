@@ -1,6 +1,6 @@
 'use client';
 import { productImageSrc, formatMoney } from '@/lib/format';
-import { CATEGORY_COLORS } from '@/lib/admin-constants';
+import { CATEGORY_COLORS } from '@/lib/admin/constants';
 import { STOCK_UNIT, UNIT_SUFFIX } from '@/lib/products/price-bands';
 import AdminRowActionsMenu, { type RowActionsMenuItem } from '@/components/admin/AdminRowActionsMenu';
 import type { ProductTableRow } from '@/types/admin';

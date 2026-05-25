@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import MessageModel from '@/models/Message';
 import connectDB from '@/config/database';
-import { getSessionUser } from '@/lib/getSessionUser';
+import { getSessionUser } from '@/lib/auth/session';
 import {
   parseObjectId,
   unauthorized,

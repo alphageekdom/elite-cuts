@@ -2,7 +2,7 @@ import { inputCls, labelCls, sectionTitleCls, sectionSubCls, numberFromInput } f
 import { SelectField } from '@/components/ui/SelectField';
 import DemoResetCard from '../DemoResetCard';
 import SettingsTabFooter from '../SettingsTabFooter';
-import { DORMANCY_OPTIONS, type DormancyThreshold } from '@/lib/shopSettings/constants';
+import { DORMANCY_OPTIONS, type DormancyThreshold } from '@/lib/shop-settings/constants';
 import type { SettingsTabProps } from '../SettingsClient';
 
 const US_STATES = [

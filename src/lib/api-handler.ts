@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import type { ZodError } from 'zod';
 import { NextResponse, type NextRequest } from 'next/server';
 import connectDB from '@/config/database';
-import { getSessionUser } from '@/lib/getSessionUser';
+import { getSessionUser } from '@/lib/auth/session';
 import { isDemoAdmin } from '@/lib/auth/demo-permissions';
 
 // `ctx` is Next.js's per-request route context — `{ params: Promise<...> }` for

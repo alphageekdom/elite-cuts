@@ -1,5 +1,5 @@
 import type { Order } from '@/models/Order';
-import { reverseOrderAward, reverseOrderRedemption } from '@/lib/order-completion';
+import { reverseOrderAward, reverseOrderRedemption } from '@/lib/orders/completion';
 import { releasePromoSeat } from '@/lib/promos/apply';
 
 // Post-save cleanup for points + promo seats when an order leaves a paying

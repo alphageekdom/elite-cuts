@@ -6,7 +6,7 @@ import {
   EVENT_MIN_START_HOUR,
   EVENT_STATUSES,
   validateEventInput,
-} from '@/lib/event-config';
+} from '@/lib/events/config';
 
 // Single source of truth for grill-event POST/PATCH body shape. Consumed by:
 //   - `src/app/api/events/route.ts` (POST) — schedule a new grill event

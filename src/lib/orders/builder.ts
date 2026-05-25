@@ -6,7 +6,7 @@ import { MEMBER_DISCOUNT_RATE, DELIVERY_FEE, TAX_RATE } from '@/lib/pricing';
 import { roundMoney } from '@/lib/money';
 import { unitPrice } from '@/lib/products/pricing';
 import type { PricingType } from '@/lib/products/constants';
-import { MAX_PER_LINE } from '@/lib/shopConfig';
+import { MAX_PER_LINE } from '@/lib/shop-settings/config';
 
 // Shared shape returned by `.lean<>()` from Product when the orders route
 // only needs the customer-facing fields. Matches the Product schema:

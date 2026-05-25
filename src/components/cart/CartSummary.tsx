@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 
 import { useCartContext } from '@/context/CartContext';
 import { computeTotals, fmtPrice } from '@/lib/pricing';
-import { formatDaysUntil } from '@/lib/holidays';
+import { formatDaysUntil } from '@/lib/announcements/holidays';
 import StoreInfoModal from '@/components/ui/StoreInfoModal';
 
 type Props = {

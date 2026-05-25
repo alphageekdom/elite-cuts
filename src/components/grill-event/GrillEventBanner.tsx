@@ -1,5 +1,5 @@
 import StoreInfoModal from '@/components/ui/StoreInfoModal';
-import { formatGrillHour, type SerializedEvent } from '@/lib/event-config';
+import { formatGrillHour, type SerializedEvent } from '@/lib/events/config';
 
 type Props = {
   event: SerializedEvent;

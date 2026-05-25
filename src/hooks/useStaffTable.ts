@@ -5,7 +5,7 @@ import {
   buildStaffCounts,
   matchesStaffFilter,
 } from '@/lib/admin/staff';
-import type { StaffFilterKey, StaffRow } from '@/lib/staff-display';
+import type { StaffFilterKey, StaffRow } from '@/lib/staff/display';
 
 // Discriminated drawer state — closed / create (no row) / edit (with row).
 // Sentinel shape mirrors the previous in-component definition.

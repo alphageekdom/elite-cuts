@@ -8,8 +8,8 @@ import Product from '@/models/Product';
 import User from '@/models/User';
 import Cart from '@/models/Cart';
 import { reservePromoSeat } from '@/lib/promos/apply';
-import { recordCustomerActivity } from '@/lib/accountDeletion';
-import { notifyAdminsOfNewOrder } from '@/lib/order-notifications';
+import { recordCustomerActivity } from '@/lib/auth/account-deletion';
+import { notifyAdminsOfNewOrder } from '@/lib/orders/notifications';
 import { dollarsToCents } from '@/lib/payments/stripe';
 
 export type CompleteSessionInput = {

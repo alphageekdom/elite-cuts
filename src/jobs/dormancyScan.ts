@@ -4,7 +4,7 @@ import connectDB from '@/config/database';
 import User from '@/models/User';
 import AccountDeletionAudit from '@/models/AccountDeletionAudit';
 import ShopSettingsModel from '@/models/ShopSettings';
-import { softDeleteUser } from '@/lib/accountDeletion';
+import { softDeleteUser } from '@/lib/auth/account-deletion';
 
 const DORMANCY_FOLLOWUP_DAYS = 30;
 const DORMANCY_REASON = 'dormancy';

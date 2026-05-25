@@ -1,6 +1,6 @@
 'use client';
 import { productImageSrc } from '@/lib/format';
-import { CATEGORY_COLORS } from '@/lib/admin-constants';
+import { CATEGORY_COLORS } from '@/lib/admin/constants';
 import { CATEGORY_PAR, DEFAULT_PAR, getStockState, type StockState, type InventoryRow } from '@/lib/inventory';
 
 const STOCK_BAR_COLOR: Record<StockState, string> = {

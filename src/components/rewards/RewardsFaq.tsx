@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { FOCUS_RING } from '@/lib/styles';
 import type { ShopSettings } from '@/models/ShopSettings';
-import { formatRedemptionRate } from '@/lib/rewards';
+import { formatRedemptionRate } from '@/lib/rewards/calculator';
 
 type Props = { settings: ShopSettings };
 

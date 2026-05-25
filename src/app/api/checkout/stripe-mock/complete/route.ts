@@ -6,7 +6,7 @@ import Order from '@/models/Order';
 import { isStubMode } from '@/lib/payments/stripe';
 import { completeSessionForOrder } from '@/lib/payments/completeSession';
 import { recordStubSavedCard } from '@/lib/payments/savedCards';
-import { getSessionUser } from '@/lib/getSessionUser';
+import { getSessionUser } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
 

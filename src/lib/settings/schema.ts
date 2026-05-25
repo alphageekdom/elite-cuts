@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { DORMANCY_THRESHOLD_VALUES } from '@/lib/shopSettings/constants';
+import { DORMANCY_THRESHOLD_VALUES } from '@/lib/shop-settings/constants';
 
 // Single source of truth for shop settings PUT input. Consumed by:
 //   - `src/app/api/settings/route.ts` (PUT) — admin save

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { PRODUCT_CATEGORIES } from '@/lib/admin-constants';
+import { PRODUCT_CATEGORIES } from '@/lib/admin/constants';
 import { MEAT_QUALITY_TIERS, PRICING_TYPES } from '@/lib/products/constants';
 
 // Single source of truth for the admin product form + CSV import input

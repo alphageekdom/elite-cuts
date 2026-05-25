@@ -1,5 +1,5 @@
 import type { CustomerTableRow } from '@/types/admin';
-import { getTier, getActivity, type Tier, type ActivityStatus } from '@/lib/customer-tier';
+import { getTier, getActivity, type Tier, type ActivityStatus } from '@/lib/admin/customer-tier';
 
 // Re-export the pure helpers + types so existing client imports keep working
 // without changing every file. New server-side code should import directly

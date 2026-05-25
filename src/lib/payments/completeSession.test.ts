@@ -61,11 +61,11 @@ vi.mock('@/lib/promos/apply', () => ({
   reservePromoSeat: vi.fn(async () => true),
 }));
 
-vi.mock('@/lib/accountDeletion', () => ({
+vi.mock('@/lib/auth/account-deletion', () => ({
   recordCustomerActivity: vi.fn(async () => undefined),
 }));
 
-vi.mock('@/lib/order-notifications', () => ({
+vi.mock('@/lib/orders/notifications', () => ({
   notifyAdminsOfNewOrder: vi.fn(async () => undefined),
 }));
 

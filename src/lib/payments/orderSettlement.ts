@@ -5,7 +5,7 @@ import { dollarsToCents, getStripe, isStubMode } from '@/lib/payments/stripe';
 import {
   allVariableWeightLinesWeighed,
   realizedOrderTotal,
-} from '@/lib/order-line';
+} from '@/lib/orders/line';
 import { DELIVERY_FEE } from '@/lib/pricing';
 import { roundMoney } from '@/lib/money';
 

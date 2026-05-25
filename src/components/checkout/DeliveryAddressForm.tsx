@@ -18,7 +18,7 @@ import {
   formatPhotonSuggestion,
   type PhotonFeature,
 } from '@/lib/geocoding';
-import { DELIVERY_RADIUS_MILES } from '@/lib/shopConfig';
+import { DELIVERY_RADIUS_MILES } from '@/lib/shop-settings/config';
 
 type DeliveryCheck = 'idle' | 'checking' | 'valid' | 'invalid' | 'error';
 

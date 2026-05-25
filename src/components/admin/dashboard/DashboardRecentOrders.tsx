@@ -2,11 +2,11 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getInitials, formatMoney, avatarColorForId } from '@/lib/format';
-import { AVATAR_COLORS } from '@/lib/admin-constants';
+import { AVATAR_COLORS } from '@/lib/admin/constants';
 import {
   DASHBOARD_ORDER_STATUS_STYLES,
   getDashboardOrderStatusLabel,
-} from '@/lib/order-status';
+} from '@/lib/orders/status';
 import type { OrderRow } from '@/types/admin';
 export type { OrderRow };
 

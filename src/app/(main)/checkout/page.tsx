@@ -18,7 +18,7 @@ import {
   type CheckoutInitialContact,
   type SavedAddress,
 } from '@/context/CheckoutContext';
-import { getSessionUser } from '@/lib/getSessionUser';
+import { getSessionUser } from '@/lib/auth/session';
 import { isDemoCardTileEnabled } from '@/lib/features';
 
 export const dynamic = 'force-dynamic';

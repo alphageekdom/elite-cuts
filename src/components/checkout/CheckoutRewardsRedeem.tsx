@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
 
 import { useCheckoutContext } from '@/context/CheckoutContext';
-import { applyRedemption, computeRedemptionCap } from '@/lib/rewards';
+import { applyRedemption, computeRedemptionCap } from '@/lib/rewards/calculator';
 
 type RewardsInfo = {
   balance: number;

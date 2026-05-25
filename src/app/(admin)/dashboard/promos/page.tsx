@@ -5,7 +5,7 @@ import { Types } from 'mongoose';
 import connectDB from '@/config/database';
 import OrderModel from '@/models/Order';
 import PromoModel from '@/models/Promo';
-import { getSessionUser } from '@/lib/getSessionUser';
+import { getSessionUser } from '@/lib/auth/session';
 import PromosClient from '@/components/admin/promos/PromosClient';
 import type { PromoFormRow } from '@/components/admin/promos/PromoFormDrawer';
 

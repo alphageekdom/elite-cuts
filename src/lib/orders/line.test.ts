@@ -10,9 +10,9 @@ import {
   realizedLineTotal,
   realizedOrderTotal,
   realizedSubtotal,
-} from './order-line';
-import { buildLine, type OrderProductLean } from './orderBuilder';
-import { refundSummary } from './order-refunds';
+} from './line';
+import { buildLine, type OrderProductLean } from './builder';
+import { refundSummary } from './refunds';
 
 // Sample lines per pricingType. Each is the shape after `buildLine` ran
 // at checkout, with `realizedWeightLb` left undefined until an admin

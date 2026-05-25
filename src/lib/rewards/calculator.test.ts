@@ -11,7 +11,7 @@ import {
   getTier,
   getTierView,
   tierRank,
-} from './rewards';
+} from './calculator';
 
 // Real ShopSettings has many more fields, but every rewards function takes
 // a Pick<ShopSettings, …> slice — so a structural test object that lists

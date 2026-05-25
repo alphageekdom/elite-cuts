@@ -9,7 +9,7 @@ import Reviews from '@/components/home/Reviews';
 import HolidaySection from '@/components/holiday/HolidaySection';
 import GrillEventHero from '@/components/grill-event/GrillEventHero';
 import AccountDeletedBanner from '@/components/profile/AccountDeletedBanner';
-import { getActiveEvent } from '@/lib/events';
+import { getActiveEvent } from '@/lib/events/queries';
 
 const HomePage = async () => {
   const activeEvent = await getActiveEvent();

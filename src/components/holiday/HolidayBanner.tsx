@@ -1,6 +1,6 @@
 import StoreInfoModal from '@/components/ui/StoreInfoModal';
-import { formatDaysUntil, getActiveHoliday } from '@/lib/holidays';
-import type { SerializedEvent } from '@/lib/event-config';
+import { formatDaysUntil, getActiveHoliday } from '@/lib/announcements/holidays';
+import type { SerializedEvent } from '@/lib/events/config';
 
 import HolidayDismissibleShell from './HolidayDismissibleShell';
 

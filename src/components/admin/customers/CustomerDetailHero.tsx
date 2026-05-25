@@ -1,6 +1,6 @@
 'use client';
 import { formatDate, formatMoney, getInitials } from '@/lib/format';
-import { getLifecycle } from '@/lib/customer-tier';
+import { getLifecycle } from '@/lib/admin/customer-tier';
 import AdminEyebrow from '@/components/admin/AdminEyebrow';
 import type { CustomerTableRow } from '@/types/admin';
 import { ACTIVITY_CONFIG, TIER_CONFIG, getActivity, getTier } from './customerUtils';

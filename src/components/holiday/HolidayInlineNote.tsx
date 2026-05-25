@@ -1,5 +1,5 @@
 import StoreInfoModal from '@/components/ui/StoreInfoModal';
-import { type ActiveHoliday, formatDaysUntil } from '@/lib/holidays';
+import { type ActiveHoliday, formatDaysUntil } from '@/lib/announcements/holidays';
 
 type Props = {
   match: ActiveHoliday;

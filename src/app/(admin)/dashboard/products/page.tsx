@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { getSessionUser } from '@/lib/getSessionUser';
+import { getSessionUser } from '@/lib/auth/session';
 import connectDB from '@/config/database';
 import ProductModel from '@/models/Product';
 
-import { productCategoryCounts } from '@/lib/admin-products';
-import { serializeProductRow } from '@/lib/serializers';
+import { productCategoryCounts } from '@/lib/admin/products';
+import { serializeProductRow } from '@/lib/admin/serializers';
 import ProductsClient, { type ProductTableRow, type ProductCounts } from '@/components/admin/products/ProductsClient';
 
 export const dynamic = 'force-dynamic';

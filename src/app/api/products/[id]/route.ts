@@ -5,7 +5,7 @@ import connectDB from '@/config/database';
 import Product from '@/models/Product';
 import Review from '@/models/Review';
 import User from '@/models/User';
-import { getSessionUser } from '@/lib/getSessionUser';
+import { getSessionUser } from '@/lib/auth/session';
 import {
   parseObjectId,
   withAdminNonDemo,

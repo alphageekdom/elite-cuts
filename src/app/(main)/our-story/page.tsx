@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 
-import { getShopSettings, formatShopCityStateZip } from '@/lib/shopSettings';
+import { getShopSettings, formatShopCityStateZip } from '@/lib/shop-settings/queries';
 import OurStoryHero from '@/components/our-story/OurStoryHero';
 import OurStoryCover from '@/components/our-story/OurStoryCover';
 import OurStoryOrigin from '@/components/our-story/OurStoryOrigin';

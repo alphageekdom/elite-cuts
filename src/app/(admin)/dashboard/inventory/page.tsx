@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { getSessionUser } from '@/lib/getSessionUser';
+import { getSessionUser } from '@/lib/auth/session';
 import connectDB from '@/config/database';
 import ProductModel from '@/models/Product';
 import AgingCutModel from '@/models/AgingCut';
@@ -14,7 +14,7 @@ import InventoryClient, {
 import type { AgingCutRow } from '@/components/admin/inventory/InventoryAgingRoom';
 import type { DeliveryRow, ReceivedDeliveryRow } from '@/components/admin/inventory/InventoryUpcomingDeliveries';
 import { CATEGORY_PAR, DEFAULT_PAR } from '@/lib/inventory';
-import { productCategoryCounts } from '@/lib/admin-products';
+import { productCategoryCounts } from '@/lib/admin/products';
 
 export const dynamic = 'force-dynamic';
 

@@ -1,11 +1,11 @@
 import { Schema, model, models, type Model } from 'mongoose';
-import { SHIFT_COLORS, type ShiftColor } from '@/lib/shift-constants';
+import { SHIFT_COLORS, type ShiftColor } from '@/lib/shifts/constants';
 import {
   STAFF_ROLE_KEYS,
   STAFF_STATUSES,
   type StaffRoleKey,
   type StaffStatus,
-} from '@/lib/staff-display';
+} from '@/lib/staff/display';
 
 // Re-export so existing server-side imports (`from '@/models/StaffMember'`)
 // keep working; the canonical home for the enums is the client-safe lib file.

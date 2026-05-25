@@ -1,21 +1,21 @@
 import type { Metadata } from 'next';
 import { redirect, notFound } from 'next/navigation';
-import { getSessionUser } from '@/lib/getSessionUser';
+import { getSessionUser } from '@/lib/auth/session';
 import connectDB from '@/config/database';
 import Order from '@/models/Order';
 import { formatMoney } from '@/lib/format';
-import { refundSummary } from '@/lib/order-refunds';
+import { refundSummary } from '@/lib/orders/refunds';
 import {
   orderHasRealizedDifference,
   realizedOrderTotal,
-} from '@/lib/order-line';
+} from '@/lib/orders/line';
 import {
   formatPhoneHref,
   formatShopCityStateZip,
   formatWebsiteDisplay,
   getShopSettings,
-} from '@/lib/shopSettings';
-import { RECEIPT_ORDER_STATUS_STYLES } from '@/lib/order-status';
+} from '@/lib/shop-settings/queries';
+import { RECEIPT_ORDER_STATUS_STYLES } from '@/lib/orders/status';
 import ReceiptToolbar from './ReceiptToolbar';
 import ReceiptHeader from './ReceiptHeader';
 import ReceiptItemsTable from './ReceiptItemsTable';

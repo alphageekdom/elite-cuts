@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import mongoose from 'mongoose';
 
 import ShopSettings, { type ShopSettings as ShopSettingsType } from '@/models/ShopSettings';
-import { SHOP_SETTINGS_KEYS } from '@/lib/shopSettings/defaults';
+import { SHOP_SETTINGS_KEYS } from '@/lib/shop-settings/defaults';
 import { withAdmin, withAdminNonDemo, zodBadRequest } from '@/lib/api-handler';
 import { shopSettingsInputSchema } from '@/lib/settings/schema';
 

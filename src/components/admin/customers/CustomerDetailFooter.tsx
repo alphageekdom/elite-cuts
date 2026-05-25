@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { inputCls } from '@/components/admin/AdminForm';
-import { getLifecycle } from '@/lib/customer-tier';
+import { getLifecycle } from '@/lib/admin/customer-tier';
 import type { CustomerTableRow } from '@/types/admin';
 
 type Props = {

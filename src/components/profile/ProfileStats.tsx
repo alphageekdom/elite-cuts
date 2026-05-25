@@ -1,4 +1,4 @@
-import type { TierInfo } from '@/lib/rewards';
+import type { TierInfo } from '@/lib/rewards/calculator';
 
 const fmt = (n: number) => n.toLocaleString('en-US');
 

@@ -1,10 +1,10 @@
 import { Schema, model, models, type Model } from 'mongoose';
-import { DEFAULT_SHOP_SETTINGS } from '@/lib/shopSettings/defaults';
+import { DEFAULT_SHOP_SETTINGS } from '@/lib/shop-settings/defaults';
 import {
   DORMANCY_THRESHOLD_VALUES,
   DORMANCY_OPTIONS,
   type DormancyThreshold,
-} from '@/lib/shopSettings/constants';
+} from '@/lib/shop-settings/constants';
 
 // Re-export so existing server-side imports (`from '@/models/ShopSettings'`)
 // keep working without each consumer chasing the constants file.

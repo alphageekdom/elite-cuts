@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 
 import ProductModel from '@/models/Product';
 import { withAdminNonDemo } from '@/lib/api-handler';
-import { parseCsv, csvRowsToRecords } from '@/lib/csv-parse';
+import { parseCsv, csvRowsToRecords } from '@/lib/csv/parse';
 import { withOptionalTransaction } from '@/lib/db/transaction';
 import { escapeRegex } from '@/lib/regex-escape';
 import { productInputSchema, flattenProductIssues, type ProductInput } from '@/lib/products/schema';

@@ -5,7 +5,7 @@ import { connection } from 'next/server';
 
 import connectDB from '@/config/database';
 import ShopSettingsModel, { type ShopSettings } from '@/models/ShopSettings';
-import { DEFAULT_SHOP_SETTINGS, SHOP_SETTINGS_KEYS } from '@/lib/shopSettings/defaults';
+import { DEFAULT_SHOP_SETTINGS, SHOP_SETTINGS_KEYS } from '@/lib/shop-settings/defaults';
 
 // Fallback when Mongo is unreachable on cold start. Reads from the single
 // `DEFAULT_SHOP_SETTINGS` snapshot in `./shopSettings/defaults.ts`.
@@ -53,4 +53,4 @@ export {
   formatShopAddress,
   formatShopCityStateZip,
   formatWebsiteDisplay,
-} from './shopSettingsFormat';
+} from './format';

@@ -7,7 +7,7 @@ import connectDB from '@/config/database';
 import Order, { PAYMENT_METHODS, type PaymentMethod } from '@/models/Order';
 import Product from '@/models/Product';
 import User from '@/models/User';
-import { getSessionUser } from '@/lib/getSessionUser';
+import { getSessionUser } from '@/lib/auth/session';
 import {
   unauthorized,
   parsePagination,
@@ -15,14 +15,14 @@ import {
   zodBadRequest,
 } from '@/lib/api-handler';
 import { isIn } from '@/lib/validation';
-import { awardOrderCompletion } from '@/lib/order-completion';
-import { recordCustomerActivity } from '@/lib/accountDeletion';
-import { notifyAdminsOfNewOrder } from '@/lib/order-notifications';
+import { awardOrderCompletion } from '@/lib/orders/completion';
+import { recordCustomerActivity } from '@/lib/auth/account-deletion';
+import { notifyAdminsOfNewOrder } from '@/lib/orders/notifications';
 import {
   computeSubtotal,
   computeOrderTotals,
   type OrderProductLean,
-} from '@/lib/orderBuilder';
+} from '@/lib/orders/builder';
 import {
   adminCreateOrderSchema,
   type AdminInitialStatus,

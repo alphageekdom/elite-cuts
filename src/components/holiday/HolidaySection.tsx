@@ -1,6 +1,6 @@
 import StoreInfoModal from '@/components/ui/StoreInfoModal';
 import Reveal from '@/components/uielements/Reveal';
-import { formatDaysUntil, getActiveHoliday } from '@/lib/holidays';
+import { formatDaysUntil, getActiveHoliday } from '@/lib/announcements/holidays';
 
 const titleCaseCut = (slug: string) =>
   slug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join('-');

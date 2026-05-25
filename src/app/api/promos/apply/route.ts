@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { validatePromo } from '@/lib/promos/validate';
-import { getSessionUser } from '@/lib/getSessionUser';
+import { getSessionUser } from '@/lib/auth/session';
 import { clientIpFromHeaders, rateLimit } from '@/lib/rateLimit';
 
 // Per-IP cap. The checkout customer types in a handful of codes at most;

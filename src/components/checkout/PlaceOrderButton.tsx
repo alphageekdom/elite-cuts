@@ -9,7 +9,7 @@ import { useCheckoutContext } from '@/context/CheckoutContext';
 import { useShopSettings } from '@/context/ShopSettingsContext';
 import { computeTotals, fmtPrice, DELIVERY_FEE } from '@/lib/pricing';
 import { isContactComplete } from '@/lib/checkoutValidation';
-import { formatShopAddress } from '@/lib/shopSettingsFormat';
+import { formatShopAddress } from '@/lib/shop-settings/format';
 
 const SpinnerIcon = () => (
   <svg
