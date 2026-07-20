@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { formatMoney, productImageSrc } from '@/lib/format';
+import { productPath } from '@/lib/products/paths';
 import type { SerializedProduct } from '@/models/Product';
 import useHandleAddToCart from '@/hooks/useHandleAddToCart';
 
@@ -22,7 +23,7 @@ function RecentItem({ product }: { product: SerializedProduct }) {
 
   return (
     <li className="flex items-center gap-3.5 py-3 border-b border-line-soft last:border-0 last:pb-0 first:pt-0">
-      <Link href={`/products/${product._id}`} className="relative w-12 h-12 rounded shrink-0 overflow-hidden bg-cream-deep block">
+      <Link href={productPath(product)} className="relative w-12 h-12 rounded shrink-0 overflow-hidden bg-cream-deep block">
         {product.images[0] && (
           <Image
             src={productImageSrc(product.images[0]) ?? ''}
@@ -34,7 +35,7 @@ function RecentItem({ product }: { product: SerializedProduct }) {
         )}
       </Link>
       <div className="min-w-0 flex-1">
-        <Link href={`/products/${product._id}`}>
+        <Link href={productPath(product)}>
           <p className="font-display font-medium text-[15px] tracking-tight truncate hover:text-oxblood transition-colors">
             {product.name}
           </p>

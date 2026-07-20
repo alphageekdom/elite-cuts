@@ -6,6 +6,7 @@ import Link from 'next/link';
 import useHandleAddToCart from '@/hooks/useHandleAddToCart';
 import { useCartContext } from '@/context/CartContext';
 import { productImageSrc } from '@/lib/format';
+import { productPath } from '@/lib/products/paths';
 import { fmtPrice } from '@/lib/pricing';
 import type { SerializedProduct } from '@/models/Product';
 
@@ -37,7 +38,7 @@ const SuggestionCard = ({ product }: SuggestProps) => {
   return (
     <div className='flex items-center gap-3 rounded-sm border border-transparent bg-cream p-3 transition-[border-color,transform] duration-300 hover:-translate-y-0.5 hover:border-line motion-reduce:transition-none motion-reduce:hover:translate-y-0'>
       <Link
-        href={`/products/${product._id}`}
+        href={productPath(product)}
         aria-label={`View ${product.name}`}
         className='relative h-12 w-12 shrink-0 overflow-hidden rounded-sm bg-cream-deep'
       >
@@ -52,7 +53,7 @@ const SuggestionCard = ({ product }: SuggestProps) => {
 
       <div className='min-w-0 flex-1'>
         <Link
-          href={`/products/${product._id}`}
+          href={productPath(product)}
           className='block truncate font-display text-sm font-medium tracking-tight transition-colors duration-300 hover:text-oxblood motion-reduce:transition-none'
         >
           {product.name}

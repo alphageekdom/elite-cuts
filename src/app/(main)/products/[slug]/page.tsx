@@ -1,11 +1,12 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import type { Types } from 'mongoose';
 
 import connectDB from '@/config/database';
 import ProductModel, { type SerializedProduct } from '@/models/Product';
 import ReviewModel from '@/models/Review';
+import { resolveProductByParam } from '@/lib/products/resolve';
 import { convertToSerializableObject } from '@/lib/convertToObject';
 import { getSessionUser } from '@/lib/auth/session';
 import { AVATAR_COLORS, MEMBER_AVATAR_COLORS } from '@/lib/admin/constants';
@@ -22,7 +23,7 @@ import ReviewActions from './ReviewActions';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type PageProps = { params: Promise<{ id: string }> };
+type PageProps = { params: Promise<{ slug: string }> };
 
 type UserTier = 'Master Cut' | 'Connoisseur' | 'Regular';
 
@@ -60,19 +61,20 @@ const trimDescription = (text: string, max = 155): string => {
 };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  await connectDB();
-  const { id } = await params;
-  const product = await ProductModel.findById(id).select('name description').lean();
-  if (!product) {
-    return {
-      title: 'Product Not Found',
-      robots: { index: false, follow: false },
-    };
-  }
+  const { slug } = await params;
+  const resolved = await resolveProductByParam(slug);
+  // Resolve here rather than only in the page: metadata runs before the
+  // streaming shell flushes, so the redirect/404 gets a real status code
+  // instead of a 200 with a boundary rendered into it.
+  if (resolved.kind === 'redirect') permanentRedirect(`/products/${resolved.slug}`);
+  if (resolved.kind === 'notfound') notFound();
+
+  const name = resolved.doc.name as string;
+  const description = resolved.doc.description as string;
   return {
-    title: product.name,
-    description: trimDescription(product.description),
-    alternates: { canonical: `/products/${id}` },
+    title: name,
+    description: trimDescription(description),
+    alternates: { canonical: `/products/${slug}` },
   };
 }
 
@@ -170,20 +172,24 @@ function initials(name: string) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function ProductPage({ params }: PageProps) {
-  await connectDB();
-  const { id } = await params;
+  const { slug } = await params;
 
-  const productDoc = await ProductModel.findById(id).lean();
-  if (!productDoc) notFound();
+  // Cached — shares the resolution generateMetadata already ran this request.
+  const resolved = await resolveProductByParam(slug);
+  if (resolved.kind === 'redirect') permanentRedirect(`/products/${resolved.slug}`);
+  if (resolved.kind === 'notfound') notFound();
+
+  await connectDB();
+  const productId = String(resolved.doc._id);
 
   const product = convertToSerializableObject(
-    productDoc as Record<string, unknown>,
+    resolved.doc,
   ) as SerializedProduct;
 
   const sessionUser = await getSessionUser();
 
   // Reviews (populate user name + rewardPoints; _id included by default)
-  const rawReviews = (await ReviewModel.find({ product: id })
+  const rawReviews = (await ReviewModel.find({ product: productId })
     .populate<{ user: { _id: Types.ObjectId; name: string; rewardPoints: number } | null }>('user', 'name rewardPoints')
     .sort({ createdAt: -1 })
     .lean()) as unknown as LeanReviewWithUser[];
@@ -227,7 +233,7 @@ export default async function ProductPage({ params }: PageProps) {
   // Related products (same category, exclude current, in stock, limit 3)
   const relatedDocs = await ProductModel.find({
     category: product.category,
-    _id: { $ne: id },
+    _id: { $ne: productId },
     stockCount: { $gt: 0 },
   })
     .sort({ isFeatured: -1 })
@@ -561,7 +567,7 @@ export default async function ProductPage({ params }: PageProps) {
           )}
 
           <div className='mt-10 border-t border-line-soft pt-10 md:mt-14 md:pt-12'>
-            <ReviewForm productId={id} ownReview={ownReview} />
+            <ReviewForm productId={productId} ownReview={ownReview} />
           </div>
         </section>
 
