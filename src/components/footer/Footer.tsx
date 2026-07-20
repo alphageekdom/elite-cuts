@@ -81,9 +81,9 @@ const SOCIALS = [
 ] as const;
 
 const QUICK_LINKS = [
-  { label: 'Shop All Cuts', href: '/products' },
-  { label: 'Featured Cuts', href: '/#featured' },
-  { label: 'Our Story', href: '/#about-heading' },
+  { label: 'Shop all cuts', href: '/products' },
+  { label: 'Featured cuts', href: '/#featured' },
+  { label: 'Our Story', href: '/our-story' },
   { label: 'Contact', href: '/contact' },
 ] as const;
 

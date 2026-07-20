@@ -59,7 +59,7 @@ const About = () => {
             <div className='mt-12 flex items-center gap-6 border-t border-line pt-8'>
               <SignatureSvg />
               <div className='font-display'>
-                <div className='text-lg font-medium italic'>Tangelo Doe</div>
+                <div className='text-lg font-medium italic'>Tangelo Reyes</div>
                 <div className='text-sm font-sans not-italic tracking-[0.04em] text-muted'>
                   Founder, EliteCuts
                 </div>

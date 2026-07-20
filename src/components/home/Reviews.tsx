@@ -15,7 +15,7 @@ const REVIEWS: readonly ReviewCardProps[] = [
       </>
     ),
     name: 'Joseph Harmon',
-    meta: 'Master Cut member',
+    meta: 'Regular since 2021',
     avatarColor: 'bg-linear-to-br from-oxblood to-oxblood-deep text-cream',
     tier: 'master',
   },
@@ -29,7 +29,7 @@ const REVIEWS: readonly ReviewCardProps[] = [
       </>
     ),
     name: 'Sonia Park',
-    meta: 'Connoisseur member',
+    meta: 'Regular since 2023',
     avatarColor: 'bg-linear-to-br from-camel to-[#a07445] text-ink',
     tier: 'connoisseur',
   },
@@ -38,13 +38,11 @@ const REVIEWS: readonly ReviewCardProps[] = [
     quote: (
       <>
         Came in for a whole chicken, left with the heritage pork belly on the
-        butcher&apos;s recommendation — best impulse buy I&apos;ve made in
-        years.{' '}
-        <em className='italic'>Now I plan my Sundays around it.</em>
+        butcher&apos;s recommendation — now I plan my Sundays around it.
       </>
     ),
     name: 'Marcus Webb',
-    meta: 'Connoisseur member',
+    meta: 'Regular since 2024',
     avatarColor: 'bg-linear-to-br from-[#4a6b3a] to-[#3d5c2a] text-cream',
     tier: 'connoisseur',
   },
@@ -67,7 +65,7 @@ const Reviews = () => {
             className='mb-20 max-w-[16ch] font-display text-[clamp(40px,5vw,68px)] leading-[1.05] tracking-[-0.025em] font-normal'
           >
             What our{' '}
-            <em className='font-normal italic text-oxblood'>community</em> is
+            <em className='font-normal italic text-oxblood'>regulars</em> are
             saying.
           </h2>
         </Reveal>
