@@ -1,13 +1,9 @@
 import type { MetadataRoute } from 'next';
 
+import connectDB from '@/config/database';
+import Product from '@/models/Product';
 import { SITE_URL } from '@/lib/seo/site-url';
 
-// Static routes only, on purpose. Product detail URLs are keyed by Mongo
-// ObjectId, and the nightly demo reset re-creates every product with a new
-// id — so baking product URLs into the sitemap would advertise links that
-// die at the next reset. Product pages stay discoverable through the
-// server-rendered catalog links; product entries can return here once the
-// route resolves by stable slug (tracked follow-up).
 const STATIC_ROUTES = [
   '',
   '/products',
@@ -19,6 +15,24 @@ const STATIC_ROUTES = [
   '/privacy',
 ];
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  return STATIC_ROUTES.map((route) => ({ url: `${SITE_URL}${route}` }));
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  await connectDB();
+  // Product URLs are keyed by slug, which survives the nightly demo reset
+  // (identical seeded names re-derive identical slugs). Same visibility
+  // filter as the catalog listing.
+  const products = await Product.find({
+    'images.0': { $exists: true },
+    isActive: { $ne: false },
+    slug: { $type: 'string', $gt: '' },
+  })
+    .select('slug updatedAt')
+    .lean();
+
+  return [
+    ...STATIC_ROUTES.map((route) => ({ url: `${SITE_URL}${route}` })),
+    ...products.map((product) => ({
+      url: `${SITE_URL}/products/${product.slug}`,
+      lastModified: product.updatedAt,
+    })),
+  ];
 }

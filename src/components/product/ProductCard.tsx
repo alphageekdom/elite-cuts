@@ -13,6 +13,7 @@ import { useCartContext } from '@/context/CartContext';
 import useHandleAddToCart from '@/hooks/useHandleAddToCart';
 import useHandleBookmark from '@/hooks/useHandleBookmark';
 import { productImageSrc, formatMoney } from '@/lib/format';
+import { productPath } from '@/lib/products/paths';
 import { MAX_PER_LINE } from '@/lib/shop-settings/config';
 
 import { type SerializedProduct } from '@/models/Product';
@@ -101,7 +102,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
   }, [checkBookmarkStatus]);
 
   const tag = resolveTag(product);
-  const productHref = `/products/${product._id}`;
+  const productHref = productPath(product);
 
   // Stock derivation: > 5 → in stock (green), 1-5 → low (camel), 0 → out (camel + disabled).
   const outOfStock = product.stockCount <= 0;

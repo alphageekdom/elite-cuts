@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { formatMoney, productImageSrc } from '@/lib/format';
+import { productPath } from '@/lib/products/paths';
 import type { SerializedProduct } from '@/models/Product';
 import useHandleAddToCart from '@/hooks/useHandleAddToCart';
 
@@ -45,7 +46,7 @@ function BookmarkCard({
 
   return (
     <div className="bg-paper border border-line-soft rounded overflow-hidden transition-transform duration-400 hover:-translate-y-0.75">
-      <Link href={`/products/${bookmark._id}`} aria-label={`View ${bookmark.name}`} className="block">
+      <Link href={productPath(bookmark)} aria-label={`View ${bookmark.name}`} className="block">
         <div className="relative aspect-4/3 overflow-hidden">
           <Image
             src={productImageSrc(bookmark.images[0]) ?? ''}
