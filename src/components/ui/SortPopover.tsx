@@ -50,6 +50,11 @@ type Props<T extends string> = {
   // Disables the trigger button when true — the popover never opens
   // and the trigger reads with reduced opacity.
   disabled?: boolean;
+  // Hides `prefix` below sm so the trigger reads by its value alone, buying
+  // back ~110px of a phone toolbar. Opt-in: the admin toolbars sit two of
+  // these side by side between roughly 480–640px with width to spare, where
+  // dropping the label would cost clarity for nothing.
+  hidePrefixBelowSm?: boolean;
 };
 
 export default function SortPopover<T extends string>({
@@ -61,6 +66,7 @@ export default function SortPopover<T extends string>({
   align = 'right',
   placeholderLabel,
   disabled = false,
+  hidePrefixBelowSm = false,
 }: Props<T>) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -112,7 +118,13 @@ export default function SortPopover<T extends string>({
             : 'border-line text-ink-soft hover:border-ink hover:text-ink'
         }`}
       >
-        <span className="text-muted">{prefix}</span>
+        <span
+          className={
+            hidePrefixBelowSm ? 'hidden text-muted sm:inline' : 'text-muted'
+          }
+        >
+          {prefix}
+        </span>
         {triggerLabel}
         <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <polyline points="6 9 12 15 18 9" />

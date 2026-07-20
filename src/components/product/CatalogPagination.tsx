@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import LinkPendingDot from '@/components/product/LinkPendingDot';
+
 type CatalogPaginationProps = {
   page: number;
   totalPages: number;
@@ -86,6 +88,7 @@ const CatalogPagination = ({
           <Link href={hrefForPage(page - 1)} scroll={false} className={NAV_BTN}>
             <ChevronLeft />
             Previous
+            <LinkPendingDot />
           </Link>
         )}
 
@@ -132,6 +135,7 @@ const CatalogPagination = ({
           <Link href={hrefForPage(page + 1)} scroll={false} className={NAV_BTN}>
             Next
             <ChevronRight />
+            <LinkPendingDot />
           </Link>
         )}
       </div>

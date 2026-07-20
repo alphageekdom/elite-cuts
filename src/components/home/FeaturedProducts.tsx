@@ -87,7 +87,10 @@ const FeaturedProducts = async () => {
           <div className='grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4'>
             {serialized.map((product, i) => (
               <Reveal key={product._id} delayMs={200 + i * 70}>
-                <ProductCard product={product} />
+                <ProductCard
+                  product={product}
+                  sizes='(min-width: 1280px) 280px, (min-width: 1024px) 25vw, (min-width: 768px) 50vw, 100vw'
+                />
               </Reveal>
             ))}
           </div>

@@ -21,10 +21,24 @@ type TagVariant = 'featured' | 'aged' | 'new';
 
 type ProductCardProps = {
   product: SerializedProduct;
+  /**
+   * `sizes` for the card image. Defaults to the catalog grid
+   * (`sm:grid-cols-2 lg:grid-cols-3`). Grids that step columns at different
+   * breakpoints pass their own — the homepage Featured grid goes 4-up at lg,
+   * the related-cuts strip goes 3-up at md.
+   */
+  sizes?: string;
 };
 
+// Past 1280px the grids stop growing (max-w-7xl caps content at 1216px), so a
+// `vw` clause keeps over-declaring as the viewport widens — ~570px claimed for
+// a 389px card at 1728px, which costs a whole width step on 2x displays. The
+// fixed-px clause pins the real rendered width above that breakpoint.
+const DEFAULT_SIZES =
+  '(min-width: 1280px) 389px, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw';
+
 const TAG_CLASS: Record<TagVariant, string> = {
-  featured: 'bg-ink text-cream',
+  featured: 'bg-ink text-camel-soft',
   aged: 'bg-oxblood text-cream',
   new: 'bg-camel text-ink',
 };
@@ -82,7 +96,7 @@ const StarIcon = () => (
   </svg>
 );
 
-const ProductCard = ({ product }: ProductCardProps) => {
+const ProductCard = ({ product, sizes = DEFAULT_SIZES }: ProductCardProps) => {
   const { data: session } = useSession();
   const userId = session?.user?.userId;
 
@@ -102,6 +116,15 @@ const ProductCard = ({ product }: ProductCardProps) => {
 
   const tag = resolveTag(product);
   const productHref = productPath(product);
+
+  // The inline chip beside the name is a *weight* chip — short, glanceable.
+  // A bundle's stamped label is an includes-list sentence, which crowds the
+  // name and reads badly in a pill, so it stays as a full-width line under
+  // the price where it has room. Either way the real stamped field renders.
+  const weightLabel = product.displayWeightLabel;
+  const showWeightAsPill = Boolean(
+    weightLabel && product.pricingType !== 'bundle',
+  );
 
   // Stock derivation: > 5 → in stock (green), 1-5 → low (camel), 0 → out (camel + disabled).
   const outOfStock = product.stockCount <= 0;
@@ -149,7 +172,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
   };
 
   return (
-    <article className='group relative flex h-full flex-col overflow-hidden rounded-xl border border-line bg-paper transition-shadow duration-300 hover:shadow-[0_18px_40px_-24px_rgba(28,24,20,0.35)] motion-reduce:transition-none'>
+    <article className='group relative flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-paper transition-shadow duration-300 hover:shadow-[0_18px_40px_-24px_rgba(28,24,20,0.35)] motion-reduce:transition-none'>
       <div className='relative aspect-4/5 overflow-hidden bg-cream-deep'>
         <Link
           href={productHref}
@@ -160,7 +183,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
             src={productImageSrc(product.images[0]) ?? ''}
             alt=''
             fill
-            sizes='(min-width: 1024px) 25vw, (min-width: 768px) 50vw, 100vw'
+            sizes={sizes}
             className='object-cover transition-transform duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:scale-105 motion-reduce:group-hover:scale-100 motion-reduce:transition-none'
           />
         </Link>
@@ -173,15 +196,17 @@ const ProductCard = ({ product }: ProductCardProps) => {
           </span>
         )}
 
+        {/* Cream in both states: camel-soft only reached 2.6:1 against the
+            translucent backdrop over a light photo, under the 3:1 floor. The
+            filled-vs-outline heart carries the saved state instead, so it
+            survives without relying on colour at all. */}
         <button
           type='button'
           onClick={onSaveClick}
           aria-label={isBookmarked ? 'Remove from saved' : 'Save'}
           aria-pressed={isBookmarked}
           disabled={loading}
-          className={`absolute top-4 right-4 z-2 grid h-11 w-11 place-items-center rounded-full bg-cream/95 backdrop-blur-md transition-[background-color,transform] duration-300 hover:scale-105 hover:bg-cream motion-reduce:transition-none motion-reduce:hover:scale-100 ${
-            isBookmarked ? 'text-oxblood' : 'text-ink'
-          }`}
+          className='absolute top-4 right-4 z-2 grid h-11 w-11 place-items-center rounded-full bg-ink/65 text-cream backdrop-blur-md transition-[background-color,transform] duration-300 hover:scale-105 hover:bg-ink/80 focus-visible:bg-ink/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cream motion-reduce:transition-none motion-reduce:hover:scale-100'
         >
           <HeartIcon filled={isBookmarked} />
         </button>
@@ -206,9 +231,18 @@ const ProductCard = ({ product }: ProductCardProps) => {
           </span>
         </div>
 
-        <h3 className='mb-2.5 line-clamp-2 font-display text-[22px] font-medium leading-[1.15] tracking-[-0.02em] transition-colors duration-300 group-hover:text-oxblood motion-reduce:transition-none md:text-[24px]'>
-          <Link href={productHref}>{product.name}</Link>
-        </h3>
+        {/* Name + weight chip share a wrapping baseline row so a long cut
+            name pushes the chip to its own line instead of being squeezed. */}
+        <div className='mb-2.5 flex flex-wrap items-baseline gap-x-2.5 gap-y-2'>
+          <h3 className='line-clamp-2 font-display text-[22px] font-medium leading-[1.15] tracking-[-0.02em] transition-colors duration-300 group-hover:text-oxblood motion-reduce:transition-none md:text-[24px]'>
+            <Link href={productHref}>{product.name}</Link>
+          </h3>
+          {showWeightAsPill && (
+            <span className='shrink-0 rounded-full border border-line px-2.5 py-1 text-[11px] leading-none whitespace-nowrap text-muted'>
+              {weightLabel}
+            </span>
+          )}
+        </div>
 
         <p className='mb-5 line-clamp-3 text-sm leading-[1.65] text-ink-soft'>
           {product.description}
@@ -228,9 +262,9 @@ const ProductCard = ({ product }: ProductCardProps) => {
                 </>
               )}
             </div>
-            {product.displayWeightLabel && (
-              <div className='mt-0.5 text-[11px] leading-snug text-muted'>
-                {product.displayWeightLabel}
+            {!showWeightAsPill && weightLabel && (
+              <div className='mt-1 line-clamp-2 text-[11px] leading-snug text-muted'>
+                {weightLabel}
               </div>
             )}
           </div>
@@ -249,7 +283,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
           <div
             role='group'
             aria-label={`${product.name} quantity`}
-            className='mt-4 flex w-full items-center justify-between rounded-full bg-ink px-1.5 py-1.5 text-cream'
+            className='mt-4 flex w-full items-center justify-between rounded-lg bg-ink px-1.5 py-1.5 text-cream'
           >
             <button
               type='button'
@@ -280,7 +314,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
             type='button'
             onClick={onAddClick}
             disabled={isAddingToCart || outOfStock}
-            className='mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-ink px-4 py-3 text-[13px] font-medium tracking-[0.04em] text-cream transition-colors duration-300 hover:bg-oxblood disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none'
+            className='mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-ink px-4 py-3 text-[13px] font-medium tracking-[0.04em] text-cream transition-colors duration-300 hover:bg-oxblood disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none'
           >
             {isAddingToCart ? (
               <SpinnerIcon className='h-3.5 w-3.5' />
