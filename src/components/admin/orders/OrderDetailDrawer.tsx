@@ -451,7 +451,7 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
                 <span>
                   Points redeemed ({order.pointsRedeemed.toLocaleString('en-US')} pts)
                   {order.status === 'Cancelled' && (
-                    <em className="not-italic ml-2 text-[10px] tracking-[0.06em] uppercase text-camel">returned</em>
+                    <em className="not-italic ml-2 text-[10px] tracking-[0.06em] uppercase text-camel-deep">returned</em>
                   )}
                 </span>
                 <span className={`font-mono text-[12px] ${order.status === 'Cancelled' ? 'line-through' : ''}`}>
@@ -468,7 +468,7 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
               <span className="font-display text-[22px] font-medium tracking-[-0.01em] text-ink">{formatMoney(order.total)}</span>
             </div>
             {orderHasRealized && (
-              <div className="flex justify-between items-baseline text-[12px] text-camel">
+              <div className="flex justify-between items-baseline text-[12px] text-camel-deep">
                 <span>↻ Final at pickup (after weighing)</span>
                 <span className="font-mono text-[11px]">{formatMoney(realizedTotalAtPickup)}</span>
               </div>
@@ -483,14 +483,14 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
                         ? 'bg-green/10 text-green'
                         : order.settlementStatus === 'failed'
                         ? 'bg-oxblood/10 text-oxblood'
-                        : 'bg-camel/15 text-camel'
+                        : 'bg-camel/15 text-camel-deep'
                     }`}
                   >
                     {order.settlementStatus}
                   </span>
                 </div>
                 {(order.settlementPaymentIntents ?? []).map((tx) => (
-                  <div key={tx.id} className="flex justify-between items-baseline text-[12px] text-camel">
+                  <div key={tx.id} className="flex justify-between items-baseline text-[12px] text-camel-deep">
                     <span>
                       {tx.kind === 'capture' ? '+' : '−'}
                       {formatMoney(tx.amount)}{' '}
@@ -533,7 +533,7 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
                 <span>
                   Points awarded on fulfilment
                   {order.status === 'Cancelled' && (
-                    <em className="not-italic ml-2 text-[10px] tracking-[0.06em] uppercase text-camel">reversed</em>
+                    <em className="not-italic ml-2 text-[10px] tracking-[0.06em] uppercase text-camel-deep">reversed</em>
                   )}
                 </span>
                 <span className={`font-mono text-[11px] ${order.status === 'Cancelled' ? 'line-through' : ''}`}>
@@ -542,7 +542,7 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
               </div>
             )}
             {order.pointsRedemptionReturned > 0 && order.status !== 'Cancelled' && (
-              <div className="flex justify-between items-baseline text-[12px] text-camel">
+              <div className="flex justify-between items-baseline text-[12px] text-camel-deep">
                 <span>↻ Returned from refunds</span>
                 <span className="font-mono text-[11px]">+{order.pointsRedemptionReturned.toLocaleString('en-US')} pts to balance</span>
               </div>

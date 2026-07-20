@@ -19,7 +19,7 @@ type FilterKey = 'all' | PromoStatus;
 
 const STATUS_COPY: Record<PromoStatus, { label: string; tone: string; dotClass: string }> = {
   active:    { label: 'Active',    tone: 'bg-green/10 text-green border-green/30',          dotClass: 'bg-green' },
-  scheduled: { label: 'Scheduled', tone: 'bg-camel/10 text-camel border-camel/30',          dotClass: 'bg-camel' },
+  scheduled: { label: 'Scheduled', tone: 'bg-camel/10 text-camel-deep border-camel/30',          dotClass: 'bg-camel' },
   expired:   { label: 'Expired',   tone: 'bg-muted/10 text-muted border-line',              dotClass: 'bg-muted' },
   exhausted: { label: 'Exhausted', tone: 'bg-oxblood/10 text-oxblood border-oxblood/30',    dotClass: 'bg-oxblood' },
   disabled:  { label: 'Disabled',  tone: 'bg-muted/10 text-muted border-line',              dotClass: 'bg-muted' },

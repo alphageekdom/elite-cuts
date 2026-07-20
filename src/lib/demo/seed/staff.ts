@@ -10,17 +10,17 @@ export type DemoStaffSeed = Omit<StaffMember, 'createdAt' | 'updatedAt'>;
 // observe the seasonal filter pill behavior on the Staff tab.
 export const DEMO_STAFF: DemoStaffSeed[] = [
   {
-    name: 'Tangelo Doe',
+    name: 'Tomás Reyes',
     role: 'Head butcher',
     roleKey: 'head-butcher',
     station: 'Butcher Station',
     color: 'tangelo',
     status: 'active',
-    email: 'tangelo@elitecuts.demo',
+    email: 'tomas@elitecuts.demo',
     notes: 'Founder & head butcher. Opens most weekdays.',
   },
   {
-    name: 'Marcus Reyes',
+    name: 'Marcus Vega',
     role: 'Charcuterie',
     roleKey: 'charcuterie',
     station: 'Prep Station',

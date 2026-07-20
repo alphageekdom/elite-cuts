@@ -5,7 +5,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 
-import ArrowIcon from '@/components/uielements/ArrowIcon';
 import MinusIcon from '@/components/uielements/MinusIcon';
 import PlusIcon from '@/components/uielements/PlusIcon';
 import SpinnerIcon from '@/components/uielements/SpinnerIcon';
@@ -150,8 +149,8 @@ const ProductCard = ({ product }: ProductCardProps) => {
   };
 
   return (
-    <article className='group relative flex h-full flex-col'>
-      <div className='relative mb-6 aspect-4/5 overflow-hidden rounded-sm bg-cream-deep'>
+    <article className='group relative flex h-full flex-col overflow-hidden rounded-xl border border-line bg-paper transition-shadow duration-300 hover:shadow-[0_18px_40px_-24px_rgba(28,24,20,0.35)] motion-reduce:transition-none'>
+      <div className='relative aspect-4/5 overflow-hidden bg-cream-deep'>
         <Link
           href={productHref}
           aria-label={`View ${product.name}`}
@@ -186,57 +185,9 @@ const ProductCard = ({ product }: ProductCardProps) => {
         >
           <HeartIcon filled={isBookmarked} />
         </button>
-
-        <div className='absolute right-4 bottom-4 left-4 z-2 translate-y-[120%] opacity-0 transition-[transform,opacity] duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] max-md:translate-y-0 max-md:opacity-100 md:group-hover:translate-y-0 md:group-hover:opacity-100 md:group-focus-within:translate-y-0 md:group-focus-within:opacity-100 pointer-coarse:translate-y-0 pointer-coarse:opacity-100 motion-reduce:transition-none motion-reduce:max-md:translate-y-0 motion-reduce:max-md:opacity-100'>
-          {inCart ? (
-            <div
-              role='group'
-              aria-label={`${product.name} quantity`}
-              className='flex w-full items-center justify-between rounded-full bg-ink px-1.5 py-1.5 text-cream'
-            >
-              <button
-                type='button'
-                onClick={onDecrement}
-                aria-label={`Decrease ${product.name} quantity`}
-                className='grid h-9 w-9 place-items-center rounded-full transition-colors duration-300 hover:bg-oxblood motion-reduce:transition-none'
-              >
-                <MinusIcon className='h-3 w-3' />
-              </button>
-              <span
-                aria-live='polite'
-                className='font-display text-[15px] font-medium tracking-tight'
-              >
-                {currentQty}
-              </span>
-              <button
-                type='button'
-                onClick={onIncrement}
-                disabled={currentQty >= maxQty}
-                aria-label={`Increase ${product.name} quantity`}
-                className='grid h-9 w-9 place-items-center rounded-full transition-colors duration-300 hover:bg-oxblood disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none'
-              >
-                <PlusIcon className='h-3 w-3' />
-              </button>
-            </div>
-          ) : (
-            <button
-              type='button'
-              onClick={onAddClick}
-              disabled={isAddingToCart || outOfStock}
-              className='flex w-full items-center justify-center gap-2 rounded-full bg-ink px-4 py-3 text-[13px] font-medium tracking-[0.04em] text-cream transition-colors duration-300 hover:bg-oxblood disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none'
-            >
-              {isAddingToCart ? (
-                <SpinnerIcon className='h-3.5 w-3.5' />
-              ) : (
-                <CartIcon />
-              )}
-              {isAddingToCart ? 'Adding…' : outOfStock ? 'Sold out' : 'Add to cart'}
-            </button>
-          )}
-        </div>
       </div>
 
-      <div className='flex flex-1 flex-col px-1'>
+      <div className='flex flex-1 flex-col p-5'>
         <div className='mb-2.5 flex items-center gap-2.5 text-[11px] tracking-[0.16em] uppercase text-muted'>
           <span>{product.category}</span>
           <span
@@ -255,7 +206,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
           </span>
         </div>
 
-        <h3 className='mb-2.5 line-clamp-2 font-display text-[22px] font-medium leading-[1.15] tracking-[-0.02em] transition-colors duration-300 group-hover:text-oxblood motion-reduce:transition-none md:text-[26px]'>
+        <h3 className='mb-2.5 line-clamp-2 font-display text-[22px] font-medium leading-[1.15] tracking-[-0.02em] transition-colors duration-300 group-hover:text-oxblood motion-reduce:transition-none md:text-[24px]'>
           <Link href={productHref}>{product.name}</Link>
         </h3>
 
@@ -283,7 +234,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
               </div>
             )}
           </div>
-          <span className='inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.04em] text-muted'>
+          <span className='inline-flex shrink-0 items-center gap-1.5 font-mono text-[11px] tracking-[0.04em] whitespace-nowrap text-muted'>
             <span
               aria-hidden='true'
               className={`h-1.5 w-1.5 rounded-full ${
@@ -293,13 +244,52 @@ const ProductCard = ({ product }: ProductCardProps) => {
             {stockLabel}
           </span>
         </div>
-        <Link
-          href={productHref}
-          className='group/view mt-3.5 inline-flex items-center gap-1.5 self-start border-b border-oxblood/30 pb-0.5 text-[13px] font-medium tracking-[0.04em] text-oxblood transition-[gap,border-color] duration-300 hover:gap-2.5 hover:border-oxblood motion-reduce:transition-none'
-        >
-          View cut
-          <ArrowIcon className='transition-transform duration-300 group-hover/view:translate-x-0.5 motion-reduce:transition-none' />
-        </Link>
+
+        {inCart ? (
+          <div
+            role='group'
+            aria-label={`${product.name} quantity`}
+            className='mt-4 flex w-full items-center justify-between rounded-full bg-ink px-1.5 py-1.5 text-cream'
+          >
+            <button
+              type='button'
+              onClick={onDecrement}
+              aria-label={`Decrease ${product.name} quantity`}
+              className='grid h-10 w-10 place-items-center rounded-full transition-colors duration-300 hover:bg-oxblood motion-reduce:transition-none'
+            >
+              <MinusIcon className='h-3 w-3' />
+            </button>
+            <span
+              aria-live='polite'
+              className='font-display text-[15px] font-medium tracking-tight'
+            >
+              {currentQty}
+            </span>
+            <button
+              type='button'
+              onClick={onIncrement}
+              disabled={currentQty >= maxQty}
+              aria-label={`Increase ${product.name} quantity`}
+              className='grid h-10 w-10 place-items-center rounded-full transition-colors duration-300 hover:bg-oxblood disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none'
+            >
+              <PlusIcon className='h-3 w-3' />
+            </button>
+          </div>
+        ) : (
+          <button
+            type='button'
+            onClick={onAddClick}
+            disabled={isAddingToCart || outOfStock}
+            className='mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-ink px-4 py-3 text-[13px] font-medium tracking-[0.04em] text-cream transition-colors duration-300 hover:bg-oxblood disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none'
+          >
+            {isAddingToCart ? (
+              <SpinnerIcon className='h-3.5 w-3.5' />
+            ) : (
+              <CartIcon />
+            )}
+            {isAddingToCart ? 'Adding…' : outOfStock ? 'Sold out' : 'Add to cart'}
+          </button>
+        )}
       </div>
     </article>
   );

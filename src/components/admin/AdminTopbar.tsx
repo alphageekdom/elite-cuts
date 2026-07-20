@@ -150,7 +150,7 @@ export default function AdminTopbar({ openMessageCount = 0 }: AdminTopbarProps) 
                 <span className="font-display text-[15px] font-medium text-ink">
                   Notifications
                   {unreadCount > 0 && (
-                    <span className="ml-2 text-[11px] font-mono text-camel">{unreadCount} new</span>
+                    <span className="ml-2 text-[11px] font-mono text-camel-deep">{unreadCount} new</span>
                   )}
                 </span>
                 {unreadCount > 0 && (
@@ -187,7 +187,7 @@ export default function AdminTopbar({ openMessageCount = 0 }: AdminTopbarProps) 
                       >
                         {/* Type icon */}
                         <div className={`w-7 h-7 rounded-full grid place-items-center shrink-0 mt-0.5 ${
-                          n.type === 'new_order' ? 'bg-green/15 text-green' : 'bg-camel/20 text-camel'
+                          n.type === 'new_order' ? 'bg-green/15 text-green' : 'bg-camel/20 text-camel-deep'
                         }`}>
                           {n.type === 'new_order' ? (
                             <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

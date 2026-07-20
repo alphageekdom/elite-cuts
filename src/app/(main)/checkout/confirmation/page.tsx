@@ -263,7 +263,7 @@ export default async function ConfirmationPage({ searchParams }: Props) {
                 <span>{formatMoney(order.totalCost)}</span>
               </div>
               {showRealizedAtPickup && (
-                <div className='flex justify-between text-[12px] text-camel'>
+                <div className='flex justify-between text-[12px] text-camel-deep'>
                   <span className='italic'>
                     {order.paymentResult?.settlementStatus === 'settled'
                       ? 'Settled at pickup (after weighing)'

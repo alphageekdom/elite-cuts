@@ -90,7 +90,7 @@ export default function OurStorySourcing() {
                 </div>
               </div>
               <div>
-                <div className='text-camel mb-4 text-[11px] tracking-[0.22em] uppercase'>
+                <div className='text-camel-deep mb-4 text-[11px] tracking-[0.22em] uppercase'>
                   {partner.eyebrow}
                 </div>
                 <h3 className='font-display mb-4 text-[clamp(26px,3vw,38px)] leading-[1.1] font-medium tracking-[-0.02em]'>

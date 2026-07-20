@@ -65,7 +65,7 @@ export default function CheckoutPublicPromos({ onApply }: Props) {
             disabled={isApplying}
             className="inline-flex items-center gap-1.5 rounded-full border border-line bg-cream px-3 py-1.5 font-mono text-[11px] tracking-[0.04em] text-ink-soft transition-all duration-200 hover:border-ink hover:text-ink disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-line disabled:hover:text-ink-soft"
           >
-            <span className="text-camel">+</span>
+            <span className="text-camel-deep">+</span>
             <span className="font-medium text-ink">{p.code}</span>
             <span className="text-muted">·</span>
             <span>{p.label}</span>

@@ -9,7 +9,7 @@ export type { Tier, ActivityStatus };
 
 export const TIER_CONFIG: Record<Tier, { label: string; pillClass: string; showStar: boolean }> = {
   master: { label: 'Master Cut', pillClass: 'bg-ink text-camel-soft', showStar: true },
-  connoisseur: { label: 'Connoisseur', pillClass: 'bg-camel/20 text-camel', showStar: true },
+  connoisseur: { label: 'Connoisseur', pillClass: 'bg-camel/20 text-camel-deep', showStar: true },
   regular: { label: 'Regular', pillClass: 'bg-ink/6 text-muted', showStar: false },
 };
 
@@ -19,7 +19,7 @@ export const ACTIVITY_CONFIG: Record<ActivityStatus, { label: string; pillClass:
   // appear on lighter backgrounds and stay with their canonical green-soft /
   // camel / oxblood pills.
   active: { label: 'Active', pillClass: 'bg-green/25 text-green-bright' },
-  dormant: { label: 'Dormant', pillClass: 'bg-camel/20 text-camel' },
+  dormant: { label: 'Dormant', pillClass: 'bg-camel/20 text-camel-deep' },
   'at-risk': { label: 'At risk', pillClass: 'bg-red-soft text-oxblood' },
   new: { label: 'New', pillClass: 'bg-ink text-cream' },
 };
@@ -32,7 +32,7 @@ export function deriveTags(row: CustomerTableRow): Array<{ label: string; cls: s
   if (row.orderCount >= 15) tags.push({ label: 'BULK BUYER', cls: 'bg-green-soft text-green' });
   if (activity === 'new') tags.push({ label: 'FIRST 30 DAYS', cls: 'bg-cream-deep text-ink-soft' });
   if (activity === 'at-risk') tags.push({ label: 'DORMANT', cls: 'bg-cream-deep text-ink-soft' });
-  if (row.savedCutsCount > 0) tags.push({ label: 'SAVED CUTS', cls: 'bg-camel/20 text-camel' });
+  if (row.savedCutsCount > 0) tags.push({ label: 'SAVED CUTS', cls: 'bg-camel/20 text-camel-deep' });
   if (tags.length === 0) tags.push({ label: 'REGULAR', cls: 'bg-cream-deep text-ink-soft' });
   return tags;
 }

@@ -34,11 +34,11 @@ export type ProductCategory = (typeof PRODUCT_CATEGORIES)[number];
 export const CATEGORY_COLORS: Record<string, string> = {
   Beef: 'bg-red-soft text-oxblood',
   Chicken: 'bg-green-soft text-green',
-  Pork: 'bg-[rgba(184,137,90,0.18)] text-camel',
+  Pork: 'bg-[rgba(184,137,90,0.18)] text-camel-deep',
   Lamb: 'bg-[rgba(28,24,20,0.08)] text-ink-soft',
-  Sausage: 'bg-[rgba(184,137,90,0.12)] text-camel',
+  Sausage: 'bg-[rgba(184,137,90,0.12)] text-camel-deep',
   Prepared: 'bg-[rgba(28,24,20,0.06)] text-muted',
   Bundles: 'bg-[rgba(74,107,58,0.12)] text-green',
-  Charcuterie: 'bg-[rgba(122,92,58,0.18)] text-camel',
+  Charcuterie: 'bg-[rgba(122,92,58,0.18)] text-camel-deep',
   Other: 'bg-cream-deep text-ink-soft',
 };

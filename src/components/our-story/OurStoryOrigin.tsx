@@ -16,7 +16,7 @@ export default function OurStoryOrigin() {
                 Started with one tomahawk and a lot of optimism.
               </h3>
               <p className='text-ink-soft mb-4 text-sm leading-[1.65] lg:max-w-[32ch]'>
-                Tangelo spent nine years as head butcher at a Beverly Hills
+                Tomás spent nine years as head butcher at a Beverly Hills
                 steakhouse. The kitchen was busy. The work was good. But the
                 cuts going out on $90 plates were getting mishandled by the
                 time they hit customers&apos; home kitchens — and that
@@ -50,7 +50,7 @@ export default function OurStoryOrigin() {
                 <em className='text-oxblood italic'>twelve cuts.</em>
               </h2>
               <p className='text-ink-soft first-letter:font-display first-letter:text-oxblood mb-5 max-w-[56ch] text-base leading-[1.75] first-letter:float-left first-letter:mt-1.5 first-letter:mr-3.5 first-letter:text-[clamp(44px,8vw,64px)] first-letter:leading-[0.9] first-letter:font-medium'>
-                Not twelve a day. Twelve total. Tangelo kept the lights on by
+                Not twelve a day. Twelve total. Tomás kept the lights on by
                 working nights at his old kitchen and letting the dry-aging
                 cabinet earn its keep slowly — every steak that came out of it
                 took 28 days, and there was no shortcut for that.

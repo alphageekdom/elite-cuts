@@ -4,18 +4,18 @@ import Reveal from '@/components/uielements/Reveal';
 
 const TEAM = [
   {
-    name: 'Tangelo Doe',
+    name: 'Tomás Reyes',
     role: 'Founder · Head Butcher',
     bio: 'Trained at Smith & Wollensky NYC, then nine years as head butcher at a Beverly Hills steakhouse before opening EliteCuts.',
     fact: 'Bone-in côte de boeuf, 28-day aged.',
-    img: '/images/our-story/team-tangelo-doe.jpg',
+    img: '/images/our-story/team-tomas-reyes.jpg',
   },
   {
-    name: 'Marcus Reyes',
+    name: 'Marcus Vega',
     role: 'Senior Butcher · Charcuterie',
     bio: 'Joined in 2021 from a Lyon-trained background. Runs the charcuterie program — house-cured saucisson, lardo, bresaola.',
     fact: 'Pork shoulder, 12 hours over oak.',
-    img: '/images/our-story/team-marcus-reyes.jpg',
+    img: '/images/our-story/team-marcus-vega.jpg',
   },
   {
     name: 'Elena Huang',
@@ -72,7 +72,7 @@ export default function OurStoryTeam() {
                   <div className='font-display mb-1 text-[20px] font-medium tracking-[-0.015em]'>
                     {member.name}
                   </div>
-                  <div className='text-camel mb-3.5 text-[11px] tracking-[0.18em] uppercase'>
+                  <div className='text-camel-deep mb-3.5 text-[11px] tracking-[0.18em] uppercase'>
                     {member.role}
                   </div>
                   <p className='text-ink-soft mb-3.5 text-[13px] leading-[1.55]'>

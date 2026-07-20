@@ -44,7 +44,7 @@ const About = () => {
             </h2>
 
             <p className='mb-5.5 max-w-[52ch] text-base leading-[1.75] text-ink-soft first-letter:float-left first-letter:mt-1.5 first-letter:mr-3 first-letter:font-display first-letter:text-[60px] first-letter:leading-[0.9] first-letter:font-medium first-letter:text-oxblood'>
-              Tangelo opened EliteCuts in 2018 with a simple rule: every cut
+              Tomás opened EliteCuts in 2018 with a simple rule: every cut
               should leave the counter looking like the butcher cared about it.
               Eight years later, we still cut to order, dry-age our beef
               in-house, and only carry meat from farms we know by name.
@@ -59,9 +59,9 @@ const About = () => {
             <div className='mt-12 flex items-center gap-6 border-t border-line pt-8'>
               <SignatureSvg />
               <div className='font-display'>
-                <div className='text-lg font-medium italic'>Tangelo Reyes</div>
+                <div className='text-lg font-medium italic'>Tomás Reyes</div>
                 <div className='text-sm font-sans not-italic tracking-[0.04em] text-muted'>
-                  Founder, EliteCuts
+                  Founder · Head Butcher
                 </div>
               </div>
             </div>
@@ -84,7 +84,7 @@ const About = () => {
               </div>
               <div className='mt-6 inline-flex flex-col rounded-sm bg-ink px-7 py-6 text-cream shadow-[0_20px_50px_rgba(0,0,0,0.15)] lg:absolute lg:bottom-16 lg:-left-8 lg:mt-0'>
                 <div className='mb-1.5 font-display text-[clamp(36px,4vw,44px)] leading-none tracking-[-0.03em] font-normal'>
-                  <em className='font-normal italic text-camel'>8+</em> yrs
+                  <em className='font-normal italic text-camel-deep'>8+</em> yrs
                 </div>
                 <div className='text-[11px] tracking-[0.18em] uppercase opacity-70'>
                   Serving San Diego

@@ -22,7 +22,7 @@ export default function AdminEyebrow({
   className = '',
 }: AdminEyebrowProps) {
   return (
-    <div className={`font-display italic ${SIZE_CLASSES[size]} text-camel ${className}`}>
+    <div className={`font-display italic ${SIZE_CLASSES[size]} text-camel-deep ${className}`}>
       {children}
     </div>
   );

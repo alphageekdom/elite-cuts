@@ -18,7 +18,7 @@ export default function EditorialEyebrow({
   const display = as === 'inline-block' ? 'inline-block' : 'block';
   return (
     <span
-      className={`font-display italic text-sm text-camel tracking-[0.02em] ${display} ${className}`}
+      className={`font-display italic text-sm text-camel-deep tracking-[0.02em] ${display} ${className}`}
     >
       {children}
     </span>

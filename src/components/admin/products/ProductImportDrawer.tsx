@@ -27,7 +27,7 @@ type Props = {
 
 const STATUS_CHIP: Record<RowResult['status'], { label: string; bg: string; text: string }> = {
   create: { label: 'CREATE', bg: 'bg-green-soft', text: 'text-green' },
-  update: { label: 'UPDATE', bg: 'bg-cream-deep', text: 'text-camel' },
+  update: { label: 'UPDATE', bg: 'bg-cream-deep', text: 'text-camel-deep' },
   skip:   { label: 'SKIP',   bg: 'bg-line-soft',  text: 'text-muted' },
   error:  { label: 'ERROR',  bg: 'bg-red-soft',   text: 'text-oxblood' },
 };
@@ -237,7 +237,7 @@ export default function ProductImportDrawer({ onClose, onCommitted }: Props) {
               <span className="text-muted">·</span>
               <span>
                 <span className="text-green font-medium">{dryRun.summary.create} new</span>,{' '}
-                <span className="text-camel font-medium">{dryRun.summary.update} updated</span>,{' '}
+                <span className="text-camel-deep font-medium">{dryRun.summary.update} updated</span>,{' '}
                 <span className="text-muted">{dryRun.summary.skip} unchanged</span>
                 {errorCount > 0 && (
                   <>, <span className="text-oxblood font-medium">{errorCount} error{errorCount === 1 ? '' : 's'}</span></>
@@ -284,7 +284,7 @@ export default function ProductImportDrawer({ onClose, onCommitted }: Props) {
                                 <div key={i} className="font-mono text-[11px]">
                                   <span className="text-muted">{d.field}:</span>{' '}
                                   <span className="text-ink-soft line-through">{fmtCell(d.from)}</span>{' '}
-                                  <span className="text-camel">→</span>{' '}
+                                  <span className="text-camel-deep">→</span>{' '}
                                   <span className="text-ink">{fmtCell(d.to)}</span>
                                 </div>
                               ))}

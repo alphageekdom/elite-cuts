@@ -109,7 +109,7 @@ function Stars({ rating, size = 'sm' }: { rating: number; size?: 'sm' | 'md' | '
   const sizes = { sm: 'h-3.5 w-3.5', md: 'h-4 w-4', lg: 'h-5 w-5' };
   const full = Math.round(rating);
   return (
-    <div className='flex gap-0.5 text-camel' aria-label={`${rating.toFixed(1)} out of 5 stars`}>
+    <div className='flex gap-0.5 text-camel-deep' aria-label={`${rating.toFixed(1)} out of 5 stars`}>
       {Array.from({ length: 5 }, (_, i) => (
         <svg
           key={i}
@@ -156,7 +156,7 @@ function getUserTier(pts: number): UserTier {
 
 const TIER_PILL: Partial<Record<UserTier, { label: string; cls: string }>> = {
   'Master Cut':  { label: 'Master Cut',  cls: 'bg-oxblood/10 text-oxblood' },
-  'Connoisseur': { label: 'Connoisseur', cls: 'bg-camel/15 text-camel'     },
+  'Connoisseur': { label: 'Connoisseur', cls: 'bg-camel/15 text-camel-deep'     },
 };
 
 // ─── Avatar initials helper ───────────────────────────────────────────────────
@@ -495,7 +495,7 @@ export default async function ProductPage({ params }: PageProps) {
                 <div className='flex flex-col gap-2'>
                   {dist.map(({ star, count, fraction }) => (
                     <div key={star} className='grid grid-cols-[18px_1fr_24px] items-center gap-2.5 text-[12px] text-ink-soft'>
-                      <span className='text-[11px] text-camel'>{star}</span>
+                      <span className='text-[11px] text-camel-deep'>{star}</span>
                       <div className='h-1 overflow-hidden rounded-full bg-cream-deep'>
                         <div
                           className='h-full rounded-full bg-camel transition-[width] duration-700'

@@ -5,7 +5,7 @@ import type { MessageStatus } from '@/lib/messages/constants';
 // status (e.g. 'archived') only needs one map updated.
 
 const STYLE: Record<MessageStatus, string> = {
-  open: 'bg-camel/15 text-camel',
+  open: 'bg-camel/15 text-camel-deep',
   closed: 'bg-cream-deep text-muted',
 };
 

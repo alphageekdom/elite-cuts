@@ -69,7 +69,7 @@ export default function OurStoryVisit({ street, cityStateZip, phone }: Props) {
         <Reveal>
           <div className='border-line-soft bg-paper overflow-hidden rounded-sm border lg:grid lg:grid-cols-2'>
             <div className='p-8 lg:p-14'>
-              <p className='text-camel mb-4 text-[11px] tracking-[0.22em] uppercase'>
+              <p className='text-camel-deep mb-4 text-[11px] tracking-[0.22em] uppercase'>
                 § Come say hi
               </p>
               <h2 className='font-display mb-5 max-w-[14ch] text-[clamp(30px,4vw,46px)] leading-[1.05] font-normal tracking-tight'>

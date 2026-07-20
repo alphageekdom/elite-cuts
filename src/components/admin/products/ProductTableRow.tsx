@@ -160,7 +160,7 @@ export default function ProductTableRowComponent({
             <span className="inline-block px-1.5 py-0.5 rounded-full text-[10px] font-mono tracking-[0.06em] uppercase bg-red-soft text-oxblood">AGED</span>
           )}
           {product.isFeatured && (
-            <span className="inline-block px-1.5 py-0.5 rounded-full text-[10px] font-mono tracking-[0.06em] uppercase bg-camel/18 text-camel">FEATURED</span>
+            <span className="inline-block px-1.5 py-0.5 rounded-full text-[10px] font-mono tracking-[0.06em] uppercase bg-camel/18 text-camel-deep">FEATURED</span>
           )}
           {product.isNewArrival && (
             <span className="inline-block px-1.5 py-0.5 rounded-full text-[10px] font-mono tracking-[0.06em] uppercase bg-ink text-cream">NEW</span>

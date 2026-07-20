@@ -261,7 +261,7 @@ export default function StocktakeDrawer({ rows, onClose }: Props) {
                 </span>
                 <span>total</span>
                 {showOnlyChanged && (
-                  <span className="ml-1 text-[10px] uppercase tracking-widest text-camel">· filtered</span>
+                  <span className="ml-1 text-[10px] uppercase tracking-widest text-camel-deep">· filtered</span>
                 )}
               </button>
             )}
