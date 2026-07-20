@@ -150,7 +150,7 @@ export default function ReviewForm({ productId, ownReview }: Props) {
 
       {/* Star picker */}
       <div>
-        <div className='mb-2 flex items-center gap-0.5 text-camel'>
+        <div className='mb-2 flex items-center gap-0.5 text-camel-deep'>
           {[1, 2, 3, 4, 5].map((star) => (
             <button
               key={star}
@@ -167,7 +167,7 @@ export default function ReviewForm({ productId, ownReview }: Props) {
           ))}
         </div>
         {display > 0 && (
-          <p className='text-[12px] font-medium text-camel'>
+          <p className='text-[12px] font-medium text-camel-deep'>
             {STAR_LABELS[display - 1]}
           </p>
         )}

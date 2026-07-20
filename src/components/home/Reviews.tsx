@@ -5,7 +5,6 @@ import SectionEyebrow from './SectionEyebrow';
 
 const REVIEWS: readonly ReviewCardProps[] = [
   {
-    variant: 'light',
     quote: (
       <>
         Picked up a bone-in ribeye for our anniversary last month — they
@@ -20,7 +19,6 @@ const REVIEWS: readonly ReviewCardProps[] = [
     tier: 'master',
   },
   {
-    variant: 'dark',
     quote: (
       <>
         Standing pickup for the dry-aged ribeyes every other Friday. The order
@@ -34,7 +32,6 @@ const REVIEWS: readonly ReviewCardProps[] = [
     tier: 'connoisseur',
   },
   {
-    variant: 'light',
     quote: (
       <>
         Came in for a whole chicken, left with the heritage pork belly on the
@@ -72,7 +69,7 @@ const Reviews = () => {
 
         <div className='grid grid-cols-1 gap-8 lg:grid-cols-3'>
           {REVIEWS.map((review, i) => (
-            <Reveal key={review.name} delayMs={160 + i * 80}>
+            <Reveal key={review.name} delayMs={160 + i * 80} className='h-full'>
               <ReviewCard {...review} />
             </Reveal>
           ))}

@@ -232,7 +232,7 @@ export default async function ReceiptPage({ params }: Props) {
           {/* ── Ready for Pickup banner ── */}
           {order.orderStatus === 'Ready for Pickup' && (
             <div className="mx-8 sm:mx-12 mt-5 px-5 py-4 rounded border border-camel/25 bg-camel/8 flex items-start gap-3.5">
-              <span className="w-7 h-7 rounded-full bg-camel/20 text-camel grid place-items-center shrink-0 mt-0.5">
+              <span className="w-7 h-7 rounded-full bg-camel/20 text-camel-deep grid place-items-center shrink-0 mt-0.5">
                 <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
@@ -281,7 +281,7 @@ export default async function ReceiptPage({ params }: Props) {
                   <span className="text-ink-soft">
                     Points redeemed ({(order.pointsRedeemed ?? 0).toLocaleString('en-US')} pts)
                     {isCancelled && (
-                      <em className="not-italic ml-2 text-[11px] tracking-[0.04em] uppercase text-camel">returned</em>
+                      <em className="not-italic ml-2 text-[11px] tracking-[0.04em] uppercase text-camel-deep">returned</em>
                     )}
                   </span>
                   <span className={`font-mono text-[13px] ${isCancelled ? 'text-muted line-through' : 'text-green'}`}>
@@ -302,7 +302,7 @@ export default async function ReceiptPage({ params }: Props) {
               </span>
             </div>
             {showRealizedAtPickup && (
-              <div className="mt-2 flex justify-between items-baseline text-[13px] text-camel">
+              <div className="mt-2 flex justify-between items-baseline text-[13px] text-camel-deep">
                 <span className="italic">
                   {order.paymentResult?.settlementStatus === 'settled'
                     ? 'Settled at pickup (after weighing your cuts)'

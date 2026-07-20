@@ -41,7 +41,7 @@ export default function ProfileAccountInfo({ email, joinedAt }: Props) {
       <InfoRow
         label="Birthday"
         value={
-          <Link href="/profile?tab=settings" className="text-camel text-xs font-medium border-b border-current">
+          <Link href="/profile?tab=settings" className="text-camel-deep text-xs font-medium border-b border-current">
             Add
           </Link>
         }

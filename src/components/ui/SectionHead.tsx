@@ -9,7 +9,7 @@ export default function SectionHead({ label, num }: Props) {
   return (
     <div className='mb-14 flex items-baseline gap-6'>
       {num && (
-        <span className='font-display text-sm font-medium text-camel'>{num}</span>
+        <span className='font-display text-sm font-medium text-camel-deep'>{num}</span>
       )}
       <SectionLabel>{label}</SectionLabel>
       <span className='h-px flex-1 bg-line' aria-hidden />

@@ -31,7 +31,7 @@ type ListProps = { items: ReactNode[] };
 
 export function LegalList({ items }: ListProps) {
   return (
-    <ul className='ml-5 flex list-disc flex-col gap-2.5 text-[15px] leading-[1.7] text-ink-soft marker:text-camel'>
+    <ul className='ml-5 flex list-disc flex-col gap-2.5 text-[15px] leading-[1.7] text-ink-soft marker:text-camel-deep'>
       {items.map((item, i) => (
         <li key={i} className='pl-1'>{item}</li>
       ))}

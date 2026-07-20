@@ -45,7 +45,7 @@ export default function LegalPage({
 
       <div className='mx-auto max-w-3xl px-6 py-14 sm:px-8 sm:py-16'>
         <aside className='mb-14 rounded-lg border border-line-soft bg-paper p-6 sm:p-7'>
-          <p className='mb-2 text-[11px] font-medium uppercase tracking-[0.22em] text-camel'>
+          <p className='mb-2 text-[11px] font-medium uppercase tracking-[0.22em] text-camel-deep'>
             Portfolio notice
           </p>
           <p className='text-[14px] leading-relaxed text-ink-soft'>

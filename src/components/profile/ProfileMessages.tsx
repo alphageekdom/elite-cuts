@@ -34,7 +34,7 @@ type Props = {
 
 function statusPill(status: MessageStatus) {
   return status === 'open'
-    ? 'bg-camel/15 text-camel'
+    ? 'bg-camel/15 text-camel-deep'
     : 'bg-cream-deep text-muted';
 }
 

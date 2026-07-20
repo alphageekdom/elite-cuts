@@ -8,7 +8,7 @@ type SectionLabelProps = {
 
 const COLOR_CLASSES: Record<SectionLabelColor, string> = {
   muted: 'text-muted',
-  camel: 'text-camel',
+  camel: 'text-camel-deep',
 };
 
 // Uppercase tracking section label — sits above a heading on customer

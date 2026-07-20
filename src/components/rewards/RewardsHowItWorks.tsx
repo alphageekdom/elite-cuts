@@ -72,7 +72,7 @@ export default function RewardsHowItWorks({ settings }: Props) {
               <div className='relative pt-16 md:pt-12'>
                 <div
                   aria-hidden
-                  className='absolute top-0 left-0 font-display text-[64px] md:text-[80px] font-normal italic leading-none tracking-tight text-camel opacity-50'
+                  className='absolute top-0 left-0 font-display text-[64px] md:text-[80px] font-normal italic leading-none tracking-tight text-camel-deep opacity-50'
                 >
                   {step.n}
                 </div>

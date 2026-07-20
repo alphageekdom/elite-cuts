@@ -11,7 +11,6 @@ const TIER_LABEL: Record<'master' | 'connoisseur', string> = {
 };
 
 export type ReviewCardProps = {
-  variant: 'light' | 'dark';
   quote: ReactNode;
   name: string;
   meta: string;
@@ -19,30 +18,27 @@ export type ReviewCardProps = {
   tier?: 'master' | 'connoisseur';
 };
 
-const ReviewCard = ({ variant, quote, name, meta, avatarColor, tier }: ReviewCardProps) => {
-  const isDark = variant === 'dark';
-  const surface = isDark ? 'bg-ink text-cream' : 'bg-paper text-ink';
-  const reviewerBorder = isDark ? 'border-cream/15' : 'border-ink/10';
+const ReviewCard = ({ quote, name, meta, avatarColor, tier }: ReviewCardProps) => {
   const initials = name.split(' ').map((n) => n[0]).join('');
 
   return (
     <article
-      className={`relative rounded-sm px-7 py-10 transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:-translate-y-1 hover:shadow-[0_30px_60px_rgba(28,24,20,0.08)] motion-reduce:transition-none motion-reduce:hover:translate-y-0 md:px-11 md:py-12 ${surface}`}
+      className='relative flex h-full flex-col rounded-xl border border-line bg-paper px-7 py-10 text-ink transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:-translate-y-1 hover:shadow-[0_30px_60px_rgba(28,24,20,0.08)] motion-reduce:transition-none motion-reduce:hover:translate-y-0 md:px-11 md:py-12'
     >
       <div
         aria-hidden='true'
-        className='mb-2 font-display text-[clamp(56px,9vw,80px)] leading-[0.7] text-camel'
+        className='mb-2 font-display text-[clamp(56px,9vw,80px)] leading-[0.7] text-camel-deep'
       >
         &ldquo;
       </div>
-      <div aria-hidden='true' className='mb-5 text-sm tracking-[2px] text-camel'>
+      <div aria-hidden='true' className='mb-5 text-sm tracking-[2px] text-camel-deep'>
         ★★★★★
       </div>
       <span className='sr-only'>Rated 5 out of 5 stars</span>
       <p className='mb-9 font-display text-[clamp(19px,2.2vw,22px)] leading-[1.4] tracking-[-0.01em] font-normal'>
         {quote}
       </p>
-      <div className={`flex items-center gap-4 border-t pt-6 ${reviewerBorder}`}>
+      <div className='mt-auto flex items-center gap-4 border-t border-line-soft pt-6'>
         <div
           aria-hidden='true'
           className={`grid h-12 w-12 shrink-0 place-items-center rounded-full text-[15px] font-semibold ${avatarColor}`}

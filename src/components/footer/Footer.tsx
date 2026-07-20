@@ -173,12 +173,6 @@ const Footer = async () => {
             <div className='flex flex-col gap-1.5 text-cream/70'>
               <div>
                 &copy; {year} {settings.shopName}.{' '}
-                <span className='text-cream/65'>
-                  Portfolio project — not a real shop. No orders are processed.
-                </span>
-                <span className='mx-2 text-cream/40' aria-hidden>
-                  ·
-                </span>
                 <Link
                   href='/terms'
                   className='text-cream/70 transition-colors duration-300 hover:text-cream focus-visible:text-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cream motion-reduce:transition-none'

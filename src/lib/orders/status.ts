@@ -18,17 +18,17 @@ export function getDashboardOrderStatusLabel(status: string): string {
 
 export const DASHBOARD_ORDER_STATUS_STYLES: Record<string, string> = {
   'Order Placed':     'bg-line-soft text-ink-soft',
-  'Preparing':        'bg-camel/15 text-camel',
-  'Ready for Pickup': 'bg-camel/15 text-camel',
-  'Out for Delivery': 'bg-camel/15 text-camel',
+  'Preparing':        'bg-camel/15 text-camel-deep',
+  'Ready for Pickup': 'bg-camel/15 text-camel-deep',
+  'Out for Delivery': 'bg-camel/15 text-camel-deep',
   'Completed':        'bg-green-soft text-green',
   'Cancelled':        'bg-red-soft text-oxblood',
 };
 
 export const RECEIPT_ORDER_STATUS_STYLES: Record<string, string> = {
-  'Order Placed':     'bg-camel/18 text-camel',
-  'Preparing':        'bg-camel/18 text-camel',
-  'Ready for Pickup': 'bg-camel/18 text-camel',
+  'Order Placed':     'bg-camel/18 text-camel-deep',
+  'Preparing':        'bg-camel/18 text-camel-deep',
+  'Ready for Pickup': 'bg-camel/18 text-camel-deep',
   'Out for Delivery': 'bg-ink/10 text-ink',
   'Completed':        'bg-green-soft text-green',
   'Cancelled':        'bg-red-soft text-oxblood',
@@ -42,9 +42,9 @@ export type TableOrderStatusPill = {
 
 export const TABLE_ORDER_STATUS_PILL: Record<string, TableOrderStatusPill> = {
   'Order Placed':     { bg: 'bg-line-soft',  text: 'text-muted',    label: 'Order Placed' },
-  'Preparing':        { bg: 'bg-camel/18',   text: 'text-camel',    label: 'Preparing' },
-  'Ready for Pickup': { bg: 'bg-camel/18',   text: 'text-camel',    label: 'Ready' },
-  'Out for Delivery': { bg: 'bg-camel/18',   text: 'text-camel',    label: 'Out for Delivery' },
+  'Preparing':        { bg: 'bg-camel/18',   text: 'text-camel-deep',    label: 'Preparing' },
+  'Ready for Pickup': { bg: 'bg-camel/18',   text: 'text-camel-deep',    label: 'Ready' },
+  'Out for Delivery': { bg: 'bg-camel/18',   text: 'text-camel-deep',    label: 'Out for Delivery' },
   'Completed':        { bg: 'bg-green-soft', text: 'text-green',    label: 'Completed' },
   'Cancelled':        { bg: 'bg-red-soft',   text: 'text-oxblood',  label: 'Cancelled' },
 };

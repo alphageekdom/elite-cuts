@@ -135,7 +135,7 @@ export default function ProfileRewards({
               <div className='flex flex-wrap items-baseline gap-3 mb-2'>
                 <span className='font-display text-[56px] font-normal leading-none tracking-tight'>
                   {fmt(points)}
-                  <em className='ml-1 font-normal italic text-camel text-2xl'>pts</em>
+                  <em className='ml-1 font-normal italic text-camel-deep text-2xl'>pts</em>
                 </span>
               </div>
               <p className='text-[13px] text-cream/65'>
@@ -284,7 +284,7 @@ export default function ProfileRewards({
                   key={`${row.createdAt}-${i}`}
                   className={`grid grid-cols-[36px_1fr_auto] items-center gap-4 py-3.5 sm:grid-cols-[36px_1fr_auto_80px] ${i < visible.length - 1 ? 'border-b border-line-soft' : ''}`}
                 >
-                  <div className={`grid h-9 w-9 place-items-center rounded-full ${kind === 'earned' ? 'bg-green/10 text-green' : kind === 'redeemed' ? 'bg-oxblood/10 text-oxblood' : 'bg-camel/15 text-camel'}`}>
+                  <div className={`grid h-9 w-9 place-items-center rounded-full ${kind === 'earned' ? 'bg-green/10 text-green' : kind === 'redeemed' ? 'bg-oxblood/10 text-oxblood' : 'bg-camel/15 text-camel-deep'}`}>
                     {kind === 'earned' && (
                       <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2} className='h-4 w-4' aria-hidden>
                         <circle cx='12' cy='12' r='9' /><line x1='12' y1='7' x2='12' y2='13' /><line x1='9' y1='10' x2='15' y2='10' />

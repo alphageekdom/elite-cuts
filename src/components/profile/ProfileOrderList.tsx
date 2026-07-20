@@ -14,7 +14,7 @@ type Props = {
 function statusChip(status: OrderStatus): string {
   switch (status) {
     case 'Completed':       return 'bg-green/10 text-green';
-    case 'Ready for Pickup': return 'bg-camel/15 text-camel';
+    case 'Ready for Pickup': return 'bg-camel/15 text-camel-deep';
     case 'Cancelled':       return 'bg-oxblood/10 text-oxblood';
     default:                return 'bg-ink/10 text-muted';
   }
@@ -142,7 +142,7 @@ export default function ProfileOrderList({ orders, showAll = false }: Props) {
                 {formatMoney(order.totalCost)}
               </p>
               {orderHasRealizedDifference && (
-                <p className="font-mono text-[10px] tracking-[0.04em] text-camel italic">
+                <p className="font-mono text-[10px] tracking-[0.04em] text-camel-deep italic">
                   {realizedTotalShift >= 0 ? '+' : '−'}
                   {formatMoney(Math.abs(realizedTotalShift))} at pickup
                   {order.settlementStatus === 'settled' && ' · settled'}

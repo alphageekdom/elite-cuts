@@ -70,7 +70,7 @@ export default function OurStoryPrinciples() {
                   .filter(Boolean)
                   .join(' ')}
               >
-                <div className='text-camel mb-4 font-mono text-[11px] tracking-[0.06em]'>
+                <div className='text-camel-deep mb-4 font-mono text-[11px] tracking-[0.06em]'>
                   PRINCIPLE {p.num}
                 </div>
                 <h3 className='font-display mb-3.5 text-[clamp(22px,4vw,26px)] leading-[1.15] font-medium tracking-[-0.02em]'>
