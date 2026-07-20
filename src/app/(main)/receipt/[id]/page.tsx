@@ -26,9 +26,8 @@ type Props = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const { shopName } = await getShopSettings();
   const ref = `#EC-${id.slice(-4).toUpperCase()}`;
-  return { title: `Receipt ${ref} · ${shopName}` };
+  return { title: `Receipt ${ref}` };
 }
 
 // ── helpers ─────────────────────────────────────────────────────────────────

@@ -1,7 +1,13 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: 'Profile',
+  robots: { index: false, follow: false },
+};
 import connectDB from '@/config/database';
 import { getSessionUser } from '@/lib/auth/session';
 import User, { type PointsHistoryEntry, type TierValue } from '@/models/User';

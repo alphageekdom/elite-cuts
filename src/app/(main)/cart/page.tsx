@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 
 import connectDB from '@/config/database';
 import Product, { type SerializedProduct } from '@/models/Product';
@@ -55,8 +56,8 @@ const StepLine = () => (
   <span aria-hidden='true' className='h-px w-8 bg-line' />
 );
 
-export const metadata = {
-  title: 'Cart — EliteCuts',
+export const metadata: Metadata = {
+  title: 'Cart',
 };
 
 const CartPage = async () => {

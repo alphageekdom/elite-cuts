@@ -12,7 +12,7 @@ import SectionLabel from '@/components/ui/SectionLabel';
 export async function generateMetadata(): Promise<Metadata> {
   const { shopName } = await getShopSettings();
   return {
-    title: `Contact · ${shopName}`,
+    title: 'Contact',
     description: `Reach ${shopName} for custom cuts, pickup questions, holiday orders, and weeknight recommendations.`,
   };
 }

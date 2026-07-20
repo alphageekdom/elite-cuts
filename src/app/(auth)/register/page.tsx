@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import Register from '@/components/auth/Register';
 
 export const metadata: Metadata = {
-  title: 'Create Account | EliteCuts',
+  title: 'Create Account',
 };
 
 export default function RegisterPage() {

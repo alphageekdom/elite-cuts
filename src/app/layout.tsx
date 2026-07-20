@@ -9,6 +9,7 @@ import AuthProvider from '@/components/AuthProvider';
 import { CartProvider } from '@/context/CartContext';
 import { ShopSettingsProvider } from '@/context/ShopSettingsContext';
 import { getShopSettings } from '@/lib/shop-settings/queries';
+import { SITE_URL } from '@/lib/seo/site-url';
 
 import { Toaster } from 'sonner';
 
@@ -34,12 +35,23 @@ const jetbrains = JetBrains_Mono({
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getShopSettings();
+  const defaultTitle = `${settings.shopName} — Premium Butcher, ${settings.city}`;
   return {
+    metadataBase: new URL(SITE_URL),
     title: {
-      default: `${settings.shopName} — Premium Butcher, ${settings.city}`,
+      default: defaultTitle,
       template: `%s · ${settings.shopName}`,
     },
     description: settings.description,
+    openGraph: {
+      type: 'website',
+      siteName: settings.shopName,
+      title: defaultTitle,
+      description: settings.description,
+    },
+    twitter: {
+      card: 'summary_large_image',
+    },
   };
 }
 

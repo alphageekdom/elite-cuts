@@ -29,7 +29,7 @@ type PopulatedUser = {
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Orders · EliteCuts Admin',
+  title: 'Orders · Admin',
 };
 
 type Props = {

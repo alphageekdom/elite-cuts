@@ -17,7 +17,7 @@ import CheckoutStepRail from '@/components/checkout/CheckoutStepRail';
 import ConfirmationCartReset from '@/components/checkout/ConfirmationCartReset';
 
 export const metadata: Metadata = {
-  title: 'Order Confirmed · EliteCuts',
+  title: 'Order Confirmed',
 };
 
 export const dynamic = 'force-dynamic';

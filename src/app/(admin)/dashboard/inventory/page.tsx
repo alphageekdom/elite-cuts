@@ -19,7 +19,7 @@ import { productCategoryCounts } from '@/lib/admin/products';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Inventory · EliteCuts Admin',
+  title: 'Inventory · Admin',
 };
 
 export default async function AdminInventoryPage() {

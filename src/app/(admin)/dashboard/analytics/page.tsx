@@ -26,7 +26,7 @@ import {
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Analytics · EliteCuts Admin',
+  title: 'Analytics · Admin',
 };
 
 // CSS variable values used as inline chart colors — intentionally separate from

@@ -12,7 +12,7 @@ import type { PromoFormRow } from '@/components/admin/promos/PromoFormDrawer';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Promos · EliteCuts Admin',
+  title: 'Promos · Admin',
 };
 
 type SavingsRow = { _id: Types.ObjectId | null; totalSavings: number };
