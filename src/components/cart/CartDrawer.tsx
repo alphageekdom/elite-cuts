@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -16,6 +16,11 @@ type Props = {
   isOpen: boolean;
   onClose: () => void;
 };
+
+// Same inline Tab-cycle trap the admin SlideDrawer runs — kept local because
+// the two drawers are the only consumers and each owns its own trap.
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 const CloseIcon = () => (
   <svg
@@ -128,17 +133,49 @@ const CartDrawer = ({ isOpen, onClose }: Props) => {
   const isLoggedIn = Boolean(session?.user);
   const count = cartItems.length;
   const mounted = useIsMounted();
+  const asideRef = useRef<HTMLElement>(null);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
 
   const totals = useMemo(
     () => computeTotals(cartItems, { isLoggedIn }),
     [cartItems, isLoggedIn],
   );
 
-  // Body scroll lock + ESC to close. Both reset when the drawer closes.
+  // Focus moves to the close button on open and returns to whatever opened
+  // the drawer on close. Keyed on isOpen alone — the sibling effect re-runs
+  // whenever the parent re-renders (inline onClose identity), and re-running
+  // this one would yank focus back to the close button mid-interaction.
+  useEffect(() => {
+    if (!isOpen) return;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    closeBtnRef.current?.focus();
+    return () => previouslyFocused?.focus();
+  }, [isOpen]);
+
+  // Body scroll lock + ESC to close + Tab cycling inside the drawer. All
+  // reset when the drawer closes.
   useEffect(() => {
     if (!isOpen) return;
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const root = asideRef.current;
+      if (!root) return;
+      const focusables = root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      if (e.shiftKey && active === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     document.addEventListener('keydown', handleKey);
     document.body.style.overflow = 'hidden';
@@ -155,16 +192,18 @@ const CartDrawer = ({ isOpen, onClose }: Props) => {
       <div
         aria-hidden={!isOpen}
         onClick={onClose}
-        className={`fixed inset-0 z-[100] bg-ink/40 backdrop-blur-[4px] transition-opacity duration-400 motion-reduce:transition-none ${
+        className={`fixed inset-0 z-100 bg-ink/40 backdrop-blur-xs transition-opacity duration-400 motion-reduce:transition-none ${
           isOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
         }`}
       />
       <aside
+        ref={asideRef}
         role='dialog'
         aria-label='Cart'
-        aria-hidden={!isOpen}
-        className={`fixed inset-y-0 right-0 z-[101] flex w-full max-w-115 translate-x-full flex-col bg-cream shadow-[-20px_0_60px_rgba(0,0,0,0.15)] transition-transform duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] motion-reduce:transition-none ${
-          isOpen ? '!translate-x-0' : ''
+        aria-modal={isOpen || undefined}
+        inert={!isOpen}
+        className={`fixed inset-y-0 right-0 z-101 flex w-full max-w-115 translate-x-full flex-col bg-cream shadow-[-20px_0_60px_rgba(0,0,0,0.15)] transition-transform duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] motion-reduce:transition-none ${
+          isOpen ? 'translate-x-0!' : ''
         }`}
       >
         <header className='flex shrink-0 items-center justify-between border-b border-line-soft px-7 py-6'>
@@ -175,6 +214,7 @@ const CartDrawer = ({ isOpen, onClose }: Props) => {
             </em>
           </h2>
           <button
+            ref={closeBtnRef}
             type='button'
             onClick={onClose}
             aria-label='Close cart'

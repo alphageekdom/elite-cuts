@@ -21,7 +21,7 @@ type ProfileMenuProps = {
 };
 
 const ITEM_CLASS =
-  'block w-full px-4 py-2 text-left text-sm text-ink-soft transition-colors motion-reduce:transition-none hover:bg-cream-deep';
+  'block w-full px-4 py-2 text-left text-sm text-ink-soft transition-colors motion-reduce:transition-none hover:bg-cream-deep focus-visible:outline-none focus-visible:bg-cream-deep focus-visible:ring-2 focus-visible:ring-oxblood focus-visible:ring-inset';
 
 const ADMIN_AVATAR = 'bg-linear-to-br from-ink to-oxblood-deep text-camel';
 
@@ -43,6 +43,8 @@ const ProfileMenu = ({
   onSignOut,
 }: ProfileMenuProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const firstItemRef = useRef<HTMLAnchorElement>(null);
 
   // mousedown (not click) so we close before any inside onClick fires —
   // avoids double-handling for menu-item clicks that trigger navigation.
@@ -58,8 +60,20 @@ const ProfileMenu = ({
       }
     };
 
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+        triggerRef.current?.focus();
+      }
+    };
+
+    firstItemRef.current?.focus();
     document.addEventListener('mousedown', handlePointerDown);
-    return () => document.removeEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, [isOpen, onClose]);
 
   const avatarColor = resolveAvatarColor(userId, isAdmin, rewardPoints);
@@ -67,10 +81,10 @@ const ProfileMenu = ({
   return (
     <div ref={containerRef} className='relative'>
       <button
+        ref={triggerRef}
         type='button'
         id='user-menu-button'
         aria-expanded={isOpen}
-        aria-haspopup='menu'
         onClick={onToggle}
         className={`rounded-full ring-1 ring-line transition-shadow motion-reduce:transition-none hover:ring-camel ${FOCUS_RING}`}
       >
@@ -95,34 +109,22 @@ const ProfileMenu = ({
       </button>
       {isOpen && (
         <div
-          role='menu'
-          aria-orientation='vertical'
           aria-labelledby='user-menu-button'
-          tabIndex={-1}
           className='absolute right-0 z-10 mt-3 w-48 rounded-md border border-line bg-paper py-1 shadow-lg ring-1 ring-black/5'
         >
           <Link
+            ref={firstItemRef}
             href='/profile'
-            role='menuitem'
-            tabIndex={-1}
             onClick={onClose}
             className={ITEM_CLASS}
           >
             Your Profile
           </Link>
-          <Link
-            href='/profile?tab=saved'
-            role='menuitem'
-            tabIndex={-1}
-            onClick={onClose}
-            className={ITEM_CLASS}
-          >
+          <Link href='/profile?tab=saved' onClick={onClose} className={ITEM_CLASS}>
             Saved Cuts
           </Link>
           <button
             type='button'
-            role='menuitem'
-            tabIndex={-1}
             onClick={() => {
               onClose();
               onSignOut();
