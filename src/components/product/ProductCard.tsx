@@ -186,7 +186,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
           <HeartIcon filled={isBookmarked} />
         </button>
 
-        <div className='absolute right-4 bottom-4 left-4 z-2 translate-y-[120%] opacity-0 transition-[transform,opacity] duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] max-md:translate-y-0 max-md:opacity-100 md:group-hover:translate-y-0 md:group-hover:opacity-100 motion-reduce:transition-none motion-reduce:max-md:translate-y-0 motion-reduce:max-md:opacity-100'>
+        <div className='absolute right-4 bottom-4 left-4 z-2 translate-y-[120%] opacity-0 transition-[transform,opacity] duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] max-md:translate-y-0 max-md:opacity-100 md:group-hover:translate-y-0 md:group-hover:opacity-100 md:group-focus-within:translate-y-0 md:group-focus-within:opacity-100 pointer-coarse:translate-y-0 pointer-coarse:opacity-100 motion-reduce:transition-none motion-reduce:max-md:translate-y-0 motion-reduce:max-md:opacity-100'>
           {inCart ? (
             <div
               role='group'

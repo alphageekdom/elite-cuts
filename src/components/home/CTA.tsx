@@ -36,7 +36,7 @@ const CTA = () => {
               <ArrowIcon className='transition-transform duration-300 group-hover/primary:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover/primary:translate-x-0' />
             </Link>
             <Link
-              href='#visit'
+              href='/contact'
               className='inline-flex items-center rounded-full border border-cream/40 px-8 py-4 text-sm font-medium tracking-[0.04em] text-cream transition-[border-color,background-color] duration-300 hover:border-cream hover:bg-cream/5 motion-reduce:transition-none'
             >
               Visit the shop
