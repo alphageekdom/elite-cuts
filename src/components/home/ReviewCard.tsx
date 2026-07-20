@@ -38,6 +38,7 @@ const ReviewCard = ({ variant, quote, name, meta, avatarColor, tier }: ReviewCar
       <div aria-hidden='true' className='mb-5 text-sm tracking-[2px] text-camel'>
         ★★★★★
       </div>
+      <span className='sr-only'>Rated 5 out of 5 stars</span>
       <p className='mb-9 font-display text-[clamp(19px,2.2vw,22px)] leading-[1.4] tracking-[-0.01em] font-normal'>
         {quote}
       </p>

@@ -11,20 +11,23 @@ type Partner = {
   title: string;
   body: string;
   href: string;
+  linkLabel: string;
   image: StaticImageData;
 };
 
 const PARTNERS: readonly Partner[] = [
   {
     title: 'Premium Grills',
-    body: 'Heavy-duty grills built for the edge-to-edge sear a thick ribeye actually needs — from a partner we trust on heat.',
+    body: 'Heavy-duty grills built for the edge-to-edge sear a thick ribeye actually needs.',
     href: 'https://rcsgasgrills.com/collections/bbq-grills',
+    linkLabel: 'Browse grills',
     image: GrillImage,
   },
   {
     title: 'Kitchen Knives',
-    body: 'Sharp, balanced blades from a knife shop we trust — the difference between cutting a roast and fighting it.',
+    body: 'Sharp, balanced blades — the difference between cutting a roast and fighting it.',
     href: 'https://cutleryandmore.com/collections/kitchen-knives-cutlery',
+    linkLabel: 'Browse knives',
     image: KnivesImage,
   },
 ];
@@ -56,11 +59,11 @@ const Partners = () => {
               <article className='group overflow-hidden rounded-sm bg-paper transition-transform duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:-translate-y-1 motion-reduce:hover:translate-y-0 motion-reduce:transition-none'>
                 <div className='relative h-56 overflow-hidden md:h-64 lg:h-72'>
                   <span className='absolute top-4 left-4 z-2 rounded-full bg-cream px-3 py-1 text-[10px] font-medium tracking-[0.15em] uppercase text-ink'>
-                    Partner Pick
+                    Butcher&apos;s Pick
                   </span>
                   <Image
                     src={p.image}
-                    alt={p.title}
+                    alt=''
                     fill
                     sizes='(min-width: 1024px) 50vw, 100vw'
                     className='object-cover transition-transform duration-700 group-hover:scale-105 motion-reduce:group-hover:scale-100'
@@ -79,7 +82,7 @@ const Partners = () => {
                     rel='noopener noreferrer'
                     className='inline-flex items-center gap-2 border-b border-ink pb-0.5 text-[13px] font-medium tracking-[0.04em] text-ink transition-[gap,color] duration-300 hover:gap-3 hover:text-oxblood motion-reduce:transition-none'
                   >
-                    Browse the collection
+                    {p.linkLabel}
                     <ArrowIcon />
                   </a>
                 </div>

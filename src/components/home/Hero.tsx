@@ -31,7 +31,7 @@ const Hero = () => {
       <div className='relative z-1 mx-auto w-full max-w-7xl px-6 md:px-8'>
         <div className='mb-7 flex animate-[heroRise_0.7s_ease_both_0.1s] items-center gap-3 text-xs font-medium tracking-[0.16em] uppercase motion-reduce:animate-none'>
           <span aria-hidden='true' className='h-px w-7 bg-current opacity-60' />
-          Established 2018 · Southern California
+          Established 2018 · San Diego
         </div>
 
         <h1 className='mb-9 max-w-[14ch] font-display text-[clamp(54px,8.5vw,132px)] leading-[0.95] tracking-[-0.035em] font-normal'>
@@ -56,7 +56,7 @@ const Hero = () => {
             href='#featured'
             className='group/cta inline-flex items-center justify-center gap-2.5 rounded-full bg-oxblood px-7 py-3.5 text-sm font-medium tracking-[0.02em] text-cream transition-[background-color,transform] duration-300 hover:-translate-y-0.5 hover:bg-oxblood-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cream focus-visible:ring-offset-2 focus-visible:ring-offset-ink/40 motion-reduce:hover:translate-y-0 motion-reduce:transition-none'
           >
-            Shop best sellers
+            Shop featured cuts
             <ArrowIcon className='transition-transform duration-300 group-hover/cta:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover/cta:translate-x-0' />
           </Link>
           <Link

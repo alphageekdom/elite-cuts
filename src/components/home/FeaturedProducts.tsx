@@ -13,8 +13,9 @@ import SectionEyebrow from './SectionEyebrow';
 
 // Mirror the admin/data set so the homepage category nav can't drift —
 // every link routes to /products?category=<name> and the customer catalog
-// page resolves each name back to a Mongo query.
-const CATEGORIES = PRODUCT_CATEGORIES;
+// page resolves each name back to a Mongo query. "Other" is an admin
+// bucket, not a shopping invitation, so it stays off the marketing nav.
+const CATEGORIES = PRODUCT_CATEGORIES.filter((c) => c !== 'Other');
 
 const FeaturedProducts = async () => {
   await connectDB();
@@ -32,7 +33,9 @@ const FeaturedProducts = async () => {
     convertToSerializableObject,
   ) as SerializedProduct[];
 
-  if (serialized.length === 0) return null;
+  // No early return when nothing is featured — the hero's primary CTA
+  // anchors to #featured, so the section keeps its category nav and
+  // browse-all block and only the product grid drops out.
 
   return (
     <section
@@ -42,7 +45,7 @@ const FeaturedProducts = async () => {
     >
       <div className='mx-auto w-full max-w-7xl px-6 md:px-8'>
         <Reveal>
-          <SectionEyebrow label='Featured Products' />
+          <SectionEyebrow label='Featured Cuts' />
         </Reveal>
 
         <Reveal delayMs={80}>
@@ -57,8 +60,8 @@ const FeaturedProducts = async () => {
               </em>
             </h2>
             <p className='max-w-[34ch] pb-2 text-[15px] leading-relaxed text-ink-soft'>
-              A small slice of the counter — what regulars keep ordering, week
-              after week.
+              A few counter favorites, cut fresh the day you pick them up. The
+              lineup changes as the case does.
             </p>
           </div>
         </Reveal>
@@ -80,13 +83,15 @@ const FeaturedProducts = async () => {
           </nav>
         </Reveal>
 
-        <div className='grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4'>
-          {serialized.map((product, i) => (
-            <Reveal key={product._id} delayMs={200 + i * 70}>
-              <ProductCard product={product} />
-            </Reveal>
-          ))}
-        </div>
+        {serialized.length > 0 && (
+          <div className='grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4'>
+            {serialized.map((product, i) => (
+              <Reveal key={product._id} delayMs={200 + i * 70}>
+                <ProductCard product={product} />
+              </Reveal>
+            ))}
+          </div>
+        )}
 
         <Reveal delayMs={520}>
           <div className='mt-20 flex flex-wrap items-center justify-between gap-8 border-t border-line-soft pt-12'>
@@ -100,7 +105,7 @@ const FeaturedProducts = async () => {
               href='/products'
               className='group/cta inline-flex shrink-0 items-center gap-3 rounded-full bg-ink px-8 py-4 text-sm font-medium tracking-[0.02em] text-cream transition-[background-color,transform] duration-300 hover:-translate-y-0.5 hover:bg-oxblood motion-reduce:hover:translate-y-0 motion-reduce:transition-none'
             >
-              Browse the full shop
+              Browse all cuts
               <ArrowIcon className='transition-transform duration-300 group-hover/cta:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover/cta:translate-x-0' />
             </Link>
           </div>

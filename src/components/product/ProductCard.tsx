@@ -107,7 +107,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const outOfStock = product.stockCount <= 0;
   const lowStock = product.stockCount > 0 && product.stockCount <= 5;
   const stockLabel = outOfStock
-    ? 'Out of stock'
+    ? 'Sold out'
     : lowStock
       ? `${product.stockCount} left`
       : 'In stock';
@@ -244,7 +244,13 @@ const ProductCard = ({ product }: ProductCardProps) => {
           />
           <span className='inline-flex items-center gap-1.5 tracking-normal text-camel'>
             <StarIcon />
+            {product.rating != null && (
+              <span className='sr-only'>Rated</span>
+            )}
             {product.rating?.toFixed(1) ?? '—'}
+            {product.rating != null && (
+              <span className='sr-only'>out of 5 stars</span>
+            )}
           </span>
         </div>
 
@@ -257,16 +263,23 @@ const ProductCard = ({ product }: ProductCardProps) => {
         </p>
 
         <div className='mt-auto flex items-baseline justify-between gap-3 border-t border-line-soft pt-4.5'>
-          <div className='font-display text-xl font-medium tracking-[-0.01em] text-ink md:text-2xl'>
-            {product.displayPriceLabel ? (
-              product.displayPriceLabel
-            ) : (
-              <>
-                {formatMoney(product.price)}
-                <em className='ml-1 text-[13px] font-normal not-italic text-muted'>
-                  /lb
-                </em>
-              </>
+          <div>
+            <div className='font-display text-xl font-medium tracking-[-0.01em] text-ink md:text-2xl'>
+              {product.displayPriceLabel ? (
+                product.displayPriceLabel
+              ) : (
+                <>
+                  {formatMoney(product.price)}
+                  <em className='ml-1 text-[13px] font-normal not-italic text-muted'>
+                    {product.unit === 'each' ? 'each' : `/${product.unit}`}
+                  </em>
+                </>
+              )}
+            </div>
+            {product.displayWeightLabel && (
+              <div className='mt-0.5 text-[11px] leading-snug text-muted'>
+                {product.displayWeightLabel}
+              </div>
             )}
           </div>
           <span className='inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.04em] text-muted'>
