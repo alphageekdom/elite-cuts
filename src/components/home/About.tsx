@@ -33,11 +33,11 @@ const About = () => {
           <SectionEyebrow label='Our Story' />
         </Reveal>
 
-        <div className='grid grid-cols-1 items-start gap-20 lg:grid-cols-2'>
+        <div className='grid grid-cols-1 items-start gap-20 md:grid-cols-2 md:gap-10 lg:gap-20'>
           <Reveal delayMs={80}>
             <h2
               id='about-heading'
-              className='mb-12 font-display text-[clamp(36px,4.5vw,56px)] leading-[1.05] tracking-tight font-normal'
+              className='mb-12 scroll-mt-24 font-display text-[clamp(36px,4.5vw,56px)] leading-[1.05] tracking-tight font-normal'
             >
               A modern shop, with old{' '}
               <em className='font-normal italic text-oxblood'>standards.</em>

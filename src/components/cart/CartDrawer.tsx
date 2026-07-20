@@ -80,14 +80,14 @@ const DrawerLine = ({ line }: { line: CartLine }) => {
           </div>
         )}
         <div className='mt-2 flex items-center gap-2.5'>
-          <div className='inline-flex h-[26px] items-center overflow-hidden rounded-full border border-line bg-paper'>
+          <div className='inline-flex h-9 items-center overflow-hidden rounded-full border border-line bg-paper'>
             <button
               type='button'
               onClick={() =>
                 void setItemQuantity(productId, line.quantity - 1)
               }
               aria-label='Decrease quantity'
-              className='grid h-full w-6 place-items-center text-[11px] transition-colors duration-300 hover:bg-cream-deep motion-reduce:transition-none'
+              className='grid h-full w-8 place-items-center text-[11px] transition-colors duration-300 hover:bg-cream-deep motion-reduce:transition-none'
             >
               −
             </button>
@@ -100,7 +100,7 @@ const DrawerLine = ({ line }: { line: CartLine }) => {
                 void setItemQuantity(productId, line.quantity + 1)
               }
               aria-label='Increase quantity'
-              className='grid h-full w-6 place-items-center text-[11px] transition-colors duration-300 hover:bg-cream-deep motion-reduce:transition-none'
+              className='grid h-full w-8 place-items-center text-[11px] transition-colors duration-300 hover:bg-cream-deep motion-reduce:transition-none'
             >
               +
             </button>
@@ -108,7 +108,7 @@ const DrawerLine = ({ line }: { line: CartLine }) => {
           <button
             type='button'
             onClick={() => void removeItemFromCart(productId)}
-            className='text-[11px] text-muted transition-colors duration-300 hover:text-oxblood motion-reduce:transition-none'
+            className='-m-2 p-2 text-[11px] text-muted transition-colors duration-300 hover:text-oxblood motion-reduce:transition-none'
           >
             Remove
           </button>

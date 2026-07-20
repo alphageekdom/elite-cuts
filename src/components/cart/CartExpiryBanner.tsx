@@ -26,12 +26,17 @@ export default function CartExpiryBanner({ onVisibleChange }: Props) {
 
   return (
     <div
-      role="status"
-      aria-live="polite"
       className={`w-full transition-colors duration-500 ${
         isWarning ? 'bg-oxblood text-cream' : 'bg-ink text-cream'
       }`}
     >
+      {/* Announce state transitions only — a live region around the ticking
+          countdown would re-announce the whole sentence every second. */}
+      <span role='status' className='sr-only'>
+        {isWarning
+          ? 'Cart reservation expiring soon'
+          : 'Cart items reserved for a limited time'}
+      </span>
       <div className="max-w-7xl mx-auto flex items-center justify-between px-4 py-2.5 gap-4">
         <p className="text-[13px] font-medium tracking-wide">
           {isWarning ? '⚠ ' : ''}

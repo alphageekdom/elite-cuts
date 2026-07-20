@@ -160,7 +160,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
             src={productImageSrc(product.images[0]) ?? ''}
             alt=''
             fill
-            sizes='(min-width: 1024px) 50vw, 100vw'
+            sizes='(min-width: 1024px) 25vw, (min-width: 768px) 50vw, 100vw'
             className='object-cover transition-transform duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:scale-105 motion-reduce:group-hover:scale-100 motion-reduce:transition-none'
           />
         </Link>
@@ -179,7 +179,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
           aria-label={isBookmarked ? 'Remove from saved' : 'Save'}
           aria-pressed={isBookmarked}
           disabled={loading}
-          className={`absolute top-4 right-4 z-2 grid h-10 w-10 place-items-center rounded-full bg-cream/95 backdrop-blur-md transition-[background-color,transform] duration-300 hover:scale-105 hover:bg-cream motion-reduce:transition-none motion-reduce:hover:scale-100 ${
+          className={`absolute top-4 right-4 z-2 grid h-11 w-11 place-items-center rounded-full bg-cream/95 backdrop-blur-md transition-[background-color,transform] duration-300 hover:scale-105 hover:bg-cream motion-reduce:transition-none motion-reduce:hover:scale-100 ${
             isBookmarked ? 'text-oxblood' : 'text-ink'
           }`}
         >
@@ -242,7 +242,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
             aria-hidden='true'
             className='h-0.75 w-0.75 rounded-full bg-current opacity-40'
           />
-          <span className='inline-flex items-center gap-1.5 tracking-normal text-camel'>
+          <span className='inline-flex items-center gap-1.5 tracking-normal text-camel-deep'>
             <StarIcon />
             {product.rating != null && (
               <span className='sr-only'>Rated</span>

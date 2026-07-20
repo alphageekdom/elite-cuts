@@ -83,6 +83,7 @@ const Partners = () => {
                     className='inline-flex items-center gap-2 border-b border-ink pb-0.5 text-[13px] font-medium tracking-[0.04em] text-ink transition-[gap,color] duration-300 hover:gap-3 hover:text-oxblood motion-reduce:transition-none'
                   >
                     {p.linkLabel}
+                    <span className='sr-only'> (opens in new tab)</span>
                     <ArrowIcon />
                   </a>
                 </div>
