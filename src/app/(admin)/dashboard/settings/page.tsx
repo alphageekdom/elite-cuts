@@ -6,7 +6,7 @@ import SettingsClient from '@/components/admin/settings/SettingsClient';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Settings · EliteCuts Admin',
+  title: 'Settings · Admin',
 };
 
 export default async function AdminSettingsPage() {

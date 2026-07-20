@@ -8,7 +8,7 @@ import RewardsCtaStrip from '@/components/rewards/RewardsCtaStrip';
 import { getShopSettings } from '@/lib/shop-settings/queries';
 
 export const metadata: Metadata = {
-  title: 'Rewards — EliteCuts',
+  title: 'Rewards',
   description:
     'Earn points on every order, unlock perks, and climb the tiers. Free to join, no subscription.',
 };

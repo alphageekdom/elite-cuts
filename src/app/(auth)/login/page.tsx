@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Login from '@/components/auth/Login';
 
 export const metadata: Metadata = {
-  title: 'Sign In | EliteCuts',
+  title: 'Sign In',
 };
 
 export default function LoginPage() {

@@ -50,14 +50,29 @@ type LeanReviewWithUser = {
 
 // ─── Metadata ────────────────────────────────────────────────────────────────
 
+// Trim to snippet length at a word boundary so search results never show a
+// description cut mid-word.
+const trimDescription = (text: string, max = 155): string => {
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max);
+  const lastSpace = cut.lastIndexOf(' ');
+  return `${cut.slice(0, lastSpace > 0 ? lastSpace : max)}…`;
+};
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   await connectDB();
   const { id } = await params;
   const product = await ProductModel.findById(id).select('name description').lean();
-  if (!product) return { title: 'Product Not Found — EliteCuts' };
+  if (!product) {
+    return {
+      title: 'Product Not Found',
+      robots: { index: false, follow: false },
+    };
+  }
   return {
-    title: `${product.name} — EliteCuts`,
-    description: product.description.slice(0, 155),
+    title: product.name,
+    description: trimDescription(product.description),
+    alternates: { canonical: `/products/${id}` },
   };
 }
 

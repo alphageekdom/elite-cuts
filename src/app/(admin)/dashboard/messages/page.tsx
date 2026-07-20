@@ -9,7 +9,7 @@ import { buildMessageRow, type PopulatedUser } from '@/lib/admin/messages';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = { title: 'Messages · EliteCuts Admin' };
+export const metadata: Metadata = { title: 'Messages · Admin' };
 
 export default async function AdminMessagesPage() {
   const sessionUser = await getSessionUser();

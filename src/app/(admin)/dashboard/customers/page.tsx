@@ -15,7 +15,7 @@ import CustomersClient, {
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Customers · EliteCuts Admin',
+  title: 'Customers · Admin',
 };
 
 type OrderAggResult = {

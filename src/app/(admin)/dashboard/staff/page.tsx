@@ -12,7 +12,7 @@ import StaffPageClient from '@/components/admin/staff/StaffPageClient';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Staff · EliteCuts Admin',
+  title: 'Staff · Admin',
 };
 
 export default async function AdminStaffPage() {

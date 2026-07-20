@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import type { Metadata } from 'next';
 import About from '@/components/home/About';
 import CTA from '@/components/home/CTA';
 import FeaturedProducts from '@/components/home/FeaturedProducts';
@@ -10,6 +11,10 @@ import HolidaySection from '@/components/holiday/HolidaySection';
 import GrillEventHero from '@/components/grill-event/GrillEventHero';
 import AccountDeletedBanner from '@/components/profile/AccountDeletedBanner';
 import { getActiveEvent } from '@/lib/events/queries';
+
+export const metadata: Metadata = {
+  alternates: { canonical: '/' },
+};
 
 const HomePage = async () => {
   const activeEvent = await getActiveEvent();

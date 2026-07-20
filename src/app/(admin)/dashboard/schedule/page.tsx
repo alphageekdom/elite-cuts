@@ -21,7 +21,7 @@ import { getPastEvents, getUpcomingEvents } from '@/lib/events/queries';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Schedule · EliteCuts Admin',
+  title: 'Schedule · Admin',
 };
 
 export default async function AdminSchedulePage() {

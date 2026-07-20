@@ -12,7 +12,7 @@ import OurStoryCraftNumbers from '@/components/our-story/OurStoryCraftNumbers';
 import OurStoryVisit from '@/components/our-story/OurStoryVisit';
 
 export const metadata: Metadata = {
-  title: 'Our Story | EliteCuts',
+  title: 'Our Story',
   description:
     'A neighborhood butcher shop, modernized. Learn how EliteCuts started and what we stand for.',
 };

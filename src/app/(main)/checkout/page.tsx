@@ -24,7 +24,7 @@ import { isDemoCardTileEnabled } from '@/lib/features';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Checkout · EliteCuts',
+  title: 'Checkout',
   description: 'Complete your order — pickup-ready in ~1 hour.',
 };
 

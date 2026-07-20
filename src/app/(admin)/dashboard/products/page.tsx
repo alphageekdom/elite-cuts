@@ -11,7 +11,7 @@ import ProductsClient, { type ProductTableRow, type ProductCounts } from '@/comp
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Products · EliteCuts Admin',
+  title: 'Products · Admin',
 };
 
 export default async function AdminProductsPage() {

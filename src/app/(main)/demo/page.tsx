@@ -7,7 +7,7 @@ import DemoCards from '@/components/demo/DemoCards';
 import EditorialEyebrow from '@/components/ui/EditorialEyebrow';
 
 export const metadata: Metadata = {
-  title: 'Demo · EliteCuts',
+  title: 'Demo',
   description:
     'Explore EliteCuts as a customer or preview the admin dashboard — no account needed.',
 };

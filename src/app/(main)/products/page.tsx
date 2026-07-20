@@ -21,9 +21,10 @@ import {
 } from '@/components/product/catalogConfig';
 
 export const metadata: Metadata = {
-  title: 'The Counter — EliteCuts',
+  title: 'The Counter',
   description:
     'Browse our full case — beef, pork, chicken, lamb and charcuterie, hand-cut to order and ready for same-day pickup.',
+  alternates: { canonical: '/products' },
 };
 
 type SearchParams = {
