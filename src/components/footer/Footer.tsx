@@ -73,11 +73,11 @@ const YouTubeIcon = () => (
 );
 
 const SOCIALS = [
-  { label: 'Facebook', href: '#', Icon: FacebookIcon },
-  { label: 'Instagram', href: '#', Icon: InstagramIcon },
-  { label: 'Pinterest', href: '#', Icon: PinterestIcon },
-  { label: 'LinkedIn', href: '#', Icon: LinkedInIcon },
-  { label: 'YouTube', href: '#', Icon: YouTubeIcon },
+  { label: 'Facebook', href: 'https://www.facebook.com/elitecuts', Icon: FacebookIcon },
+  { label: 'Instagram', href: 'https://www.instagram.com/elitecuts', Icon: InstagramIcon },
+  { label: 'Pinterest', href: 'https://www.pinterest.com/elitecuts', Icon: PinterestIcon },
+  { label: 'LinkedIn', href: 'https://www.linkedin.com/company/elitecuts', Icon: LinkedInIcon },
+  { label: 'YouTube', href: 'https://www.youtube.com/@elitecuts', Icon: YouTubeIcon },
 ] as const;
 
 const QUICK_LINKS = [
@@ -158,9 +158,9 @@ const Footer = async () => {
               <ul className='flex flex-col gap-3'>
                 {QUICK_LINKS.map(({ label, href }) => (
                   <li key={label}>
-                    <a href={href} className={COLUMN_LINK}>
+                    <Link href={href} className={COLUMN_LINK}>
                       {label}
-                    </a>
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -181,7 +181,7 @@ const Footer = async () => {
                 </span>
                 <Link
                   href='/terms'
-                  className='text-cream/70 transition-colors duration-300 hover:text-cream focus-visible:outline-none focus-visible:text-cream motion-reduce:transition-none'
+                  className='text-cream/70 transition-colors duration-300 hover:text-cream focus-visible:text-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cream motion-reduce:transition-none'
                 >
                   Terms
                 </Link>
@@ -190,7 +190,7 @@ const Footer = async () => {
                 </span>
                 <Link
                   href='/privacy'
-                  className='text-cream/70 transition-colors duration-300 hover:text-cream focus-visible:outline-none focus-visible:text-cream motion-reduce:transition-none'
+                  className='text-cream/70 transition-colors duration-300 hover:text-cream focus-visible:text-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cream motion-reduce:transition-none'
                 >
                   Privacy
                 </Link>
@@ -201,9 +201,10 @@ const Footer = async () => {
                   href='https://www.alphageekdom.com'
                   target='_blank'
                   rel='noopener noreferrer'
-                  className='text-camel transition-colors duration-300 hover:text-cream focus-visible:outline-none focus-visible:text-cream motion-reduce:transition-none'
+                  className='text-camel transition-colors duration-300 hover:text-cream focus-visible:text-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cream motion-reduce:transition-none'
                 >
                   AlphaGeekdom
+                  <span className='sr-only'> (opens in new tab)</span>
                 </a>
               </div>
             </div>
@@ -212,8 +213,10 @@ const Footer = async () => {
                 <a
                   key={label}
                   href={href}
-                  aria-label={label}
-                  className='grid h-9 w-9 place-items-center rounded-full border border-cream/20 text-cream transition-[background-color,border-color] duration-300 hover:border-oxblood hover:bg-oxblood motion-reduce:transition-none'
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  aria-label={`${label} (opens in new tab)`}
+                  className='grid h-10 w-10 place-items-center rounded-full border border-cream/20 text-cream transition-[background-color,border-color] duration-300 hover:border-oxblood hover:bg-oxblood motion-reduce:transition-none'
                 >
                   <Icon />
                 </a>

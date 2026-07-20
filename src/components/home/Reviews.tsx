@@ -70,7 +70,7 @@ const Reviews = () => {
           </h2>
         </Reveal>
 
-        <div className='grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3'>
+        <div className='grid grid-cols-1 gap-8 lg:grid-cols-3'>
           {REVIEWS.map((review, i) => (
             <Reveal key={review.name} delayMs={160 + i * 80}>
               <ReviewCard {...review} />

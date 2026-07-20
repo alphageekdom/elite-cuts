@@ -163,7 +163,7 @@ const Navbar = ({ announcements = [] }: NavbarProps) => {
 
           <button
             type='button'
-            className={`inline-flex items-center justify-center rounded-md p-2 transition-colors motion-reduce:transition-none lg:hidden ${FOCUS_RING} ${triggerToneClass}`}
+            className={`inline-flex items-center justify-center rounded-md p-2.5 transition-colors motion-reduce:transition-none lg:hidden ${FOCUS_RING} ${triggerToneClass}`}
             aria-controls='mobile-menu'
             aria-expanded={isMobileMenuOpen}
             aria-label={isMobileMenuOpen ? 'Close main menu' : 'Open main menu'}

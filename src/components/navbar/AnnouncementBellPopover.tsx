@@ -19,10 +19,25 @@ const AnnouncementBellPopover = ({
   onDismiss,
 }: AnnouncementBellPopoverProps) => {
   const firstActionRef = useRef<HTMLButtonElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
     firstActionRef.current?.focus();
   }, []);
+
+  // Dismissing a card unmounts its focused Dismiss button — move focus to
+  // the adjacent card's Dismiss first so keyboard users aren't dropped to
+  // <body>. When no card remains, the bell's own handler takes over.
+  const handleDismissClick = (id: string, index: number) => {
+    const buttons = listRef.current?.querySelectorAll<HTMLElement>(
+      'button[aria-label^="Dismiss"]',
+    );
+    if (buttons) {
+      const neighbor = buttons[index + 1] ?? buttons[index - 1];
+      neighbor?.focus();
+    }
+    onDismiss(id);
+  };
 
   return (
     <div
@@ -37,7 +52,7 @@ const AnnouncementBellPopover = ({
         </p>
       </div>
 
-      <ul className='divide-y divide-line-soft'>
+      <ul ref={listRef} className='divide-y divide-line-soft'>
         {announcements.map((a, i) => (
           <li key={a.id} className='flex items-start gap-3 px-4 py-3.5'>
             <span
@@ -61,7 +76,7 @@ const AnnouncementBellPopover = ({
             <button
               ref={i === 0 ? firstActionRef : null}
               type='button'
-              onClick={() => onDismiss(a.id)}
+              onClick={() => handleDismissClick(a.id, i)}
               aria-label={`Dismiss ${a.title}`}
               className='-mr-1 -mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-cream-deep hover:text-ink'
             >

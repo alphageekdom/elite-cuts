@@ -38,6 +38,7 @@ const AnnouncementBell = ({
   const [open, setOpen] = useState(false);
   const mounted = useIsMounted();
   const containerRef = useRef<HTMLDivElement>(null);
+  const bellRef = useRef<HTMLButtonElement>(null);
 
   // Hydrate dismissed state from localStorage on first render of each
   // announcements set. Lazy + adjust-during-render keeps the read out of
@@ -71,11 +72,31 @@ const AnnouncementBell = ({
   useEffect(() => {
     if (!open) return;
     const handleKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
+      if (event.key === 'Escape') {
+        setOpen(false);
+        bellRef.current?.focus();
+      }
     };
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
   }, [open]);
+
+  // Dismissing the last announcement unmounts the bell and popover together,
+  // which would drop keyboard focus to <body>. Move focus to the focusable
+  // element just before the bell in document order (the cart button) first.
+  const focusStableNeighbor = () => {
+    const container = containerRef.current;
+    if (!container) return;
+    const focusables = Array.from(
+      document.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ),
+    );
+    const firstInside = focusables.findIndex((el) => container.contains(el));
+    if (firstInside > 0) focusables[firstInside - 1].focus();
+  };
+
+  const visible = announcements.filter((a) => !dismissed[a.id]);
 
   const handleDismiss = (id: string) => {
     try {
@@ -83,10 +104,9 @@ const AnnouncementBell = ({
     } catch {
       // localStorage unavailable — dismissal is in-memory only this session
     }
+    if (visible.length === 1 && visible[0].id === id) focusStableNeighbor();
     setDismissed((prev) => ({ ...prev, [id]: true }));
   };
-
-  const visible = announcements.filter((a) => !dismissed[a.id]);
 
   if (!mounted || visible.length === 0) return null;
 
@@ -101,6 +121,7 @@ const AnnouncementBell = ({
   return (
     <div ref={containerRef} className='relative'>
       <button
+        ref={bellRef}
         type='button'
         onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}

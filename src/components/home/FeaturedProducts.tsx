@@ -75,7 +75,7 @@ const FeaturedProducts = async () => {
               <Link
                 key={category}
                 href={`/products?category=${category}`}
-                className='flex items-center justify-center rounded-full border border-line bg-cream px-2 py-1.5 text-[11px] font-medium tracking-[0.12em] uppercase text-ink-soft transition-[background-color,border-color,color] duration-300 hover:border-ink hover:bg-ink hover:text-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-cream motion-reduce:transition-none sm:px-5 sm:py-2 sm:text-[12px] sm:tracking-[0.16em]'
+                className='flex min-h-10 items-center justify-center rounded-full border border-line bg-cream px-3 py-1.5 text-[11px] font-medium tracking-[0.12em] uppercase text-ink-soft transition-[background-color,border-color,color] duration-300 hover:border-ink hover:bg-ink hover:text-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-cream motion-reduce:transition-none sm:min-h-auto sm:px-5 sm:py-2 sm:text-[12px] sm:tracking-[0.16em]'
               >
                 {category}
               </Link>

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 const TIER_PILL: Record<'master' | 'connoisseur', string> = {
   master: 'bg-oxblood/10 text-oxblood',
-  connoisseur: 'bg-camel/15 text-camel',
+  connoisseur: 'bg-camel/15 text-camel-deep',
 };
 
 const TIER_LABEL: Record<'master' | 'connoisseur', string> = {
@@ -50,11 +50,11 @@ const ReviewCard = ({ variant, quote, name, meta, avatarColor, tier }: ReviewCar
           {initials}
         </div>
         <div>
-          <div className='mb-1 flex items-center gap-2'>
+          <div className='mb-1 flex flex-wrap items-center gap-2'>
             <span className='text-[15px] font-semibold'>{name}</span>
             {tier && (
               <span
-                className={`rounded-full px-2 py-0.5 text-[10px] font-medium tracking-[0.12em] uppercase ${TIER_PILL[tier]}`}
+                className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium tracking-[0.12em] whitespace-nowrap uppercase ${TIER_PILL[tier]}`}
               >
                 {TIER_LABEL[tier]}
               </span>

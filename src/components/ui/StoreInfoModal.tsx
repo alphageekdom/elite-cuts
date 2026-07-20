@@ -122,6 +122,7 @@ export default function StoreInfoModal({
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const wasOpenRef = useRef(false);
 
   const settings = useShopSettings();
@@ -137,10 +138,32 @@ export default function StoreInfoModal({
 
   useScrollLock(open);
 
+  // Escape to close + Tab cycle inside the dialog — same inline trap the
+  // cart drawer and admin SlideDrawer run.
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key === 'Escape') {
+        setOpen(false);
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const root = dialogRef.current;
+      if (!root) return;
+      const focusables = root.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      if (e.shiftKey && active === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
@@ -180,6 +203,7 @@ export default function StoreInfoModal({
           />
 
           <div
+            ref={dialogRef}
             role='dialog'
             aria-modal='true'
             aria-label={label}
@@ -219,6 +243,7 @@ export default function StoreInfoModal({
                   fill='none'
                   stroke='currentColor'
                   strokeWidth='2'
+                  aria-hidden='true'
                 >
                   <line x1='18' y1='6' x2='6' y2='18' />
                   <line x1='6' y1='6' x2='18' y2='18' />
@@ -237,6 +262,7 @@ export default function StoreInfoModal({
                     fill='none'
                     stroke='currentColor'
                     strokeWidth={2}
+                    aria-hidden='true'
                   >
                     <path d='M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z' />
                     <circle cx='12' cy='10' r='3' />
@@ -253,6 +279,7 @@ export default function StoreInfoModal({
                       className='mt-1 inline-flex items-center gap-1 text-[12px] font-medium text-oxblood transition-colors duration-200 hover:text-ink'
                     >
                       Get directions
+                      <span className='sr-only'> (opens in new tab)</span>
                       <svg
                         width='10'
                         height='10'
@@ -279,6 +306,7 @@ export default function StoreInfoModal({
                     fill='none'
                     stroke='currentColor'
                     strokeWidth={2}
+                    aria-hidden='true'
                   >
                     <path d='M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z' />
                   </svg>
