@@ -582,7 +582,11 @@ export default async function ProductPage({ params }: PageProps) {
 
             <div className='grid gap-6 sm:grid-cols-2 md:grid-cols-3'>
               {related.map((p) => (
-                <ProductCard key={p._id} product={p} />
+                <ProductCard
+                  key={p._id}
+                  product={p}
+                  sizes='(min-width: 1280px) 389px, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw'
+                />
               ))}
             </div>
           </section>

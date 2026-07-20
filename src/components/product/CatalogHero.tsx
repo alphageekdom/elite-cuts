@@ -24,7 +24,7 @@ const CatalogHero = ({ stats }: CatalogHeroProps) => (
       <dl className='flex flex-wrap gap-x-12 gap-y-6 border-t border-line-soft pt-8'>
         {stats.map((stat) => (
           <div key={stat.label}>
-            <dt className='order-2 text-[11px] tracking-[0.22em] uppercase text-muted'>
+            <dt className='text-[11px] tracking-[0.22em] uppercase text-muted'>
               {stat.label}
             </dt>
             <dd className='mb-1.5 font-display text-[28px] leading-none tracking-[-0.02em] font-normal'>
