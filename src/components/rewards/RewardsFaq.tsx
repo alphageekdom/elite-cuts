@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { FOCUS_RING } from '@/lib/styles';
 import type { ShopSettings } from '@/models/ShopSettings';
 import { formatRedemptionRate } from '@/lib/rewards/calculator';
+import PlusIcon from '@/components/uielements/PlusIcon';
 
 type Props = { settings: ShopSettings };
 
@@ -55,20 +56,6 @@ function buildFaqs(settings: ShopSettings) {
   ];
 }
 
-const PlusIcon = () => (
-  <svg
-    viewBox='0 0 24 24'
-    fill='none'
-    stroke='currentColor'
-    strokeWidth={2}
-    className='w-3 h-3 transition-transform duration-300'
-    aria-hidden
-  >
-    <line x1='12' y1='5' x2='12' y2='19' />
-    <line x1='5' y1='12' x2='19' y2='12' />
-  </svg>
-);
-
 export default function RewardsFaq({ settings }: Props) {
   const [openIdx, setOpenIdx] = useState<number | null>(0);
 
@@ -97,7 +84,7 @@ export default function RewardsFaq({ settings }: Props) {
                     : 'border-line text-ink-soft'
                 }`}
               >
-                <PlusIcon />
+                <PlusIcon className='w-3 h-3 transition-transform duration-300' />
               </span>
             </button>
             <div

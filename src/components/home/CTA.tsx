@@ -33,7 +33,7 @@ const CTA = () => {
               className='group/primary inline-flex items-center gap-2.5 rounded-full bg-cream px-8 py-4 text-sm font-medium tracking-[0.04em] text-ink transition-[background-color,transform] duration-300 hover:-translate-y-0.5 hover:bg-paper motion-reduce:hover:translate-y-0 motion-reduce:transition-none'
             >
               Shop the counter
-              <ArrowIcon className='transition-transform duration-300 group-hover/primary:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover/primary:translate-x-0' />
+              <ArrowIcon className='h-3.5 w-3.5 transition-transform duration-300 group-hover/primary:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover/primary:translate-x-0' />
             </Link>
             <Link
               href='/contact'

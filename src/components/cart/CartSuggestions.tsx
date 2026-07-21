@@ -8,25 +8,12 @@ import { useCartContext } from '@/context/CartContext';
 import { productImageSrc } from '@/lib/format';
 import { productPath } from '@/lib/products/paths';
 import { fmtPrice } from '@/lib/pricing';
+import PlusIcon from '@/components/uielements/PlusIcon';
 import type { SerializedProduct } from '@/models/Product';
 
 type SuggestProps = {
   product: SerializedProduct;
 };
-
-const PlusIcon = () => (
-  <svg
-    viewBox='0 0 24 24'
-    fill='none'
-    stroke='currentColor'
-    strokeWidth={2.5}
-    aria-hidden='true'
-    className='h-2.5 w-2.5'
-  >
-    <line x1='12' y1='5' x2='12' y2='19' />
-    <line x1='5' y1='12' x2='19' y2='12' />
-  </svg>
-);
 
 const SuggestionCard = ({ product }: SuggestProps) => {
   // Silent on the cart page — the item appearing in the items panel beside
@@ -70,7 +57,7 @@ const SuggestionCard = ({ product }: SuggestProps) => {
         aria-label={`Add ${product.name} to cart`}
         className='grid h-7 w-7 shrink-0 place-items-center rounded-full bg-ink text-cream transition-[background-color,transform] duration-300 hover:scale-[1.08] hover:bg-oxblood disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none motion-reduce:hover:scale-100'
       >
-        <PlusIcon />
+        <PlusIcon className='h-2.5 w-2.5' />
       </button>
     </div>
   );

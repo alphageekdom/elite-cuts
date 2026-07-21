@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 import ArrowIcon from '@/components/uielements/ArrowIcon';
+import { CTA_ARROW } from '@/lib/styles';
 import HeroBg from '@/assets/images/hero-butcher.jpg';
 
 const Hero = () => {
@@ -57,7 +58,7 @@ const Hero = () => {
             className='group/cta inline-flex items-center justify-center gap-2.5 rounded-full bg-oxblood px-7 py-3.5 text-sm font-medium tracking-[0.02em] text-cream transition-[background-color,transform] duration-300 hover:-translate-y-0.5 hover:bg-oxblood-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cream focus-visible:ring-offset-2 focus-visible:ring-offset-ink/40 motion-reduce:hover:translate-y-0 motion-reduce:transition-none'
           >
             Shop featured cuts
-            <ArrowIcon className='transition-transform duration-300 group-hover/cta:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover/cta:translate-x-0' />
+            <ArrowIcon className={CTA_ARROW} />
           </Link>
           <Link
             href='/products'

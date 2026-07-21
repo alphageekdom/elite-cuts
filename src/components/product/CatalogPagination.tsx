@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import LinkPendingDot from '@/components/product/LinkPendingDot';
+import ChevronIcon from '@/components/uielements/ChevronIcon';
 
 type CatalogPaginationProps = {
   page: number;
@@ -25,32 +26,6 @@ const buildPageList = (page: number, totalPages: number): (number | 'ellipsis')[
   }
   return items;
 };
-
-const ChevronLeft = () => (
-  <svg
-    viewBox='0 0 24 24'
-    fill='none'
-    stroke='currentColor'
-    strokeWidth={2}
-    aria-hidden='true'
-    className='h-3 w-3'
-  >
-    <polyline points='15 18 9 12 15 6' />
-  </svg>
-);
-
-const ChevronRight = () => (
-  <svg
-    viewBox='0 0 24 24'
-    fill='none'
-    stroke='currentColor'
-    strokeWidth={2}
-    aria-hidden='true'
-    className='h-3 w-3'
-  >
-    <polyline points='9 18 15 12 9 6' />
-  </svg>
-);
 
 const NAV_BTN =
   'inline-flex items-center gap-2 rounded-full border border-line px-4.5 py-2.5 text-[13px] font-medium text-ink transition-[background-color,border-color] duration-300 hover:border-ink hover:bg-paper focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-cream motion-reduce:transition-none';
@@ -81,12 +56,12 @@ const CatalogPagination = ({
       <div className='inline-flex items-center gap-1'>
         {prevDisabled ? (
           <span className={NAV_BTN_DISABLED} aria-disabled='true'>
-            <ChevronLeft />
+            <ChevronIcon direction='left' className='h-3 w-3' />
             Previous
           </span>
         ) : (
           <Link href={hrefForPage(page - 1)} scroll={false} className={NAV_BTN}>
-            <ChevronLeft />
+            <ChevronIcon direction='left' className='h-3 w-3' />
             Previous
             <LinkPendingDot />
           </Link>
@@ -129,12 +104,12 @@ const CatalogPagination = ({
         {nextDisabled ? (
           <span className={NAV_BTN_DISABLED} aria-disabled='true'>
             Next
-            <ChevronRight />
+            <ChevronIcon direction='right' className='h-3 w-3' />
           </span>
         ) : (
           <Link href={hrefForPage(page + 1)} scroll={false} className={NAV_BTN}>
             Next
-            <ChevronRight />
+            <ChevronIcon direction='right' className='h-3 w-3' />
             <LinkPendingDot />
           </Link>
         )}

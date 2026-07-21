@@ -2,8 +2,6 @@ type ArrowIconProps = { className?: string };
 
 const ArrowIcon = ({ className }: ArrowIconProps) => (
   <svg
-    width={14}
-    height={14}
     viewBox='0 0 24 24'
     fill='none'
     stroke='currentColor'

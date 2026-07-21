@@ -84,7 +84,7 @@ const Partners = () => {
                   >
                     {p.linkLabel}
                     <span className='sr-only'> (opens in new tab)</span>
-                    <ArrowIcon />
+                    <ArrowIcon className='h-3.5 w-3.5' />
                   </a>
                 </div>
               </article>

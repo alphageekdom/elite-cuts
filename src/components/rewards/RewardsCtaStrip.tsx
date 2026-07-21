@@ -32,7 +32,7 @@ export default function RewardsCtaStrip() {
               className='inline-flex items-center gap-2.5 rounded-full bg-cream px-7 py-4 text-sm font-medium tracking-[0.02em] text-ink transition-[background-color,transform] duration-300 hover:bg-paper hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cream focus-visible:ring-offset-2 focus-visible:ring-offset-oxblood motion-reduce:transition-none motion-reduce:hover:translate-y-0'
             >
               Join Rewards
-              <ArrowIcon />
+              <ArrowIcon className='h-3.5 w-3.5' />
             </Link>
             <Link
               href='/products'

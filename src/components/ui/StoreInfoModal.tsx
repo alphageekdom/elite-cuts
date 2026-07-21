@@ -13,6 +13,7 @@ import {
   formatShopCityStateZip,
 } from '@/lib/shop-settings/format';
 import SectionLabel from '@/components/ui/SectionLabel';
+import CheckIcon from '@/components/uielements/CheckIcon';
 import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
 
 // dayIndex: 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
@@ -61,22 +62,6 @@ function ClipboardIcon() {
   );
 }
 
-function CheckIcon() {
-  return (
-    <svg
-      width='11'
-      height='11'
-      viewBox='0 0 24 24'
-      fill='none'
-      stroke='currentColor'
-      strokeWidth='2.5'
-      aria-hidden='true'
-    >
-      <polyline points='20 6 9 17 4 12' />
-    </svg>
-  );
-}
-
 function CopyButton({ text, label }: { text: string; label: string }) {
   const [copied, setCopied] = useState(false);
 
@@ -98,7 +83,7 @@ function CopyButton({ text, label }: { text: string; label: string }) {
       className='inline-flex min-w-16 shrink-0 items-center justify-center gap-1.5 rounded-full border border-line bg-cream px-2.5 py-1 text-[11px] font-medium tracking-[0.04em] text-muted transition-colors duration-200 hover:border-ink hover:text-ink'
     >
       {copied ? (
-        <CheckIcon />
+        <CheckIcon className='h-2.75 w-2.75' />
       ) : (
         <>
           <ClipboardIcon /> Copy
