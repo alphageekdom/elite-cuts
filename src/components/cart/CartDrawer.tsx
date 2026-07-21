@@ -12,6 +12,8 @@ import { useIsMounted } from '@/hooks/useIsMounted';
 import { productImageSrc } from '@/lib/format';
 import { computeTotals, fmtPrice } from '@/lib/pricing';
 import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
+import ArrowIcon from '@/components/uielements/ArrowIcon';
+import XIcon from '@/components/uielements/XIcon';
 
 type Props = {
   isOpen: boolean;
@@ -22,33 +24,6 @@ type Props = {
 // the two drawers are the only consumers and each owns its own trap.
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
-const CloseIcon = () => (
-  <svg
-    viewBox='0 0 24 24'
-    fill='none'
-    stroke='currentColor'
-    strokeWidth={2}
-    aria-hidden='true'
-    className='h-3.5 w-3.5'
-  >
-    <line x1='18' y1='6' x2='6' y2='18' />
-    <line x1='6' y1='6' x2='18' y2='18' />
-  </svg>
-);
-
-const ArrowIcon = () => (
-  <svg
-    viewBox='0 0 24 24'
-    fill='none'
-    stroke='currentColor'
-    strokeWidth={2}
-    aria-hidden='true'
-    className='h-3 w-3'
-  >
-    <path d='M5 12h14M13 5l7 7-7 7' />
-  </svg>
-);
 
 const DrawerLine = ({ line }: { line: CartLine }) => {
   const { setItemQuantity, removeItemFromCart } = useCartContext();
@@ -219,7 +194,7 @@ const CartDrawer = ({ isOpen, onClose }: Props) => {
             aria-label='Close cart'
             className='grid h-9 w-9 place-items-center rounded-full border border-line bg-paper text-ink transition-[background-color,border-color] duration-300 hover:border-ink hover:bg-cream-deep motion-reduce:transition-none'
           >
-            <CloseIcon />
+            <XIcon className='h-3.5 w-3.5' />
           </button>
         </header>
 
@@ -300,7 +275,7 @@ const CartDrawer = ({ isOpen, onClose }: Props) => {
                 className='inline-flex items-center justify-center gap-2 rounded-full bg-ink px-4 py-3.5 text-[13px] font-medium tracking-[0.02em] text-cream transition-colors duration-300 hover:bg-oxblood motion-reduce:transition-none'
               >
                 Checkout
-                <ArrowIcon />
+                <ArrowIcon className='h-3 w-3' />
               </Link>
             </div>
 

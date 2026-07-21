@@ -16,6 +16,8 @@ import BuyBlock from '@/components/product/detail/BuyBlock';
 import ProductCard from '@/components/product/ProductCard';
 import SectionHead from '@/components/ui/SectionHead';
 import StoreInfoModal from '@/components/ui/StoreInfoModal';
+import ChevronIcon from '@/components/uielements/ChevronIcon';
+import { CRUMB_CHEVRON } from '@/lib/styles';
 import HolidayInlineNote from '@/components/holiday/HolidayInlineNote';
 import { getHolidayForCut } from '@/lib/announcements/holidays';
 import ReviewForm from './ReviewForm';
@@ -90,20 +92,6 @@ const StarIcon = () => (
     <polygon points='12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26' />
   </svg>
 );
-
-const ChevronRight = () => (
-  <svg
-    viewBox='0 0 24 24'
-    fill='none'
-    stroke='currentColor'
-    strokeWidth={2}
-    aria-hidden
-    className='h-2.5 w-2.5 opacity-50'
-  >
-    <polyline points='9 18 15 12 9 6' />
-  </svg>
-);
-
 
 function Stars({ rating, size = 'sm' }: { rating: number; size?: 'sm' | 'md' | 'lg' }) {
   const sizes = { sm: 'h-3.5 w-3.5', md: 'h-4 w-4', lg: 'h-5 w-5' };
@@ -270,18 +258,18 @@ export default async function ProductPage({ params }: PageProps) {
           <Link href='/' className='transition-colors duration-300 hover:text-oxblood'>
             Home
           </Link>
-          <ChevronRight />
+          <ChevronIcon direction='right' className={CRUMB_CHEVRON} />
           <Link href='/products' className='transition-colors duration-300 hover:text-oxblood'>
             Shop
           </Link>
-          <ChevronRight />
+          <ChevronIcon direction='right' className={CRUMB_CHEVRON} />
           <Link
             href={`/products?category=${product.category}`}
             className='transition-colors duration-300 hover:text-oxblood'
           >
             {product.category}
           </Link>
-          <ChevronRight />
+          <ChevronIcon direction='right' className={CRUMB_CHEVRON} />
           <span className='text-ink'>{product.name}</span>
         </nav>
 

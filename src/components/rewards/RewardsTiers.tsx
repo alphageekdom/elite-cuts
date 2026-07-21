@@ -1,3 +1,4 @@
+import CheckIcon from '@/components/uielements/CheckIcon';
 import Reveal from '@/components/uielements/Reveal';
 import SectionHead from '@/components/ui/SectionHead';
 import type { ShopSettings } from '@/models/ShopSettings';
@@ -6,17 +7,10 @@ type Props = { settings: ShopSettings };
 
 const fmt = (n: number) => n.toLocaleString('en-US');
 
-const CheckIcon = ({ camel = false }: { camel?: boolean }) => (
-  <svg
-    viewBox='0 0 24 24'
-    fill='none'
-    stroke='currentColor'
-    strokeWidth={2.5}
+const TierCheck = ({ camel = false }: { camel?: boolean }) => (
+  <CheckIcon
     className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${camel ? 'text-camel-soft' : 'text-green'}`}
-    aria-hidden
-  >
-    <polyline points='20 6 9 17 4 12' />
-  </svg>
+  />
 );
 
 export default function RewardsTiers({ settings }: Props) {
@@ -84,7 +78,7 @@ export default function RewardsTiers({ settings }: Props) {
               <ul className='flex flex-col gap-3.5 border-t border-line-soft pt-6'>
                 {regularPerks.map((perk) => (
                   <li key={perk} className='flex items-start gap-2.5 text-sm leading-snug text-ink-soft'>
-                    <CheckIcon />
+                    <TierCheck />
                     {perk}
                   </li>
                 ))}
@@ -111,7 +105,7 @@ export default function RewardsTiers({ settings }: Props) {
               <ul className='flex flex-col gap-3.5 border-t border-cream/12 pt-6'>
                 {connoisseurPerks.map((perk) => (
                   <li key={perk} className='flex items-start gap-2.5 text-sm leading-snug text-cream/90'>
-                    <CheckIcon camel />
+                    <TierCheck camel />
                     {perk}
                   </li>
                 ))}
@@ -144,7 +138,7 @@ export default function RewardsTiers({ settings }: Props) {
               <ul className='flex flex-col gap-3.5 border-t border-line-soft pt-6'>
                 {masterCutPerks.map((perk) => (
                   <li key={perk} className='flex items-start gap-2.5 text-sm leading-snug text-ink-soft'>
-                    <CheckIcon />
+                    <TierCheck />
                     {perk}
                   </li>
                 ))}

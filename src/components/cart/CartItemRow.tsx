@@ -12,34 +12,9 @@ import { fmtPrice } from '@/lib/pricing';
 import { MAX_PER_LINE } from '@/lib/shop-settings/config';
 
 import CheckIcon from '@/components/uielements/CheckIcon';
+import MinusIcon from '@/components/uielements/MinusIcon';
+import PlusIcon from '@/components/uielements/PlusIcon';
 import XIcon from '@/components/uielements/XIcon';
-
-const MinusIcon = () => (
-  <svg
-    viewBox='0 0 24 24'
-    fill='none'
-    stroke='currentColor'
-    strokeWidth={2.5}
-    aria-hidden='true'
-    className='h-2.5 w-2.5'
-  >
-    <line x1='5' y1='12' x2='19' y2='12' />
-  </svg>
-);
-
-const PlusIcon = () => (
-  <svg
-    viewBox='0 0 24 24'
-    fill='none'
-    stroke='currentColor'
-    strokeWidth={2.5}
-    aria-hidden='true'
-    className='h-2.5 w-2.5'
-  >
-    <line x1='12' y1='5' x2='12' y2='19' />
-    <line x1='5' y1='12' x2='19' y2='12' />
-  </svg>
-);
 
 type Props = {
   line: CartLine;
@@ -160,7 +135,7 @@ const CartItemRow = ({ line }: Props) => {
               aria-label='Decrease quantity'
               className='grid h-8 w-8 place-items-center transition-colors duration-300 hover:bg-cream-deep disabled:cursor-not-allowed disabled:opacity-30 motion-reduce:transition-none'
             >
-              <MinusIcon />
+              <MinusIcon className='h-2.5 w-2.5' />
             </button>
             <input
               type='number'
@@ -182,7 +157,7 @@ const CartItemRow = ({ line }: Props) => {
               aria-label='Increase quantity'
               className='grid h-8 w-8 place-items-center transition-colors duration-300 hover:bg-cream-deep disabled:cursor-not-allowed disabled:opacity-30 motion-reduce:transition-none'
             >
-              <PlusIcon />
+              <PlusIcon className='h-2.5 w-2.5' />
             </button>
           </div>
 

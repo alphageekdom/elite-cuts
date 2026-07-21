@@ -57,7 +57,7 @@ export default function RewardsHero({ settings }: Props) {
                 className='inline-flex items-center gap-2.5 rounded-full bg-ink px-7 py-4 text-sm font-medium tracking-[0.02em] text-cream transition-[background-color,transform] duration-300 hover:bg-oxblood hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oxblood focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:hover:translate-y-0'
               >
                 Join — it&#39;s free
-                <ArrowIcon />
+                <ArrowIcon className='h-3.5 w-3.5' />
               </Link>
               <a
                 href='#how'

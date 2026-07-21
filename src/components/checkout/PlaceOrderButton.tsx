@@ -10,33 +10,8 @@ import { useShopSettings } from '@/context/ShopSettingsContext';
 import { computeTotals, fmtPrice, DELIVERY_FEE } from '@/lib/pricing';
 import { isContactComplete } from '@/lib/checkoutValidation';
 import { formatShopAddress } from '@/lib/shop-settings/format';
-
-const SpinnerIcon = () => (
-  <svg
-    viewBox='0 0 24 24'
-    fill='none'
-    stroke='currentColor'
-    strokeWidth={2}
-    aria-hidden='true'
-    className='h-3.5 w-3.5 animate-spin'
-  >
-    <circle cx='12' cy='12' r='10' strokeOpacity={0.25} />
-    <path d='M12 2a10 10 0 0 1 10 10' />
-  </svg>
-);
-
-const ArrowIcon = () => (
-  <svg
-    viewBox='0 0 24 24'
-    fill='none'
-    stroke='currentColor'
-    strokeWidth={2}
-    aria-hidden='true'
-    className='h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0'
-  >
-    <path d='M5 12h14M13 5l7 7-7 7' />
-  </svg>
-);
+import ArrowIcon from '@/components/uielements/ArrowIcon';
+import SpinnerIcon from '@/components/uielements/SpinnerIcon';
 
 const PlaceOrderButton = () => {
   const { cartItems } = useCartContext();
@@ -199,7 +174,11 @@ const PlaceOrderButton = () => {
           ${fmtPrice(total)}
         </span>
       )}
-      {isLoading ? <SpinnerIcon /> : canSubmit ? <ArrowIcon /> : null}
+      {isLoading ? (
+        <SpinnerIcon className='h-3.5 w-3.5' />
+      ) : canSubmit ? (
+        <ArrowIcon className='h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0' />
+      ) : null}
     </button>
   );
 };

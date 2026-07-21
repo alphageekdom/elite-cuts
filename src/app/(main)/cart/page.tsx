@@ -9,21 +9,10 @@ import { getActiveHoliday } from '@/lib/announcements/holidays';
 import CartItemsPanel from '@/components/cart/CartItemsPanel';
 import CartSuggestions from '@/components/cart/CartSuggestions';
 import CartSummary from '@/components/cart/CartSummary';
+import ChevronIcon from '@/components/uielements/ChevronIcon';
+import { CRUMB_CHEVRON } from '@/lib/styles';
 
 export const dynamic = 'force-dynamic';
-
-const ChevronIcon = () => (
-  <svg
-    viewBox='0 0 24 24'
-    fill='none'
-    stroke='currentColor'
-    strokeWidth={2}
-    aria-hidden='true'
-    className='h-2.5 w-2.5 opacity-50'
-  >
-    <polyline points='9 18 15 12 9 6' />
-  </svg>
-);
 
 const Step = ({
   num,
@@ -99,14 +88,14 @@ const CartPage = async () => {
           >
             Home
           </Link>
-          <ChevronIcon />
+          <ChevronIcon direction='right' className={CRUMB_CHEVRON} />
           <Link
             href='/products'
             className='transition-colors duration-300 hover:text-oxblood motion-reduce:transition-none'
           >
             Shop
           </Link>
-          <ChevronIcon />
+          <ChevronIcon direction='right' className={CRUMB_CHEVRON} />
           <span className='text-ink' aria-current='page'>
             Cart
           </span>

@@ -8,23 +8,12 @@ import { useCartContext } from '@/context/CartContext';
 import { computeTotals, fmtPrice } from '@/lib/pricing';
 import { formatDaysUntil } from '@/lib/announcements/holidays';
 import StoreInfoModal from '@/components/ui/StoreInfoModal';
+import ArrowIcon from '@/components/uielements/ArrowIcon';
+import { CTA_ARROW } from '@/lib/styles';
 
 type Props = {
   activeHoliday?: { name: string; daysUntil: number } | null;
 };
-
-const ArrowIcon = () => (
-  <svg
-    viewBox='0 0 24 24'
-    fill='none'
-    stroke='currentColor'
-    strokeWidth={2}
-    aria-hidden='true'
-    className='h-3.5 w-3.5 transition-transform duration-300 group-hover/cta:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover/cta:translate-x-0'
-  >
-    <path d='M5 12h14M13 5l7 7-7 7' />
-  </svg>
-);
 
 const CartSummary = ({ activeHoliday }: Props) => {
   const { cartItems } = useCartContext();
@@ -106,7 +95,7 @@ const CartSummary = ({ activeHoliday }: Props) => {
               className='mt-6 flex w-full cursor-not-allowed items-center justify-center gap-3 rounded-full bg-ink px-7 py-4 text-[15px] font-medium tracking-[0.02em] text-cream opacity-50'
             >
               Continue to checkout
-              <ArrowIcon />
+              <ArrowIcon className={CTA_ARROW} />
             </button>
             <p
               id='checkout-empty-hint'
@@ -121,7 +110,7 @@ const CartSummary = ({ activeHoliday }: Props) => {
             className='group/cta mt-6 flex items-center justify-center gap-3 rounded-full bg-ink px-7 py-4 text-[15px] font-medium tracking-[0.02em] text-cream transition-[background-color,transform] duration-300 hover:-translate-y-px hover:bg-oxblood motion-reduce:transition-none motion-reduce:hover:translate-y-0'
           >
             Continue to checkout
-            <ArrowIcon />
+            <ArrowIcon className={CTA_ARROW} />
           </Link>
         )}
       </div>

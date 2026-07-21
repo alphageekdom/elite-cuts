@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import ArrowIcon from '@/components/uielements/ArrowIcon';
+import { CTA_ARROW } from '@/lib/styles';
 import connectDB from '@/config/database';
 import Reveal from '@/components/uielements/Reveal';
 import Product, { type SerializedProduct } from '@/models/Product';
@@ -109,7 +110,7 @@ const FeaturedProducts = async () => {
               className='group/cta inline-flex shrink-0 items-center gap-3 rounded-full bg-ink px-8 py-4 text-sm font-medium tracking-[0.02em] text-cream transition-[background-color,transform] duration-300 hover:-translate-y-0.5 hover:bg-oxblood motion-reduce:hover:translate-y-0 motion-reduce:transition-none'
             >
               Browse all cuts
-              <ArrowIcon className='transition-transform duration-300 group-hover/cta:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover/cta:translate-x-0' />
+              <ArrowIcon className={CTA_ARROW} />
             </Link>
           </div>
         </Reveal>

@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { GiMeatCleaver } from 'react-icons/gi';
 import { MOBILE_PRIMARY, MOBILE_MORE } from './navItems';
 import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
+import XIcon from '@/components/uielements/XIcon';
 
 type Props = {
   criticalInventoryCount: number;
@@ -14,12 +15,6 @@ type Props = {
 const MoreIcon = () => (
   <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <circle cx="5" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" />
-  </svg>
-);
-
-const CloseIcon = () => (
-  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
   </svg>
 );
 
@@ -155,7 +150,7 @@ export default function AdminMobileBottomNav({ criticalInventoryCount, openMessa
                 aria-label="Close navigation menu"
                 className="w-8 h-8 rounded-full grid place-items-center text-cream/70 hover:text-cream hover:bg-cream/10 transition-colors"
               >
-                <CloseIcon />
+                <XIcon className="w-4 h-4" />
               </button>
             </div>
 
