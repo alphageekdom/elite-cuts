@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type ReactNode } from 'react';
 import { useScrollLock } from '@/hooks/useScrollLock';
+import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
 
 // CSS selector for all keyboard-focusable elements — used by the Tab-cycle
 // trap below. Lives here (not in a shared hook) because the trap logic is
@@ -37,13 +38,14 @@ export default function SlideDrawer({
   // prior `useAdminDrawer({ scrollLock: false })` opt-out is gone.
   useScrollLock(open);
 
+  // Escape goes through the shared stack so a popover opened *inside* the
+  // drawer claims it first — closing only itself instead of taking the whole
+  // drawer (and any unsaved edits) with it.
+  useDismissOnEscape(open, onClose);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-        return;
-      }
       if (e.key !== 'Tab') return;
       const root = asideRef.current;
       if (!root) return;
@@ -62,7 +64,7 @@ export default function SlideDrawer({
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
+  }, [open]);
 
   return (
     <>

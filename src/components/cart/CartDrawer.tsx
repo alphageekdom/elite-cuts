@@ -11,6 +11,7 @@ import { useCartContext, type CartLine } from '@/context/CartContext';
 import { useIsMounted } from '@/hooks/useIsMounted';
 import { productImageSrc } from '@/lib/format';
 import { computeTotals, fmtPrice } from '@/lib/pricing';
+import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
 
 type Props = {
   isOpen: boolean;
@@ -152,15 +153,13 @@ const CartDrawer = ({ isOpen, onClose }: Props) => {
     return () => previouslyFocused?.focus();
   }, [isOpen]);
 
-  // Body scroll lock + ESC to close + Tab cycling inside the drawer. All
-  // reset when the drawer closes.
+  useDismissOnEscape(isOpen, onClose);
+
+  // Body scroll lock + Tab cycling inside the drawer. All reset when the
+  // drawer closes; Escape is handled by the shared stack above.
   useEffect(() => {
     if (!isOpen) return;
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-        return;
-      }
       if (e.key !== 'Tab') return;
       const root = asideRef.current;
       if (!root) return;

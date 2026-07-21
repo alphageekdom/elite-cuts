@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { AVATAR_COLORS, MEMBER_AVATAR_COLORS } from '@/lib/admin/constants';
 import { avatarColorForId } from '@/lib/format';
 import { FOCUS_RING } from '@/lib/styles';
+import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
 
 type ProfileMenuProps = {
   profileImage?: string;
@@ -60,21 +61,15 @@ const ProfileMenu = ({
       }
     };
 
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-        triggerRef.current?.focus();
-      }
-    };
-
     firstItemRef.current?.focus();
     document.addEventListener('mousedown', handlePointerDown);
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('mousedown', handlePointerDown);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
+    return () => document.removeEventListener('mousedown', handlePointerDown);
   }, [isOpen, onClose]);
+
+  useDismissOnEscape(isOpen, () => {
+    onClose();
+    triggerRef.current?.focus();
+  });
 
   const avatarColor = resolveAvatarColor(userId, isAdmin, rewardPoints);
 

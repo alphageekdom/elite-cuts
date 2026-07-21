@@ -1,6 +1,8 @@
 'use client';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
+import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
+
 // `useLayoutEffect` is fine in the browser but warns during SSR. Swap to
 // `useEffect` on the server so the SSR pass stays silent — the measure
 // pass only runs after the panel opens client-side anyway, so the
@@ -102,6 +104,14 @@ export default function SortPopover<T extends string>({
     setResolvedAlign(align);
   }, [open, align]);
 
+  // Escape closes just this popover — including at the two call sites that
+  // render inside an open `SlideDrawer`, where the drawer would otherwise
+  // swallow it and discard unsaved order edits.
+  useDismissOnEscape(open, () => {
+    setOpen(false);
+    triggerRef.current?.focus();
+  });
+
   const current = options.find((o) => o.value === value);
   const triggerLabel = current?.label ?? placeholderLabel ?? options[0]?.label ?? '';
 
@@ -112,7 +122,7 @@ export default function SortPopover<T extends string>({
         type="button"
         disabled={disabled}
         onClick={() => setOpen((v) => !v)}
-        className={`inline-flex items-center gap-1.5 bg-paper border rounded-full px-3.5 py-2 text-[13px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+        className={`inline-flex items-center gap-1.5 bg-paper border rounded-full px-3.5 py-2.5 text-[13px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
           open
             ? 'border-oxblood text-ink'
             : 'border-line text-ink-soft hover:border-ink hover:text-ink'
@@ -146,6 +156,10 @@ export default function SortPopover<T extends string>({
                   onClick={() => {
                     onChange(o.value);
                     setOpen(false);
+                    // The panel unmounts under the focused option, so without
+                    // this focus falls to <body> and the next Tab restarts
+                    // from the top of the page.
+                    triggerRef.current?.focus();
                   }}
                   className={`flex w-full items-center justify-between gap-2.5 px-3.5 py-1.5 text-[13px] text-left hover:bg-cream cursor-pointer ${
                     active ? 'text-ink' : 'text-ink-soft'

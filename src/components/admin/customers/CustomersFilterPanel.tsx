@@ -1,6 +1,6 @@
 'use client';
-import { useEffect } from 'react';
 import type { Tier } from './customerUtils';
+import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
 
 // Filter values for the customers More filters popover. The tier multi-select
 // composes with (refines) the stat-strip status filter — both apply together.
@@ -55,13 +55,8 @@ type Props = {
 export default function CustomersFilterPanel({ filters, onChange, onClear, onClose }: Props) {
   const hasActive = activeFilterCount(filters) > 0;
 
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
-    }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  // The panel only mounts while open, so it claims Escape unconditionally.
+  useDismissOnEscape(true, onClose);
 
   function update<K extends keyof CustomerFilters>(key: K, value: CustomerFilters[K]) {
     onChange({ ...filters, [key]: value });

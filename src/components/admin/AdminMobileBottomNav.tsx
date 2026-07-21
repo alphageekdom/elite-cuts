@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { GiMeatCleaver } from 'react-icons/gi';
 import { MOBILE_PRIMARY, MOBILE_MORE } from './navItems';
+import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
 
 type Props = {
   criticalInventoryCount: number;
@@ -57,15 +58,7 @@ export default function AdminMobileBottomNav({ criticalInventoryCount, openMessa
     if (sheetOpen) setSheetOpen(false);
   }
 
-  // ESC key closes sheet
-  useEffect(() => {
-    if (!sheetOpen) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setSheetOpen(false);
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [sheetOpen]);
+  useDismissOnEscape(sheetOpen, () => setSheetOpen(false));
 
   // Focus close button when sheet opens
   useEffect(() => {

@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 
 import { computeFloatingMenuPos, type FloatingMenuPos } from '@/lib/floatingMenu';
+import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
 
 export type RowActionsMenuItem = {
   label: string;
@@ -79,16 +80,13 @@ export default function AdminRowActionsMenu({
       if (menuRef.current?.contains(target)) return;
       onOpenChange(false);
     };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onOpenChange(false);
-    };
     document.addEventListener('mousedown', onDocClick);
-    document.addEventListener('keydown', onKey);
     return () => {
       document.removeEventListener('mousedown', onDocClick);
-      document.removeEventListener('keydown', onKey);
     };
   }, [open, onOpenChange]);
+
+  useDismissOnEscape(open, () => onOpenChange(false));
 
   return (
     <>

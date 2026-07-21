@@ -7,6 +7,7 @@ import type { Announcement } from '@/lib/announcements/data';
 import { ANNOUNCEMENT_DOT_BG } from '@/lib/announcements/display';
 import { FOCUS_RING, scrollAwareTone } from '@/lib/styles';
 import { useIsMounted } from '@/hooks/useIsMounted';
+import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
 import AnnouncementBellPopover from './AnnouncementBellPopover';
 
 type AnnouncementBellProps = {
@@ -69,17 +70,10 @@ const AnnouncementBell = ({
     return () => document.removeEventListener('mousedown', handlePointerDown);
   }, [open]);
 
-  useEffect(() => {
-    if (!open) return;
-    const handleKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setOpen(false);
-        bellRef.current?.focus();
-      }
-    };
-    document.addEventListener('keydown', handleKey);
-    return () => document.removeEventListener('keydown', handleKey);
-  }, [open]);
+  useDismissOnEscape(open, () => {
+    setOpen(false);
+    bellRef.current?.focus();
+  });
 
   // Dismissing the last announcement unmounts the bell and popover together,
   // which would drop keyboard focus to <body>. Move focus to the focusable

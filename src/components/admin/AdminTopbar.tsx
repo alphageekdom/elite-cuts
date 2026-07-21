@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { toast } from 'sonner';
 import { relativeTime } from '@/lib/format';
+import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
 import DemoModeChip from '@/components/demo/DemoModeChip';
 
 const PAGE_TITLES: Record<string, string> = {
@@ -84,15 +85,7 @@ export default function AdminTopbar({ openMessageCount = 0 }: AdminTopbarProps) 
     return () => document.removeEventListener('mousedown', handleClick);
   }, [open]);
 
-  // Close on Escape
-  useEffect(() => {
-    if (!open) return;
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setOpen(false);
-    }
-    document.addEventListener('keydown', handleKey);
-    return () => document.removeEventListener('keydown', handleKey);
-  }, [open]);
+  useDismissOnEscape(open, () => setOpen(false));
 
   async function markAllRead() {
     setMarking(true);

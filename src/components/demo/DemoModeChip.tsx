@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 
 import { FOCUS_RING } from '@/lib/styles';
+import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
 
 // Small "Demo mode" badge in the top navbar (customer shell + admin shell).
 // Only rendered when `session.user.isDemo` — no chip on real sessions, no
@@ -19,20 +20,15 @@ export default function DemoModeChip() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
 
+  useDismissOnEscape(open, () => setOpen(false));
+
   useEffect(() => {
     if (!open) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
-    };
     const handleClickOutside = (event: MouseEvent) => {
       if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
     };
-    window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => window.removeEventListener('mousedown', handleClickOutside);
   }, [open]);
 
   if (!isDemo) return null;

@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { messageInputSchema } from '@/lib/messages/schema';
+import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
 
 type Props = {
   isOpen: boolean;
@@ -58,12 +59,7 @@ export default function NewMessageModal({
     }
   }, [isOpen, tab]);
 
-  // Close on Escape
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    if (isOpen) document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [isOpen, onClose]);
+  useDismissOnEscape(isOpen, onClose);
 
   if (!isOpen) return null;
 
