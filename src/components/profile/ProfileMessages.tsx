@@ -1,11 +1,12 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 
 import NewMessageModal from './NewMessageModal';
 import { AVATAR_COLORS, MEMBER_AVATAR_COLORS } from '@/lib/admin/constants';
 import { avatarColorForId, getInitials } from '@/lib/format';
 import type { MessageStatus } from '@/models/Message';
+import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
 
 export type SerializedMessage = {
   _id: string;
@@ -88,16 +89,13 @@ export default function ProfileMessages({ messages, userId, name, rewardPoints, 
   // Escape cancels whichever inline interaction is open (edit form or
   // delete-confirm) — matches the NewMessageModal's Escape-closes behavior
   // so the keyboard contract stays consistent across the messages tab.
-  useEffect(() => {
-    if (editingId === null && confirmingDeleteId === null) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
+  useDismissOnEscape(
+    editingId !== null || confirmingDeleteId !== null,
+    () => {
       if (editingId !== null) cancelEdit();
       if (confirmingDeleteId !== null) setConfirmingDeleteId(null);
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [editingId, confirmingDeleteId]);
+    },
+  );
 
   async function saveEdit(id: string) {
     const subject = editSubject.trim();

@@ -17,6 +17,7 @@ import DemoModeChip from '../demo/DemoModeChip';
 import Logo from './Logo';
 import { FOCUS_RING } from '@/lib/styles';
 import type { Announcement } from '@/lib/announcements/data';
+import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
 
 const SCROLL_THRESHOLD = 60;
 const LG_BREAKPOINT_PX = 1024;
@@ -77,16 +78,10 @@ const Navbar = ({ announcements = [] }: NavbarProps) => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  useEffect(() => {
-    if (!isMobileMenuOpen && !isProfileMenuOpen) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      setIsMobileMenuOpen(false);
-      setIsProfileMenuOpen(false);
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isMobileMenuOpen, isProfileMenuOpen]);
+  // Only the mobile menu is claimed here — `ProfileMenu` claims its own and
+  // also returns focus to its trigger, which this blanket handler used to
+  // pre-empt.
+  useDismissOnEscape(isMobileMenuOpen, () => setIsMobileMenuOpen(false));
 
   // Close any open menu when the route changes (link clicks, back/forward, etc).
   // Adjust state while rendering so the close lands in the same render as the

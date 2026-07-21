@@ -13,6 +13,7 @@ import {
   formatShopCityStateZip,
 } from '@/lib/shop-settings/format';
 import SectionLabel from '@/components/ui/SectionLabel';
+import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
 
 // dayIndex: 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
 type HoursRow = {
@@ -138,15 +139,13 @@ export default function StoreInfoModal({
 
   useScrollLock(open);
 
-  // Escape to close + Tab cycle inside the dialog — same inline trap the
-  // cart drawer and admin SlideDrawer run.
+  useDismissOnEscape(open, () => setOpen(false));
+
+  // Tab cycle inside the dialog — same inline trap the cart drawer and admin
+  // SlideDrawer run. Escape is handled by the shared stack above.
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setOpen(false);
-        return;
-      }
       if (e.key !== 'Tab') return;
       const root = dialogRef.current;
       if (!root) return;
