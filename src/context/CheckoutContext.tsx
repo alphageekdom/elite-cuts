@@ -3,9 +3,8 @@
 import {
   createContext,
   useContext,
-  useEffect,
   useReducer,
-  useRef,
+  useState,
   type Dispatch,
   type ReactNode,
 } from 'react';
@@ -309,32 +308,37 @@ export const CheckoutProvider = ({
   // new values into state. The reducer's PREFILL_FROM_PROPS handler only
   // overwrites empty fields, so anything the shopper has already typed is
   // preserved across the transition.
-  const initialContactKey = `${initialContact?.name ?? ''}|${initialContact?.email ?? ''}|${initialContact?.phone ?? ''}`;
-  const savedAddressesKey = (savedAddresses ?? [])
-    .map((a) => a.id)
-    .join(',');
-  // Skip the dispatch on the very first render — buildInitialState already
-  // seeded the reducer with the same values, so the redundant first dispatch
-  // would be wasted work. The effect still fires on subsequent prop changes,
-  // which is exactly when it matters (e.g. after router.refresh() following
-  // an inline sign-in).
-  const isFirstPrefillRef = useRef(true);
-  useEffect(() => {
-    if (isFirstPrefillRef.current) {
-      isFirstPrefillRef.current = false;
-      return;
+  //
+  // The key collapses the prefill props into one stable scalar so this reacts
+  // to the user's identity actually changing, not to a parent re-render handing
+  // back new object identities for the same data.
+  const prefillKey =
+    `${initialContact?.name ?? ''}|${initialContact?.email ?? ''}|${initialContact?.phone ?? ''}` +
+    `::${(savedAddresses ?? []).map((a) => a.id).join(',')}`;
+
+  // Adjusting state during render (React's recommended pattern over a mirroring
+  // useEffect) rather than an effect keyed on the scalar. Seeding the comparison
+  // state with the *current* key is what makes the first render a no-op:
+  // buildInitialState already seeded the reducer from these same props, so a
+  // first-render dispatch would be wasted work. That replaces the previous
+  // isFirstPrefillRef guard — one less ref, and no dependency array to hold wrong.
+  //
+  // Same end state as the effect, slightly different timing: React replays this
+  // component before committing, so the prefill lands pre-paint instead of after,
+  // and there is no longer a frame showing un-prefilled fields. Dispatching during
+  // render is only safe because PREFILL_FROM_PROPS is idempotent (it fills empty
+  // fields only) — React may replay the render and enqueue the action twice. Keep
+  // that reducer case idempotent or this pattern stops being safe.
+  const [syncedPrefillKey, setSyncedPrefillKey] = useState(prefillKey);
+  if (prefillKey !== syncedPrefillKey) {
+    setSyncedPrefillKey(prefillKey);
+    if (initialContact || (savedAddresses && savedAddresses.length > 0)) {
+      dispatch({
+        type: 'PREFILL_FROM_PROPS',
+        payload: { initialContact, savedAddresses },
+      });
     }
-    if (!initialContact && (!savedAddresses || savedAddresses.length === 0)) return;
-    dispatch({
-      type: 'PREFILL_FROM_PROPS',
-      payload: { initialContact, savedAddresses },
-    });
-    // initialContactKey + savedAddressesKey collapse the prefill props into
-    // stable scalars so the effect only fires when the user identity actually
-    // changes — not on every parent re-render that hands back new object
-    // identities for the same data.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialContactKey, savedAddressesKey]);
+  }
 
   return (
     <CheckoutContext.Provider value={{ state, dispatch }}>

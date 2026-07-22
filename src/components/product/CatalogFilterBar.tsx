@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useEffectEvent,
   useRef,
   useState,
   useTransition,
@@ -125,13 +126,28 @@ const CatalogFilterBar = ({ categoryCounts }: CatalogFilterBarProps) => {
     else router.push(url, { scroll: false });
   };
 
-  // Debounced URL sync as the user types. Intentionally omits pushQuery from
-  // deps — it closes over searchParams and would reset the timer each keystroke.
+  // `pushQuery` closes over searchParams (via buildUrl) and initialQuery, so its identity
+  // changes every render. Listing it in the effect below would restart the debounce on any
+  // re-render rather than only on the keystrokes `query` already tracks. The effect must read
+  // the latest one WITHOUT reacting to it, which is what an effect event is for.
+  //
+  // Reading `searchParams` fresh is a real gain, not just lint hygiene: with the old captured
+  // closure, clicking a category pill inside the 350ms window left the settling debounce
+  // building its URL from pre-click searchParams, which wiped the category that had just been
+  // applied. The debounced *value* is still the old one on purpose — `query` is passed as an
+  // argument below rather than read fresh, so the search text stays debounced.
+  //
+  // A wrapper rather than making pushQuery itself an effect event, because the three handlers
+  // below (clear-search, and both search form submits) call it directly. At runtime an effect
+  // event only forbids being called during render, so those would work — but the react-hooks
+  // lint rule rejects referencing one outside an Effect, and that rule is what binds here.
+  const pushQueryFromDebounce = useEffectEvent((next: string) => pushQuery(next));
+
+  // Debounced URL sync as the user types.
   useEffect(() => {
     if (query === initialQuery) return;
-    const t = setTimeout(() => pushQuery(query), SEARCH_DEBOUNCE_MS);
+    const t = setTimeout(() => pushQueryFromDebounce(query), SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, initialQuery]);
 
   const onSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
