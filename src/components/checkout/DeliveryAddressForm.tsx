@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useEffectEvent, useRef, useState, type ChangeEvent } from 'react';
 
 import {
   useCheckoutContext,
@@ -87,15 +87,33 @@ const DeliveryAddressForm = () => {
     setDeliveryCheck(isWithinDeliveryRadius(coords.lat, coords.lon) ? 'valid' : 'invalid');
   };
 
+  // `checkDeliveryRadius` closes over the address fields and setState, so it is a new
+  // function every render. Listing it in the effect below would make this self-perpetuating:
+  // the timer fires -> setDeliveryCheck('checking') -> re-render -> new identity -> effect
+  // re-runs -> fresh timer -> geocode resolves -> setDeliveryCheck('valid') -> re-render ->
+  // fresh timer -> ... i.e. a geocode request every 800ms forever. `checkingRef` does not
+  // save us: it only blocks *concurrent* calls, and it's already cleared by the time the
+  // next timer fires. The effect needs the latest function without reacting to it, which is
+  // what an effect event is for.
+  //
+  // A wrapper rather than making checkDeliveryRadius itself an effect event, because
+  // handleBlur below also calls it. At runtime an effect event only forbids being called
+  // during render, so a handler would work — but the react-hooks lint rule rejects
+  // referencing one outside an Effect, and that rule is the binding constraint here.
+  const checkDeliveryRadiusFromDebounce = useEffectEvent(() => void checkDeliveryRadius());
+
   // Auto-check when all fields are filled — catches autofill extensions that
   // set values programmatically without triggering blur events.
+  //
+  // Deps are unchanged from before the effect-event refactor, deliberately. Note address2 is
+  // read by the query above but is not listed here, so a unit number typed inside the 800ms
+  // window rides along without having reset the timer. That's pre-existing (the blur path
+  // always sent the latest address2 too) and is left alone here to keep this change
+  // lint-only — see the delivery-geocode entry in context/deferred-findings.md.
   useEffect(() => {
     if (address1.trim().length < 5 || city.trim().length < 2 || zip.length < 5) return;
-    const timeout = setTimeout(() => void checkDeliveryRadius(), 800);
+    const timeout = setTimeout(() => checkDeliveryRadiusFromDebounce(), 800);
     return () => clearTimeout(timeout);
-    // checkDeliveryRadius omitted from deps intentionally — it reads fresh state
-    // via closure and including it would cause infinite loops via checkingRef.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address1, city, zip, addressState]);
 
   const selectSuggestion = (feature: PhotonFeature) => {
