@@ -1,10 +1,11 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { GiMeatCleaver } from 'react-icons/gi';
 import { MOBILE_PRIMARY, MOBILE_MORE } from './navItems';
 import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 import XIcon from '@/components/uielements/XIcon';
 
 type Props = {
@@ -34,6 +35,7 @@ export default function AdminMobileBottomNav({ criticalInventoryCount, openMessa
   const pathname = usePathname();
   const [sheetOpen, setSheetOpen] = useState(false);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
 
   const isActive = (href: string) =>
     href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(href);
@@ -55,10 +57,10 @@ export default function AdminMobileBottomNav({ criticalInventoryCount, openMessa
 
   useDismissOnEscape(sheetOpen, () => setSheetOpen(false));
 
-  // Focus close button when sheet opens
-  useEffect(() => {
-    if (sheetOpen) closeButtonRef.current?.focus();
-  }, [sheetOpen]);
+  // Focus lands on the close button on open, Tab cycles inside the sheet, and
+  // focus returns to the "More" trigger on close. Previously only focus-in was
+  // wired up — no trap, no restore.
+  useFocusTrap(sheetOpen, sheetRef, { initialFocusRef: closeButtonRef });
 
   // Shared per-tab classes — every tab keeps a 2-px transparent top border so
   // active and inactive tabs are the same height, then the active tab swaps
@@ -127,6 +129,7 @@ export default function AdminMobileBottomNav({ criticalInventoryCount, openMessa
               with tighter padding so the X close button stays above the
               fold on iPhone SE (375px landscape height). */}
           <div
+            ref={sheetRef}
             role="dialog"
             aria-modal="true"
             aria-label="More navigation"

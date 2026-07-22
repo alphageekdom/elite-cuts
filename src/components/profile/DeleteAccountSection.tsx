@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { signOut, useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import DemoDisabledHint from '@/components/demo/DemoDisabledHint';
+import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 const CONFIRMATION_PHRASE = 'DELETE';
 
@@ -17,6 +19,7 @@ export default function DeleteAccountSection() {
   const [phrase, setPhrase] = useState('');
   const [confirmed, setConfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   const canSubmit = phrase === CONFIRMATION_PHRASE && confirmed && !submitting;
 
@@ -30,6 +33,13 @@ export default function DeleteAccountSection() {
     setModalOpen(false);
     resetModal();
   };
+
+  // This destructive-confirm modal shipped as a bare `role="dialog"` with no
+  // keyboard handling at all — no Escape, no focus trap, no restore. Focus lands
+  // on the DELETE field on open, Tab stays inside, Escape and restore now match
+  // every other dialog. closeModal already no-ops mid-submit.
+  useDismissOnEscape(modalOpen, closeModal);
+  useFocusTrap(modalOpen, panelRef);
 
   const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -91,6 +101,7 @@ export default function DeleteAccountSection() {
           aria-labelledby="delete-account-title"
         >
           <div
+            ref={panelRef}
             className="bg-paper border border-line-soft rounded-2xl w-full max-w-md p-6 sm:p-8 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >

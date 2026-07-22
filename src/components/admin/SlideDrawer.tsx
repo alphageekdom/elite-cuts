@@ -1,14 +1,9 @@
 'use client';
 
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
-
-// CSS selector for all keyboard-focusable elements — used by the Tab-cycle
-// trap below. Lives here (not in a shared hook) because the trap logic is
-// inline and `SlideDrawer` is the only surface that needs the selector.
-const FOCUSABLE_SELECTOR =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 type Props = {
   open: boolean;
@@ -43,28 +38,11 @@ export default function SlideDrawer({
   // drawer (and any unsaved edits) with it.
   useDismissOnEscape(open, onClose);
 
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Tab') return;
-      const root = asideRef.current;
-      if (!root) return;
-      const focusables = root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
-      if (focusables.length === 0) return;
-      const first = focusables[0];
-      const last = focusables[focusables.length - 1];
-      const active = document.activeElement as HTMLElement | null;
-      if (e.shiftKey && active === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && active === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [open]);
+  // Focus moves into the drawer on open, Tab cycles inside it, and focus
+  // returns to the trigger on close. Previously only the Tab cycle lived here;
+  // focus-in and restore are new, so admin drawers no longer strand keyboard
+  // focus on <body>.
+  useFocusTrap(open, asideRef);
 
   return (
     <>

@@ -81,9 +81,21 @@ export default function ProfileMessages({ messages, userId, name, rewardPoints, 
   }
 
   function cancelEdit() {
+    const returnFocusId = editingId;
     setEditingId(null);
     setEditSubject('');
     setEditBody('');
+    // The row's Edit button unmounts while the inline form is open, so there's
+    // nothing to restore by reference. Once this state change re-renders the
+    // button, hand focus back to it (by row id) rather than dropping the
+    // keyboard user to <body>. Covers cancel, Escape, and post-save alike.
+    if (returnFocusId) {
+      requestAnimationFrame(() => {
+        document
+          .querySelector<HTMLElement>(`[data-edit-trigger="${returnFocusId}"]`)
+          ?.focus();
+      });
+    }
   }
 
   // Escape cancels whichever inline interaction is open (edit form or
@@ -335,6 +347,7 @@ export default function ProfileMessages({ messages, userId, name, rewardPoints, 
                         {canEdit && (
                           <button
                             type="button"
+                            data-edit-trigger={msg._id}
                             onClick={() => startEdit(msg)}
                             className="text-muted hover:text-ink focus-visible:outline-none focus-visible:text-ink transition-colors"
                           >

@@ -39,6 +39,7 @@ const BAR_COLORS = [
 const STRENGTH_LABELS = ['', 'Weak', 'Fair', 'Strong'];
 
 import { EMAIL_RE } from '@/lib/validation';
+import { MIN_PASSWORD_LENGTH } from '@/lib/auth/password';
 
 import { FieldValidationIcon as FieldIcon } from '@/components/auth/FieldValidationIcon';
 import EditorialEyebrow from '@/components/ui/EditorialEyebrow';
@@ -88,7 +89,7 @@ export default function Register() {
     const p = formData.password;
     if (!p) return 0;
     let score = 0;
-    if (p.length >= 8) score++;
+    if (p.length >= MIN_PASSWORD_LENGTH) score++;
     if (/[A-Z]/.test(p) && /[a-z]/.test(p)) score++;
     if (/\d/.test(p) && /[^A-Za-z0-9]/.test(p)) score++;
     return score;
@@ -97,10 +98,23 @@ export default function Register() {
   const validity = {
     name: formData.name.trim().length > 0,
     email: EMAIL_RE.test(formData.email),
-    password: formData.password.length >= 6,
+    password: formData.password.length >= MIN_PASSWORD_LENGTH,
     confirmPassword:
       formData.confirmPassword.length > 0 &&
       formData.confirmPassword === formData.password,
+  };
+
+  // The check/X icon is aria-hidden, so a screen reader hears nothing from it.
+  // A field reads as invalid on exactly the same condition the X shows, driving
+  // aria-invalid and an sr-only message named for the specific problem.
+  const fieldInvalid = (field: keyof TouchedState) =>
+    showIcon(field) && !validity[field];
+
+  const FIELD_ERROR: Record<keyof TouchedState, string> = {
+    name: 'Enter your name.',
+    email: 'Enter a valid email address.',
+    password: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`,
+    confirmPassword: 'Passwords do not match.',
   };
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -123,8 +137,8 @@ export default function Register() {
       toast.error('Passwords do not match');
       return;
     }
-    if (formData.password.length < 8) {
-      toast.error('Password must be at least 8 characters');
+    if (formData.password.length < MIN_PASSWORD_LENGTH) {
+      toast.error(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
       return;
     }
     if (!EMAIL_RE.test(formData.email)) {
@@ -284,9 +298,16 @@ export default function Register() {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     autoComplete="name"
+                    aria-invalid={fieldInvalid('name') || undefined}
+                    aria-describedby={fieldInvalid('name') ? 'name-error' : undefined}
                     className={INPUT_CLASS}
                   />
                   <FieldIcon show={showIcon('name')} valid={validity.name} />
+                  {fieldInvalid('name') && (
+                    <p id="name-error" role="alert" className="sr-only">
+                      {FIELD_ERROR.name}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -309,9 +330,16 @@ export default function Register() {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     autoComplete="email"
+                    aria-invalid={fieldInvalid('email') || undefined}
+                    aria-describedby={fieldInvalid('email') ? 'email-error' : undefined}
                     className={INPUT_CLASS}
                   />
                   <FieldIcon show={showIcon('email')} valid={validity.email} />
+                  {fieldInvalid('email') && (
+                    <p id="email-error" role="alert" className="sr-only">
+                      {FIELD_ERROR.email}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -328,15 +356,22 @@ export default function Register() {
                     id="password"
                     name="password"
                     type="password"
-                    placeholder="At least 8 characters"
+                    placeholder={`At least ${MIN_PASSWORD_LENGTH} characters`}
                     required
                     value={formData.password}
                     onChange={handleChange}
                     onBlur={handleBlur}
                     autoComplete="new-password"
+                    aria-invalid={fieldInvalid('password') || undefined}
+                    aria-describedby={fieldInvalid('password') ? 'password-error' : undefined}
                     className={INPUT_CLASS}
                   />
                   <FieldIcon show={showIcon('password')} valid={validity.password} />
+                  {fieldInvalid('password') && (
+                    <p id="password-error" role="alert" className="sr-only">
+                      {FIELD_ERROR.password}
+                    </p>
+                  )}
                 </div>
                 {formData.password && (
                   <div className="mt-2.5">
@@ -375,12 +410,21 @@ export default function Register() {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     autoComplete="new-password"
+                    aria-invalid={fieldInvalid('confirmPassword') || undefined}
+                    aria-describedby={
+                      fieldInvalid('confirmPassword') ? 'confirmPassword-error' : undefined
+                    }
                     className={INPUT_CLASS}
                   />
                   <FieldIcon
                     show={showIcon('confirmPassword')}
                     valid={validity.confirmPassword}
                   />
+                  {fieldInvalid('confirmPassword') && (
+                    <p id="confirmPassword-error" role="alert" className="sr-only">
+                      {FIELD_ERROR.confirmPassword}
+                    </p>
+                  )}
                 </div>
               </div>
 

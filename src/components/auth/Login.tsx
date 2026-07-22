@@ -85,10 +85,29 @@ export default function Login() {
   const showIcon = (field: keyof TouchedState) =>
     touched[field] || (anyTouched && formData[field].length > 0);
 
-  const validity = {
-    email: EMAIL_RE.test(formData.email),
-    password: formData.password.length >= 6,
-  };
+  // Email only, deliberately — there is no password check on sign-in.
+  //
+  // Nothing client-side can tell whether an *existing* password is correct, so
+  // a length test here would be theatre: it used to flip a green check at 6
+  // characters, which matched no rule the app enforces (registration requires
+  // MIN_PASSWORD_LENGTH) and would show a red X to a grandfathered shorter
+  // password that signs in perfectly well. Worse, any threshold it displayed
+  // would advertise the password rule on the one form that must never discuss
+  // credentials — a failed attempt returns a single generic "Invalid email or
+  // password" (see handleSubmit) precisely so the form can't confirm which half
+  // was right.
+  //
+  // The email check stays because it describes the shape of the value just
+  // typed, not the credential behind it. Register is the opposite case: it must
+  // state the rule, since you can't ask someone to meet a rule you won't show.
+  const emailValid = EMAIL_RE.test(formData.email);
+
+  // The check/X icon is aria-hidden, so on its own it tells a screen reader
+  // nothing; this drives aria-invalid plus the sr-only message on exactly the
+  // condition that shows the X.
+  const emailInvalid = showIcon('email') && !emailValid;
+
+  const EMAIL_ERROR = 'Enter a valid email address.';
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -236,9 +255,16 @@ export default function Login() {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     autoComplete="email"
+                    aria-invalid={emailInvalid || undefined}
+                    aria-describedby={emailInvalid ? 'email-error' : undefined}
                     className={`${INPUT_CLASS} disabled:opacity-60 disabled:cursor-not-allowed`}
                   />
-                  <FieldIcon show={showIcon('email')} valid={validity.email} />
+                  <FieldIcon show={showIcon('email')} valid={emailValid} />
+                  {emailInvalid && (
+                    <p id="email-error" role="alert" className="sr-only">
+                      {EMAIL_ERROR}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -261,7 +287,11 @@ export default function Login() {
                     autoComplete="current-password"
                     className={`${INPUT_CLASS} disabled:opacity-60 disabled:cursor-not-allowed`}
                   />
-                  <FieldIcon show={showIcon('password')} valid={validity.password} />
+                  {/* No validity icon, no aria-invalid, no announced message —
+                      all deliberate, see the note above the email check. Password
+                      length belongs on register and update-password, never on
+                      sign-in; the generic submit-time toast is the only failure
+                      signal here. */}
                 </div>
               </div>
 
