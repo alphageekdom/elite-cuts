@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -9,6 +9,8 @@ import { useSession } from 'next-auth/react';
 
 import { useCartContext, type CartLine } from '@/context/CartContext';
 import { useIsMounted } from '@/hooks/useIsMounted';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
+import { useScrollLock } from '@/hooks/useScrollLock';
 import { productImageSrc } from '@/lib/format';
 import { computeTotals, fmtPrice } from '@/lib/pricing';
 import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
@@ -19,11 +21,6 @@ type Props = {
   isOpen: boolean;
   onClose: () => void;
 };
-
-// Same inline Tab-cycle trap the admin SlideDrawer runs — kept local because
-// the two drawers are the only consumers and each owns its own trap.
-const FOCUSABLE_SELECTOR =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 const DrawerLine = ({ line }: { line: CartLine }) => {
   const { setItemQuantity, removeItemFromCart } = useCartContext();
@@ -117,47 +114,11 @@ const CartDrawer = ({ isOpen, onClose }: Props) => {
     [cartItems, isLoggedIn],
   );
 
-  // Focus moves to the close button on open and returns to whatever opened
-  // the drawer on close. Keyed on isOpen alone — the sibling effect re-runs
-  // whenever the parent re-renders (inline onClose identity), and re-running
-  // this one would yank focus back to the close button mid-interaction.
-  useEffect(() => {
-    if (!isOpen) return;
-    const previouslyFocused = document.activeElement as HTMLElement | null;
-    closeBtnRef.current?.focus();
-    return () => previouslyFocused?.focus();
-  }, [isOpen]);
-
+  // Focus lands on the close button rather than the first focusable, which
+  // would be whatever link happens to sit at the top of the drawer body.
+  useFocusTrap(isOpen, asideRef, { initialFocusRef: closeBtnRef });
+  useScrollLock(isOpen);
   useDismissOnEscape(isOpen, onClose);
-
-  // Body scroll lock + Tab cycling inside the drawer. All reset when the
-  // drawer closes; Escape is handled by the shared stack above.
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Tab') return;
-      const root = asideRef.current;
-      if (!root) return;
-      const focusables = root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
-      if (focusables.length === 0) return;
-      const first = focusables[0];
-      const last = focusables[focusables.length - 1];
-      const active = document.activeElement as HTMLElement | null;
-      if (e.shiftKey && active === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && active === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener('keydown', handleKey);
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', handleKey);
-      document.body.style.overflow = '';
-    };
-  }, [isOpen, onClose]);
 
   if (!mounted) return null;
 

@@ -32,7 +32,14 @@ const CheckoutStepRail = ({ currentStep }: Props) => (
                         : 'border-line bg-paper font-display italic text-[12px] text-muted'
                   }`}
                 >
-                  {isDone ? <CheckIcon className='h-2.75 w-2.75' /> : stepNum}
+                  {isDone ? (
+                    <>
+                      <CheckIcon className='h-2.75 w-2.75' />
+                      <span className='sr-only'>Completed</span>
+                    </>
+                  ) : (
+                    stepNum
+                  )}
                 </span>
                 {label === 'Confirmation' ? (
                   <span className='hidden sm:inline'>{label}</span>

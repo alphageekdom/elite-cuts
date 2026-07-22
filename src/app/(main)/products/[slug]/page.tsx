@@ -270,7 +270,7 @@ export default async function ProductPage({ params }: PageProps) {
             {product.category}
           </Link>
           <ChevronIcon direction='right' className={CRUMB_CHEVRON} />
-          <span className='text-ink'>{product.name}</span>
+          <span className='text-ink' aria-current='page'>{product.name}</span>
         </nav>
 
         {/* ── Product hero ── */}

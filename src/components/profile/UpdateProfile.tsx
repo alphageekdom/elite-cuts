@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import DemoDisabledHint from '@/components/demo/DemoDisabledHint';
+import { MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH } from '@/lib/auth/password';
 
 const empty = { currentPassword: '', newPassword: '', confirmNewPassword: '' };
 
@@ -27,8 +28,8 @@ export default function UpdateProfile() {
       return;
     }
 
-    if (formData.newPassword.length < 8) {
-      toast.error('Password must be at least 8 characters');
+    if (formData.newPassword.length < MIN_PASSWORD_LENGTH) {
+      toast.error(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
       return;
     }
 
@@ -100,11 +101,13 @@ export default function UpdateProfile() {
           autoComplete="new-password"
           required
           minLength={8}
-          maxLength={128}
+          maxLength={MAX_PASSWORD_LENGTH}
           className={INPUT}
-          placeholder="Min. 8 characters"
+          placeholder={`Min. ${MIN_PASSWORD_LENGTH} characters`}
         />
-        <p className="text-[11px] text-muted mt-1.5">8–128 characters</p>
+        <p className="text-[11px] text-muted mt-1.5">
+          {MIN_PASSWORD_LENGTH}–{MAX_PASSWORD_LENGTH} characters
+        </p>
       </div>
 
       <div>

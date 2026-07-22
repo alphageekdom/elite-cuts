@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
@@ -15,6 +15,7 @@ import {
 import SectionLabel from '@/components/ui/SectionLabel';
 import CheckIcon from '@/components/uielements/CheckIcon';
 import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 // dayIndex: 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
 type HoursRow = {
@@ -106,10 +107,8 @@ export default function StoreInfoModal({
   triggerClassName,
 }: StoreInfoModalProps) {
   const [open, setOpen] = useState(false);
-  const triggerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
-  const wasOpenRef = useRef(false);
 
   const settings = useShopSettings();
   const shopAddress = settings.street;
@@ -126,51 +125,15 @@ export default function StoreInfoModal({
 
   useDismissOnEscape(open, () => setOpen(false));
 
-  // Tab cycle inside the dialog — same inline trap the cart drawer and admin
-  // SlideDrawer run. Escape is handled by the shared stack above.
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key !== 'Tab') return;
-      const root = dialogRef.current;
-      if (!root) return;
-      const focusables = root.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      );
-      if (focusables.length === 0) return;
-      const first = focusables[0];
-      const last = focusables[focusables.length - 1];
-      const active = document.activeElement as HTMLElement | null;
-      if (e.shiftKey && active === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && active === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [open]);
-
-  // Focus close button on open; restore focus to trigger on close (only after first open)
-  useEffect(() => {
-    if (open) {
-      wasOpenRef.current = true;
-      const id = window.setTimeout(() => closeRef.current?.focus(), 50);
-      return () => window.clearTimeout(id);
-    }
-    if (wasOpenRef.current) {
-      triggerRef.current?.focus();
-    }
-  }, [open]);
+  // Focus lands on the close button on open (not the first link in the body),
+  // Tab cycles inside, and focus returns to the trigger on close.
+  useFocusTrap(open, dialogRef, { initialFocusRef: closeRef });
 
   const { todayRow, isOpen } = getStatus();
 
   return (
     <>
       <button
-        ref={triggerRef}
         type='button'
         onClick={() => setOpen(true)}
         className={triggerClassName ?? DEFAULT_TRIGGER_CLASS}

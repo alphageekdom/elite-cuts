@@ -1,11 +1,12 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { messageInputSchema } from '@/lib/messages/schema';
 import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 type Props = {
   isOpen: boolean;
@@ -32,6 +33,7 @@ export default function NewMessageModal({
   const [body, setBody] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const subjectRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   // Adjust state while rendering: sync subject when the parent passes a new
   // prefilledSubject (e.g. opening contact for a different order), and reset
@@ -52,12 +54,9 @@ export default function NewMessageModal({
 
   useScrollLock(isOpen);
 
-  // Focus subject on open
-  useEffect(() => {
-    if (isOpen && tab === 'inapp') {
-      setTimeout(() => subjectRef.current?.focus(), 50);
-    }
-  }, [isOpen, tab]);
+  // Focus lands on the subject field on open (present because the tab resets to
+  // 'inapp' on close), Tab cycles inside, focus returns to the opener on close.
+  useFocusTrap(isOpen, dialogRef, { initialFocusRef: subjectRef });
 
   useDismissOnEscape(isOpen, onClose);
 
@@ -122,6 +121,7 @@ export default function NewMessageModal({
 
       {/* Modal */}
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="new-message-modal-title"
