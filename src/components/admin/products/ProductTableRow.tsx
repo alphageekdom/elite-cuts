@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 import { productImageSrc, formatMoney } from '@/lib/format';
 import { CATEGORY_COLORS } from '@/lib/admin/constants';
 import { STOCK_UNIT, UNIT_SUFFIX } from '@/lib/products/price-bands';
@@ -99,8 +100,15 @@ export default function ProductTableRowComponent({
         <div className="flex items-center gap-3.5 min-w-60">
           <div className="w-14 h-14 rounded-md bg-cream-deep shrink-0 overflow-hidden">
             {thumb ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={thumb} alt={product.name} className="w-full h-full object-cover" />
+              // 56px box (w-14). Fixed width/height rather than `fill` so the row
+              // needs no positioning context; next/image handles the 2x srcset.
+              <Image
+                src={thumb}
+                alt={product.name}
+                width={56}
+                height={56}
+                className="w-full h-full object-cover"
+              />
             ) : (
               <div className="w-full h-full grid place-items-center text-muted">
                 <svg className="w-5 h-5 opacity-40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">

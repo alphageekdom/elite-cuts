@@ -514,6 +514,11 @@ export default function ProductFormDrawer({ product, onClose, onSave }: Props) {
             <div className="flex flex-wrap gap-2 mt-3">
               {imageFiles.map((f, i) => (
                 <div key={i} className="relative group w-16 h-16 rounded-md overflow-hidden bg-cream-deep border border-line shrink-0">
+                  {/* Stays a plain <img> on purpose: the src is a blob: object URL
+                      from URL.createObjectURL above, pointing at a File the admin just
+                      picked. next/image can't optimize a blob: URL — there's no origin
+                      to fetch and nothing to cache — and routing it through the
+                      optimizer would only add a hop for bytes already in memory. */}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   {previewUrls[i] && <img src={previewUrls[i]} alt={f.name} className="w-full h-full object-cover" />}
                   <button
