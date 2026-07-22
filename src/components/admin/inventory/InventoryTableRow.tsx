@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 import { productImageSrc } from '@/lib/format';
 import { CATEGORY_COLORS } from '@/lib/admin/constants';
 import { CATEGORY_PAR, DEFAULT_PAR, getStockState, type StockState, type InventoryRow } from '@/lib/inventory';
@@ -46,8 +47,15 @@ export default function InventoryTableRowComponent({
         <div className="flex items-center gap-3.5">
           <div className="w-11 h-11 rounded bg-cream-deep shrink-0 overflow-hidden">
             {thumb ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={thumb} alt={row.name} className="w-full h-full object-cover" />
+              // 44px box (w-11). Fixed width/height rather than `fill` so the row
+              // needs no positioning context; next/image handles the 2x srcset.
+              <Image
+                src={thumb}
+                alt={row.name}
+                width={44}
+                height={44}
+                className="w-full h-full object-cover"
+              />
             ) : (
               <div className="w-full h-full" />
             )}
