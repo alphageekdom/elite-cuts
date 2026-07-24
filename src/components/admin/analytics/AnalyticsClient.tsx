@@ -141,7 +141,7 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
               )}
             </svg>
             {!hasSpark && (
-              <div className="mt-2 text-center text-[10px] font-mono text-cream/45 tracking-[0.04em]">
+              <div className="mt-2 text-center text-[10px] font-mono text-cream/60 tracking-[0.04em]">
                 No revenue this period
               </div>
             )}

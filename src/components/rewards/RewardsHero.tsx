@@ -110,7 +110,7 @@ export default function RewardsHero({ settings }: Props) {
                   )}
                 </div>
                 <ul className='flex flex-col gap-1.5'>
-                  {['Free pickup, always', 'Early access to weekly specials', 'Birthday cut on us'].map((perk) => (
+                  {['Early access to weekly specials', 'Birthday cut on us'].map((perk) => (
                     <li key={perk} className='flex items-center gap-2 text-xs text-cream/85'>
                       <svg
                         viewBox='0 0 24 24'

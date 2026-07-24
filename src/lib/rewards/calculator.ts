@@ -21,11 +21,11 @@ export function addMonths(date: Date, months: number): Date {
 export type TierInfo = {
   tier: Tier;
   label: string;
-  threshold: number;        // lifetime points required to reach this tier
-  nextTier: Tier | null;    // null when already at top tier
+  threshold: number; // lifetime points required to reach this tier
+  nextTier: Tier | null; // null when already at top tier
   nextThreshold: number | null;
-  pointsToNext: number;     // 0 when at top tier
-  progress: number;         // 0..1 within the current band (1 when at top tier)
+  pointsToNext: number; // 0 when at top tier
+  progress: number; // 0..1 within the current band (1 when at top tier)
 };
 
 export type RedemptionInput = {
@@ -33,7 +33,11 @@ export type RedemptionInput = {
   currentBalance: number;
   settings: Pick<
     ShopSettings,
-    'redemptionPoints' | 'redemptionDollars' | 'minToRedeem' | 'maxRedemptionPercent' | 'maxRedemptionDollars'
+    | 'redemptionPoints'
+    | 'redemptionDollars'
+    | 'minToRedeem'
+    | 'maxRedemptionPercent'
+    | 'maxRedemptionDollars'
   >;
   /**
    * The order's subtotal in dollars. When provided, the per-order cap
@@ -45,8 +49,8 @@ export type RedemptionInput = {
 };
 
 export type RedemptionCap = {
-  capDollars: number;       // the effective cap as a dollar amount
-  capCents: number;         // same, in cents (matches applyRedemption result units)
+  capDollars: number; // the effective cap as a dollar amount
+  capCents: number; // same, in cents (matches applyRedemption result units)
 };
 
 // Pure helper: compute the per-order cap from settings + subtotal.
@@ -166,13 +170,19 @@ export function applyRedemption({
   orderSubtotalDollars,
 }: RedemptionInput): RedemptionResult {
   if (!Number.isInteger(pointsToRedeem) || pointsToRedeem <= 0) {
-    return { valid: false, error: 'Points to redeem must be a positive whole number' };
+    return {
+      valid: false,
+      error: 'Points to redeem must be a positive whole number',
+    };
   }
   if (pointsToRedeem > currentBalance) {
     return { valid: false, error: 'Not enough points' };
   }
   if (pointsToRedeem < settings.minToRedeem) {
-    return { valid: false, error: `Minimum ${settings.minToRedeem} points to redeem` };
+    return {
+      valid: false,
+      error: `Minimum ${settings.minToRedeem} points to redeem`,
+    };
   }
   // Round redemption down to the nearest whole "block" (e.g. multiples of 100)
   // so the customer never spends a partial conversion that yields zero cents.
@@ -183,7 +193,10 @@ export function applyRedemption({
   }
   const valueCents = computeRedemption(usable, settings);
   if (valueCents <= 0) {
-    return { valid: false, error: 'Redemption would not reduce the order total' };
+    return {
+      valid: false,
+      error: 'Redemption would not reduce the order total',
+    };
   }
   // Per-order cap — min(percent × subtotal, flat $). Only enforced when
   // the caller passes orderSubtotalDollars; legacy callers without it skip
@@ -214,8 +227,151 @@ export function formatRedemptionRate(
 ): string {
   const pts = Math.max(1, Math.floor(settings.redemptionPoints));
   const dollars = Math.max(0, settings.redemptionDollars);
-  const dollarLabel = Number.isInteger(dollars) ? `$${dollars}` : `$${dollars.toFixed(2)}`;
+  const dollarLabel = Number.isInteger(dollars)
+    ? `$${dollars}`
+    : `$${dollars.toFixed(2)}`;
   return `${pts.toLocaleString('en-US')} pts = ${dollarLabel} off`;
+}
+
+// ── Rewards projection (marketing calculator) ────────────────────────────
+// Rough "what a month gives back" estimate for the Rewards page calculator.
+// Deliberately an estimate: it ignores the weekend multiplier (Sat/Sun only),
+// the per-order redemption cap, and points expiry, so the UI must label it as
+// such. Reads the earn rate, redemption ratio, tier thresholds, and the tier
+// window from settings so the number always matches the configured reality.
+//
+// The `reach` shape is a discriminated union rather than a pre-formatted
+// string so the component can render honest, grammatical copy for each case —
+// and, critically, so the rolling-window regime isn't misreported. When
+// `tierWindowMonths > 0`, qualifying points reset each window, so a pace that
+// can't cross a threshold within one window never reaches that tier at all
+// ('stuck') — saying "over a year" there would be a lie. Only lifetime tiers
+// (`tierWindowMonths === 0`) get the "eventually, just slowly" ('slow') case.
+export type RewardsReach =
+  | { kind: 'reached'; tierLabel: string; months: number }
+  | { kind: 'slow'; tierLabel: string } // lifetime tiers, more than a year out
+  | { kind: 'stuck'; stayLabel: string; tierLabel: string } // window resets first
+  | { kind: 'none' }; // no points earned at this pace
+
+export type RewardsProjection = {
+  monthlyPoints: number;
+  yearlyDollarsBack: number;
+  reach: RewardsReach;
+};
+
+export function projectRewards(
+  monthlySpendDollars: number,
+  settings: Pick<
+    ShopSettings,
+    | 'pointsPerDollar'
+    | 'redemptionPoints'
+    | 'redemptionDollars'
+    | 'connoisseurThreshold'
+    | 'masterCutThreshold'
+    | 'tierWindowMonths'
+  >,
+): RewardsProjection {
+  const spend = Math.max(0, monthlySpendDollars);
+  const rate = Math.max(0, settings.pointsPerDollar);
+  const monthlyPoints = Math.floor(spend * rate);
+
+  // Dollars back per year: convert a year of points at the redemption ratio.
+  const redeemPts = Math.max(1, Math.floor(settings.redemptionPoints));
+  const redeemDollars = Math.max(0, settings.redemptionDollars);
+  const yearlyDollarsBack = Math.round(
+    ((monthlyPoints * 12) / redeemPts) * redeemDollars,
+  );
+
+  const conn = Math.max(0, Math.floor(settings.connoisseurThreshold));
+  const master = Math.max(conn, Math.floor(settings.masterCutThreshold));
+  const connLabel = getTier(conn, settings).label;
+  const masterLabel = getTier(master, settings).label;
+
+  // No earning → no honest projection.
+  if (monthlyPoints <= 0) {
+    return { monthlyPoints, yearlyDollarsBack, reach: { kind: 'none' } };
+  }
+
+  // Rolling window: qualifying resets every `tierWindowMonths`, so a tier is
+  // only reachable if the pace crosses its threshold within one window. A
+  // 0-month window means lifetime tiers (points never reset) — there a
+  // one-year horizon is used purely to decide when to say "a little over a
+  // year" instead of naming a large month count.
+  const windowMonths = Math.max(0, Math.floor(settings.tierWindowMonths ?? 0));
+  const horizon = windowMonths > 0 ? windowMonths : 12;
+  const monthsToReach = (threshold: number) =>
+    Math.ceil(threshold / monthlyPoints);
+
+  const masterMonths = monthsToReach(master);
+  if (masterMonths <= horizon) {
+    return {
+      monthlyPoints,
+      yearlyDollarsBack,
+      reach: { kind: 'reached', tierLabel: masterLabel, months: masterMonths },
+    };
+  }
+  const connMonths = monthsToReach(conn);
+  if (connMonths <= horizon) {
+    return {
+      monthlyPoints,
+      yearlyDollarsBack,
+      reach: { kind: 'reached', tierLabel: connLabel, months: connMonths },
+    };
+  }
+
+  // Connoisseur is out of reach within the horizon.
+  if (windowMonths > 0) {
+    // Rolling window: qualifying resets before the threshold is met, so the
+    // customer plateaus below Connoisseur rather than ever arriving there.
+    const stayLabel = getTier(monthlyPoints * windowMonths, settings).label;
+    return {
+      monthlyPoints,
+      yearlyDollarsBack,
+      reach: { kind: 'stuck', stayLabel, tierLabel: connLabel },
+    };
+  }
+  // Lifetime tiers: reachable eventually, just slowly.
+  return {
+    monthlyPoints,
+    yearlyDollarsBack,
+    reach: { kind: 'slow', tierLabel: connLabel },
+  };
+}
+
+// The exact rewards-config slice the client-side rewards components need. The
+// full ShopSettings doc carries admin-only fields (notification toggles, the
+// dormancy threshold, pickup-ops config) that have no business crossing the
+// server/client boundary — the marketing page's client components (Standing,
+// Calculator, FAQ) take this narrowed shape and the server page builds it via
+// `toRewardsPublicSettings`, so nothing admin-only serializes into the RSC
+// payload.
+export type RewardsPublicSettings = Pick<
+  ShopSettings,
+  | 'pointsPerDollar'
+  | 'weekendMultiplier'
+  | 'minToRedeem'
+  | 'pointsExpiryMonths'
+  | 'tierWindowMonths'
+  | 'connoisseurThreshold'
+  | 'masterCutThreshold'
+  | 'redemptionPoints'
+  | 'redemptionDollars'
+>;
+
+export function toRewardsPublicSettings(
+  settings: ShopSettings,
+): RewardsPublicSettings {
+  return {
+    pointsPerDollar: settings.pointsPerDollar,
+    weekendMultiplier: settings.weekendMultiplier,
+    minToRedeem: settings.minToRedeem,
+    pointsExpiryMonths: settings.pointsExpiryMonths,
+    tierWindowMonths: settings.tierWindowMonths,
+    connoisseurThreshold: settings.connoisseurThreshold,
+    masterCutThreshold: settings.masterCutThreshold,
+    redemptionPoints: settings.redemptionPoints,
+    redemptionDollars: settings.redemptionDollars,
+  };
 }
 
 export function formatPointsExpiry(
@@ -228,11 +384,11 @@ export function formatPointsExpiry(
 }
 
 export type EffectiveBalance = {
-  balance: number;            // live balance with expired awards dropped, floored at 0
-  storedBalance: number;      // the User.rewardPoints field, untouched
-  lifetimePoints: number;     // User.lifetimePoints, untouched
-  expiredPoints: number;      // sum of positive awards that have aged past expiresAt
-  recentHistory: PointsHistoryEntry[];  // newest first, capped
+  balance: number; // live balance with expired awards dropped, floored at 0
+  storedBalance: number; // the User.rewardPoints field, untouched
+  lifetimePoints: number; // User.lifetimePoints, untouched
+  expiredPoints: number; // sum of positive awards that have aged past expiresAt
+  recentHistory: PointsHistoryEntry[]; // newest first, capped
 };
 
 // Pure read-side view of a user's points. Walks the history once: positive
@@ -262,7 +418,8 @@ export function getEffectiveBalance(
   const reversedOrderIds = new Set<string>();
   for (const entry of history) {
     if (
-      (entry.reason === 'cancel_reverse' || entry.reason === 'refund_reverse') &&
+      (entry.reason === 'cancel_reverse' ||
+        entry.reason === 'refund_reverse') &&
       entry.orderId
     ) {
       reversedOrderIds.add(String(entry.orderId));
@@ -283,7 +440,10 @@ export function getEffectiveBalance(
   }
 
   const recent = [...history]
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    )
     .slice(0, recentLimit);
 
   return {
@@ -312,7 +472,10 @@ export function getQualifyingPoints(
     if (t < startMs || t > endMs) continue;
     if (entry.reason === 'order_fulfilled') {
       qualifying += entry.delta;
-    } else if (entry.reason === 'cancel_reverse' || entry.reason === 'refund_reverse') {
+    } else if (
+      entry.reason === 'cancel_reverse' ||
+      entry.reason === 'refund_reverse'
+    ) {
       qualifying += entry.delta;
     }
   }
@@ -337,14 +500,14 @@ export function getQualifyingPoints(
 export type TierView = {
   tier: Tier;
   label: string;
-  qualifying: number;          // pts earned this period (0 if windowMonths === 0)
+  qualifying: number; // pts earned this period (0 if windowMonths === 0)
   nextThreshold: number | null;
   pointsToNext: number;
-  progress: number;            // 0..1 within current band
-  periodStart: Date;           // resolved (uses createdAt fallback)
-  periodEndsAt: Date | null;   // null when windowMonths === 0
-  reassessed: boolean;         // true if the helper decided this read crossed the anniversary
-  nextAnniversaryAt: Date;     // value to persist if reassessed
+  progress: number; // 0..1 within current band
+  periodStart: Date; // resolved (uses createdAt fallback)
+  periodEndsAt: Date | null; // null when windowMonths === 0
+  reassessed: boolean; // true if the helper decided this read crossed the anniversary
+  nextAnniversaryAt: Date; // value to persist if reassessed
 };
 
 export function getTierView(
@@ -391,15 +554,22 @@ export function getTierView(
   // just-ended period and lock that as the new tier. Start a fresh period
   // from `now`. Callers persist on reassessed === true.
   if (now.getTime() >= periodEnd.getTime()) {
-    const finalQualifying = getQualifyingPoints(history, periodStart, periodEnd);
+    const finalQualifying = getQualifyingPoints(
+      history,
+      periodStart,
+      periodEnd,
+    );
     const t = getTier(finalQualifying, settings);
     const nextEnd = addMonths(now, windowMonths);
     return {
       tier: t.tier,
       label: t.label,
-      qualifying: 0,        // fresh period — qualifying resets
+      qualifying: 0, // fresh period — qualifying resets
       nextThreshold: t.nextThreshold,
-      pointsToNext: t.pointsToNext,
+      // Fresh period starts at 0 qualifying, so the whole next-tier threshold
+      // is still ahead — not `t.pointsToNext`, which was measured from the
+      // just-ended period's total and would contradict progress: 0.
+      pointsToNext: t.nextThreshold ?? 0,
       progress: 0,
       periodStart: now,
       periodEndsAt: nextEnd,
@@ -423,17 +593,25 @@ export function getTierView(
   // locked Connoisseur with only 100 pts this period → bar fills 10% of
   // the way to Master Cut, not 0%).
   const connThreshold = Math.max(0, Math.floor(settings.connoisseurThreshold));
-  const masterThreshold = Math.max(connThreshold, Math.floor(settings.masterCutThreshold));
+  const masterThreshold = Math.max(
+    connThreshold,
+    Math.floor(settings.masterCutThreshold),
+  );
   let nextThreshold: number | null;
   let progress: number;
   if (effectiveTier === 'masterCut') {
     nextThreshold = null;
     progress = 1;
   } else {
-    nextThreshold = effectiveTier === 'regular' ? connThreshold : masterThreshold;
-    progress = Math.min(1, Math.max(0, qualifying / Math.max(1, nextThreshold)));
+    nextThreshold =
+      effectiveTier === 'regular' ? connThreshold : masterThreshold;
+    progress = Math.min(
+      1,
+      Math.max(0, qualifying / Math.max(1, nextThreshold)),
+    );
   }
-  const pointsToNext = nextThreshold === null ? 0 : Math.max(0, nextThreshold - qualifying);
+  const pointsToNext =
+    nextThreshold === null ? 0 : Math.max(0, nextThreshold - qualifying);
 
   return {
     tier: effectiveTier,

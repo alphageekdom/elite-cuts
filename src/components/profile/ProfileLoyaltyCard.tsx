@@ -55,7 +55,7 @@ export default function ProfileLoyaltyCard({ points = 0, tier, periodEndsAt }: P
       </div>
 
       {periodEndsAt && (
-        <p className="relative mt-3 font-mono text-[10px] tracking-[0.08em] uppercase text-cream/45">
+        <p className="relative mt-3 font-mono text-[10px] tracking-[0.08em] uppercase text-cream/60">
           Qualifies until {shortMonthDay(periodEndsAt)}
         </p>
       )}

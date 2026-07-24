@@ -207,7 +207,7 @@ export default function CustomersClient({ customers, counts, total, newThisWeek 
                     onChange={(e) => table.bulk.setPointsDelta(e.target.value)}
                     placeholder="+100 or -50"
                     autoFocus
-                    className="w-28 bg-cream/10 border border-cream/30 rounded-full px-3 py-1 text-[12px] text-cream outline-none placeholder:text-cream/40"
+                    className="w-28 bg-cream/10 border border-cream/30 rounded-full px-3 py-1 text-[12px] text-cream outline-none placeholder:text-cream/60"
                   />
                   <button
                     onClick={table.bulk.adjustPoints}

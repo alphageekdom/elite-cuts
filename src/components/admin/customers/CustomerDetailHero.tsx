@@ -49,7 +49,7 @@ export default function CustomerDetailHero({ customer, onClose }: Props) {
         <div className="flex items-start justify-between gap-3 mb-6">
           <div className="min-w-0 flex-1">
             <AdminEyebrow size="drawer" className="mb-1">Customer profile</AdminEyebrow>
-            <div className="font-mono text-[11px] text-cream/50 tracking-[0.04em] truncate">
+            <div className="font-mono text-[11px] text-cream/60 tracking-[0.04em] truncate">
               {custId} · MEMBER SINCE {formatDate(customer.createdAt).toUpperCase()}
             </div>
           </div>
@@ -125,27 +125,27 @@ export default function CustomerDetailHero({ customer, onClose }: Props) {
         {/* KPI strip */}
         <div className="grid grid-cols-3 pt-5 border-t border-cream/12">
           <div className="pr-4 border-r border-cream/8">
-            <div className="text-[10px] tracking-[0.18em] uppercase text-cream/50 mb-2">Lifetime spend</div>
+            <div className="text-[10px] tracking-[0.18em] uppercase text-cream/60 mb-2">Lifetime spend</div>
             <div className="font-display text-[20px] font-normal leading-none tracking-tight mb-0.5">
               {formatMoney(customer.totalSpend)}
             </div>
-            <div className="font-mono text-[11px] text-cream/50 tracking-[0.04em]">
+            <div className="font-mono text-[11px] text-cream/60 tracking-[0.04em]">
               {customer.orderCount} ORDER{customer.orderCount !== 1 ? 'S' : ''}
             </div>
           </div>
           <div className="px-4 border-r border-cream/8">
-            <div className="text-[10px] tracking-[0.18em] uppercase text-cream/50 mb-2">Avg order</div>
+            <div className="text-[10px] tracking-[0.18em] uppercase text-cream/60 mb-2">Avg order</div>
             <div className="font-display text-[20px] font-normal leading-none tracking-tight mb-0.5">
               {avgOrder > 0 ? formatMoney(avgOrder) : '—'}
             </div>
-            <div className="font-mono text-[11px] text-cream/50 tracking-[0.04em]">PER ORDER</div>
+            <div className="font-mono text-[11px] text-cream/60 tracking-[0.04em]">PER ORDER</div>
           </div>
           <div className="pl-4">
-            <div className="text-[10px] tracking-[0.18em] uppercase text-cream/50 mb-2">Saved cuts</div>
+            <div className="text-[10px] tracking-[0.18em] uppercase text-cream/60 mb-2">Saved cuts</div>
             <div className="font-display text-[20px] font-normal leading-none tracking-tight mb-0.5">
               {customer.savedCutsCount}
             </div>
-            <div className="font-mono text-[11px] text-cream/50 tracking-[0.04em]">FAVOURITES</div>
+            <div className="font-mono text-[11px] text-cream/60 tracking-[0.04em]">FAVOURITES</div>
           </div>
         </div>
       </div>

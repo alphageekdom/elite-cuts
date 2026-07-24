@@ -55,7 +55,7 @@ export default function ScheduleTodayCard({
                   {stat.unit}
                 </em>
               </div>
-              <div className='text-cream/50 text-[10px] tracking-[0.18em] uppercase'>
+              <div className='text-cream/60 text-[10px] tracking-[0.18em] uppercase'>
                 {stat.label}
               </div>
             </div>

@@ -3,9 +3,9 @@ import Link from 'next/link';
 import Reveal from '@/components/uielements/Reveal';
 import SectionHead from '@/components/ui/SectionHead';
 import RewardsFaq from './RewardsFaq';
-import type { ShopSettings } from '@/models/ShopSettings';
+import type { RewardsPublicSettings } from '@/lib/rewards/calculator';
 
-type Props = { settings: ShopSettings };
+type Props = { settings: RewardsPublicSettings };
 
 export default function RewardsFaqSection({ settings }: Props) {
   return (

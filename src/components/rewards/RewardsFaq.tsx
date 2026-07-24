@@ -2,15 +2,17 @@
 
 import { useState } from 'react';
 import { FOCUS_RING } from '@/lib/styles';
-import type { ShopSettings } from '@/models/ShopSettings';
-import { formatRedemptionRate } from '@/lib/rewards/calculator';
+import {
+  formatRedemptionRate,
+  type RewardsPublicSettings,
+} from '@/lib/rewards/calculator';
 import PlusIcon from '@/components/uielements/PlusIcon';
 
-type Props = { settings: ShopSettings };
+type Props = { settings: RewardsPublicSettings };
 
 const fmt = (n: number) => n.toLocaleString('en-US');
 
-function buildFaqs(settings: ShopSettings) {
+function buildFaqs(settings: RewardsPublicSettings) {
   const ppd = settings.pointsPerDollar === 1 ? '1 point' : `${settings.pointsPerDollar} points`;
   const minRedeemCopy =
     settings.minToRedeem > 0

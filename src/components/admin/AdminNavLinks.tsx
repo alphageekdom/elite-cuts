@@ -27,7 +27,7 @@ export default function AdminNavLinks({ criticalInventoryCount, openMessageCount
       {/* Workspace */}
       <div className="mb-6">
         {!collapsed && (
-          <div className="text-[10px] font-medium tracking-[0.22em] uppercase text-cream/50 mb-3.5 px-3">
+          <div className="text-[10px] font-medium tracking-[0.22em] uppercase text-cream/60 mb-3.5 px-3">
             Workspace
           </div>
         )}
@@ -56,7 +56,7 @@ export default function AdminNavLinks({ criticalInventoryCount, openMessageCount
       {/* Operations */}
       <div>
         {!collapsed && (
-          <div className="text-[10px] font-medium tracking-[0.22em] uppercase text-cream/50 mb-3.5 px-3 mt-2">
+          <div className="text-[10px] font-medium tracking-[0.22em] uppercase text-cream/60 mb-3.5 px-3 mt-2">
             Operations
           </div>
         )}

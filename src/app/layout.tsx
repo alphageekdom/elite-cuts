@@ -9,6 +9,7 @@ import AuthProvider from '@/components/AuthProvider';
 import { CartProvider } from '@/context/CartContext';
 import { ShopSettingsProvider } from '@/context/ShopSettingsContext';
 import { getShopSettings } from '@/lib/shop-settings/queries';
+import { toPublicShopSettings } from '@/lib/shop-settings/public';
 import { SITE_URL } from '@/lib/seo/site-url';
 
 import { Toaster } from 'sonner';
@@ -65,7 +66,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       <body className="bg-cream font-sans text-ink antialiased">
         <AuthProvider>
           <CartProvider>
-            <ShopSettingsProvider value={settings}>
+            <ShopSettingsProvider value={toPublicShopSettings(settings)}>
               {children}
             </ShopSettingsProvider>
           </CartProvider>
