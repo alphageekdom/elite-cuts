@@ -1,11 +1,11 @@
-type CheckIconProps = { className?: string };
+type CheckIconProps = { className?: string; strokeWidth?: number };
 
-const CheckIcon = ({ className }: CheckIconProps) => (
+const CheckIcon = ({ className, strokeWidth = 2.5 }: CheckIconProps) => (
   <svg
     viewBox='0 0 24 24'
     fill='none'
     stroke='currentColor'
-    strokeWidth={2.5}
+    strokeWidth={strokeWidth}
     aria-hidden='true'
     className={className}
   >

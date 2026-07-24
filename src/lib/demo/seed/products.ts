@@ -64,7 +64,12 @@ export const DEMO_PRODUCTS: DemoProductSeed[] = [
       'Coarse-ground chuck with the ideal 80/20 fat ratio. Ground daily for burgers, meatballs, and meat sauce.',
     rating: 4.5,
     stockCount: 35,
-    images: ['beef-ground-chuck.jpg'],
+    images: [
+      'beef-ground-chuck.jpg',
+      '/images/products/gallery/beef-ground-chuck-2.jpg',
+      '/images/products/gallery/beef-ground-chuck-3.jpg',
+      '/images/products/gallery/beef-ground-chuck-4.jpg',
+    ],
     isFeatured: true,
   },
   {
@@ -97,7 +102,12 @@ export const DEMO_PRODUCTS: DemoProductSeed[] = [
       'USDA Prime ribeye, dry-aged 28 days in-house. Concentrated flavor, deep marbling, butter-soft texture.',
     rating: 4.9,
     stockCount: 12,
-    images: ['beef-ribeye-dry-aged.jpg'],
+    images: [
+      'beef-ribeye-dry-aged.jpg',
+      '/images/products/gallery/beef-ribeye-dry-aged-2.jpg',
+      '/images/products/gallery/beef-ribeye-dry-aged-3.jpg',
+      '/images/products/gallery/beef-ribeye-dry-aged-4.jpg',
+    ],
     isFeatured: true,
     isAged: true,
   },
@@ -147,7 +157,12 @@ export const DEMO_PRODUCTS: DemoProductSeed[] = [
       'A long-bone ribeye trimmed clean — the show-stopper cut. Built for the grill or a hot cast-iron sear.',
     rating: 4.9,
     stockCount: 6,
-    images: ['beef-tomahawk.jpg'],
+    images: [
+      'beef-tomahawk.jpg',
+      '/images/products/gallery/beef-tomahawk-2.jpg',
+      '/images/products/gallery/beef-tomahawk-3.jpg',
+      '/images/products/gallery/beef-tomahawk-4.jpg',
+    ],
     isFeatured: true,
   },
 
@@ -223,7 +238,12 @@ export const DEMO_PRODUCTS: DemoProductSeed[] = [
       'Air-chilled whole bird. Crispier skin, cleaner flavor, ready for the roasting pan or spatchcock-and-grill.',
     rating: 4.7,
     stockCount: 20,
-    images: ['chicken-whole.jpg'],
+    images: [
+      'chicken-whole.jpg',
+      '/images/products/gallery/chicken-whole-2.jpg',
+      '/images/products/gallery/chicken-whole-3.jpg',
+      '/images/products/gallery/chicken-whole-4.jpg',
+    ],
     isFeatured: true,
   },
 
@@ -382,7 +402,12 @@ export const DEMO_PRODUCTS: DemoProductSeed[] = [
       'Mini T-bones from the lamb loin. Quick-cooking, rich, and perfect for the grill.',
     rating: 4.8,
     stockCount: 8,
-    images: ['lamb-loin-chops.jpg'],
+    images: [
+      'lamb-loin-chops.jpg',
+      '/images/products/gallery/lamb-loin-chops-2.jpg',
+      '/images/products/gallery/lamb-loin-chops-3.jpg',
+      '/images/products/gallery/lamb-loin-chops-4.jpg',
+    ],
     isFeatured: true,
   },
   {
@@ -505,7 +530,12 @@ export const DEMO_PRODUCTS: DemoProductSeed[] = [
       'Imported 24-month aged Parma prosciutto, hand-sliced and laid in petals. The classic.',
     rating: 4.9,
     stockCount: 10,
-    images: ['charcuterie-prosciutto.jpg'],
+    images: [
+      'charcuterie-prosciutto.jpg',
+      '/images/products/gallery/charcuterie-prosciutto-2.jpg',
+      '/images/products/gallery/charcuterie-prosciutto-3.jpg',
+      '/images/products/gallery/charcuterie-prosciutto-4.jpg',
+    ],
     isFeatured: true,
   },
   {
@@ -630,7 +660,12 @@ export const DEMO_PRODUCTS: DemoProductSeed[] = [
       'Five premium cuts in one box — everything you need for a steakhouse-style dinner at home. Hand-selected, butcher-trimmed.',
     rating: 4.9,
     stockCount: 6,
-    images: ['bundles-beef-sampler.jpg'],
+    images: [
+      'bundles-beef-sampler.jpg',
+      '/images/products/gallery/bundles-beef-sampler-2.jpg',
+      '/images/products/gallery/bundles-beef-sampler-3.jpg',
+      '/images/products/gallery/bundles-beef-sampler-4.jpg',
+    ],
     isFeatured: true,
   },
   {
