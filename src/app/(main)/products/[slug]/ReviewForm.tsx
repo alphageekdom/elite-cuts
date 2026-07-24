@@ -6,6 +6,9 @@ import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
+import CheckIcon from '@/components/uielements/CheckIcon';
+import StarIcon from '@/components/uielements/StarIcon';
+
 type OwnReview = { _id: string; rating: number; comment: string };
 
 type Props = {
@@ -15,19 +18,19 @@ type Props = {
 
 const MAX_COMMENT = 1000;
 
-const Star = ({ filled, size = 'md' }: { filled: boolean; size?: 'md' | 'lg' }) => {
+const Star = ({
+  filled,
+  size = 'md',
+}: {
+  filled: boolean;
+  size?: 'md' | 'lg';
+}) => {
   const cls = size === 'lg' ? 'h-7 w-7' : 'h-5 w-5';
   return (
-    <svg
-      viewBox='0 0 24 24'
-      fill={filled ? 'currentColor' : 'none'}
-      stroke='currentColor'
-      strokeWidth={filled ? 0 : 1.5}
-      aria-hidden
+    <StarIcon
+      filled={filled}
       className={`${cls} transition-colors duration-150`}
-    >
-      <polygon points='12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26' />
-    </svg>
+    />
   );
 };
 
@@ -48,11 +51,11 @@ export default function ReviewForm({ productId, ownReview }: Props) {
   // Not signed in
   if (!session) {
     return (
-      <div className='rounded-sm border border-dashed border-line bg-paper px-6 py-10 text-center'>
-        <p className='text-[14px] text-muted'>
+      <div className='border-line bg-paper rounded-sm border border-dashed px-6 py-10 text-center'>
+        <p className='text-muted text-[14px]'>
           <Link
             href='/login'
-            className='font-medium text-ink underline-offset-2 hover:underline'
+            className='text-ink font-medium underline-offset-2 hover:underline'
           >
             Sign in
           </Link>{' '}
@@ -65,24 +68,15 @@ export default function ReviewForm({ productId, ownReview }: Props) {
   // Signed in + already reviewed + not editing → placecard
   if (ownReview && !isEditing) {
     return (
-      <div className='flex items-center justify-between gap-4 rounded-sm border border-line-soft bg-paper px-6 py-8'>
-        <span className='inline-flex items-center gap-2 text-[14px] text-muted'>
-          <svg
-            viewBox='0 0 24 24'
-            fill='none'
-            stroke='currentColor'
-            strokeWidth={2}
-            aria-hidden
-            className='h-4 w-4 shrink-0 text-green'
-          >
-            <polyline points='20 6 9 17 4 12' />
-          </svg>
+      <div className='border-line-soft bg-paper flex items-center justify-between gap-4 rounded-sm border px-6 py-8'>
+        <span className='text-muted inline-flex items-center gap-2 text-[14px]'>
+          <CheckIcon strokeWidth={2} className='text-green h-4 w-4 shrink-0' />
           You&apos;ve already reviewed this cut.
         </span>
         <button
           type='button'
           onClick={() => setIsEditing(true)}
-          className='shrink-0 text-[13px] font-medium text-ink-soft underline-offset-2 hover:text-ink hover:underline'
+          className='text-ink-soft hover:text-ink shrink-0 text-[13px] font-medium underline-offset-2 hover:underline'
         >
           Edit my review
         </button>
@@ -93,8 +87,14 @@ export default function ReviewForm({ productId, ownReview }: Props) {
   // Edit or new submit form
   const handleSubmit = async (e: { preventDefault(): void }) => {
     e.preventDefault();
-    if (!rating) { toast.error('Please select a star rating'); return; }
-    if (!comment.trim()) { toast.error('Please write a comment'); return; }
+    if (!rating) {
+      toast.error('Please select a star rating');
+      return;
+    }
+    if (!comment.trim()) {
+      toast.error('Please write a comment');
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -110,7 +110,9 @@ export default function ReviewForm({ productId, ownReview }: Props) {
       });
 
       if (res.ok) {
-        toast.success(ownReview ? 'Review updated.' : 'Review submitted — thanks!');
+        toast.success(
+          ownReview ? 'Review updated.' : 'Review submitted — thanks!',
+        );
         setIsEditing(false);
         router.refresh();
       } else if (res.status === 409) {
@@ -138,10 +140,10 @@ export default function ReviewForm({ productId, ownReview }: Props) {
   return (
     <form onSubmit={handleSubmit} className='space-y-5 md:space-y-6'>
       <div>
-        <h3 className='mb-1 font-display text-[22px] font-medium tracking-[-0.01em]'>
+        <h3 className='font-display mb-1 text-[22px] font-medium tracking-[-0.01em]'>
           {ownReview ? 'Edit your review' : 'Leave a review'}
         </h3>
-        <p className='text-[13px] text-muted'>
+        <p className='text-muted text-[13px]'>
           {ownReview
             ? 'Update your rating or comment below.'
             : 'Share your experience with this cut.'}
@@ -150,7 +152,7 @@ export default function ReviewForm({ productId, ownReview }: Props) {
 
       {/* Star picker */}
       <div>
-        <div className='mb-2 flex items-center gap-0.5 text-camel-deep'>
+        <div className='text-camel-deep mb-2 flex items-center gap-0.5'>
           {[1, 2, 3, 4, 5].map((star) => (
             <button
               key={star}
@@ -160,14 +162,14 @@ export default function ReviewForm({ productId, ownReview }: Props) {
               onMouseLeave={() => setHovered(0)}
               aria-label={`Rate ${star} out of 5 — ${STAR_LABELS[star - 1]}`}
               aria-pressed={rating === star}
-              className='grid min-h-11 min-w-11 place-items-center rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-1'
+              className='focus-visible:ring-ink grid min-h-11 min-w-11 place-items-center rounded focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none'
             >
               <Star filled={star <= display} size='lg' />
             </button>
           ))}
         </div>
         {display > 0 && (
-          <p className='text-[12px] font-medium text-camel-deep'>
+          <p className='text-camel-deep text-[12px] font-medium'>
             {STAR_LABELS[display - 1]}
           </p>
         )}
@@ -185,9 +187,9 @@ export default function ReviewForm({ productId, ownReview }: Props) {
           maxLength={MAX_COMMENT}
           placeholder='Share your experience with this cut…'
           rows={4}
-          className='w-full resize-none rounded-sm border border-line bg-paper px-4 py-3 text-[14px] leading-[1.65] text-ink placeholder:text-muted transition-colors duration-200 focus:border-ink focus:outline-none'
+          className='border-line bg-paper text-ink placeholder:text-muted focus:border-ink w-full resize-none rounded-sm border px-4 py-3 text-[14px] leading-[1.65] transition-colors duration-200 focus:outline-none'
         />
-        <div className='mt-1 text-right font-mono text-[11px] text-muted'>
+        <div className='text-muted mt-1 text-right font-mono text-[11px]'>
           {comment.length} / {MAX_COMMENT}
         </div>
       </div>
@@ -196,17 +198,21 @@ export default function ReviewForm({ productId, ownReview }: Props) {
         <button
           type='submit'
           disabled={submitting || !rating || !comment.trim()}
-          className='rounded-full bg-ink px-6 py-3 text-[13px] font-medium tracking-[0.04em] text-cream transition-colors duration-300 hover:bg-oxblood disabled:cursor-not-allowed disabled:opacity-50'
+          className='bg-ink text-cream hover:bg-oxblood rounded-full px-6 py-3 text-[13px] font-medium tracking-[0.04em] transition-colors duration-300 disabled:cursor-not-allowed disabled:opacity-50'
         >
           {submitting
-            ? ownReview ? 'Updating…' : 'Submitting…'
-            : ownReview ? 'Update review' : 'Submit review'}
+            ? ownReview
+              ? 'Updating…'
+              : 'Submitting…'
+            : ownReview
+              ? 'Update review'
+              : 'Submit review'}
         </button>
         {ownReview && (
           <button
             type='button'
             onClick={handleCancel}
-            className='text-[13px] text-muted hover:text-ink'
+            className='text-muted hover:text-ink text-[13px]'
           >
             Cancel
           </button>

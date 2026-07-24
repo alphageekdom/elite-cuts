@@ -8,6 +8,7 @@ import { useSession } from 'next-auth/react';
 import MinusIcon from '@/components/uielements/MinusIcon';
 import PlusIcon from '@/components/uielements/PlusIcon';
 import SpinnerIcon from '@/components/uielements/SpinnerIcon';
+import StarIcon from '@/components/uielements/StarIcon';
 import { useCartContext } from '@/context/CartContext';
 import useHandleAddToCart from '@/hooks/useHandleAddToCart';
 import useHandleBookmark from '@/hooks/useHandleBookmark';
@@ -82,17 +83,6 @@ const CartIcon = () => (
     <circle cx='9' cy='21' r='1' />
     <circle cx='20' cy='21' r='1' />
     <path d='M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6' />
-  </svg>
-);
-
-const StarIcon = () => (
-  <svg
-    viewBox='0 0 24 24'
-    fill='currentColor'
-    aria-hidden='true'
-    className='h-2.5 w-2.5'
-  >
-    <polygon points='12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26' />
   </svg>
 );
 
@@ -172,8 +162,8 @@ const ProductCard = ({ product, sizes = DEFAULT_SIZES }: ProductCardProps) => {
   };
 
   return (
-    <article className='group relative flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-paper transition-shadow duration-300 hover:shadow-[0_18px_40px_-24px_rgba(28,24,20,0.35)] motion-reduce:transition-none'>
-      <div className='relative aspect-4/5 overflow-hidden bg-cream-deep'>
+    <article className='group border-line bg-paper relative flex h-full flex-col overflow-hidden rounded-2xl border transition-shadow duration-300 hover:shadow-[0_18px_40px_-24px_rgba(28,24,20,0.35)] motion-reduce:transition-none'>
+      <div className='bg-cream-deep relative aspect-4/5 overflow-hidden'>
         <Link
           href={productHref}
           aria-label={`View ${product.name}`}
@@ -184,7 +174,7 @@ const ProductCard = ({ product, sizes = DEFAULT_SIZES }: ProductCardProps) => {
             alt=''
             fill
             sizes={sizes}
-            className='object-cover transition-transform duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:scale-105 motion-reduce:group-hover:scale-100 motion-reduce:transition-none'
+            className='object-cover transition-transform duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100'
           />
         </Link>
 
@@ -206,24 +196,22 @@ const ProductCard = ({ product, sizes = DEFAULT_SIZES }: ProductCardProps) => {
           aria-label={isBookmarked ? 'Remove from saved' : 'Save'}
           aria-pressed={isBookmarked}
           disabled={loading}
-          className='absolute top-4 right-4 z-2 grid h-11 w-11 place-items-center rounded-full bg-ink/65 text-cream backdrop-blur-md transition-[background-color,transform] duration-300 hover:scale-105 hover:bg-ink/80 focus-visible:bg-ink/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cream motion-reduce:transition-none motion-reduce:hover:scale-100'
+          className='bg-ink/65 text-cream hover:bg-ink/80 focus-visible:bg-ink/80 focus-visible:ring-cream absolute top-4 right-4 z-2 grid h-11 w-11 place-items-center rounded-full backdrop-blur-md transition-[background-color,transform] duration-300 hover:scale-105 focus-visible:ring-2 focus-visible:outline-none motion-reduce:transition-none motion-reduce:hover:scale-100'
         >
           <HeartIcon filled={isBookmarked} />
         </button>
       </div>
 
       <div className='flex flex-1 flex-col p-5'>
-        <div className='mb-2.5 flex items-center gap-2.5 text-[11px] tracking-[0.16em] uppercase text-muted'>
+        <div className='text-muted mb-2.5 flex items-center gap-2.5 text-[11px] tracking-[0.16em] uppercase'>
           <span>{product.category}</span>
           <span
             aria-hidden='true'
             className='h-0.75 w-0.75 rounded-full bg-current opacity-40'
           />
-          <span className='inline-flex items-center gap-1.5 tracking-normal text-camel-deep'>
-            <StarIcon />
-            {product.rating != null && (
-              <span className='sr-only'>Rated</span>
-            )}
+          <span className='text-camel-deep inline-flex items-center gap-1.5 tracking-normal'>
+            <StarIcon className='h-2.5 w-2.5' />
+            {product.rating != null && <span className='sr-only'>Rated</span>}
             {product.rating?.toFixed(1) ?? '—'}
             {product.rating != null && (
               <span className='sr-only'>out of 5 stars</span>
@@ -234,41 +222,41 @@ const ProductCard = ({ product, sizes = DEFAULT_SIZES }: ProductCardProps) => {
         {/* Name + weight chip share a wrapping baseline row so a long cut
             name pushes the chip to its own line instead of being squeezed. */}
         <div className='mb-2.5 flex flex-wrap items-baseline gap-x-2.5 gap-y-2'>
-          <h3 className='line-clamp-2 font-display text-[22px] font-medium leading-[1.15] tracking-[-0.02em] transition-colors duration-300 group-hover:text-oxblood motion-reduce:transition-none md:text-[24px]'>
+          <h3 className='font-display group-hover:text-oxblood line-clamp-2 text-[22px] leading-[1.15] font-medium tracking-[-0.02em] transition-colors duration-300 motion-reduce:transition-none md:text-[24px]'>
             <Link href={productHref}>{product.name}</Link>
           </h3>
           {showWeightAsPill && (
-            <span className='shrink-0 rounded-full border border-line px-2.5 py-1 text-[11px] leading-none whitespace-nowrap text-muted'>
+            <span className='border-line text-muted shrink-0 rounded-full border px-2.5 py-1 text-[11px] leading-none whitespace-nowrap'>
               {weightLabel}
             </span>
           )}
         </div>
 
-        <p className='mb-5 line-clamp-3 text-sm leading-[1.65] text-ink-soft'>
+        <p className='text-ink-soft mb-5 line-clamp-3 text-sm leading-[1.65]'>
           {product.description}
         </p>
 
-        <div className='mt-auto flex items-baseline justify-between gap-3 border-t border-line-soft pt-4.5'>
+        <div className='border-line-soft mt-auto flex items-baseline justify-between gap-3 border-t pt-4.5'>
           <div>
-            <div className='font-display text-xl font-medium tracking-[-0.01em] text-ink md:text-2xl'>
+            <div className='font-display text-ink text-xl font-medium tracking-[-0.01em] md:text-2xl'>
               {product.displayPriceLabel ? (
                 product.displayPriceLabel
               ) : (
                 <>
                   {formatMoney(product.price)}
-                  <em className='ml-1 text-[13px] font-normal not-italic text-muted'>
+                  <em className='text-muted ml-1 text-[13px] font-normal not-italic'>
                     {product.unit === 'each' ? 'each' : `/${product.unit}`}
                   </em>
                 </>
               )}
             </div>
             {!showWeightAsPill && weightLabel && (
-              <div className='mt-1 line-clamp-2 text-[11px] leading-snug text-muted'>
+              <div className='text-muted mt-1 line-clamp-2 text-[11px] leading-snug'>
                 {weightLabel}
               </div>
             )}
           </div>
-          <span className='inline-flex shrink-0 items-center gap-1.5 font-mono text-[11px] tracking-[0.04em] whitespace-nowrap text-muted'>
+          <span className='text-muted inline-flex shrink-0 items-center gap-1.5 font-mono text-[11px] tracking-[0.04em] whitespace-nowrap'>
             <span
               aria-hidden='true'
               className={`h-1.5 w-1.5 rounded-full ${
@@ -283,13 +271,13 @@ const ProductCard = ({ product, sizes = DEFAULT_SIZES }: ProductCardProps) => {
           <div
             role='group'
             aria-label={`${product.name} quantity`}
-            className='mt-4 flex w-full items-center justify-between rounded-lg bg-ink px-1.5 py-1.5 text-cream'
+            className='bg-ink text-cream mt-4 flex w-full items-center justify-between rounded-lg px-1.5 py-1.5'
           >
             <button
               type='button'
               onClick={onDecrement}
               aria-label={`Decrease ${product.name} quantity`}
-              className='grid h-10 w-10 place-items-center rounded-full transition-colors duration-300 hover:bg-oxblood motion-reduce:transition-none'
+              className='hover:bg-oxblood grid h-10 w-10 place-items-center rounded-full transition-colors duration-300 motion-reduce:transition-none'
             >
               <MinusIcon className='h-3 w-3' />
             </button>
@@ -304,7 +292,7 @@ const ProductCard = ({ product, sizes = DEFAULT_SIZES }: ProductCardProps) => {
               onClick={onIncrement}
               disabled={currentQty >= maxQty}
               aria-label={`Increase ${product.name} quantity`}
-              className='grid h-10 w-10 place-items-center rounded-full transition-colors duration-300 hover:bg-oxblood disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none'
+              className='hover:bg-oxblood grid h-10 w-10 place-items-center rounded-full transition-colors duration-300 disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none'
             >
               <PlusIcon className='h-3 w-3' />
             </button>
@@ -314,14 +302,18 @@ const ProductCard = ({ product, sizes = DEFAULT_SIZES }: ProductCardProps) => {
             type='button'
             onClick={onAddClick}
             disabled={isAddingToCart || outOfStock}
-            className='mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-ink px-4 py-3 text-[13px] font-medium tracking-[0.04em] text-cream transition-colors duration-300 hover:bg-oxblood disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none'
+            className='bg-ink text-cream hover:bg-oxblood mt-4 flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-[13px] font-medium tracking-[0.04em] transition-colors duration-300 disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none'
           >
             {isAddingToCart ? (
               <SpinnerIcon className='h-3.5 w-3.5' />
             ) : (
               <CartIcon />
             )}
-            {isAddingToCart ? 'Adding…' : outOfStock ? 'Sold out' : 'Add to cart'}
+            {isAddingToCart
+              ? 'Adding…'
+              : outOfStock
+                ? 'Sold out'
+                : 'Add to cart'}
           </button>
         )}
       </div>

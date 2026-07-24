@@ -6,6 +6,7 @@ import Order from '@/models/Order';
 import Cart from '@/models/Cart';
 import SavedCard from '@/models/SavedCard';
 import Notification from '@/models/Notification';
+import Review from '@/models/Review';
 import Product from '@/models/Product';
 import Promo from '@/models/Promo';
 import StaffMember from '@/models/StaffMember';
@@ -96,13 +97,22 @@ export async function resetDemoCustomerState(): Promise<ResetCounts> {
 
   const demoId = demo._id;
 
-  // Owned collections — straight deleteMany by owner field.
-  const [ordersRes, cartRes, savedCardsRes, notificationsRes] = await Promise.all([
-    Order.deleteMany({ user: demoId }),
-    Cart.deleteMany({ user: demoId }),
-    SavedCard.deleteMany({ user: demoId }),
-    Notification.deleteMany({ userId: demoId }),
-  ]);
+  // Owned collections — straight deleteMany by owner field. Helpful votes are
+  // the exception: they don't belong to the demo customer, they live on shared
+  // Review docs (which survive the reset), so a demo session's votes would
+  // otherwise permanently reshuffle the "Most helpful" badge for every later
+  // visitor. Pull the demo id out of every review's voter list.
+  const [ordersRes, cartRes, savedCardsRes, notificationsRes] =
+    await Promise.all([
+      Order.deleteMany({ user: demoId }),
+      Cart.deleteMany({ user: demoId }),
+      SavedCard.deleteMany({ user: demoId }),
+      Notification.deleteMany({ userId: demoId }),
+      Review.updateMany(
+        { helpfulVoters: demoId },
+        { $pull: { helpfulVoters: demoId } },
+      ),
+    ]);
 
   // Embedded state on the User doc. Clearing here also resets the dormancy
   // bookkeeping so a long stretch with no demo activity doesn't trip
@@ -152,7 +162,9 @@ export async function restoreDemoCatalog(): Promise<CatalogCounts> {
   // image URL before the bulk delete so admin-uploaded Cloudinary assets get
   // purged alongside the Mongo docs; seeded local filenames return null from
   // the extractor and are silently skipped.
-  const existingProducts = await Product.find({}).select('images').lean<{ images: string[] }[]>();
+  const existingProducts = await Product.find({})
+    .select('images')
+    .lean<{ images: string[] }[]>();
   const allImageUrls = existingProducts.flatMap((p) => p.images ?? []);
   await deleteCloudinaryImages(allImageUrls);
 

@@ -13,6 +13,11 @@ export type Review = {
   rating: number;
   comment: string;
   authorNameSnapshot: string;
+  // Users who marked this review helpful. Stored as the voter set rather than
+  // a bare counter so "one vote per user" is enforced structurally ($addToSet /
+  // $pull) and the current viewer's vote state is derivable without a second
+  // collection. Count = length.
+  helpfulVoters: Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 };
@@ -47,6 +52,11 @@ const ReviewSchema = new Schema<Review>(
       type: String,
       trim: true,
       default: '',
+    },
+    helpfulVoters: {
+      type: [Schema.Types.ObjectId],
+      ref: 'User',
+      default: [],
     },
   },
   {

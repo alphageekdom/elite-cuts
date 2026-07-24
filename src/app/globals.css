@@ -9,6 +9,9 @@
   --color-camel: #c99b62;
   --color-camel-soft: #e0a86b;
   --color-camel-deep: #8a6236;
+  /* Deeper gold for camel-family text on a camel tint (e.g. bg-camel/15),
+     where camel-deep erodes below 4.5:1. Passes ~5.5:1 on cream. */
+  --color-camel-deeper: #74522d;
   --color-ink: #1c1814;
   --color-ink-soft: #2d2722;
   --color-muted: #71695d;

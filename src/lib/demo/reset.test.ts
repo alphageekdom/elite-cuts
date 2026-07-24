@@ -42,6 +42,7 @@ const mocks = vi.hoisted(() => ({
   cartDeleteMany: vi.fn(),
   savedCardDeleteMany: vi.fn(),
   notificationDeleteMany: vi.fn(),
+  reviewUpdateMany: vi.fn(),
   productFind: vi.fn(),
   productDeleteMany: vi.fn(),
   productCreate: vi.fn(),
@@ -76,6 +77,10 @@ vi.mock('@/models/SavedCard', () => ({
 
 vi.mock('@/models/Notification', () => ({
   default: { deleteMany: mocks.notificationDeleteMany },
+}));
+
+vi.mock('@/models/Review', () => ({
+  default: { updateMany: mocks.reviewUpdateMany },
 }));
 
 vi.mock('@/models/Product', () => ({
@@ -147,6 +152,7 @@ describe('resetDemoCustomerState — demo customer not found', () => {
     expect(mocks.cartDeleteMany).not.toHaveBeenCalled();
     expect(mocks.savedCardDeleteMany).not.toHaveBeenCalled();
     expect(mocks.notificationDeleteMany).not.toHaveBeenCalled();
+    expect(mocks.reviewUpdateMany).not.toHaveBeenCalled();
     expect(mocks.userUpdateOne).not.toHaveBeenCalled();
   });
 });
@@ -160,6 +166,7 @@ describe('resetDemoCustomerState — demo customer found', () => {
     mocks.cartDeleteMany.mockResolvedValue({ deletedCount: 1 });
     mocks.savedCardDeleteMany.mockResolvedValue({ deletedCount: 2 });
     mocks.notificationDeleteMany.mockResolvedValue({ deletedCount: 5 });
+    mocks.reviewUpdateMany.mockResolvedValue({ modifiedCount: 0 });
     mocks.userUpdateOne.mockResolvedValue({ modifiedCount: 1 });
   });
 
@@ -175,6 +182,19 @@ describe('resetDemoCustomerState — demo customer found', () => {
     expect(mocks.notificationDeleteMany).toHaveBeenCalledWith({
       userId: demoId,
     });
+  });
+
+  it('pulls the demo id out of every review helpful-voter list', async () => {
+    const { resetDemoCustomerState } = await import('./reset');
+    await resetDemoCustomerState();
+
+    // Helpful votes live on shared Review docs, not the demo customer's own
+    // collections, so they must be scrubbed separately or they'd persist
+    // across the reset and reshuffle the "Most helpful" badge.
+    expect(mocks.reviewUpdateMany).toHaveBeenCalledWith(
+      { helpfulVoters: demoId },
+      { $pull: { helpfulVoters: demoId } },
+    );
   });
 
   it('clears the User-embedded state and resets balances to zero', async () => {
@@ -354,6 +374,7 @@ describe('resetDemoData', () => {
     mocks.cartDeleteMany.mockResolvedValue({ deletedCount: 1 });
     mocks.savedCardDeleteMany.mockResolvedValue({ deletedCount: 2 });
     mocks.notificationDeleteMany.mockResolvedValue({ deletedCount: 5 });
+    mocks.reviewUpdateMany.mockResolvedValue({ modifiedCount: 0 });
     mocks.userUpdateOne.mockResolvedValue({ modifiedCount: 1 });
     stubCatalogHappyPath();
   });

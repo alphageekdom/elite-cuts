@@ -33,7 +33,7 @@ export default function ReviewActions({ reviewId }: Props) {
 
   if (confirming) {
     return (
-      <div className='mt-3 flex items-center gap-3 text-[12px]'>
+      <div className='flex items-center gap-3 text-[12px]'>
         <span className='text-muted'>Delete this review?</span>
         <button
           type='button'
@@ -55,14 +55,12 @@ export default function ReviewActions({ reviewId }: Props) {
   }
 
   return (
-    <div className='mt-3 text-[12px]'>
-      <button
-        type='button'
-        onClick={() => setConfirming(true)}
-        className='text-muted hover:text-oxblood'
-      >
-        Delete review
-      </button>
-    </div>
+    <button
+      type='button'
+      onClick={() => setConfirming(true)}
+      className='text-[12px] text-muted hover:text-oxblood'
+    >
+      Delete review
+    </button>
   );
 }

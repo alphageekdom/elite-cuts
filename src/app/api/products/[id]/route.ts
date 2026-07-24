@@ -43,7 +43,9 @@ export const GET = async (_request: NextRequest, { params }: Ctx) => {
       return NextResponse.json({ message: 'Product not found' }, { status: 404 });
     }
 
-    const reviews = await Review.find({ product: id });
+    // Exclude helpfulVoters — the voter id list is private. Consumers only
+    // ever need the count, which the client derives from the array elsewhere.
+    const reviews = await Review.find({ product: id }).select('-helpfulVoters');
 
     return NextResponse.json({ ...product.toJSON(), reviews });
   } catch (error) {
