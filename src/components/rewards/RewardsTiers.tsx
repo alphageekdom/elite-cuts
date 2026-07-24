@@ -23,7 +23,7 @@ export default function RewardsTiers({ settings }: Props) {
     `Earn ${ppd} per $1 spent`,
     'Save cuts for quick reorder',
     'Order history & quick reorder',
-    'Free pickup on orders over $50',
+    'Free in-store pickup',
   ];
   // The shop-wide weekend multiplier applies to every tier when it's > 1;
   // we don't claim a tier-specific bonus because no code path actually
@@ -33,7 +33,6 @@ export default function RewardsTiers({ settings }: Props) {
 
   const connoisseurPerks = [
     ...(weekendPerk ? [weekendPerk] : []),
-    'Free pickup, always (no minimum)',
     'Early access to weekly specials',
     'Free birthday cut (up to $50)',
     'All Regular tier perks',

@@ -1,6 +1,12 @@
 export const FOCUS_RING =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oxblood focus-visible:ring-offset-2';
 
+// Dark-surface variant: a cream ring on an ink offset. Oxblood-on-ink is only
+// ~2.5:1 and leans on a white halo to be seen; on ink sections use this so the
+// focus indicator reads without the halo (matches RewardsCtaStrip's dark CTA).
+export const FOCUS_RING_DARK =
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cream focus-visible:ring-offset-2 focus-visible:ring-offset-ink';
+
 // Sizing for the ChevronIcon separators between breadcrumb links. Shared so
 // the cart and product-detail crumbs can't drift apart.
 export const CRUMB_CHEVRON = 'h-2.5 w-2.5 opacity-50';

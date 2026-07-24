@@ -389,6 +389,7 @@ export default async function ProfilePage({ searchParams }: Props) {
                 redemptionPoints={settings.redemptionPoints}
                 redemptionDollars={settings.redemptionDollars}
                 pointsExpiryMonths={settings.pointsExpiryMonths}
+                weekendMultiplier={settings.weekendMultiplier}
               />
             )}
 

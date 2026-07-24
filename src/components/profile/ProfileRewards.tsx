@@ -6,13 +6,6 @@ import { FOCUS_RING } from '@/lib/styles';
 import type { TierInfo } from '@/lib/rewards/calculator';
 import type { PointsHistoryReason } from '@/models/User';
 
-const UNLOCKED_PERKS: { bold: string; body: string }[] = [
-  { bold: 'Free pickup, always.', body: 'No minimum order required.' },
-  { bold: '2× points', body: 'on weekend orders.' },
-  { bold: 'Early access', body: 'to weekly specials.' },
-  { bold: 'Free birthday cut', body: 'up to $50.' },
-];
-
 const LOCKED_PERKS = ['15% off dry-aged cuts', "Quarterly butcher's box"];
 
 type Filter = 'all' | 'earned' | 'redeemed';
@@ -37,6 +30,7 @@ type Props = {
   redemptionPoints: number;
   redemptionDollars: number;
   pointsExpiryMonths: number;
+  weekendMultiplier: number;
 };
 
 const fmt = (n: number) => n.toLocaleString('en-US');
@@ -73,8 +67,21 @@ export default function ProfileRewards({
   redemptionPoints,
   redemptionDollars,
   pointsExpiryMonths,
+  weekendMultiplier,
 }: Props) {
   const [filter, setFilter] = useState<Filter>('all');
+
+  // Weekend-bonus perk mirrors the marketing tiers: only claimed when the
+  // shop actually runs a multiplier > 1, using the real configured value —
+  // never a hardcoded "2×" that would lie when the setting is off.
+  const unlockedPerks: { bold: string; body: string }[] = [
+    { bold: 'Free pickup, always.', body: 'No minimum order required.' },
+    ...(weekendMultiplier > 1
+      ? [{ bold: `${weekendMultiplier}× points`, body: 'on weekend orders.' }]
+      : []),
+    { bold: 'Early access', body: 'to weekly specials.' },
+    { bold: 'Free birthday cut', body: 'up to $50.' },
+  ];
 
   const atMax = tier.nextTier === null;
   const target = tier.nextThreshold ?? tier.threshold;
@@ -143,7 +150,7 @@ export default function ProfileRewards({
                 <strong className='font-medium text-cream'>${dollarValue} off</strong>{' '}
                 your next order.
               </p>
-              <p className='mt-2 text-[12px] text-cream/45'>
+              <p className='mt-2 text-[12px] text-cream/60'>
                 Lifetime earned: <strong className='text-cream/70 font-medium'>{fmt(lifetimePoints)}</strong>
                 {expiredPoints > 0 && (
                   <> · Expired: <strong className='text-cream/70 font-medium'>{fmt(expiredPoints)}</strong></>
@@ -185,7 +192,7 @@ export default function ProfileRewards({
                 </p>
               )}
               {periodEndLabel && (
-                <p className='mt-3 font-mono text-[10px] tracking-[0.08em] uppercase text-cream/45'>
+                <p className='mt-3 font-mono text-[10px] tracking-[0.08em] uppercase text-cream/60'>
                   Qualifying period ends {periodEndLabel}
                 </p>
               )}
@@ -207,7 +214,7 @@ export default function ProfileRewards({
           </div>
 
           <ul className='flex flex-col'>
-            {UNLOCKED_PERKS.map((perk) => (
+            {unlockedPerks.map((perk) => (
               <li key={perk.bold} className='flex items-start gap-3 border-b border-line-soft py-3 text-sm leading-snug text-ink-soft'>
                 <span className='mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-green text-cream'>
                   <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={3} strokeLinecap='round' strokeLinejoin='round' className='h-2.75 w-2.75' aria-hidden>
