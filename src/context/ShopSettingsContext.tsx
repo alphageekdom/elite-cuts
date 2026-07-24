@@ -2,12 +2,15 @@
 
 import { createContext, useContext, type ReactNode } from 'react';
 
-import type { ShopSettings } from '@/models/ShopSettings';
+import type { PublicShopSettings } from '@/lib/shop-settings/public';
 
-const ShopSettingsContext = createContext<ShopSettings | null>(null);
+// The context carries only the public settings slice — the root layout strips
+// admin-only fields (alert toggles, dormancy threshold) via toPublicShopSettings
+// before providing, so they never reach the client bundle.
+const ShopSettingsContext = createContext<PublicShopSettings | null>(null);
 
 type Props = {
-  value: ShopSettings;
+  value: PublicShopSettings;
   children: ReactNode;
 };
 
@@ -19,7 +22,7 @@ export function ShopSettingsProvider({ value, children }: Props) {
   );
 }
 
-export function useShopSettings(): ShopSettings {
+export function useShopSettings(): PublicShopSettings {
   const value = useContext(ShopSettingsContext);
   if (!value) {
     throw new Error('useShopSettings must be used inside a ShopSettingsProvider');
