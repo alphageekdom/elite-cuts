@@ -17,6 +17,8 @@ import { productPath } from '@/lib/products/paths';
 import { MAX_PER_LINE } from '@/lib/shop-settings/config';
 
 import { type SerializedProduct } from '@/models/Product';
+import CartIcon from '@/components/uielements/CartIcon';
+import HeartIcon from '@/components/uielements/HeartIcon';
 
 type TagVariant = 'featured' | 'aged' | 'new';
 
@@ -57,34 +59,6 @@ const resolveTag = (product: SerializedProduct): TagVariant | null => {
   if (product.isNewArrival) return 'new';
   return null;
 };
-
-const HeartIcon = ({ filled }: { filled: boolean }) => (
-  <svg
-    viewBox='0 0 24 24'
-    fill={filled ? 'currentColor' : 'none'}
-    stroke='currentColor'
-    strokeWidth={2}
-    aria-hidden='true'
-    className='h-4 w-4 transition-[fill] duration-300 motion-reduce:transition-none'
-  >
-    <path d='M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z' />
-  </svg>
-);
-
-const CartIcon = () => (
-  <svg
-    viewBox='0 0 24 24'
-    fill='none'
-    stroke='currentColor'
-    strokeWidth={2}
-    aria-hidden='true'
-    className='h-3.5 w-3.5'
-  >
-    <circle cx='9' cy='21' r='1' />
-    <circle cx='20' cy='21' r='1' />
-    <path d='M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6' />
-  </svg>
-);
 
 const ProductCard = ({ product, sizes = DEFAULT_SIZES }: ProductCardProps) => {
   const { data: session } = useSession();
@@ -198,7 +172,7 @@ const ProductCard = ({ product, sizes = DEFAULT_SIZES }: ProductCardProps) => {
           disabled={loading}
           className='bg-ink/65 text-cream hover:bg-ink/80 focus-visible:bg-ink/80 focus-visible:ring-cream absolute top-4 right-4 z-2 grid h-11 w-11 place-items-center rounded-full backdrop-blur-md transition-[background-color,transform] duration-300 hover:scale-105 focus-visible:ring-2 focus-visible:outline-none motion-reduce:transition-none motion-reduce:hover:scale-100'
         >
-          <HeartIcon filled={isBookmarked} />
+          <HeartIcon className='h-4 w-4' filled={isBookmarked} />
         </button>
       </div>
 
@@ -307,7 +281,7 @@ const ProductCard = ({ product, sizes = DEFAULT_SIZES }: ProductCardProps) => {
             {isAddingToCart ? (
               <SpinnerIcon className='h-3.5 w-3.5' />
             ) : (
-              <CartIcon />
+              <CartIcon className='h-3.5 w-3.5' />
             )}
             {isAddingToCart
               ? 'Adding…'

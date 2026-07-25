@@ -3,8 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEMO_PRODUCTS } from './seed/products';
 import { DEMO_PROMOS } from './seed/promos';
 import { DEMO_STAFF } from './seed/staff';
-import { DEMO_SHIFTS, currentWeekStartUtc } from './seed/shifts';
-import { DEMO_SHOP_SETTINGS } from './seed/settings';
+import { DEMO_SHIFTS } from './seed/shifts';
 
 // ── Module mocks ────────────────────────────────────────────────────────
 // reset.ts pulls in `server-only`, `connectDB`, and a dozen Mongoose
@@ -271,99 +270,10 @@ function stubCatalogHappyPath(): void {
   mocks.settingsFindOneAndUpdate.mockResolvedValue({});
 }
 
-describe('restoreDemoCatalog', () => {
-  beforeEach(() => {
-    stubCatalogHappyPath();
-  });
-
-  it('deletes every shared collection before inserting the seed snapshot', async () => {
-    const { restoreDemoCatalog } = await import('./reset');
-    await restoreDemoCatalog();
-
-    expect(mocks.productDeleteMany).toHaveBeenCalledWith({});
-    expect(mocks.productCreate).toHaveBeenCalledWith(DEMO_PRODUCTS);
-    expect(mocks.promoDeleteMany).toHaveBeenCalledWith({});
-    expect(mocks.staffDeleteMany).toHaveBeenCalledWith({});
-    expect(mocks.staffInsertMany).toHaveBeenCalledWith(DEMO_STAFF);
-    expect(mocks.eventDeleteMany).toHaveBeenCalledWith({});
-  });
-
-  it('stamps usageCount=0 on every restored promo', async () => {
-    const { restoreDemoCatalog } = await import('./reset');
-    await restoreDemoCatalog();
-
-    const inserted = mocks.promoInsertMany.mock.calls[0][0] as Array<{
-      code: string;
-      usageCount: number;
-    }>;
-    expect(inserted).toHaveLength(DEMO_PROMOS.length);
-    for (const promo of inserted) {
-      expect(promo.usageCount).toBe(0);
-    }
-  });
-
-  it('scopes shift delete + insert to the current Monday-UTC week', async () => {
-    const { restoreDemoCatalog } = await import('./reset');
-    await restoreDemoCatalog();
-
-    const expectedWeekStart = currentWeekStartUtc();
-    expect(mocks.shiftDeleteMany).toHaveBeenCalledWith({
-      weekStart: expectedWeekStart,
-    });
-
-    const insertedShifts = mocks.shiftInsertMany.mock.calls[0][0] as Array<{
-      weekStart: Date;
-    }>;
-    expect(insertedShifts).toHaveLength(DEMO_SHIFTS.length);
-    for (const shift of insertedShifts) {
-      expect(shift.weekStart).toEqual(expectedWeekStart);
-    }
-  });
-
-  it('upserts settings with the seed payload', async () => {
-    const { restoreDemoCatalog } = await import('./reset');
-    await restoreDemoCatalog();
-
-    expect(mocks.settingsFindOneAndUpdate).toHaveBeenCalledWith(
-      {},
-      DEMO_SHOP_SETTINGS,
-      expect.objectContaining({ upsert: true }),
-    );
-  });
-
-  it('returns the per-collection delete + restore counts', async () => {
-    const { restoreDemoCatalog } = await import('./reset');
-    const counts = await restoreDemoCatalog();
-
-    expect(counts).toEqual({
-      productsDeleted: 12,
-      productsRestored: DEMO_PRODUCTS.length,
-      promosDeleted: 3,
-      promosRestored: DEMO_PROMOS.length,
-      staffDeleted: 4,
-      staffRestored: DEMO_STAFF.length,
-      shiftsDeleted: 30,
-      shiftsRestored: DEMO_SHIFTS.length,
-      eventsDeleted: 2,
-      eventsRestored: 0,
-      settingsRestored: true,
-    });
-  });
-
-  it('tolerates a missing deletedCount and reports zero for that collection', async () => {
-    mocks.productDeleteMany.mockResolvedValue({}); // no deletedCount returned
-    const { restoreDemoCatalog } = await import('./reset');
-    const counts = await restoreDemoCatalog();
-
-    expect(counts.productsDeleted).toBe(0);
-    expect(counts.productsRestored).toBe(DEMO_PRODUCTS.length);
-  });
-});
-
 // ── Top-level orchestrator + idempotency ───────────────────────────────
-// `resetDemoData` composes the customer wipe and catalog restore. The
-// idempotency test runs it twice with the same mocks and asserts the
-// returned counts are identical — the contract the cron relies on.
+// `resetDemoData` is the customer wipe and nothing else. The idempotency
+// test runs it twice with the same mocks and asserts the returned counts are
+// identical — the contract the cron relies on.
 
 describe('resetDemoData', () => {
   const demoId = 'demo-customer-id';
@@ -379,31 +289,18 @@ describe('resetDemoData', () => {
     stubCatalogHappyPath();
   });
 
-  it('runs the customer wipe and skips the catalog restore', async () => {
+  it('runs the customer wipe and touches nothing else', async () => {
     const { resetDemoData } = await import('./reset');
     const counts = await resetDemoData();
 
-    // Customer wipe ran.
-    expect(counts).toMatchObject({
+    // The whole envelope — `toEqual`, not `toMatchObject`, so a catalog count
+    // reappearing in the shape fails here rather than passing silently.
+    expect(counts).toEqual({
       ordersDeleted: 3,
       cartDeleted: 1,
       savedCardsDeleted: 2,
       notificationsDeleted: 5,
       userReset: true,
-      // Catalog counts read zero — the orchestrator no longer calls
-      // restoreDemoCatalog so seeded products / reviews / promos /
-      // staff / shifts persist across resets.
-      productsDeleted: 0,
-      productsRestored: 0,
-      promosDeleted: 0,
-      promosRestored: 0,
-      staffDeleted: 0,
-      staffRestored: 0,
-      shiftsDeleted: 0,
-      shiftsRestored: 0,
-      eventsDeleted: 0,
-      eventsRestored: 0,
-      settingsRestored: false,
     });
 
     // No catalog-side write should have fired.
