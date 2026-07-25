@@ -12,6 +12,10 @@ import GrillEventHero from '@/components/grill-event/GrillEventHero';
 import AccountDeletedBanner from '@/components/profile/AccountDeletedBanner';
 import { getActiveEvent } from '@/lib/events/queries';
 import { getShopSettings } from '@/lib/shop-settings/queries';
+import {
+  foundingYearsLabel,
+  yearsSinceFounding,
+} from '@/lib/shop-settings/founding';
 import { SITE_URL } from '@/lib/seo/site-url';
 
 export const metadata: Metadata = {
@@ -23,6 +27,12 @@ const HomePage = async () => {
     getActiveEvent(),
     getShopSettings(),
   ]);
+
+  // Clock read stays in the page (server-rendered per request) so the About
+  // section's "N years" copy derives instead of sitting frozen in the markup.
+  const now = new Date();
+  const yearsLabel = foundingYearsLabel(now);
+  const years = yearsSinceFounding(now);
 
   // Honest structured data only — every field below is rendered somewhere on
   // the site. No ratings, reviews, or offers: demo products aren't
@@ -66,7 +76,7 @@ const HomePage = async () => {
       <HolidaySection />
       <Marquee />
       <FeaturedProducts />
-      <About />
+      <About yearsLabel={yearsLabel} years={years} />
       <Partners />
       <Reviews />
       <CTA />

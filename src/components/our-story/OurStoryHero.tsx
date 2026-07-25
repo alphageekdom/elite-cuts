@@ -1,12 +1,28 @@
 import Reveal from '@/components/uielements/Reveal';
+import { FOUNDED_YEAR } from '@/lib/shop-settings/founding';
+import { PARTNER_COUNT } from '@/lib/our-story/partners';
 
-export default function OurStoryHero() {
+type Props = {
+  cityStateZip: string;
+  // Live counts — the fact list used to claim "6+ local farms" while the
+  // sourcing section named three, and "6 staff" with four team cards below.
+  cutCount: number;
+  staffCount: number;
+  yearsLabel: string;
+};
+
+export default function OurStoryHero({
+  cityStateZip,
+  cutCount,
+  staffCount,
+  yearsLabel,
+}: Props) {
   return (
     <section className='px-4 pt-14 pb-12 sm:pt-18 sm:px-8 lg:px-16'>
       <div className='mx-auto max-w-7xl'>
         <Reveal>
           <p className='text-muted mb-6 inline-flex items-center gap-3 text-[11px] font-medium tracking-[0.22em] uppercase before:h-px before:w-7 before:bg-current before:opacity-50'>
-            Our Story · Est. 2018
+            Our Story · Est. {FOUNDED_YEAR}
           </p>
         </Reveal>
 
@@ -21,20 +37,22 @@ export default function OurStoryHero() {
           <Reveal>
             <div className='text-muted font-mono text-[11px] leading-[1.8] tracking-[0.04em]'>
               <p>
-                <strong className='text-ink'>Founded</strong> 2018
+                <strong className='text-ink'>Founded</strong> {FOUNDED_YEAR}
               </p>
               <p>
-                <strong className='text-ink'>Location</strong> San Diego, CA
+                <strong className='text-ink'>Location</strong> {cityStateZip}
               </p>
               <p>
-                <strong className='text-ink'>Counter</strong> 6 staff
+                <strong className='text-ink'>Cuts in the case</strong>{' '}
+                {cutCount}
               </p>
               <p>
-                <strong className='text-ink'>Sourcing</strong> 6+ local farms
+                <strong className='text-ink'>Partner farms</strong>{' '}
+                {PARTNER_COUNT}
               </p>
               <p>
-                <strong className='text-ink'>Aging room</strong> 28 days,
-                climate-controlled
+                <strong className='text-ink'>Team</strong> {staffCount} on the
+                roster
               </p>
             </div>
           </Reveal>
@@ -45,8 +63,9 @@ export default function OurStoryHero() {
                 don&apos;t sell anything you wouldn&apos;t cook for your own
                 family.
               </em>{' '}
-              Eight years later, that&apos;s still the only one we follow
-              without exception.
+              {yearsLabel}
+              {' later, '}
+              that&apos;s still the only one we follow without exception.
             </p>
           </Reveal>
         </div>

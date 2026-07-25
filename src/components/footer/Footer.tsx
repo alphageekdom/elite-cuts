@@ -6,6 +6,10 @@ import {
   formatShopCityStateZip,
   getShopSettings,
 } from '@/lib/shop-settings/queries';
+import {
+  formatShopHoursCondensed,
+  getShopHours,
+} from '@/lib/shop-settings/hours-queries';
 import { splitWordmark } from '@/lib/wordmark';
 
 const FacebookIcon = () => (
@@ -93,7 +97,13 @@ const COLUMN_LINK =
   'text-[15px] text-cream opacity-85 transition-[opacity,padding] duration-300 hover:opacity-100 hover:pl-1.5 motion-reduce:transition-none motion-reduce:hover:pl-0';
 
 const Footer = async () => {
-  const settings = await getShopSettings();
+  const [settings, hoursDays] = await Promise.all([
+    getShopSettings(),
+    getShopHours(),
+  ]);
+  // Hours used to be hardcoded here and in the Our Story visit block, so both
+  // would quietly lie to customers the moment an admin changed them.
+  const hours = formatShopHoursCondensed(hoursDays);
   const year = new Date().getFullYear();
   const cityStateZip = formatShopCityStateZip(settings);
   const wordmark = splitWordmark(settings.shopName);
@@ -129,11 +139,13 @@ const Footer = async () => {
                 {cityStateZip}
               </p>
               <p className='text-sm leading-[1.7] opacity-75'>
-                Tue–Sat 9am–7pm
-                <br />
-                Sun 10am–4pm
-                <br />
-                Closed Mondays
+                {hours.map((row) => (
+                  <span key={row.label} className='block'>
+                    {row.isClosed
+                      ? `Closed ${row.label}`
+                      : `${row.label} ${row.value}`}
+                  </span>
+                ))}
               </p>
             </div>
 
