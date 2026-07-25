@@ -24,7 +24,18 @@ export const useReveal = <T extends HTMLElement = HTMLDivElement>() => {
       { threshold: 0.12, rootMargin: '0px 0px -60px 0px' }
     );
     io.observe(el);
-    return () => io.disconnect();
+
+    // A control inside an unrevealed wrapper is still focusable, and tabbing to
+    // one only scrolls it to the viewport edge — which the -60px bottom margin
+    // excludes, so the observer may not fire and focus would sit on an
+    // invisible element (WCAG 2.4.7). Revealing on focus closes that window.
+    const reveal = () => setVisible(true);
+    el.addEventListener('focusin', reveal);
+
+    return () => {
+      io.disconnect();
+      el.removeEventListener('focusin', reveal);
+    };
   }, []);
 
   return { ref, visible };
