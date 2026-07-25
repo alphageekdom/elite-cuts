@@ -29,6 +29,22 @@
   --font-mono: var(--font-jetbrains);
 }
 
+@layer base {
+  /* Tailwind's preflight leaves placeholders at `currentColor` mixed 50% with
+     transparent. Against our ink-on-cream forms that lands around 3.3:1 —
+     under the 4.5:1 floor — and it applies to every input that doesn't set a
+     `placeholder:` utility of its own, which is most of them.
+
+     Setting the floor here instead of per-input fixes all of them at once and
+     keeps the two surfaces that genuinely need something else (the dark admin
+     points-grant field) working, because a utility class always beats a base
+     rule. `--color-muted` measures 4.69:1 on cream and 5.07:1 on paper. */
+  ::placeholder {
+    color: var(--color-muted);
+    opacity: 1;
+  }
+}
+
 @utility custom-shadow {
   box-shadow: rgb(38, 57, 77) 0px 20px 30px -10px;
 }
