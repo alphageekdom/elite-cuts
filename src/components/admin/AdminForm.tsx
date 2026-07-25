@@ -39,7 +39,7 @@ export function Toggle({ checked, onChange, ariaLabel }: ToggleProps) {
 // re-export here to keep imports honest.
 
 export const inputCls =
-  'w-full border border-line bg-paper text-sm text-ink px-4 py-3 rounded-lg outline-none focus:border-ink transition-colors placeholder:text-muted/60';
+  'w-full border border-line bg-paper text-sm text-ink px-4 py-3 rounded-lg outline-none focus:border-ink transition-colors placeholder:text-muted';
 export const labelCls =
   'block text-[11px] font-medium tracking-[0.22em] uppercase text-muted mb-2';
 export const sectionTitleCls =

@@ -157,7 +157,7 @@ export default function CheckoutCardForm({ isLoggedIn, onValidityChange }: Props
             inputMode='numeric'
             aria-label='Card number'
             maxLength={19}
-            className='min-w-0 flex-1 bg-transparent font-mono text-[14px] text-ink outline-none placeholder:text-muted/60'
+            className='min-w-0 flex-1 bg-transparent font-mono text-[14px] text-ink outline-none placeholder:text-muted'
           />
         </div>
       </div>
@@ -179,7 +179,7 @@ export default function CheckoutCardForm({ isLoggedIn, onValidityChange }: Props
               inputMode='numeric'
               aria-label='Expiry month'
               maxLength={2}
-              className='w-8 bg-transparent text-center font-mono text-[14px] text-ink outline-none placeholder:text-muted/60'
+              className='w-8 bg-transparent text-center font-mono text-[14px] text-ink outline-none placeholder:text-muted'
             />
             <span
               className='select-none font-mono text-[14px] text-muted'
@@ -197,7 +197,7 @@ export default function CheckoutCardForm({ isLoggedIn, onValidityChange }: Props
               inputMode='numeric'
               aria-label='Expiry year'
               maxLength={2}
-              className='w-8 bg-transparent text-center font-mono text-[14px] text-ink outline-none placeholder:text-muted/60'
+              className='w-8 bg-transparent text-center font-mono text-[14px] text-ink outline-none placeholder:text-muted'
             />
           </div>
         </div>
@@ -220,7 +220,7 @@ export default function CheckoutCardForm({ isLoggedIn, onValidityChange }: Props
               inputMode='numeric'
               aria-label='Card CVC'
               maxLength={3}
-              className='w-full bg-transparent text-center font-mono text-[14px] text-ink outline-none placeholder:text-muted/60'
+              className='w-full bg-transparent text-center font-mono text-[14px] text-ink outline-none placeholder:text-muted'
             />
           </div>
         </div>
