@@ -17,6 +17,13 @@ export function formatPhoneHref(phone: string): string {
   return `tel:${sign}${trimmed.replace(/\D/g, '')}`;
 }
 
+// Google Maps directions link for the shop. Uses the `dir` endpoint rather
+// than `search` so the link actually starts turn-by-turn navigation, which is
+// what every call site's label promises.
+export function formatDirectionsUrl(fullAddress: string): string {
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(fullAddress)}`;
+}
+
 export function formatWebsiteDisplay(website: string): string {
   return website.replace(/^https?:\/\//, '').replace(/\/$/, '');
 }

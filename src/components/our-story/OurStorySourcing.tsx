@@ -1,51 +1,7 @@
 import Image from 'next/image';
 import SectionHead from '@/components/ui/SectionHead';
 import Reveal from '@/components/uielements/Reveal';
-
-const PARTNERS = [
-  {
-    eyebrow: 'Beef · Since 2019',
-    title: 'Hartwell',
-    titleEm: 'Ranch',
-    body: 'Family-run since 1962. They raise Black Angus on 4,000 acres of Central Valley grass and finish on a corn-and-barley blend for 120 days. We buy whole carcasses, never less.',
-    meta: 'CENTRAL VALLEY · 1.8HR DRIVE',
-    img: '/images/our-story/partner-hartwell-ranch.jpg',
-    stats: [
-      { v: '4,000', unit: 'ac', label: 'Pasture' },
-      { v: '120', unit: 'days', label: 'Grain finish' },
-      { v: '1962', unit: '', label: 'Family-run since' },
-    ],
-    flip: false,
-  },
-  {
-    eyebrow: 'Pork · Since 2023',
-    title: 'Wildwood',
-    titleEm: 'Farm',
-    body: "Heritage Berkshire pork, pasture-raised on 80 acres of oak savannah. The hogs forage acorns most of the year. That's why the fat tastes the way it does.",
-    meta: 'SAN LUIS OBISPO · 1.5HR DRIVE',
-    img: '/images/our-story/partner-wildwood-farm.jpg',
-    stats: [
-      { v: '80', unit: 'ac', label: 'Oak savannah' },
-      { v: '100', unit: '%', label: 'Pasture-raised' },
-      { v: '~120', unit: '', label: 'Hogs / year' },
-    ],
-    flip: true,
-  },
-  {
-    eyebrow: 'Chicken · Since 2021',
-    title: 'Sunridge',
-    titleEm: 'Farm',
-    body: 'Free-range heritage chickens raised on 60 acres of coastal sage scrubland in Ventura County. No antibiotics, no confinement — the birds forage year-round, and the flavor shows it. We take whole-bird delivery every Tuesday and break them down ourselves.',
-    meta: 'VENTURA COUNTY · 1.3HR DRIVE',
-    img: '/images/our-story/partner-sunridge-farm.jpg',
-    stats: [
-      { v: '60', unit: 'ac', label: 'Coastal scrubland' },
-      { v: '100', unit: '%', label: 'Free-range' },
-      { v: '~180', unit: '', label: 'Birds per month' },
-    ],
-    flip: false,
-  },
-];
+import { PARTNERS, PARTNER_COUNT } from '@/lib/our-story/partners';
 
 export default function OurStorySourcing() {
   return (
@@ -62,9 +18,9 @@ export default function OurStorySourcing() {
         </Reveal>
         <Reveal>
           <p className='text-ink-soft mb-16 max-w-[50ch] text-base'>
-            We don&apos;t work with distributors. Every partner on this list —
-            we&apos;ve walked their land, met their animals, and shaken hands
-            on the deal.
+            We don&apos;t work with distributors. These are the{' '}
+            {PARTNER_COUNT} farms behind everything in the case — we&apos;ve
+            walked their land, met their animals, and shaken hands on the deal.
           </p>
         </Reveal>
 
@@ -79,7 +35,8 @@ export default function OurStorySourcing() {
                 <div className='relative aspect-4/3 overflow-hidden rounded-sm'>
                   <Image
                     src={partner.img}
-                    alt={`${partner.title} ${partner.titleEm}`}
+                    // Decorative: the farm name is the h3 beside this image.
+                    alt=''
                     fill
                     className='object-cover contrast-[1.03] saturate-[0.93]'
                     sizes='(max-width: 1024px) 100vw, 50vw'

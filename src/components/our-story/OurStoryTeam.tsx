@@ -6,7 +6,7 @@ const TEAM = [
   {
     name: 'Tomás Reyes',
     role: 'Founder · Head Butcher',
-    bio: 'Trained at Smith & Wollensky NYC, then nine years as head butcher at a Beverly Hills steakhouse before opening EliteCuts.',
+    bio: 'Trained in New York steakhouse kitchens, then nine years as head butcher at a Beverly Hills steakhouse before opening EliteCuts.',
     fact: 'Bone-in côte de boeuf, 28-day aged.',
     img: '/images/our-story/team-tomas-reyes.jpg',
   },
@@ -33,7 +33,15 @@ const TEAM = [
   },
 ];
 
-export default function OurStoryTeam() {
+type Props = {
+  // Full roster size. The cards below are the counter-facing crew, so the
+  // blurb reconciles the two counts explicitly rather than letting the hero's
+  // roster figure silently contradict the number of cards on screen.
+  staffCount: number;
+};
+
+export default function OurStoryTeam({ staffCount }: Props) {
+  const others = Math.max(0, staffCount - TEAM.length);
   return (
     <section className='bg-paper px-4 py-24 sm:px-8 lg:px-16'>
       <div className='mx-auto max-w-7xl'>
@@ -48,27 +56,32 @@ export default function OurStoryTeam() {
           </h2>
         </Reveal>
         <Reveal>
-          <p className='text-ink-soft mb-16 max-w-[50ch] text-base'>
-            When you walk in on a Saturday morning, these are the faces. Most
-            of us have been here longer than three years. Any of us will cut
-            you a sample if you ask.
+          <p className='text-ink-soft mb-16 max-w-[52ch] text-base'>
+            When you walk in on a Saturday morning, these are the faces
+            you&apos;ll meet at the counter
+            {others > 0
+              ? `, with ${others} more on the roster behind them`
+              : ''}
+            . Any of us will cut you a sample if you ask.
           </p>
         </Reveal>
 
         <div className='grid gap-5 sm:grid-cols-2 lg:grid-cols-4'>
           {TEAM.map((member) => (
-            <Reveal key={member.name}>
-              <div className='group border-line-soft bg-cream overflow-hidden rounded-sm border transition-transform duration-400 hover:-translate-y-1'>
-                <div className='bg-cream-deep relative aspect-square w-full sm:aspect-3/4'>
+            <Reveal key={member.name} className='h-full'>
+              <div className='group border-line-soft bg-cream flex h-full flex-col overflow-hidden rounded-sm border transition-transform duration-400 hover:-translate-y-1'>
+                <div className='bg-cream-deep relative aspect-square w-full shrink-0 sm:aspect-3/4'>
                   <Image
                     src={member.img}
-                    alt={member.name}
+                    // Decorative: the name is printed directly below, so a
+                    // descriptive alt would just make screen readers say it twice.
+                    alt=''
                     fill
                     className='object-cover contrast-[1.03] saturate-[0.95]'
                     sizes='(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw'
                   />
                 </div>
-                <div className='p-5 pb-6'>
+                <div className='flex-1 p-5 pb-6'>
                   <div className='font-display mb-1 text-[20px] font-medium tracking-[-0.015em]'>
                     {member.name}
                   </div>

@@ -4,6 +4,15 @@ import ShopImage from '@/assets/images/butcher-shop.jpg';
 import Reveal from '@/components/uielements/Reveal';
 
 import SectionEyebrow from './SectionEyebrow';
+import { FOUNDED_YEAR } from '@/lib/shop-settings/founding';
+
+type AboutProps = {
+  // Derived on the server from FOUNDED_YEAR so the prose and the years badge
+  // can't go stale the way the hardcoded "Eight years later" / "8+ yrs" pair
+  // would have the moment the calendar rolled over.
+  yearsLabel: string;
+  years: number;
+};
 
 const SignatureSvg = () => (
   <svg
@@ -22,7 +31,7 @@ const SignatureSvg = () => (
   </svg>
 );
 
-const About = () => {
+const About = ({ yearsLabel, years }: AboutProps) => {
   return (
     <section
       aria-labelledby='about-heading'
@@ -44,10 +53,10 @@ const About = () => {
             </h2>
 
             <p className='mb-5.5 max-w-[52ch] text-base leading-[1.75] text-ink-soft first-letter:float-left first-letter:mt-1.5 first-letter:mr-3 first-letter:font-display first-letter:text-[60px] first-letter:leading-[0.9] first-letter:font-medium first-letter:text-oxblood'>
-              Tomás opened EliteCuts in 2018 with a simple rule: every cut
-              should leave the counter looking like the butcher cared about it.
-              Eight years later, we still cut to order, dry-age our beef
-              in-house, and only carry meat from farms we know by name.
+              Tomás opened EliteCuts in {FOUNDED_YEAR} with a simple rule:
+              every cut should leave the counter looking like the butcher cared
+              about it. {yearsLabel} later, we still cut to order, dry-age our
+              beef in-house, and only carry meat from farms we know by name.
             </p>
             <p className='mb-5.5 max-w-[52ch] text-base leading-[1.75] text-ink-soft'>
               Order online by 4pm for same-day pickup. Or stop by the counter
@@ -84,7 +93,10 @@ const About = () => {
               </div>
               <div className='mt-6 inline-flex flex-col rounded-sm bg-ink px-7 py-6 text-cream shadow-[0_20px_50px_rgba(0,0,0,0.15)] lg:absolute lg:bottom-16 lg:-left-8 lg:mt-0'>
                 <div className='mb-1.5 font-display text-[clamp(36px,4vw,44px)] leading-none tracking-[-0.03em] font-normal'>
-                  <em className='font-normal italic text-camel-deep'>8+</em> yrs
+                  <em className='font-normal italic text-camel-deep'>
+                    {years}+
+                  </em>{' '}
+                  yrs
                 </div>
                 <div className='text-[11px] tracking-[0.18em] uppercase opacity-70'>
                   Serving San Diego

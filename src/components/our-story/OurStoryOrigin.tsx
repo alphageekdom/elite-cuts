@@ -1,7 +1,15 @@
 import SectionHead from '@/components/ui/SectionHead';
 import Reveal from '@/components/uielements/Reveal';
+import { FOUNDED_YEAR } from '@/lib/shop-settings/founding';
 
-export default function OurStoryOrigin() {
+type Props = {
+  // The shop's real street, from settings. This copy used to name a
+  // "Carnivore Street" that exists nowhere else in the app and contradicted
+  // the address printed further down the same page.
+  street: string;
+};
+
+export default function OurStoryOrigin({ street }: Props) {
   return (
     <section className='px-4 pb-24 sm:px-8 lg:px-16'>
       <div className='mx-auto max-w-7xl'>
@@ -12,9 +20,12 @@ export default function OurStoryOrigin() {
         <div className='grid gap-12 lg:gap-20 lg:grid-cols-[1fr_1.4fr]'>
           <Reveal>
             <aside>
-              <h3 className='font-display text-oxblood mb-4 text-[22px] leading-[1.2] font-normal tracking-[-0.01em] italic'>
+              {/* A lede, not a subheading: as an h3 it sat ahead of this
+                  section's h2 in the DOM, so the page outline read h1 → h3 → h2
+                  and heading navigation landed here before the real heading. */}
+              <p className='font-display text-oxblood mb-4 text-[22px] leading-[1.2] font-normal tracking-[-0.01em] italic'>
                 Started with one tomahawk and a lot of optimism.
-              </h3>
+              </p>
               <p className='text-ink-soft mb-4 text-sm leading-[1.65] lg:max-w-[32ch]'>
                 Tomás spent nine years as head butcher at a Beverly Hills
                 steakhouse. The kitchen was busy. The work was good. But the
@@ -23,9 +34,9 @@ export default function OurStoryOrigin() {
                 bothered him.
               </p>
               <p className='text-ink-soft mb-5 text-sm leading-[1.65] lg:max-w-[32ch]'>
-                So in March 2018, he signed a lease on a 600-square-foot shop
-                on Carnivore Street, brought in a single dry-aging cabinet,
-                and wrote the menu on a whiteboard.
+                So in March {FOUNDED_YEAR}, he signed a lease on a
+                600-square-foot shop at {street}, brought in a single
+                dry-aging cabinet, and wrote the menu on a whiteboard.
               </p>
               <div className='border-line-soft bg-paper flex items-baseline gap-3 rounded-sm border p-5'>
                 <div>
@@ -70,9 +81,9 @@ export default function OurStoryOrigin() {
               </blockquote>
               <p className='text-ink-soft max-w-[56ch] text-base leading-[1.75]'>
                 By the end of year one, the shop had outgrown the cabinet. By
-                year three, we&apos;d doubled the floor space, hired our
-                second butcher, and started sourcing directly from a single
-                ranch in the Central Valley. We&apos;ve kept growing — but
+                our second year we were buying directly from a single ranch out
+                in Ramona, and by the fourth we&apos;d doubled the floor space
+                and hired our second butcher. We&apos;ve kept growing — but
                 slowly, deliberately, the way you&apos;d age a brisket. The
                 shop today is recognizably the same place. Just with more cuts
                 in the case.

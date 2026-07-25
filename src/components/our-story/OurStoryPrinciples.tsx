@@ -1,5 +1,6 @@
 import SectionHead from '@/components/ui/SectionHead';
 import Reveal from '@/components/uielements/Reveal';
+import { CASE_HOURS_MAX } from '@/lib/our-story/standards';
 
 const PRINCIPLES = [
   {
@@ -18,7 +19,7 @@ const PRINCIPLES = [
     num: '03',
     title: 'Never',
     titleEm: 'frozen',
-    body: "If it's in our case, it's been refrigerated — not frozen — and it's been there less than 36 hours. If it doesn't sell within three days, it goes to the charcuterie counter or the staff fridge. Full stop.",
+    body: `If it's in our case, it's been refrigerated — not frozen — and it's been there less than ${CASE_HOURS_MAX} hours. Whatever doesn't sell by then goes to the charcuterie counter or the staff fridge. Full stop.`,
   },
   {
     num: '04',
@@ -48,7 +49,7 @@ export default function OurStoryPrinciples() {
           <SectionHead label='What we stand for' />
         </Reveal>
         <Reveal>
-          <h2 className='font-display mb-16 max-w-[16ch] text-[clamp(38px,5vw,60px)] leading-[1.05] font-normal tracking-[-0.025em]'>
+          <h2 className='font-display mb-16 max-w-[16ch] text-[clamp(38px,5vw,60px)] leading-[1.05] font-normal tracking-tight'>
             Six rules we don&apos;t{' '}
             <em className='text-oxblood italic'>break.</em>
           </h2>

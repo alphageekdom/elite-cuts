@@ -37,6 +37,10 @@ export const getShopHours = cache(async (): Promise<ShopHoursDay[]> => {
 // since this module is `server-only`.
 export {
   DAY_NAMES,
+  DAY_ABBREVIATIONS,
   formatShopHoursRows,
+  formatShopHoursCondensed,
+  formatOpenDaysSpan,
   type ShopHoursRow,
+  type ShopHoursCondensedRow,
 } from './hours-format';
