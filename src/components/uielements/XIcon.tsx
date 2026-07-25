@@ -1,11 +1,16 @@
-type XIconProps = { className?: string };
+type XIconProps = {
+  className?: string;
+  // Not every call site wants the heavier default — the store-info modal's
+  // close control is drawn at 2.
+  strokeWidth?: number;
+};
 
-const XIcon = ({ className }: XIconProps) => (
+const XIcon = ({ className, strokeWidth = 2.5 }: XIconProps) => (
   <svg
     viewBox='0 0 24 24'
     fill='none'
     stroke='currentColor'
-    strokeWidth={2.5}
+    strokeWidth={strokeWidth}
     aria-hidden='true'
     className={className}
   >

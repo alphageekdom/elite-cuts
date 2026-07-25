@@ -9,6 +9,8 @@ import { formatMoney } from '@/lib/format';
 import { unitPrice } from '@/lib/products/pricing';
 import { MAX_PER_LINE } from '@/lib/shop-settings/config';
 import type { SerializedProduct } from '@/models/Product';
+import CartIcon from '@/components/uielements/CartIcon';
+import HeartIcon from '@/components/uielements/HeartIcon';
 
 type Props = {
   product: Pick<
@@ -35,34 +37,6 @@ type Props = {
     | 'includedItems'
   >;
 };
-
-const CartIcon = () => (
-  <svg
-    viewBox='0 0 24 24'
-    fill='none'
-    stroke='currentColor'
-    strokeWidth={2}
-    aria-hidden
-    className='h-3.5 w-3.5'
-  >
-    <circle cx='9' cy='21' r='1' />
-    <circle cx='20' cy='21' r='1' />
-    <path d='M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6' />
-  </svg>
-);
-
-const HeartIcon = ({ filled }: { filled: boolean }) => (
-  <svg
-    viewBox='0 0 24 24'
-    fill={filled ? 'currentColor' : 'none'}
-    stroke='currentColor'
-    strokeWidth={2}
-    aria-hidden
-    className='h-3.5 w-3.5 transition-[fill] duration-300 motion-reduce:transition-none'
-  >
-    <path d='M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z' />
-  </svg>
-);
 
 const ShareIcon = () => (
   <svg
@@ -201,7 +175,7 @@ export default function BuyBlock({ product }: Props) {
           disabled={outOfStock || isAddingToCart}
           className='flex flex-1 items-center justify-center gap-2.5 rounded-full bg-ink px-5 py-3.5 text-[14px] font-medium tracking-[0.04em] text-cream transition-[background-color,transform] duration-300 hover:-translate-y-px hover:bg-oxblood disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:hover:translate-y-0'
         >
-          <CartIcon />
+          <CartIcon className='h-3.5 w-3.5' />
           {isAddingToCart
             ? 'Adding…'
             : outOfStock
@@ -224,7 +198,7 @@ export default function BuyBlock({ product }: Props) {
               : 'border-line text-ink-soft hover:border-ink hover:bg-paper hover:text-ink'
           }`}
         >
-          <HeartIcon filled={isBookmarked} />
+          <HeartIcon className='h-3.5 w-3.5' filled={isBookmarked} />
           Save
         </button>
 

@@ -1,11 +1,15 @@
-type ArrowIconProps = { className?: string };
+type ArrowIconProps = {
+  className?: string;
+  // Some call sites draw it heavier than the default.
+  strokeWidth?: number;
+};
 
-const ArrowIcon = ({ className }: ArrowIconProps) => (
+const ArrowIcon = ({ className, strokeWidth = 2 }: ArrowIconProps) => (
   <svg
     viewBox='0 0 24 24'
     fill='none'
     stroke='currentColor'
-    strokeWidth={2}
+    strokeWidth={strokeWidth}
     aria-hidden='true'
     className={className}
   >
