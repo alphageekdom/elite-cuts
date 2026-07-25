@@ -26,17 +26,51 @@ import { EMAIL_RE } from '@/lib/validation';
 
 import { FieldValidationIcon as FieldIcon } from '@/components/auth/FieldValidationIcon';
 import EditorialEyebrow from '@/components/ui/EditorialEyebrow';
+import ArrowIcon from '@/components/uielements/ArrowIcon';
+import ChevronIcon from '@/components/uielements/ChevronIcon';
+import DashboardIcon from '@/components/uielements/DashboardIcon';
+import UserIcon from '@/components/uielements/UserIcon';
 import {
   useSignInLockout,
   formatLockoutCountdown,
 } from '@/hooks/useSignInLockout';
 import { startDemoSession, type DemoType } from '@/lib/auth/demo-signin';
+import { buildLoginBenefits } from '@/lib/auth/login-benefits';
+import { FOUNDED_YEAR } from '@/lib/shop-settings/founding';
+import { useShopSettings } from '@/context/ShopSettingsContext';
 
 const INPUT_CLASS =
-  'w-full border-0 border-b border-line bg-transparent text-ink text-base py-2 pb-3.5 pr-6 outline-none placeholder:text-muted/60 focus:border-oxblood transition-colors duration-300';
+  'w-full border-0 border-b border-line bg-transparent text-ink text-base py-2 pb-3.5 pr-6 outline-none placeholder:text-muted focus:border-oxblood transition-colors duration-300';
 
-const DEMO_BUTTON_CLASS =
-  'inline-flex w-full items-center justify-center rounded-full border border-line px-4 py-3 text-[13px] font-medium tracking-[0.04em] text-ink-soft transition-colors duration-300 hover:border-ink hover:text-ink disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-line disabled:hover:text-ink-soft motion-reduce:transition-none';
+const DEMO_DOOR_CLASS =
+  'flex w-full items-center gap-3.5 rounded-xl border border-line bg-paper px-4 py-3.5 transition-colors duration-300 hover:border-ink disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-line motion-reduce:transition-none';
+
+// The two demo accounts, described by what each one actually lets you do.
+// The customer door is unrestricted; the owner door writes to the catalog,
+// promos, staff, shifts and settings but leaves the order queue and customer
+// records read-only, so the copy stops at "run the shop" rather than promising
+// the whole dashboard.
+//
+// The chip colours carry the same signal the app's own two shells do — the
+// cream storefront against the dark ink admin — so the pair reads at a glance
+// before the labels are even parsed. (The design used emoji here; these are
+// drawn glyphs instead, since no other customer-facing surface uses emoji.)
+const DEMO_DOORS = [
+  {
+    type: 'customer' as DemoType,
+    title: 'Shop as a demo customer',
+    body: 'Full catalog, cart, and pickup — no account needed.',
+    Icon: UserIcon,
+    chipCls: 'bg-cream-deep text-oxblood',
+  },
+  {
+    type: 'admin' as DemoType,
+    title: 'Run the shop as the owner',
+    body: 'Price cuts, edit the roster, run a promo. Resets overnight.',
+    Icon: DashboardIcon,
+    chipCls: 'bg-ink text-camel-soft',
+  },
+];
 
 export default function Login() {
   const router = useRouter();
@@ -54,7 +88,14 @@ export default function Login() {
     password: false,
   });
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [demoPending, setDemoPending] = useState<DemoType | null>(null);
+
+  // The panel's four member benefits and its address line both read from the
+  // shop's own settings rather than being written into the markup — see
+  // `buildLoginBenefits` for which claims that keeps honest.
+  const shopSettings = useShopSettings();
+  const benefits = buildLoginBenefits(shopSettings);
 
   const handleDemoSignIn = async (demoType: DemoType) => {
     if (demoPending || loading || isLocked) return;
@@ -135,6 +176,11 @@ export default function Login() {
         redirect: false,
         email: formData.email,
         password: formData.password,
+        // Credentials cross the wire as strings. Sent explicitly on both
+        // branches — this is the one surface that offers the choice, so it has
+        // to state the answer rather than let `resolveRememberMe` fall back to
+        // the default it keeps for surfaces that don't ask.
+        rememberMe: String(formData.rememberMe),
       });
       if (res?.error) {
         const wasLockout = registerLockoutFromMessage(res.error);
@@ -187,34 +233,9 @@ export default function Login() {
 
   return (
     <div className="grid min-h-[calc(100vh-5rem)] md:grid-cols-2">
-      {/* Visual Side */}
-      <aside className="relative hidden md:flex overflow-hidden bg-ink text-cream">
-        <div
-          className="absolute inset-0 scale-[1.05] hero-bg-login animate-[heroZoom_22s_ease-in-out_infinite_alternate]"
-        />
-        <div className="relative z-10 flex flex-col justify-between w-full h-full p-12 xl:p-14">
-          <div className="max-w-[36ch]">
-            <div className="inline-flex items-center gap-3 text-[11px] font-medium tracking-[0.22em] uppercase mb-7 opacity-85">
-              <span className="w-7 h-px bg-current opacity-60" />
-              Welcome back
-            </div>
-            <blockquote className="font-display text-[clamp(28px,2.6vw,38px)] font-normal leading-[1.15] tracking-[-0.02em] mb-7">
-              &ldquo;There is no love sincerer than the love of{' '}
-              <em className="italic text-camel-soft">good food.</em>&rdquo;
-            </blockquote>
-            <p className="font-display italic text-[13px] tracking-[0.04em] opacity-75">
-              — George Bernard Shaw
-            </p>
-          </div>
-
-          <div className="flex justify-between text-[11px] tracking-[0.18em] uppercase opacity-60">
-            <span>EC · Member Access</span>
-            <span>Est. 2018</span>
-          </div>
-        </div>
-      </aside>
-
-      {/* Form Side */}
+      {/* Form Side. First in the DOM because it's what the page is for — a
+          screen reader lands on the sign-in form rather than wading through
+          the marketing panel to reach it. */}
       <section className="flex flex-col px-8 py-8 md:px-14">
         <div className="flex justify-end text-sm">
           <span className="text-muted">
@@ -234,7 +255,10 @@ export default function Login() {
               Good to see you <em className="italic text-oxblood">again.</em>
             </h1>
             <p className="auth-reveal text-ink-soft mb-12 text-[15px] leading-relaxed max-w-[38ch] [animation-delay:300ms]">
-              Sign in to track orders, save your cuts, and check out faster next time.
+              {/* Deliberately not a second list of benefits — the panel to the
+                  left already itemises those, and repeating "save your cuts"
+                  here read as the page selling the same thing twice. */}
+              Pick up where you left off.
             </p>
 
             <form onSubmit={handleSubmit}>
@@ -277,7 +301,7 @@ export default function Login() {
                   <input
                     id="password"
                     name="password"
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     placeholder="Enter your password"
                     required
                     disabled={isLocked}
@@ -285,13 +309,28 @@ export default function Login() {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     autoComplete="current-password"
-                    className={`${INPUT_CLASS} disabled:opacity-60 disabled:cursor-not-allowed`}
+                    className={`${INPUT_CLASS} pr-16 disabled:opacity-60 disabled:cursor-not-allowed`}
                   />
                   {/* No validity icon, no aria-invalid, no announced message —
                       all deliberate, see the note above the email check. Password
                       length belongs on register and update-password, never on
                       sign-in; the generic submit-time toast is the only failure
                       signal here. */}
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    // The label says which way it will go, so it reads
+                    // correctly on its own; aria-controls ties it to the field
+                    // it acts on for anyone arriving at it out of context.
+                    aria-controls="password"
+                    // The visible label already says which way the toggle will
+                    // go, but "Show" on its own is a thin accessible name out
+                    // of context — this keeps the same word and adds the noun.
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    className="absolute right-0 top-1/2 -translate-y-1/2 px-1 py-2 text-[11px] font-semibold tracking-[0.12em] uppercase text-oxblood transition-opacity duration-300 hover:opacity-70 focus-visible:opacity-70"
+                  >
+                    {showPassword ? 'Hide' : 'Show'}
+                  </button>
                 </div>
               </div>
 
@@ -305,9 +344,13 @@ export default function Login() {
                     onChange={handleChange}
                     className="auth-check"
                   />
-                  Remember me
+                  Keep me signed in
                 </label>
-                <Link href="#" className="text-[13px] text-ink-soft hover:text-oxblood transition-colors duration-300">
+                {/* Was href="#" — a dead link on a primary auth surface. There
+                    is no password reset (the demo doors below are how a visitor
+                    gets in without an account), so this points at the one place
+                    a genuinely locked-out customer can reach a person. */}
+                <Link href="/contact" className="text-[13px] text-ink-soft hover:text-oxblood transition-colors duration-300">
                   Forgot password?
                 </Link>
               </div>
@@ -323,11 +366,7 @@ export default function Login() {
                   : loading
                     ? 'Signing in…'
                     : 'Sign in'}
-                {!loading && !isLocked && (
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M5 12h14M13 5l7 7-7 7" />
-                  </svg>
-                )}
+                {!loading && !isLocked && <ArrowIcon className="w-3.5 h-3.5" />}
               </button>
 
             </form>
@@ -336,34 +375,45 @@ export default function Login() {
               <div className="relative mb-5 flex items-center">
                 <span aria-hidden="true" className="flex-1 border-t border-line" />
                 <span className="px-3 text-[11px] font-medium tracking-[0.22em] uppercase text-muted">
-                  or explore as a guest
+                  Just looking around
                 </span>
                 <span aria-hidden="true" className="flex-1 border-t border-line" />
               </div>
-              <div className="grid gap-2.5 sm:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => handleDemoSignIn('customer')}
-                  disabled={Boolean(demoPending) || loading || isLocked}
-                  className={DEMO_BUTTON_CLASS}
-                >
-                  {demoPending === 'customer'
-                    ? 'Starting…'
-                    : 'Continue as Demo Customer'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleDemoSignIn('admin')}
-                  disabled={Boolean(demoPending) || loading || isLocked}
-                  className={DEMO_BUTTON_CLASS}
-                >
-                  {demoPending === 'admin'
-                    ? 'Starting…'
-                    : 'Preview Admin Dashboard'}
-                </button>
+              <div className="grid gap-2.5">
+                {DEMO_DOORS.map((door) => (
+                  <button
+                    key={door.type}
+                    type="button"
+                    onClick={() => handleDemoSignIn(door.type)}
+                    disabled={Boolean(demoPending) || loading || isLocked}
+                    className={DEMO_DOOR_CLASS}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={`grid size-9 shrink-0 place-items-center rounded-full ${door.chipCls}`}
+                    >
+                      <door.Icon className="w-4.5 h-4.5" />
+                    </span>
+                    <span className="flex-1 text-left">
+                      <span className="block text-[14.5px] font-semibold text-ink">
+                        {demoPending === door.type ? 'Starting…' : door.title}
+                      </span>
+                      <span className="mt-0.5 block text-[12.5px] text-muted">
+                        {door.body}
+                      </span>
+                    </span>
+                    <ChevronIcon
+                      direction="right"
+                      className="w-4 h-4 shrink-0 text-camel-deeper"
+                    />
+                  </button>
+                ))}
               </div>
-              <p className="mt-3 text-center text-[11px] text-muted">
-                Demo accounts let you explore the project without creating one.
+              {/* Picking a door swaps the button's own label to "Starting…",
+                  which a screen reader has no reason to re-read. This says it
+                  once, out loud, in the window before the hard navigation. */}
+              <p className="sr-only" role="status" aria-live="polite">
+                {demoPending ? 'Starting demo session, please wait…' : ''}
               </p>
             </div>
 
@@ -376,6 +426,72 @@ export default function Login() {
           </div>
         </div>
       </section>
+
+      {/* Visual Side.
+          Second in the DOM, first on screen from md up. The panel's h2 would
+          otherwise precede the form's h1, which reads as a document whose
+          first heading is a level deeper than its title. `order-first` puts
+          it back on the left visually without that cost — and below md it's
+          display:none anyway, so the source order is what everyone gets. */}
+      <aside className="relative hidden md:order-first md:flex overflow-hidden bg-ink text-cream">
+        <div
+          className="absolute inset-0 scale-[1.05] hero-bg-login animate-[heroZoom_22s_ease-in-out_infinite_alternate]"
+        />
+        {/* The shared hero gradient bottoms out around 40% opacity across the
+            middle of the panel, which was fine behind a short pull-quote but
+            leaves four benefits' worth of body copy sitting on raw photography.
+            This scrim floors the backdrop behind the text so its contrast holds
+            whatever image the panel is carrying. */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-linear-to-t from-ink/95 via-ink/75 to-ink/25"
+        />
+        <div className="relative z-10 flex flex-col justify-end w-full h-full gap-11 p-12 xl:p-14">
+          <div className="max-w-[42ch]">
+            <div className="inline-flex items-center gap-3 text-[11px] font-medium tracking-[0.22em] uppercase mb-6 text-camel-soft">
+              <span aria-hidden="true" className="w-6.5 h-px bg-camel" />
+              Member access
+            </div>
+            <h2 className="font-display text-[clamp(30px,3vw,46px)] font-normal leading-[1.06] tracking-[-0.02em] mb-8">
+              The counter{' '}
+              <em className="italic text-camel-soft">remembers</em> you.
+            </h2>
+            <dl className="flex flex-col">
+              {benefits.map((benefit) => (
+                <div
+                  key={benefit.num}
+                  className="flex items-start gap-4 border-t border-cream/15 py-3.5"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="font-display shrink-0 pt-0.5 text-[14px] text-camel"
+                  >
+                    {benefit.num}
+                  </span>
+                  <div>
+                    <dt className="text-[15px] font-semibold text-cream/95">
+                      {benefit.title}
+                    </dt>
+                    <dd className="mt-1 text-[13.5px] leading-normal text-cream/70">
+                      {benefit.body}
+                    </dd>
+                  </div>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          <div className="flex justify-between gap-4 border-t border-cream/15 pt-6 text-[11px] tracking-[0.18em] uppercase text-cream/60">
+            {/* Address from settings, founding year from the shared constant —
+                both were literals here and in Register, and the year would
+                have gone stale on its own. */}
+            <span>
+              {shopSettings.street} · {shopSettings.city}
+            </span>
+            <span className="shrink-0">Est · {FOUNDED_YEAR}</span>
+          </div>
+        </div>
+      </aside>
     </div>
   );
 }

@@ -49,7 +49,7 @@ export default function DemoDoors({ cutCount, startingPoints }: Props) {
           />
           <div
             aria-hidden
-            className='absolute inset-0 bg-gradient-to-b from-ink/45 to-transparent to-45%'
+            className='absolute inset-0 bg-linear-to-b from-ink/45 to-transparent to-45%'
           />
           <span className='bg-paper/95 text-ink absolute top-4.5 left-5 rounded-full px-3 py-1.5 text-[10.5px] font-semibold tracking-[0.18em] uppercase'>
             Door 01 · Storefront
@@ -113,7 +113,7 @@ export default function DemoDoors({ cutCount, startingPoints }: Props) {
           />
           <div
             aria-hidden
-            className='absolute inset-0 bg-gradient-to-b from-ink/55 via-transparent to-ink/70'
+            className='absolute inset-0 bg-linear-to-b from-ink/55 via-transparent to-ink/70'
           />
           <span className='bg-camel-soft text-ink absolute top-4.5 left-5 rounded-full px-3 py-1.5 text-[10.5px] font-semibold tracking-[0.18em] uppercase'>
             Door 02 · Back of house
@@ -164,6 +164,14 @@ export default function DemoDoors({ cutCount, startingPoints }: Props) {
           </div>
         </div>
       </article>
+
+      {/* Picking a door swaps that button's own label to "Starting demo…",
+          which a screen reader has no reason to re-read. This says it once,
+          out loud, in the window before the hard navigation. Mirrors the
+          same announcement on the sign-in page's pair of doors. */}
+      <p className='sr-only' role='status' aria-live='polite'>
+        {pending ? 'Starting demo session, please wait…' : ''}
+      </p>
     </div>
   );
 }
