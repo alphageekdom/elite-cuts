@@ -1,0 +1,68 @@
+name: CI
+
+# Feature branches are merged locally on this project rather than through pull
+# requests, so a PR-only trigger would never fire. Run on every branch push, and
+# on PRs too in case that habit changes.
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# A push to a PR branch fires both events; drop the superseded run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    name: lint · typecheck · test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          # Matches local and satisfies the tightest dependency constraint
+          # (vitest: ^20 || ^22 || >=24). No engines field or .nvmrc to read.
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci
+
+      # next-env.d.ts is gitignored but sits in tsconfig's include, so a fresh
+      # checkout has no ambient next/image-types declarations and typecheck
+      # fails with TS2307 on the static image imports. `next typegen` restores
+      # them without a full build — no env vars, no database.
+      - name: Generate Next.js types
+        run: npx next typegen
+
+      # The reason this workflow exists. Next 16 removed ESLint from
+      # `next build` and there is no git hook, so this command is the only
+      # thing enforcing --max-warnings=0.
+      - name: Lint
+        run: npm run lint
+
+      # `next build` typechecks too, so Vercel is a backstop — but this fails
+      # minutes earlier and covers branches Vercel may not build.
+      - name: Typecheck
+        if: ${{ !cancelled() }}
+        run: npm run typecheck
+
+      # Every database access in the suite is mocked; no services or env needed.
+      - name: Test
+        if: ${{ !cancelled() }}
+        run: npm test
+
+      # Deliberately absent:
+      #   next build   — the sitemap route is statically prerendered and queries
+      #                  Mongo at build time, so this would need a reachable,
+      #                  seeded database on every push. Vercel already covers it.
+      #   format:check — 389 tracked files fail Prettier; it would be
+      #                  permanently red. See context/deferred-findings.md.
