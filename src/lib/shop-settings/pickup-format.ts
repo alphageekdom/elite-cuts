@@ -54,6 +54,16 @@ export function parseLeadMinutes(value: string): number | null {
   return /^h/i.test(match[2]) ? Math.round(amount * 60) : Math.round(amount);
 }
 
+// How long until an order is ready, phrased for customer copy — "about 30 min",
+// or "shortly" when the configured lead time doesn't parse. Shared so the
+// pickup note on a product page and the member benefit on the sign-in panel
+// can't drift on either the wording or the fallback.
+export function formatReadyIn(leadTime: string): string {
+  return parseLeadMinutes(leadTime) === null
+    ? 'shortly'
+    : `about ${leadTime.trim()}`;
+}
+
 // Which row of `ShopHoursDay[]` is "today" at the shop, not on the server.
 // Shop hours index 0 = Monday; `Date#getDay` indexes 0 = Sunday, hence the
 // rotation. The stored timezone is `"America/Los_Angeles (PT)"` — an IANA
@@ -125,7 +135,7 @@ export function getPickupNote({
   now,
 }: PickupNoteInput): PickupNote {
   const leadMinutes = parseLeadMinutes(leadTime);
-  const readyIn = leadMinutes === null ? 'shortly' : `about ${leadTime.trim()}`;
+  const readyIn = formatReadyIn(leadTime);
 
   const byIndex = new Map(days.map((d) => [d.dayOfWeek, d]));
   const todayIndex = shopWeekdayIndex(timezone, now);

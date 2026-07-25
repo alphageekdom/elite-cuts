@@ -7,6 +7,12 @@ import bcrypt from 'bcryptjs';
 import { clientIpFromHeaders, rateLimit } from '@/lib/rateLimit';
 import { demoLoginInputSchema } from '@/lib/auth/demo-login-schema';
 import { MAX_PASSWORD_LENGTH } from '@/lib/auth/password';
+import {
+  SESSION_COOKIE_MAX_AGE_SECONDS,
+  isSessionExpired,
+  resolveRememberMe,
+  resolveSessionExpiry,
+} from '@/lib/auth/session-lifetime';
 
 // Sign-in deliberately enforces MAX only — a too-long password would otherwise
 // run a slow bcrypt.compare and become a DoS vector. MIN is enforced at
@@ -29,6 +35,7 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: 'Email', type: 'email', placeholder: 'example@example.com' },
         password: { label: 'Password', type: 'password', placeholder: 'Password' },
+        rememberMe: { label: 'Keep me signed in', type: 'checkbox' },
       },
       async authorize(credentials, req) {
         // IP-level throttle backstop — the per-account lockout below only
@@ -150,6 +157,11 @@ export const authOptions: NextAuthOptions = {
           rewardPoints: (user.rewardPoints as number) ?? 0,
           isDemo: Boolean(user.isDemo),
           demoType: user.demoType as DemoType | undefined,
+          // Only /login posts this. The other two callers of this provider —
+          // Register's restore-and-sign-in and the checkout inline sign-in —
+          // send nothing, and `resolveRememberMe` reads that silence as the
+          // long lifetime those flows have always had.
+          rememberMe: resolveRememberMe(credentials.rememberMe),
         };
       },
     }),
@@ -207,10 +219,21 @@ export const authOptions: NextAuthOptions = {
           rewardPoints: (user.rewardPoints as number) ?? 0,
           isDemo: true,
           demoType: user.demoType as DemoType | undefined,
+          // Demo doors offer no "keep me signed in" choice, so they take the
+          // shorter lifetime. A throwaway exploration session has no business
+          // persisting for a month on a recruiter's machine, and the nightly
+          // reset wipes what it was looking at anyway.
+          rememberMe: false,
         };
       },
     }),
   ],
+  session: {
+    // Explicit rather than inherited so the ceiling is visible next to the
+    // per-session deadlines that reference it. Same 30 days NextAuth defaults
+    // to, so no existing session's cookie changes length.
+    maxAge: SESSION_COOKIE_MAX_AGE_SECONDS,
+  },
   pages: {
     signIn: '/login',
     error: '/error',
@@ -226,6 +249,21 @@ export const authOptions: NextAuthOptions = {
         // Fresh sign-in just validated the user; skip the re-check until the
         // window expires.
         token.lastDeletionCheckAt = Date.now();
+        // Stamped once, here. Deliberately not refreshed on later calls — the
+        // deadline is absolute, so "keep me signed in" means a fixed 30 days
+        // rather than 30 days of inactivity.
+        token.sessionExpiresAt = resolveSessionExpiry(
+          Boolean(user.rememberMe),
+          Date.now(),
+        );
+      }
+
+      // Past its deadline the token reads as logged-out everywhere, via the
+      // same tombstone the soft-delete re-check below uses. The cookie itself
+      // lives until its own max-age; NextAuth's JWT strategy gives a callback
+      // no way to clear it early.
+      if (isSessionExpired(token.sessionExpiresAt, Date.now())) {
+        return { invalidated: true };
       }
       if (trigger === 'update' && session) {
         if (session.name) token.name = session.name as string;

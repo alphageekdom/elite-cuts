@@ -40,13 +40,14 @@ const STRENGTH_LABELS = ['', 'Weak', 'Fair', 'Strong'];
 
 import { EMAIL_RE } from '@/lib/validation';
 import { MIN_PASSWORD_LENGTH } from '@/lib/auth/password';
+import { FOUNDED_YEAR } from '@/lib/shop-settings/founding';
 
 import { FieldValidationIcon as FieldIcon } from '@/components/auth/FieldValidationIcon';
 import EditorialEyebrow from '@/components/ui/EditorialEyebrow';
 import { useSignInLockout } from '@/hooks/useSignInLockout';
 
 const INPUT_CLASS =
-  'w-full border-0 border-b border-line bg-transparent text-ink text-base py-2 pb-3.5 pr-6 outline-none placeholder:text-muted/60 focus:border-oxblood transition-colors duration-300';
+  'w-full border-0 border-b border-line bg-transparent text-ink text-base py-2 pb-3.5 pr-6 outline-none placeholder:text-muted focus:border-oxblood transition-colors duration-300';
 
 export default function Register() {
   const router = useRouter();
@@ -246,7 +247,7 @@ export default function Register() {
 
           <div className="flex justify-between text-[11px] tracking-[0.18em] uppercase opacity-60">
             <span>EC · New Account</span>
-            <span>Est. 2018</span>
+            <span>Est. {FOUNDED_YEAR}</span>
           </div>
         </div>
       </aside>
