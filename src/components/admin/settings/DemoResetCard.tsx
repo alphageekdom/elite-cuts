@@ -9,9 +9,9 @@ import type { DemoResetCounts } from '@/lib/demo/reset';
 import { sectionTitleCls, sectionSubCls } from '@/components/admin/AdminForm';
 
 // "Reset demo data" card that sits on the Settings → General tab. Calls
-// `/api/admin/demo/reset` which shares the wipe orchestrator with the
-// nightly cron, so a manual reset and the 3am cron lay down the same
-// final state.
+// `/api/admin/demo/reset`, which shares one orchestrator with the nightly
+// cron, so a manual reset and the overnight run lay down the same final
+// state — demo-customer wipe plus catalog and shop-config restore.
 //
 // Hidden from a demo admin — the server endpoint refuses the same case
 // anyway, but the card itself goes away so the demo admin doesn't see
@@ -42,7 +42,8 @@ export default function DemoResetCard() {
         const customerPart = counts.userReset
           ? `${counts.ordersDeleted} order${counts.ordersDeleted === 1 ? '' : 's'} cleared`
           : 'no demo customer found';
-        toast.success(`Demo data reset · ${customerPart}.`);
+        const catalogPart = `${counts.productsRestored} cut${counts.productsRestored === 1 ? '' : 's'} restored`;
+        toast.success(`Demo data reset · ${customerPart} · ${catalogPart}.`);
       }
       setConfirming(false);
     } catch (error) {

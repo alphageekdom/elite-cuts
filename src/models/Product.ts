@@ -4,6 +4,7 @@ import {
   model,
   models,
   type Model,
+  type Types,
 } from 'mongoose';
 import { PRODUCT_CATEGORIES, type ProductCategory } from '@/lib/admin/constants';
 import {
@@ -53,6 +54,12 @@ export type Product = {
   supplier?: string;
   parLevel?: number;
   reorderPoint?: number;
+  // Admin who created the row. Mirrors `Promo.createdBy`, and exists for the
+  // same reason: the nightly demo restore has to tell a product a demo admin
+  // invented apart from a seeded one, and delete only the former. Absent on
+  // every product that pre-dates this field — which is exactly right, since
+  // those are all seeded.
+  createdBy?: Types.ObjectId;
 
   // — Realistic pricing model (Phase 1). Per-type fields are optional at the
   // Mongoose layer; the Zod schema at src/lib/products/schema.ts enforces
@@ -200,6 +207,7 @@ const ProductSchema = new Schema<Product>(
       min: 0,
       default: 0,
     },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
 
     // — Realistic pricing model. Per-type fields stay optional at this
     // layer; the Zod schema enforces per-pricingType requirements.

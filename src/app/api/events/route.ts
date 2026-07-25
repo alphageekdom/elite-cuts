@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import EventModel from '@/models/Event';
 import Notification from '@/models/Notification';
 import User from '@/models/User';
-import { withAdmin, withAdminNonDemo, zodBadRequest } from '@/lib/api-handler';
+import { withAdmin, zodBadRequest } from '@/lib/api-handler';
 import { serializeEvent } from '@/lib/events/queries';
 import { DEFAULT_EVENT_MESSAGE, parseLaDayString } from '@/lib/events/config';
 import { eventCreateSchema } from '@/lib/events/schema';
@@ -30,7 +30,7 @@ export const GET = withAdmin(async (request: NextRequest) => {
   }
 });
 
-export const POST = withAdminNonDemo(async (request: NextRequest) => {
+export const POST = withAdmin(async (request: NextRequest) => {
   try {
     const parsed = eventCreateSchema.safeParse(await request.json().catch(() => ({})));
     if (!parsed.success) return zodBadRequest(parsed.error, 'Invalid event input');

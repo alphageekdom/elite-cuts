@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import Product from '@/models/Product';
-import { parseObjectId, withAdminNonDemo } from '@/lib/api-handler';
+import { parseObjectId, withAdmin } from '@/lib/api-handler';
 
 // PATCH /api/products/:id/stock — admin-only stock count adjustment
-export const PATCH = withAdminNonDemo<{ id: string }>(async (request, ctx) => {
+export const PATCH = withAdmin<{ id: string }>(async (request, ctx) => {
   try {
     const { id } = await ctx.params;
     const invalid = parseObjectId(id);

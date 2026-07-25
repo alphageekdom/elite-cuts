@@ -4,7 +4,7 @@ import StaffMemberModel from '@/models/StaffMember';
 import {
   parseObjectId,
   pickDefined,
-  withAdminNonDemo,
+  withAdmin,
   zodBadRequest,
 } from '@/lib/api-handler';
 import { staffPatchSchema, type StaffPatchInput } from '@/lib/staff/schema';
@@ -20,7 +20,7 @@ const STAFF_PATCH_KEYS = [
   'notes',
 ] as const satisfies readonly (keyof StaffPatchInput)[];
 
-export const PATCH = withAdminNonDemo<{ id: string }>(async (request, ctx) => {
+export const PATCH = withAdmin<{ id: string }>(async (request, ctx) => {
   const { id } = await ctx.params;
   const invalid = parseObjectId(id);
   if (invalid) return invalid;
@@ -51,7 +51,7 @@ export const PATCH = withAdminNonDemo<{ id: string }>(async (request, ctx) => {
   });
 });
 
-export const DELETE = withAdminNonDemo<{ id: string }>(async (_request, ctx) => {
+export const DELETE = withAdmin<{ id: string }>(async (_request, ctx) => {
   const { id } = await ctx.params;
   const invalid = parseObjectId(id);
   if (invalid) return invalid;

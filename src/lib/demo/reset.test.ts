@@ -1,37 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { DEMO_PRODUCTS } from './seed/products';
-import { DEMO_PROMOS } from './seed/promos';
-import { DEMO_STAFF } from './seed/staff';
-import { DEMO_SHIFTS } from './seed/shifts';
-
 // ── Module mocks ────────────────────────────────────────────────────────
 // reset.ts pulls in `server-only`, `connectDB`, and a dozen Mongoose
 // models. None of that runs cleanly outside Next's bundler / a live DB,
 // so each gets stubbed. The tests exercise:
 //   1. resetDemoCustomerState — demo customer not found / found branches.
-//   2. restoreDemoCatalog — per-collection delete + re-insert from seed,
-//      including settings upsert and shift weekStart scoping.
-//   3. resetDemoData — orchestrator merges customer + catalog counts.
-//   4. Idempotency — running resetDemoData twice produces the same end
-//      state (each step deletes before inserting, so a second run wipes
-//      and re-inserts identical rows).
-// End-to-end wipe behavior (what a real `deleteMany` actually clears in
-// Mongo) is out of scope until the project gains mongodb-memory-server.
+//   2. The review gap: reviews the demo customer *authored* are deleted and
+//      the affected products' ratings recomputed.
+//   3. resetDemoData — orchestrator merges the customer wipe with the
+//      catalog restore.
+// The restore half has its own suite in ./restore.test.ts. End-to-end wipe
+// behavior (what a real `deleteMany` actually clears in Mongo) is out of
+// scope until the project gains mongodb-memory-server.
 
 vi.mock('server-only', () => ({}));
 
 vi.mock('@/config/database', () => ({
   default: vi.fn(async () => undefined),
-}));
-
-// Cloudinary cleanup is invoked by restoreDemoCatalog before its bulk
-// product delete. The underlying SDK module throws at import time when
-// CLOUDINARY_* env vars aren't set, so the cleanup module is stubbed
-// here rather than relying on env presence in CI. Tests never assert on
-// it — they only need it to not blow up.
-vi.mock('@/lib/products/cloudinary-cleanup', () => ({
-  deleteCloudinaryImages: vi.fn(async () => undefined),
 }));
 
 const mocks = vi.hoisted(() => ({
@@ -42,17 +27,9 @@ const mocks = vi.hoisted(() => ({
   savedCardDeleteMany: vi.fn(),
   notificationDeleteMany: vi.fn(),
   reviewUpdateMany: vi.fn(),
-  productFind: vi.fn(),
-  productDeleteMany: vi.fn(),
-  productCreate: vi.fn(),
-  promoDeleteMany: vi.fn(),
-  promoInsertMany: vi.fn(),
-  staffDeleteMany: vi.fn(),
-  staffInsertMany: vi.fn(),
-  shiftDeleteMany: vi.fn(),
-  shiftInsertMany: vi.fn(),
-  eventDeleteMany: vi.fn(),
-  settingsFindOneAndUpdate: vi.fn(),
+  reviewFind: vi.fn(),
+  reviewDeleteMany: vi.fn(),
+  recomputeProductRating: vi.fn(),
 }));
 
 vi.mock('@/models/User', () => ({
@@ -79,44 +56,42 @@ vi.mock('@/models/Notification', () => ({
 }));
 
 vi.mock('@/models/Review', () => ({
-  default: { updateMany: mocks.reviewUpdateMany },
-}));
-
-vi.mock('@/models/Product', () => ({
   default: {
-    find: mocks.productFind,
-    deleteMany: mocks.productDeleteMany,
-    create: mocks.productCreate,
+    updateMany: mocks.reviewUpdateMany,
+    find: mocks.reviewFind,
+    deleteMany: mocks.reviewDeleteMany,
   },
 }));
 
-vi.mock('@/models/Promo', () => ({
-  default: {
-    deleteMany: mocks.promoDeleteMany,
-    insertMany: mocks.promoInsertMany,
-  },
+vi.mock('@/lib/reviews/recompute', () => ({
+  recomputeProductRating: mocks.recomputeProductRating,
 }));
 
-vi.mock('@/models/StaffMember', () => ({
-  default: {
-    deleteMany: mocks.staffDeleteMany,
-    insertMany: mocks.staffInsertMany,
-  },
-}));
-
-vi.mock('@/models/Shift', () => ({
-  default: {
-    deleteMany: mocks.shiftDeleteMany,
-    insertMany: mocks.shiftInsertMany,
-  },
-}));
-
-vi.mock('@/models/Event', () => ({
-  default: { deleteMany: mocks.eventDeleteMany },
-}));
-
-vi.mock('@/models/ShopSettings', () => ({
-  default: { findOneAndUpdate: mocks.settingsFindOneAndUpdate },
+// The catalog half is exercised in ./restore.test.ts; here it only needs to
+// resolve so the orchestrator can be tested. `emptyCatalogCounts` is stubbed
+// rather than imported for real because pulling in the module would drag
+// `server-only` and eight Mongoose models along with it.
+vi.mock('./restore', () => ({
+  emptyCatalogCounts: () => ({
+    productsRestored: 0,
+    productsDeleted: 0,
+    promosRestored: 0,
+    promosDeleted: 0,
+    staffRestored: 0,
+    shiftsRestored: 0,
+    eventsDeleted: 0,
+    settingsRestored: false,
+  }),
+  restoreDemoCatalog: vi.fn(async () => ({
+    productsRestored: 39,
+    productsDeleted: 0,
+    promosRestored: 5,
+    promosDeleted: 0,
+    staffRestored: 6,
+    shiftsRestored: 49,
+    eventsDeleted: 0,
+    settingsRestored: true,
+  })),
 }));
 
 // Match the chained `.select('_id')` on the findOne result — return a
@@ -141,6 +116,7 @@ describe('resetDemoCustomerState — demo customer not found', () => {
       cartDeleted: 0,
       savedCardsDeleted: 0,
       notificationsDeleted: 0,
+      reviewsDeleted: 0,
       userReset: false,
     });
 
@@ -152,6 +128,7 @@ describe('resetDemoCustomerState — demo customer not found', () => {
     expect(mocks.savedCardDeleteMany).not.toHaveBeenCalled();
     expect(mocks.notificationDeleteMany).not.toHaveBeenCalled();
     expect(mocks.reviewUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.reviewDeleteMany).not.toHaveBeenCalled();
     expect(mocks.userUpdateOne).not.toHaveBeenCalled();
   });
 });
@@ -166,6 +143,10 @@ describe('resetDemoCustomerState — demo customer found', () => {
     mocks.savedCardDeleteMany.mockResolvedValue({ deletedCount: 2 });
     mocks.notificationDeleteMany.mockResolvedValue({ deletedCount: 5 });
     mocks.reviewUpdateMany.mockResolvedValue({ modifiedCount: 0 });
+    mocks.reviewFind.mockReturnValue({
+      select: () => ({ lean: async () => [] }),
+    });
+    mocks.reviewDeleteMany.mockResolvedValue({ deletedCount: 0 });
     mocks.userUpdateOne.mockResolvedValue({ modifiedCount: 1 });
   });
 
@@ -196,7 +177,7 @@ describe('resetDemoCustomerState — demo customer found', () => {
     );
   });
 
-  it('clears the User-embedded state and resets balances to zero', async () => {
+  it('clears the User-embedded state', async () => {
     const { resetDemoCustomerState } = await import('./reset');
     await resetDemoCustomerState();
 
@@ -206,14 +187,33 @@ describe('resetDemoCustomerState — demo customer found', () => {
     expect(update.$set).toMatchObject({
       savedCuts: [],
       addresses: [],
-      rewardPoints: 0,
-      lifetimePoints: 0,
-      pointsHistory: [],
-      tierAnniversaryAt: null,
       currentTier: null,
       dormancyWarnedAt: null,
       lastActiveAt: null,
     });
+  });
+
+  it('seeds a redeemable points balance rather than zeroing it', async () => {
+    const { resetDemoCustomerState, DEMO_STARTING_POINTS } = await import(
+      './reset'
+    );
+    await resetDemoCustomerState();
+
+    const [, update] = mocks.userUpdateOne.mock.calls[0];
+    expect(update.$set.rewardPoints).toBe(DEMO_STARTING_POINTS);
+    expect(update.$set.lifetimePoints).toBe(DEMO_STARTING_POINTS);
+
+    // Points are only awarded when an admin fulfils an order, and order
+    // writes are closed to demo admins — so a demo customer starting at zero
+    // could never earn one. Without this the rewards half of the shop is
+    // undemonstrable.
+    const [entry] = update.$set.pointsHistory;
+    expect(entry.delta).toBe(DEMO_STARTING_POINTS);
+    // Only `order_fulfilled` counts toward tier qualification; an
+    // `admin_adjustment` would leave the tier bar stuck at zero.
+    expect(entry.reason).toBe('order_fulfilled');
+    // The window has to open now, or the seeded entry falls outside it.
+    expect(update.$set.tierAnniversaryAt).toBeInstanceOf(Date);
   });
 
   it('returns the per-collection counts from each deleteMany result', async () => {
@@ -225,6 +225,7 @@ describe('resetDemoCustomerState — demo customer found', () => {
       cartDeleted: 1,
       savedCardsDeleted: 2,
       notificationsDeleted: 5,
+      reviewsDeleted: 0,
       userReset: true,
     });
   });
@@ -239,41 +240,60 @@ describe('resetDemoCustomerState — demo customer found', () => {
   });
 });
 
-// ── Catalog restore ─────────────────────────────────────────────────────
-// `restoreDemoCatalog` deletes-then-inserts each shared collection from
-// the TypeScript seed snapshot. The tests check structural guarantees:
-// every step calls deleteMany before insertMany (or Model.create), the
-// counts come back from the returned shapes, and shifts are scoped to
-// the current week's start.
+// ── The review gap ─────────────────────────────────────────────────────
+// Reviews the demo customer authored are public and were previously the one
+// thing a demo session left behind permanently: the wipe pulled the demo id
+// out of every `helpfulVoters` list but never removed the rows themselves.
 
-function stubCatalogHappyPath(): void {
-  // `restoreDemoCatalog` walks existing products to collect Cloudinary
-  // images before the bulk delete. Stub the chained `.select(...).lean()`
-  // so the call resolves to an empty image list (the cloudinary cleanup
-  // is itself mocked above).
-  mocks.productFind.mockReturnValue({
-    select: () => ({ lean: async () => [] }),
+describe('resetDemoCustomerState — authored reviews', () => {
+  const demoId = 'demo-customer-id';
+
+  beforeEach(() => {
+    mocks.userFindOne.mockReturnValue(findOneChain({ _id: demoId }));
+    mocks.orderDeleteMany.mockResolvedValue({ deletedCount: 0 });
+    mocks.cartDeleteMany.mockResolvedValue({ deletedCount: 0 });
+    mocks.savedCardDeleteMany.mockResolvedValue({ deletedCount: 0 });
+    mocks.notificationDeleteMany.mockResolvedValue({ deletedCount: 0 });
+    mocks.reviewUpdateMany.mockResolvedValue({ modifiedCount: 0 });
+    mocks.userUpdateOne.mockResolvedValue({ modifiedCount: 1 });
+    mocks.reviewFind.mockReturnValue({
+      select: () => ({
+        lean: async () => [
+          { product: 'ribeye-id' },
+          { product: 'brisket-id' },
+          // Same product twice — two reviews can't share a user, but a
+          // duplicate here would mean a wasted second recompute.
+          { product: 'ribeye-id' },
+        ],
+      }),
+    });
+    mocks.reviewDeleteMany.mockResolvedValue({ deletedCount: 3 });
   });
-  mocks.productDeleteMany.mockResolvedValue({ deletedCount: 12 });
-  mocks.productCreate.mockResolvedValue(
-    new Array(DEMO_PRODUCTS.length).fill({}),
-  );
-  mocks.promoDeleteMany.mockResolvedValue({ deletedCount: 3 });
-  mocks.promoInsertMany.mockResolvedValue(new Array(DEMO_PROMOS.length).fill({}));
-  mocks.staffDeleteMany.mockResolvedValue({ deletedCount: 4 });
-  mocks.staffInsertMany.mockResolvedValue(new Array(DEMO_STAFF.length).fill({}));
-  mocks.shiftDeleteMany.mockResolvedValue({ deletedCount: 30 });
-  mocks.shiftInsertMany.mockResolvedValue(
-    new Array(DEMO_SHIFTS.length).fill({}),
-  );
-  mocks.eventDeleteMany.mockResolvedValue({ deletedCount: 2 });
-  mocks.settingsFindOneAndUpdate.mockResolvedValue({});
-}
 
-// ── Top-level orchestrator + idempotency ───────────────────────────────
-// `resetDemoData` is the customer wipe and nothing else. The idempotency
-// test runs it twice with the same mocks and asserts the returned counts are
-// identical — the contract the cron relies on.
+  it('deletes the rows and reports the count', async () => {
+    const { resetDemoCustomerState } = await import('./reset');
+    const counts = await resetDemoCustomerState();
+
+    expect(mocks.reviewDeleteMany).toHaveBeenCalledWith({ user: demoId });
+    expect(counts.reviewsDeleted).toBe(3);
+  });
+
+  it('recomputes each affected product rating exactly once', async () => {
+    const { resetDemoCustomerState } = await import('./reset');
+    await resetDemoCustomerState();
+
+    // Ratings are an average over surviving reviews, so removing rows without
+    // recomputing would leave every affected cut showing a stale score.
+    expect(mocks.recomputeProductRating).toHaveBeenCalledTimes(2);
+    const recomputed = mocks.recomputeProductRating.mock.calls.map((c) => c[0]);
+    expect(recomputed.sort()).toEqual(['brisket-id', 'ribeye-id']);
+  });
+});
+
+// ── Top-level orchestrator ─────────────────────────────────────────────
+// `resetDemoData` is the customer wipe followed by the catalog restore. The
+// restore is mocked here (it has its own suite) — what matters is that both
+// halves run and their counts merge into one envelope.
 
 describe('resetDemoData', () => {
   const demoId = 'demo-customer-id';
@@ -285,35 +305,35 @@ describe('resetDemoData', () => {
     mocks.savedCardDeleteMany.mockResolvedValue({ deletedCount: 2 });
     mocks.notificationDeleteMany.mockResolvedValue({ deletedCount: 5 });
     mocks.reviewUpdateMany.mockResolvedValue({ modifiedCount: 0 });
+    mocks.reviewFind.mockReturnValue({
+      select: () => ({ lean: async () => [] }),
+    });
+    mocks.reviewDeleteMany.mockResolvedValue({ deletedCount: 0 });
     mocks.userUpdateOne.mockResolvedValue({ modifiedCount: 1 });
-    stubCatalogHappyPath();
   });
 
-  it('runs the customer wipe and touches nothing else', async () => {
+  it('merges the customer wipe and the catalog restore into one envelope', async () => {
     const { resetDemoData } = await import('./reset');
     const counts = await resetDemoData();
 
-    // The whole envelope — `toEqual`, not `toMatchObject`, so a catalog count
-    // reappearing in the shape fails here rather than passing silently.
+    // `toEqual`, not `toMatchObject`, so a key silently disappearing from
+    // either half fails here rather than passing.
     expect(counts).toEqual({
       ordersDeleted: 3,
       cartDeleted: 1,
       savedCardsDeleted: 2,
       notificationsDeleted: 5,
+      reviewsDeleted: 0,
       userReset: true,
+      productsRestored: 39,
+      productsDeleted: 0,
+      promosRestored: 5,
+      promosDeleted: 0,
+      staffRestored: 6,
+      shiftsRestored: 49,
+      eventsDeleted: 0,
+      settingsRestored: true,
     });
-
-    // No catalog-side write should have fired.
-    expect(mocks.productDeleteMany).not.toHaveBeenCalled();
-    expect(mocks.productCreate).not.toHaveBeenCalled();
-    expect(mocks.promoDeleteMany).not.toHaveBeenCalled();
-    expect(mocks.promoInsertMany).not.toHaveBeenCalled();
-    expect(mocks.staffDeleteMany).not.toHaveBeenCalled();
-    expect(mocks.staffInsertMany).not.toHaveBeenCalled();
-    expect(mocks.shiftDeleteMany).not.toHaveBeenCalled();
-    expect(mocks.shiftInsertMany).not.toHaveBeenCalled();
-    expect(mocks.eventDeleteMany).not.toHaveBeenCalled();
-    expect(mocks.settingsFindOneAndUpdate).not.toHaveBeenCalled();
   });
 
   it('produces the same end state when run twice in a row (idempotency)', async () => {
@@ -321,5 +341,25 @@ describe('resetDemoData', () => {
     const first = await resetDemoData();
     const second = await resetDemoData();
     expect(second).toEqual(first);
+  });
+
+  it('skips the catalog restore when there is no demo customer', async () => {
+    mocks.userFindOne.mockReturnValue(findOneChain(null));
+
+    const { resetDemoData } = await import('./reset');
+    const restore = await import('./restore');
+    // Created inside the `vi.mock` factory, so the shared beforeEach — which
+    // only walks `mocks` — never resets it and calls accumulate across tests.
+    vi.mocked(restore.restoreDemoCatalog).mockClear();
+
+    const counts = await resetDemoData();
+
+    // No demo customer means the demo seed never ran here, so restoring would
+    // overwrite this install's real products, staff, shifts and settings with
+    // a snapshot meant for a demo that doesn't exist.
+    expect(restore.restoreDemoCatalog).not.toHaveBeenCalled();
+    expect(counts.userReset).toBe(false);
+    expect(counts.productsRestored).toBe(0);
+    expect(counts.settingsRestored).toBe(false);
   });
 });

@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 
 import ShopSettings, { type ShopSettings as ShopSettingsType } from '@/models/ShopSettings';
 import { SHOP_SETTINGS_KEYS } from '@/lib/shop-settings/defaults';
-import { withAdmin, withAdminNonDemo, zodBadRequest } from '@/lib/api-handler';
+import { withAdmin, zodBadRequest } from '@/lib/api-handler';
 import { shopSettingsInputSchema } from '@/lib/settings/schema';
 
 function pickSettings(doc: Record<string, unknown> | null): Partial<ShopSettingsType> {
@@ -34,9 +34,9 @@ export const GET = withAdmin(async () => {
 });
 
 // PUT /api/settings — replaces writable fields on the singleton doc.
-// `withAdminNonDemo` rejects demo-admin sessions with a 403 before the
-// handler runs.
-export const PUT = withAdminNonDemo(async (request: NextRequest) => {
+// Open to demo admins: the nightly restore rewrites the singleton from
+// `DEMO_SHOP_SETTINGS`, so whatever a demo session changes here is undone.
+export const PUT = withAdmin(async (request: NextRequest) => {
   try {
     const parsed = shopSettingsInputSchema.safeParse(await request.json().catch(() => ({})));
     if (!parsed.success) return zodBadRequest(parsed.error, 'Invalid settings payload');
