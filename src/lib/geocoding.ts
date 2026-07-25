@@ -44,6 +44,21 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 export const isWithinDeliveryRadius = (lat: number, lon: number): boolean =>
   haversineDistance(SHOP_LAT, SHOP_LNG, lat, lon) <= DELIVERY_RADIUS_MILES;
 
+// Street-level query for the delivery radius check. The parameter type has no
+// `address2` on purpose: geocoders resolve streets, not units, and Nominatim
+// returns nothing at all for "4720 Adams Ave Apt 4B" while resolving the same
+// address without the unit — which silently blocked every apartment dweller
+// from ordering delivery. Omitting the field from the type keeps a well-meaning
+// caller from passing it back in. The unit still rides along on the order
+// itself; it just isn't a lookup key.
+export const buildDeliveryGeocodeQuery = (address: {
+  address1: string;
+  city: string;
+  state: string;
+  zip: string;
+}): string =>
+  `${address.address1}, ${address.city}, ${address.state || 'CA'} ${address.zip}`;
+
 export const fetchSuggestions = async (query: string): Promise<PhotonFeature[]> => {
   try {
     const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5&lang=en`;

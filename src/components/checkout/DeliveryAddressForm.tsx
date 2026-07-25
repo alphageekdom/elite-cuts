@@ -13,6 +13,7 @@ import { FIELD_CLASS, BLOCK_LABEL_CLASS } from '@/components/checkout/checkoutSt
 import {
   STATE_ABBR,
   fetchSuggestions,
+  buildDeliveryGeocodeQuery,
   geocodeAddress,
   isWithinDeliveryRadius,
   formatPhotonSuggestion,
@@ -80,7 +81,12 @@ const DeliveryAddressForm = () => {
     if (checkingRef.current) return;
     checkingRef.current = true;
     setDeliveryCheck('checking');
-    const query = `${address1}${address2 ? ` ${address2}` : ''}, ${city}, ${addressState || 'CA'} ${zip}`;
+    const query = buildDeliveryGeocodeQuery({
+      address1,
+      city,
+      state: addressState,
+      zip,
+    });
     const coords = await geocodeAddress(query);
     checkingRef.current = false;
     if (!coords) { setDeliveryCheck('error'); return; }
@@ -104,12 +110,6 @@ const DeliveryAddressForm = () => {
 
   // Auto-check when all fields are filled — catches autofill extensions that
   // set values programmatically without triggering blur events.
-  //
-  // Deps are unchanged from before the effect-event refactor, deliberately. Note address2 is
-  // read by the query above but is not listed here, so a unit number typed inside the 800ms
-  // window rides along without having reset the timer. That's pre-existing (the blur path
-  // always sent the latest address2 too) and is left alone here to keep this change
-  // lint-only — see the delivery-geocode entry in context/deferred-findings.md.
   useEffect(() => {
     if (address1.trim().length < 5 || city.trim().length < 2 || zip.length < 5) return;
     const timeout = setTimeout(() => checkDeliveryRadiusFromDebounce(), 800);
