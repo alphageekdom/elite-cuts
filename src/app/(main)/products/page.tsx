@@ -6,6 +6,7 @@ import connectDB from '@/config/database';
 import Product, { type SerializedProduct } from '@/models/Product';
 import { convertToSerializableObject } from '@/lib/convertToObject';
 import { paginateCatalog } from '@/lib/products/pagination';
+import { VISIBLE_PRODUCT_FILTER } from '@/lib/products/constants';
 
 import CatalogFilterBar from '@/components/product/CatalogFilterBar';
 import CatalogHero from '@/components/product/CatalogHero';
@@ -72,16 +73,11 @@ const ProductsPage = async ({
 
   const pageNum = Math.max(1, Number.parseInt(params.page ?? '1', 10) || 1);
 
-  // Every catalog read starts from the same visibility filter — has an image
-  // and isn't soft-deleted. The per-category counts on the filter chips share
-  // it so a chip can never advertise a count the listing won't show.
-  const visible = { 'images.0': { $exists: true }, isActive: { $ne: false } };
-
-  // Everything except the category constraint. Each chip's count is this
-  // filter grouped by category, so a chip advertises exactly what clicking it
-  // returns — including the in-stock toggle and any active search, which the
-  // listing applies too.
-  const baseQuery: Record<string, unknown> = { ...visible };
+  // Everything except the category constraint, starting from the shared
+  // visibility filter. Each chip's count is this filter grouped by category,
+  // so a chip advertises exactly what clicking it returns — including the
+  // in-stock toggle and any active search, which the listing applies too.
+  const baseQuery: Record<string, unknown> = { ...VISIBLE_PRODUCT_FILTER };
   if (inStockOnly) baseQuery.stockCount = { $gt: 0 };
   if (q) {
     const pattern = new RegExp(escapeRegExp(q), 'i');
@@ -119,15 +115,20 @@ const ProductsPage = async ({
       .skip(skip)
       .limit(PAGE_SIZE)
       .lean(),
-    // Hero stats share `visible` with the listing and the chip counts —
-    // otherwise "Cuts available" could count a soft-deleted cut that no
-    // chip and no page of results will ever show.
-    Product.countDocuments({ ...visible, stockCount: { $gt: 0 } }),
-    Product.countDocuments({ ...visible, isFeatured: true }),
-    Product.distinct('category', visible).then((arr: string[]) => arr.length),
+    // Hero stats share the visibility filter with the listing and the chip
+    // counts — otherwise "Cuts available" could count a soft-deleted cut that
+    // no chip and no page of results will ever show.
+    Product.countDocuments({
+      ...VISIBLE_PRODUCT_FILTER,
+      stockCount: { $gt: 0 },
+    }),
+    Product.countDocuments({ ...VISIBLE_PRODUCT_FILTER, isFeatured: true }),
+    Product.distinct('category', VISIBLE_PRODUCT_FILTER).then(
+      (arr: string[]) => arr.length,
+    ),
     // Case-wide rollup of the same rating each card already shows.
     Product.aggregate<{ _id: null; avg: number | null }>([
-      { $match: visible },
+      { $match: VISIBLE_PRODUCT_FILTER },
       { $group: { _id: null, avg: { $avg: '$rating' } } },
     ]).then((rows) => rows[0]?.avg ?? 0),
     // One grouped pass for every chip count — never a query per chip.

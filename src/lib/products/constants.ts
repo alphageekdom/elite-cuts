@@ -3,6 +3,15 @@
 // client components. The Zod schema at `./schema.ts` and the admin form both
 // pull from this file so the enums stay in one place.
 
+// What counts as a customer-visible cut: it has at least one image and hasn't
+// been soft-deleted. Every surface that lists or counts the catalog starts
+// from this so a headline count can't advertise more than the shop page shows.
+// Spread it to narrow further: `{ ...VISIBLE_PRODUCT_FILTER, stockCount: { $gt: 0 } }`.
+export const VISIBLE_PRODUCT_FILTER = {
+  'images.0': { $exists: true },
+  isActive: { $ne: false },
+};
+
 export const PRICING_TYPES = [
   'fixed_package',
   'per_lb',

@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { useShopSettings } from '@/context/ShopSettingsContext';
 import {
+  formatDirectionsUrl,
   formatPhoneHref,
   formatShopAddress,
   formatShopCityStateZip,
@@ -115,7 +116,7 @@ export default function StoreInfoModal({
   const cityStateZip = formatShopCityStateZip(settings);
   const fullAddress = formatShopAddress(settings);
   const phoneHref = formatPhoneHref(settings.phone);
-  const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(fullAddress)}`;
+  const directionsUrl = formatDirectionsUrl(fullAddress);
 
   const { data: session } = useSession();
   const firstName = session?.user?.name?.trim().split(/\s+/)[0];
