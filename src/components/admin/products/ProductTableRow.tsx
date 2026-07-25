@@ -119,8 +119,18 @@ export default function ProductTableRowComponent({
             )}
           </div>
           <div className="min-w-0">
-            <div className="font-display text-[15px] font-medium tracking-[-0.005em] leading-snug mb-0.5 truncate">
-              {product.name}
+            <div className="flex items-center gap-2 mb-0.5">
+              <div className="font-display text-[15px] font-medium tracking-[-0.005em] leading-snug truncate">
+                {product.name}
+              </div>
+              {/* A soft-deleted cut otherwise renders identically to a live
+                  one — the status column was removed as duplicating the stock
+                  bar, which left no signal at all for this state. */}
+              {!product.isActive && (
+                <span className="shrink-0 rounded-full bg-oxblood/10 text-oxblood-deep px-2 py-0.5 font-mono text-[10px] font-medium tracking-[0.12em] uppercase">
+                  Inactive
+                </span>
+              )}
             </div>
             <div className="font-mono text-[11px] text-muted tracking-[0.04em] uppercase">
               {product.category} · ★ {product.rating.toFixed(1)}

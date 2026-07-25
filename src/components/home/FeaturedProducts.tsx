@@ -53,7 +53,7 @@ const FeaturedProducts = async () => {
           <div className='mb-12 flex flex-wrap items-end justify-between gap-12'>
             <h2
               id='featured-products-heading'
-              className='max-w-[18ch] font-display text-[clamp(40px,5vw,68px)] leading-[1.05] tracking-[-0.025em] font-normal'
+              className='max-w-[18ch] font-display text-[clamp(40px,5vw,68px)] leading-[1.05] tracking-tight font-normal'
             >
               The cuts our regulars{' '}
               <em className='font-normal italic text-oxblood'>
