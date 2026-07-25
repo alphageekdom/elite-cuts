@@ -1,18 +1,14 @@
-'use client';
-
-import { useState } from 'react';
-import { FOCUS_RING } from '@/lib/styles';
 import {
   formatRedemptionRate,
   type RewardsPublicSettings,
 } from '@/lib/rewards/calculator';
-import PlusIcon from '@/components/uielements/PlusIcon';
+import Accordion, { type AccordionItem } from '@/components/uielements/Accordion';
 
 type Props = { settings: RewardsPublicSettings };
 
 const fmt = (n: number) => n.toLocaleString('en-US');
 
-function buildFaqs(settings: RewardsPublicSettings) {
+function buildFaqs(settings: RewardsPublicSettings): AccordionItem[] {
   const ppd = settings.pointsPerDollar === 1 ? '1 point' : `${settings.pointsPerDollar} points`;
   const minRedeemCopy =
     settings.minToRedeem > 0
@@ -59,48 +55,5 @@ function buildFaqs(settings: RewardsPublicSettings) {
 }
 
 export default function RewardsFaq({ settings }: Props) {
-  const [openIdx, setOpenIdx] = useState<number | null>(0);
-
-  const toggle = (idx: number) =>
-    setOpenIdx((prev) => (prev === idx ? null : idx));
-
-  const faqs = buildFaqs(settings);
-
-  return (
-    <div className='border-t border-line'>
-      {faqs.map((faq, idx) => {
-        const isOpen = openIdx === idx;
-        return (
-          <div key={faq.q} className='border-b border-line-soft'>
-            <button
-              type='button'
-              onClick={() => toggle(idx)}
-              aria-expanded={isOpen}
-              className={`w-full bg-transparent py-6 font-display text-xl font-medium tracking-tight text-ink cursor-pointer flex items-center justify-between gap-4 text-left leading-snug transition-colors duration-300 motion-reduce:transition-none ${FOCUS_RING}`}
-            >
-              <span>{faq.q}</span>
-              <span
-                className={`w-8 h-8 rounded-full border grid place-items-center shrink-0 transition-[background-color,border-color,color] duration-300 motion-reduce:transition-none ${
-                  isOpen
-                    ? 'bg-ink text-cream border-ink [&_svg]:rotate-45'
-                    : 'border-line text-ink-soft'
-                }`}
-              >
-                <PlusIcon className='w-3 h-3 transition-transform duration-300' />
-              </span>
-            </button>
-            <div
-              className={`overflow-hidden transition-[max-height] duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] motion-reduce:transition-none ${
-                isOpen ? 'max-h-96' : 'max-h-0'
-              }`}
-            >
-              <p className='pb-6 text-ink-soft text-[15px] leading-[1.7] max-w-[60ch]'>
-                {faq.a}
-              </p>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
+  return <Accordion items={buildFaqs(settings)} />;
 }

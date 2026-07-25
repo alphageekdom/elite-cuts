@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 
 import ProductModel from '@/models/Product';
-import { withAdminNonDemo } from '@/lib/api-handler';
+import { withAdmin } from '@/lib/api-handler';
 import { parseCsv, csvRowsToRecords } from '@/lib/csv/parse';
 import { withOptionalTransaction } from '@/lib/db/transaction';
 import { escapeRegex } from '@/lib/regex-escape';
@@ -50,7 +50,7 @@ async function readCsvFromRequest(req: Request): Promise<{ csv?: string; error?:
   return { error: 'Unsupported Content-Type — use multipart/form-data or application/json' };
 }
 
-export const POST = withAdminNonDemo(async (req) => {
+export const POST = withAdmin(async (req, _ctx, userId) => {
   try {
     const { csv, error } = await readCsvFromRequest(req);
     if (error) return NextResponse.json({ message: error }, { status: 400 });
@@ -187,10 +187,18 @@ export const POST = withAdminNonDemo(async (req) => {
       );
     }
 
+    // Inserts carry `createdBy`; updates deliberately don't. A row this
+    // import *creates* is owned by the importing admin, which is what lets
+    // the nightly demo restore delete it again. A row it *updates* keeps
+    // whatever ownership it had — a seeded cut edited through a CSV is still
+    // a seeded cut, and the restore rewrites it in place rather than
+    // deleting it. Without the insert stamp, products imported by a demo
+    // admin would read as seeded: never restored away, and never deletable
+    // through the UI either, since the delete guard refuses seeded cuts.
     const writes = bulkOps.map((op) =>
       op.kind === 'update'
         ? { updateOne: { filter: { _id: op.matchId }, update: { $set: op.doc } } }
-        : { insertOne: { document: op.doc } },
+        : { insertOne: { document: { ...op.doc, createdBy: userId } } },
     );
 
     // Try a real transaction first — production deployments on Atlas (or any

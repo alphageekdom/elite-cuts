@@ -2,27 +2,33 @@
 
 import { revalidatePath } from 'next/cache';
 import { Types } from 'mongoose';
+import type { Session } from 'next-auth';
 
 import connectDB from '@/config/database';
 import Promo from '@/models/Promo';
 import { getSessionUser } from '@/lib/auth/session';
-import { isDemoAdmin } from '@/lib/auth/demo-permissions';
+import { pinNaturalKeyForDemo } from '@/lib/demo/natural-keys';
 import { promoInputSchema } from '@/lib/promos/schema';
 
 type ActionResult = { success: boolean; error?: string };
 
-// Mutating promo actions refuse demo-admin sessions — same posture as the
-// `withAdminNonDemo` wrapper on the admin API routes.
+// Open to demo admins — same posture as the `withAdmin` wrapper on the
+// catalog and config API routes. The nightly restore upserts every seeded
+// code back to its snapshot values and deletes any promo a demo admin
+// created, so a demo session's edits don't outlive the night.
+//
+// `createdBy` is what makes that delete safe to scope, which is why the
+// create path below stamps it.
+// Returns the session user alongside the id so callers that need to inspect
+// the actor — the natural-key pin in `updatePromo` — don't re-read the session.
 async function requireAdmin(): Promise<
-  { ok: true; userId: string } | { ok: false; error: string }
+  | { ok: true; userId: string; user: NonNullable<Session['user']> }
+  | { ok: false; error: string }
 > {
   const session = await getSessionUser();
   if (!session?.userId) return { ok: false, error: 'Authentication required' };
   if (!session.user?.isAdmin) return { ok: false, error: 'Admin access required' };
-  if (isDemoAdmin(session.user)) {
-    return { ok: false, error: 'This action is disabled for demo accounts.' };
-  }
-  return { ok: true, userId: session.userId };
+  return { ok: true, userId: session.userId, user: session.user };
 }
 
 export async function createPromo(
@@ -92,6 +98,13 @@ export async function updatePromo(
 
   try {
     await connectDB();
+
+    // `code` is the key the nightly restore matches a seeded promo on — see
+    // `pinNaturalKeyForDemo` for what a rename would strand.
+    const existing = await Promo.findById(id).select('code').lean();
+    if (!existing) return { success: false, error: 'Promo not found' };
+    data.code = pinNaturalKeyForDemo(auth.user, data.code, existing.code);
+
     // $unset nulled optionals so the doc reads "not set" instead of
     // carrying an explicit null — keeps validatePromo's $eq:null gating
     // consistent with how new promos are created.

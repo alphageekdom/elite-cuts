@@ -4,7 +4,7 @@ import Shift from '@/models/Shift';
 import {
   parseObjectId,
   pickDefined,
-  withAdminNonDemo,
+  withAdmin,
   zodBadRequest,
 } from '@/lib/api-handler';
 import { findShiftCollision } from '@/lib/shifts/queries';
@@ -18,7 +18,7 @@ const SHIFT_PATCH_KEYS = [
   'hourIndex',
 ] as const satisfies readonly (keyof ShiftPatchInput)[];
 
-export const PATCH = withAdminNonDemo<{ id: string }>(async (request, ctx) => {
+export const PATCH = withAdmin<{ id: string }>(async (request, ctx) => {
   try {
     const { id } = await ctx.params;
     const invalid = parseObjectId(id);
@@ -69,7 +69,7 @@ export const PATCH = withAdminNonDemo<{ id: string }>(async (request, ctx) => {
   }
 });
 
-export const DELETE = withAdminNonDemo<{ id: string }>(async (_request, ctx) => {
+export const DELETE = withAdmin<{ id: string }>(async (_request, ctx) => {
   try {
     const { id } = await ctx.params;
     const invalid = parseObjectId(id);

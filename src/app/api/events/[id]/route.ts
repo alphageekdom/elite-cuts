@@ -3,14 +3,14 @@ import { NextResponse } from 'next/server';
 import EventModel from '@/models/Event';
 import {
   parseObjectId,
-  withAdminNonDemo,
+  withAdmin,
   zodBadRequest,
 } from '@/lib/api-handler';
 import { serializeEvent } from '@/lib/events/queries';
 import { parseLaDayString } from '@/lib/events/config';
 import { eventPatchSchema, makeEventInputSchema } from '@/lib/events/schema';
 
-export const PATCH = withAdminNonDemo<{ id: string }>(async (request, ctx) => {
+export const PATCH = withAdmin<{ id: string }>(async (request, ctx) => {
   try {
     const { id } = await ctx.params;
     const invalid = parseObjectId(id);
@@ -73,7 +73,7 @@ export const PATCH = withAdminNonDemo<{ id: string }>(async (request, ctx) => {
   }
 });
 
-export const DELETE = withAdminNonDemo<{ id: string }>(async (_request, ctx) => {
+export const DELETE = withAdmin<{ id: string }>(async (_request, ctx) => {
   try {
     const { id } = await ctx.params;
     const invalid = parseObjectId(id);

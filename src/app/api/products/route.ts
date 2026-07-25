@@ -10,7 +10,7 @@ import {
   productRecordFromFormData,
 } from '@/lib/products/parse-form-input';
 import { productInputSchema } from '@/lib/products/schema';
-import { withAdminNonDemo, parsePagination } from '@/lib/api-handler';
+import { withAdmin, parsePagination } from '@/lib/api-handler';
 
 const ALLOWED_PRODUCT_SORT_FIELDS = new Set(['_id', 'name', 'price', 'createdAt', 'stockCount']);
 
@@ -46,7 +46,7 @@ export const GET = async (request: NextRequest) => {
 // the Mongo doc references the secure URLs. Validation runs through the
 // Zod schema at src/lib/products/schema.ts (same schema the admin form
 // uses pre-submit for inline errors).
-export const POST = withAdminNonDemo(async (request: NextRequest) => {
+export const POST = withAdmin(async (request: NextRequest, _ctx, userId) => {
   try {
     const formData = await request.formData();
 
@@ -87,11 +87,14 @@ export const POST = withAdminNonDemo(async (request: NextRequest) => {
     // The model's pre-validate hook stamps backcompat `price` / `unit` and
     // the display labels from the canonical pricingType + per-type fields,
     // so the route just hands over the parsed input verbatim plus images.
+    // `createdBy` is what lets the nightly demo restore delete products a demo
+    // admin invented while leaving seeded ones alone.
     const { stock, ...rest } = parsed.data;
     const newProduct = new Product({
       ...rest,
       stockCount: stock,
       images: uploadedImages,
+      createdBy: userId,
     });
     await newProduct.save();
 

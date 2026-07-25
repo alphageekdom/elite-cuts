@@ -6,9 +6,11 @@ import Product from '@/models/Product';
 import Review from '@/models/Review';
 import User from '@/models/User';
 import { getSessionUser } from '@/lib/auth/session';
+import { isDemoAdmin } from '@/lib/auth/demo-permissions';
+import { pinNaturalKeyForDemo } from '@/lib/demo/natural-keys';
 import {
   parseObjectId,
-  withAdminNonDemo,
+  withAdmin,
   zodBadRequest,
   type RouteContext,
 } from '@/lib/api-handler';
@@ -60,7 +62,7 @@ export const GET = async (_request: NextRequest, { params }: Ctx) => {
 // canonical pricing fields — a direct PATCH would persist briefly and then
 // get clobbered on the next full save. Admins edit price through the full
 // PUT form going forward.
-export const PATCH = withAdminNonDemo<{ id: string }>(async (request, ctx) => {
+export const PATCH = withAdmin<{ id: string }>(async (request, ctx) => {
   try {
     const { id } = await ctx.params;
     const invalid = parseObjectId(id);
@@ -91,7 +93,7 @@ export const PATCH = withAdminNonDemo<{ id: string }>(async (request, ctx) => {
 });
 
 // DELETE /api/products/:id — admin-only.
-export const DELETE = withAdminNonDemo<{ id: string }>(async (_request, ctx) => {
+export const DELETE = withAdmin<{ id: string }>(async (_request, ctx) => {
   try {
     const { id } = await ctx.params;
     const invalid = parseObjectId(id);
@@ -100,6 +102,26 @@ export const DELETE = withAdminNonDemo<{ id: string }>(async (_request, ctx) => 
     const existingProduct = await Product.findById(id);
     if (!existingProduct) {
       return NextResponse.json({ message: 'Product not found' }, { status: 404 });
+    }
+
+    // A demo admin may delete cuts they added, but not seeded ones. This is a
+    // hard delete, and the six collections that reference a product `_id`
+    // (reviews above all) would be orphaned the instant it ran — the nightly
+    // restore re-creates a seeded cut, but with a fresh id, so its reviews
+    // and the rating computed from them would never reattach. Deleting a cut
+    // the demo session created has nothing pointing at it, so it stays open.
+    const sessionUser = await getSessionUser();
+    if (
+      isDemoAdmin(sessionUser?.user) &&
+      String(existingProduct.createdBy ?? '') !== String(sessionUser?.userId)
+    ) {
+      return NextResponse.json(
+        {
+          message:
+            'Demo mode: seeded cuts can’t be deleted, but you can edit them or delete cuts you add.',
+        },
+        { status: 403 },
+      );
     }
 
     // Fire-and-log Cloudinary cleanup before the Mongo delete. Local seeded
@@ -119,7 +141,7 @@ export const DELETE = withAdminNonDemo<{ id: string }>(async (_request, ctx) => 
 // through the same Zod schema as POST, then preserves rating + images from
 // the persisted doc (those aren't form-editable) and falls back to existing
 // boolean toggle values when the form doesn't submit them.
-export const PUT = withAdminNonDemo<{ id: string }>(async (request, ctx) => {
+export const PUT = withAdmin<{ id: string }>(async (request, ctx) => {
   try {
     const { id } = await ctx.params;
     const invalid = parseObjectId(id);
@@ -136,6 +158,15 @@ export const PUT = withAdminNonDemo<{ id: string }>(async (request, ctx) => {
     // new one from name". The coercer would otherwise re-derive on every
     // rename and break external references.
     if (!record.slug?.trim()) record.slug = existingProduct.slug;
+
+    // `slug` is the key the nightly restore matches a seeded cut on — see
+    // `pinNaturalKeyForDemo` for what a rename would strand.
+    const editor = await getSessionUser();
+    record.slug = pinNaturalKeyForDemo(
+      editor?.user,
+      record.slug,
+      existingProduct.slug,
+    );
 
     const parsed = productInputSchema.safeParse(coerceProductInput(record));
     if (!parsed.success) return zodBadRequest(parsed.error);
