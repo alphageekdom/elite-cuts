@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 
-export const LEGAL_LINK_CLASS =
-  'text-oxblood underline underline-offset-4 decoration-oxblood/40 hover:decoration-oxblood';
+// Canonical home is `legalStyles.ts`; re-exported here so the Privacy page's
+// existing import keeps working until it migrates and this file goes away.
+export { LEGAL_LINK_CLASS } from './legalStyles';
 
 type SectionProps = {
   heading: string;
