@@ -168,6 +168,20 @@
   animation: authRise 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
+/* The resting state has to be spelled out rather than just cancelling the
+   animation: `.auth-reveal` starts at opacity 0 and only becomes visible
+   because `forwards` holds the animation's end state, so `animation: none`
+   alone would leave both auth forms permanently invisible for anyone who asks
+   for reduced motion. The photo panels' infinite zoom is cancelled at the two
+   call sites with `motion-reduce:animate-none`. */
+@media (prefers-reduced-motion: reduce) {
+  .auth-reveal {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+}
+
 .auth-check {
   appearance: none;
   width: 16px;
