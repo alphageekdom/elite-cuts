@@ -9,6 +9,7 @@ import { getSessionUser } from '@/lib/auth/session';
 import { formatMoney, productImageSrc } from '@/lib/format';
 import { DELIVERY_FEE } from '@/lib/pricing';
 import { getShopSettings, formatShopAddress } from '@/lib/shop-settings/queries';
+import { formatReadyIn } from '@/lib/shop-settings/pickup-format';
 import {
   orderHasRealizedDifference,
   realizedOrderTotal,
@@ -31,7 +32,9 @@ export default async function ConfirmationPage({ searchParams }: Props) {
   if (!orderId) redirect('/cart');
 
   const sessionUser = await getSessionUser();
-  const shopAddress = formatShopAddress(await getShopSettings());
+  const shopSettings = await getShopSettings();
+  const shopAddress = formatShopAddress(shopSettings);
+  const readyIn = formatReadyIn(shopSettings.leadTime);
 
   await connectDB();
 
@@ -88,8 +91,22 @@ export default async function ConfirmationPage({ searchParams }: Props) {
           <h1 className='font-display text-[clamp(36px,5vw,60px)] font-normal leading-[1.05] tracking-tight'>
             You&apos;re all <em className='text-oxblood'>set.</em>
           </h1>
+          {/* Both halves of the previous copy here were false. No mail service
+              is connected to this project, so nothing was ever sent; and every
+              notification type in the system (`new_order`, `low_stock`,
+              `new_event`, `settlement_failed`) is written only to users with
+              `isAdmin: true`, so no customer has ever been told their order is
+              ready by any channel. The Privacy page now states plainly that the
+              shop sends no email, and this page sat three clicks away
+              contradicting it.
+              Branched on guest, because "check your order history" is only
+              true for someone who has one — a guest's order isn't attached to
+              an account until they register with the same email, which the
+              block further down the page already offers. */}
           <p className='mx-auto mt-3.5 max-w-[42ch] text-[15px] text-ink-soft'>
-            We&apos;ve sent a confirmation to your email. You&apos;ll get a pickup-ready notification when your order is hand-cut and waiting for you.
+            {isGuestOrder
+              ? "We've got your order. Your reference is just below — that's what the counter will ask for."
+              : "Your order is saved to your order history — that's where you'll see it move to ready for pickup."}
           </p>
         </div>
 
@@ -135,7 +152,7 @@ export default async function ConfirmationPage({ searchParams }: Props) {
                   </p>
                   <p className='mt-1 text-[13px] text-ink-soft'>{shopAddress}</p>
                   <p className='mt-1 font-mono text-[11px] tracking-[0.06em] text-green'>
-                    FREE · ~1 HOUR
+                    FREE · {readyIn.toUpperCase()}
                   </p>
                 </>
               ) : (

@@ -5,6 +5,7 @@ import { useEffect, useMemo } from 'react';
 import { useCheckoutContext } from '@/context/CheckoutContext';
 import { useShopSettings } from '@/context/ShopSettingsContext';
 import { formatShopAddress } from '@/lib/shop-settings/format';
+import { formatReadyIn } from '@/lib/shop-settings/pickup-format';
 import { BLOCK_LABEL_CLASS } from '@/components/checkout/checkoutStyles';
 import DeliveryAddressForm from '@/components/checkout/DeliveryAddressForm';
 import { DELIVERY_RADIUS_MILES } from '@/lib/shop-settings/config';
@@ -104,7 +105,7 @@ const FulfillmentToggle = () => {
                 fulfillment === 'pickup' ? 'text-camel-soft' : 'text-green'
               }`}
             >
-              FREE · ~1 HOUR
+              FREE · {formatReadyIn(shopSettings.leadTime).toUpperCase()}
             </div>
           </div>
         </button>
