@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { signOut, useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import DemoDisabledHint from '@/components/demo/DemoDisabledHint';
+import { ACCOUNT_DELETION_GRACE_DAYS } from '@/lib/auth/account-deletion-constants';
 import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 
@@ -76,8 +77,8 @@ export default function DeleteAccountSection() {
         </h2>
         <p className="text-[13px] text-muted leading-relaxed mb-5 max-w-lg">
           Permanently close your EliteCuts account. Your profile is hidden immediately,
-          and we keep it recoverable for 30 days — sign back in any time before then
-          to cancel. After 30 days, your account and personal details are erased.
+          and we keep it recoverable for {ACCOUNT_DELETION_GRACE_DAYS} days — sign back in any time before then
+          to cancel. After that, your account and personal details are erased.
         </p>
         <button
           type="button"
@@ -108,11 +109,19 @@ export default function DeleteAccountSection() {
             <h3 id="delete-account-title" className="font-display text-2xl font-normal mb-3">
               Delete your <em className="italic text-oxblood">account</em>?
             </h3>
+            {/* "Anonymous records" was not true, and this is the moment it
+                matters most — a customer reads this sentence while deciding.
+                `hardDeleteUser` copies the real name, email and phone onto past
+                orders and stamps the real name onto reviews and messages; only
+                the link to the account is severed. The Privacy page states this
+                accurately, and this dialog contradicted it. */}
             <p className="text-[13px] text-ink-soft leading-relaxed mb-5">
               Your account will be hidden immediately. You can recover it by signing back
-              in any time in the next 30 days. After that, your profile, saved cuts, cart,
-              and reward points will be permanently erased. Past orders and reviews stay
-              on the system as anonymous records.
+              in any time in the next {ACCOUNT_DELETION_GRACE_DAYS} days. After that your profile, saved cuts, cart,
+              saved cards, and reward points are erased for good. Past orders keep the
+              name, email, and phone that were on them, and any reviews or messages you
+              wrote stay published under your name — detached from your account, but not
+              anonymous.
             </p>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -138,7 +147,10 @@ export default function DeleteAccountSection() {
                   disabled={submitting}
                   className="mt-0.5"
                 />
-                <span>I understand my account will be permanently erased after 30 days.</span>
+                <span>
+                  I understand my account will be permanently erased after{' '}
+                  {ACCOUNT_DELETION_GRACE_DAYS} days.
+                </span>
               </label>
               <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-3 sm:justify-end pt-2">
                 <button

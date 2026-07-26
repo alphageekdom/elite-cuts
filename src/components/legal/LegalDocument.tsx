@@ -6,26 +6,38 @@ import ArrowIcon from '@/components/uielements/ArrowIcon';
 import { formatLegalDate } from './legalDate';
 import LegalToc, { type LegalTocItem } from './LegalToc';
 
-// The redesigned legal shell. Terms is the first consumer; the Privacy page
-// still renders through the older `LegalPage` and migrates onto this in its
-// own feature, at which point that file goes away. Until then the two legal
-// pages deliberately look different — a known, temporary state.
+// The shared legal shell. Terms and Privacy both render through it, so the two
+// pages can't drift apart on chrome — header, notice, contents rail, section
+// numbering and closing card all live here once.
 //
-// Anything only Terms needs (the portfolio notice, the contents rail) is an
-// optional prop rather than baked in, so Privacy can adopt the shell without
-// inheriting furniture it has no use for.
+// The pieces only one page needs (the notice, the contents rail, a section's
+// `wide` escape from the prose measure) are optional rather than baked in, so
+// a third legal page could adopt the shell without inheriting furniture it has
+// no use for.
 
-/** Body paragraph for the new shell. Privacy's prose still comes from
- *  `LegalParagraph`; both exist only until Privacy migrates. */
-export function LegalDocParagraph({ children }: { children: ReactNode }) {
-  return <p className='text-[16px] leading-[1.75] text-ink-soft'>{children}</p>;
+/** Body paragraph. Sized for reading rather than for scanning.
+ *
+ *  Carries its own measure rather than inheriting the section's. In a `wide`
+ *  section the container opens up for the structured blocks, and prose sitting
+ *  alongside them would open up with it — running at ~112 characters a line
+ *  against ~88 in the prose-only sections, which reads as two different
+ *  documents. Capping here keeps every paragraph on the page identical
+ *  regardless of what else its section contains. */
+export function LegalParagraph({ children }: { children: ReactNode }) {
+  return (
+    <p className='max-w-[66ch] text-[16px] leading-[1.75] text-ink-soft'>
+      {children}
+    </p>
+  );
 }
 
-/** Rule-separated rows rather than bullets — the list here is a set of
- *  disclaimers to read one at a time, not a tally. */
-export function LegalDocList({ items }: { items: ReactNode[] }) {
+/** Rule-separated rows rather than bullets — these lists are things to read
+ *  one at a time, not a tally to count. */
+export function LegalList({ items }: { items: ReactNode[] }) {
   return (
-    <ul className='flex flex-col'>
+    // Capped for the same reason as `LegalParagraph` — a list is prose too, and
+    // would sprawl if its section were ever marked `wide`.
+    <ul className='flex max-w-[66ch] flex-col'>
       {items.map((item, i) => (
         <li
           key={i}
@@ -41,15 +53,27 @@ export function LegalDocList({ items }: { items: ReactNode[] }) {
   );
 }
 
-export type LegalDocSection = {
+export type LegalSection = {
   id: string;
   title: string;
   /** One line, in the shop's voice, above the prose. */
   summary: string;
   body: ReactNode;
+  /**
+   * Widen the body past the prose measure for this section. Paragraphs want a
+   * comfortable reading width; structured blocks — a two-column comparison, a
+   * three-column card row — need more than that. Opt in per section rather
+   * than widening the shell, so prose stays readable everywhere it isn't set.
+   *
+   * Note this is a *wider cap*, not an absent one. Leaving it unbounded let a
+   * single line of vendor-description text stretch to 928px on a 1728px
+   * display — legible in isolation, but jarring directly above a paragraph
+   * section still wrapping at 66ch.
+   */
+  wide?: boolean;
 };
 
-export type LegalDocNotice = {
+export type LegalNotice = {
   eyebrow: string;
   heading: string;
   headingAccent: string;
@@ -63,8 +87,8 @@ type Props = {
   titleAccent: string;
   meta: { label: string; value: string }[];
   updatedAt: string;
-  sections: LegalDocSection[];
-  notice?: LegalDocNotice;
+  sections: LegalSection[];
+  notice?: LegalNotice;
   withContents?: boolean;
   closing: {
     heading: string;
@@ -187,10 +211,29 @@ export default function LegalDocument({
         <div className='min-w-0'>
           <article>
             {numbered.map((section, i) => (
+              // `tabIndex={-1}` makes the fragment target focusable, which is
+              // what lets the browser's own hash navigation land focus here.
+              // Without it a contents-rail jump scrolls the page but leaves
+              // focus on <body>, so a keyboard or screen-reader user is moved
+              // without being told where to. Never in the tab order — -1 is
+              // programmatic only.
+              //
+              // This was first written as an onClick calling `.focus()`, which
+              // silently did nothing: the browser's own fragment handling runs
+              // after the click handler and put focus back on <body>. Letting
+              // the target be focusable and leaving the browser to it is both
+              // simpler and the thing that actually works.
+              //
+              // Scope note: this covers in-page jumps from the rail. Landing on
+              // a `/privacy#vendors` URL *directly* still neither scrolls nor
+              // focuses — Next resets scroll during hydration before the
+              // fragment is honoured. That's app-wide behaviour, not specific
+              // to this shell, and isn't something `tabIndex` can reach.
               <section
                 key={section.id}
                 id={section.id}
-                className={`scroll-mt-24 pb-12 ${
+                tabIndex={-1}
+                className={`scroll-mt-24 pb-12 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-oxblood ${
                   i > 0 ? 'border-t border-line pt-12' : ''
                 }`}
               >
@@ -209,7 +252,11 @@ export default function LegalDocument({
                   <p className='font-display mb-5 max-w-[62ch] text-[18px] italic leading-snug text-oxblood'>
                     {section.summary}
                   </p>
-                  <div className='flex max-w-[66ch] flex-col gap-4'>
+                  <div
+                    className={`flex flex-col gap-4 ${
+                      section.wide ? 'max-w-4xl' : 'max-w-[66ch]'
+                    }`}
+                  >
                     {section.body}
                   </div>
                 </div>

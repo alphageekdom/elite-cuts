@@ -6,7 +6,10 @@ import AccountDeletionAudit from '@/models/AccountDeletionAudit';
 import ShopSettingsModel from '@/models/ShopSettings';
 import { softDeleteUser } from '@/lib/auth/account-deletion';
 
-const DORMANCY_FOLLOWUP_DAYS = 30;
+// Lives in `lib/auth/account-deletion-constants.ts` — a leaf module, so the
+// Privacy page can state the real warning-to-soft-delete gap without importing
+// this job (and its models) just to read an integer.
+import { DORMANCY_FOLLOWUP_DAYS } from '@/lib/auth/account-deletion-constants';
 const DORMANCY_REASON = 'dormancy';
 
 type UserRow = {

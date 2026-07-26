@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { ACCOUNT_DELETION_GRACE_DAYS } from '@/lib/auth/account-deletion-constants';
 
 type Mode = 'deleted' | 'dormancyCleared';
 
@@ -83,7 +84,7 @@ export default function AccountDeletedBanner() {
         <span className="text-ink-soft">
           {untilLabel
             ? `We'll permanently erase your account on ${untilLabel}. Sign in any time before then to restore it.`
-            : `We'll permanently erase your account in 30 days. Sign in any time before then to restore it.`}
+            : `We'll permanently erase your account in ${ACCOUNT_DELETION_GRACE_DAYS} days. Sign in any time before then to restore it.`}
         </span>
         <button
           type="button"

@@ -1,7 +1,8 @@
-// Chrome shared by both legal shells, in its own module so neither has to
-// import from the other. `LegalSection`/`LegalPage` (Privacy) and
-// `LegalDocument` (Terms) both read from here, so deleting the old pair when
-// Privacy migrates touches nothing the new shell depends on.
+// Chrome shared by the legal pages, in its own leaf module so a page can pull
+// it without importing the shell and vice versa. Kept separate from
+// `LegalDocument` deliberately: that independence is what let the old
+// `LegalPage`/`LegalSection` pair be deleted without touching anything the
+// current shell depends on.
 //
 // Named after the sibling convention (`authStyles.ts`, `checkoutStyles.ts`).
 

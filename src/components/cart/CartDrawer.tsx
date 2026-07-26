@@ -9,6 +9,8 @@ import { useSession } from 'next-auth/react';
 
 import { useCartContext, type CartLine } from '@/context/CartContext';
 import { useIsMounted } from '@/hooks/useIsMounted';
+import { useShopSettings } from '@/context/ShopSettingsContext';
+import { formatReadyIn } from '@/lib/shop-settings/pickup-format';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { productImageSrc } from '@/lib/format';
@@ -103,6 +105,7 @@ const DrawerLine = ({ line }: { line: CartLine }) => {
 const CartDrawer = ({ isOpen, onClose }: Props) => {
   const { cartItems } = useCartContext();
   const { data: session } = useSession();
+  const { leadTime } = useShopSettings();
   const isLoggedIn = Boolean(session?.user);
   const count = cartItems.length;
   const mounted = useIsMounted();
@@ -240,9 +243,12 @@ const CartDrawer = ({ isOpen, onClose }: Props) => {
               </Link>
             </div>
 
+            {/* Was a hardcoded "~1 hour" — double the shop's configured lead
+                time, and it would have contradicted the checkout trust strip
+                the moment that one started reading settings. */}
             <p className='mt-3 text-center font-mono text-[11px] tracking-[0.04em] text-muted'>
               <strong className='font-medium text-ink'>Free pickup</strong> ·
-              ready in ~1 hour
+              ready in {formatReadyIn(leadTime)}
             </p>
           </footer>
         )}

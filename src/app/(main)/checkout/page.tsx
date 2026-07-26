@@ -20,13 +20,20 @@ import {
 } from '@/context/CheckoutContext';
 import { getSessionUser } from '@/lib/auth/session';
 import { isDemoCardTileEnabled } from '@/lib/features';
+import { getShopSettings } from '@/lib/shop-settings/queries';
+import { formatReadyIn } from '@/lib/shop-settings/pickup-format';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
-  title: 'Checkout',
-  description: 'Complete your order — pickup-ready in ~1 hour.',
-};
+// Was a static "~1 hour", double the shop's configured lead time. Read from
+// settings so it can't drift from what the cart drawer and trust strip say.
+export async function generateMetadata(): Promise<Metadata> {
+  const { leadTime } = await getShopSettings();
+  return {
+    title: 'Checkout',
+    description: `Complete your order — pickup ready in ${formatReadyIn(leadTime).replace(/^about /, '')}.`,
+  };
+}
 
 export default async function CheckoutPage() {
   const sessionUser = await getSessionUser();

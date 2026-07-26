@@ -7,11 +7,14 @@ import Order from '@/models/Order';
 import Review from '@/models/Review';
 import Message from '@/models/Message';
 import Notification from '@/models/Notification';
+import SavedCard from '@/models/SavedCard';
 import AccountDeletionAudit, {
   type AccountDeletionAction,
 } from '@/models/AccountDeletionAudit';
 
-export const ACCOUNT_DELETION_GRACE_DAYS = 30;
+// Lives in `account-deletion-constants.ts` — a leaf, so pages and client
+// components can read it without pulling this module's eight models in.
+import { ACCOUNT_DELETION_GRACE_DAYS } from './account-deletion-constants';
 export const FORMER_CUSTOMER_NAME = 'Former customer';
 
 type UserId = Types.ObjectId | string;
@@ -296,8 +299,25 @@ export async function hardDeleteUser(
   await Message.updateMany({ user: userId }, { $set: { user: null } });
 
   // Hard-delete child collections.
+  //
+  // `SavedCard` and the helpful-vote lists were both missing here until the
+  // privacy-page pass went looking for what actually survives a purge. Neither
+  // is reachable once the User doc is gone, so they were orphaned permanently:
+  // card metadata (cardholder name, brand, last4, expiry) sitting in a
+  // collection nothing would ever query again, and the user's ObjectId still
+  // sitting in `helpfulVoters` on every review they voted on. The demo reset
+  // has always cleared both — see `lib/demo/reset.ts` — so this was an
+  // omission rather than a deliberate retention.
+  //
+  // Votes are pulled rather than deleted because the review itself belongs to
+  // someone else and survives; only the departing user's entry comes out.
   await Cart.deleteMany({ user: userId });
   await Notification.deleteMany({ userId });
+  await SavedCard.deleteMany({ user: userId });
+  await Review.updateMany(
+    { helpfulVoters: userId },
+    { $pull: { helpfulVoters: userId } },
+  );
 
   // Finally, delete the user document itself. The embedded savedCuts and
   // pointsHistory arrays go with it.

@@ -2,9 +2,9 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 import LegalDocument, {
-  LegalDocList,
-  LegalDocParagraph,
-  type LegalDocSection,
+  LegalList,
+  LegalParagraph,
+  type LegalSection,
 } from '@/components/legal/LegalDocument';
 import { LEGAL_LINK_CLASS } from '@/components/legal/legalStyles';
 import { getShopSettings } from '@/lib/shop-settings/queries';
@@ -26,7 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function TermsPage() {
   const { shopName, email } = await getShopSettings();
 
-  const sections: LegalDocSection[] = [
+  const sections: LegalSection[] = [
     {
       id: 'use',
       title: 'Acceptable use',
@@ -37,14 +37,14 @@ export default async function TermsPage() {
       summary: "Use it like a real shop. Just don't abuse it.",
       body: (
         <>
-          <LegalDocParagraph>
+          <LegalParagraph>
             Browse the catalog, create an account, place orders, and explore
             every feature — that&apos;s exactly what the site is here for.
-          </LegalDocParagraph>
-          <LegalDocParagraph>
+          </LegalParagraph>
+          <LegalParagraph>
             Please don&apos;t scrape it at volume, abuse the sign-in flows, or
             use it to host content that isn&apos;t yours.
-          </LegalDocParagraph>
+          </LegalParagraph>
         </>
       ),
     },
@@ -54,17 +54,17 @@ export default async function TermsPage() {
       summary: 'Your password is yours. Demo accounts are shared and temporary.',
       body: (
         <>
-          <LegalDocParagraph>
+          <LegalParagraph>
             Keep your own password private — it&apos;s the only thing separating
             your order history from anyone else&apos;s.
-          </LegalDocParagraph>
+          </LegalParagraph>
           {/* The sharing half is the point of this paragraph, and it covers
               both doors. The demo signs every visitor into the *same* two
               seeded accounts, so concurrent visitors see each other's carts —
               and a demo admin's catalog edits show on the live storefront
               until the nightly restore puts them back. "Anything you save"
               alone read customer-only and missed that. */}
-          <LegalDocParagraph>
+          <LegalParagraph>
             If you sign in through one of the shared accounts on the{' '}
             <Link href='/demo' className={LEGAL_LINK_CLASS}>
               demo page
@@ -73,7 +73,7 @@ export default async function TermsPage() {
             accounts. Anything you do under them — orders you place as the
             customer, changes you make as the admin — may be seen by other
             visitors and goes back with the nightly reset.
-          </LegalDocParagraph>
+          </LegalParagraph>
         </>
       ),
     },
@@ -83,15 +83,15 @@ export default async function TermsPage() {
       summary: 'Nothing is charged — every checkout is a dry run.',
       body: (
         <>
-          <LegalDocParagraph>
+          <LegalParagraph>
             No real money changes hands on {shopName}. Checkout either records a
             no-charge order on the spot or hands you to a test payment page —
             neither one touches a real card.
-          </LegalDocParagraph>
-          <LegalDocParagraph>
+          </LegalParagraph>
+          <LegalParagraph>
             Prices, stock levels, pickup slots, and order history all exist to
             show how the shop would work, not to sell you a steak.
-          </LegalDocParagraph>
+          </LegalParagraph>
         </>
       ),
     },
@@ -100,7 +100,7 @@ export default async function TermsPage() {
       title: 'What we cannot promise',
       summary: "It's a personal project, so treat it as one.",
       body: (
-        <LegalDocList
+        <LegalList
           items={[
             "The site may go down, change, or retire without warning — it's a personal project, not a service.",
             // Both doors, not just the customer one: the nightly job restores
@@ -121,11 +121,11 @@ export default async function TermsPage() {
       // actual commitment (it's also why LAST_UPDATED above must move with any
       // substantive edit).
       body: (
-        <LegalDocParagraph>
+        <LegalParagraph>
           The site is a portfolio project, so don&apos;t expect surprise
           updates. But if these terms do change, the date at the top moves with
           them — no other notice goes out.
-        </LegalDocParagraph>
+        </LegalParagraph>
       ),
     },
     {
@@ -133,7 +133,7 @@ export default async function TermsPage() {
       title: 'Contact',
       summary: "Ask us anything — we'd rather answer than have you guess.",
       body: (
-        <LegalDocParagraph>
+        <LegalParagraph>
           Questions about any of the above go through the{' '}
           <Link href='/contact' className={LEGAL_LINK_CLASS}>
             contact page
@@ -143,7 +143,7 @@ export default async function TermsPage() {
             {email}
           </a>
           . There&apos;s no legal department on the other end, just us.
-        </LegalDocParagraph>
+        </LegalParagraph>
       ),
     },
   ];
