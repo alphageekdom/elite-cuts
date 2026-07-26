@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import SectionLabel from '@/components/ui/SectionLabel';
+import { formatLegalDate } from './legalDate';
 
 type Props = {
   eyebrow: string;
@@ -11,13 +12,8 @@ type Props = {
   children: ReactNode;
 };
 
-const LAST_UPDATED_FORMAT = new Intl.DateTimeFormat('en-US', {
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric',
-  timeZone: 'UTC',
-});
-
+// Retained for the Privacy page only; Terms now renders through
+// `LegalDocument`. This file goes away when Privacy migrates onto it.
 export default function LegalPage({
   eyebrow,
   title,
@@ -26,7 +22,7 @@ export default function LegalPage({
   updatedAt,
   children,
 }: Props) {
-  const lastUpdated = LAST_UPDATED_FORMAT.format(new Date(`${updatedAt}T00:00:00Z`));
+  const lastUpdated = formatLegalDate(updatedAt);
 
   return (
     <>
