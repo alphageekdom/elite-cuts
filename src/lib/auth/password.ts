@@ -25,3 +25,19 @@ export const PASSWORD_LENGTH_MESSAGE = `Password must be between ${MIN_PASSWORD_
 export function isPasswordLengthValid(password: string): boolean {
   return password.length >= MIN_PASSWORD_LENGTH && password.length <= MAX_PASSWORD_LENGTH;
 }
+
+/**
+ * Advisory 0–3 score behind the register form's strength meter. Never a gate —
+ * `isPasswordLengthValid` decides what the form accepts.
+ *
+ * Anything under the minimum scores 0 no matter how complex it is. Without that
+ * floor the two complexity points alone could carry a password the form
+ * refuses: "Aa1!" scored 2 and rendered as "Fair" while submit rejected it.
+ */
+export function scorePasswordStrength(password: string): 0 | 1 | 2 | 3 {
+  if (password.length < MIN_PASSWORD_LENGTH) return 0;
+  let score = 1;
+  if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score++;
+  if (/\d/.test(password) && /[^A-Za-z0-9]/.test(password)) score++;
+  return score as 1 | 2 | 3;
+}

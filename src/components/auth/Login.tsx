@@ -35,15 +35,15 @@ import {
   formatLockoutCountdown,
 } from '@/hooks/useSignInLockout';
 import { startDemoSession, type DemoType } from '@/lib/auth/demo-signin';
-import { buildLoginBenefits } from '@/lib/auth/login-benefits';
+import { buildLoginBenefits } from '@/lib/auth/auth-benefits';
 import { FOUNDED_YEAR } from '@/lib/shop-settings/founding';
 import { useShopSettings } from '@/context/ShopSettingsContext';
-
-const INPUT_CLASS =
-  'w-full border-0 border-b border-line bg-transparent text-ink text-base py-2 pb-3.5 pr-6 outline-none placeholder:text-muted focus:border-oxblood transition-colors duration-300';
-
-const DEMO_DOOR_CLASS =
-  'flex w-full items-center gap-3.5 rounded-xl border border-line bg-paper px-4 py-3.5 transition-colors duration-300 hover:border-ink disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-line motion-reduce:transition-none';
+import {
+  AUTH_INPUT_CLASS,
+  AUTH_PW_INPUT_CLASS,
+  AUTH_PW_TOGGLE_CLASS,
+  AUTH_DOOR_CLASS,
+} from '@/components/auth/authStyles';
 
 // The two demo accounts, described by what each one actually lets you do.
 // The customer door is unrestricted; the owner door writes to the catalog,
@@ -144,9 +144,14 @@ export default function Login() {
   const emailValid = EMAIL_RE.test(formData.email);
 
   // The check/X icon is aria-hidden, so on its own it tells a screen reader
-  // nothing; this drives aria-invalid plus the sr-only message on exactly the
-  // condition that shows the X.
-  const emailInvalid = showIcon('email') && !emailValid;
+  // nothing. The announced half — aria-invalid plus the sr-only message — waits
+  // for the field's own blur rather than tracking the X, which still appears as
+  // you type. Sharing `showIcon` meant that once the password field had been
+  // touched, a single keystroke in the email field fired an assertive "Enter a
+  // valid email address." mid-word — reachable on the common recovery flow
+  // where a rejected sign-in sends someone back to re-check their email. The
+  // register form gates its announced errors the same way.
+  const emailInvalid = touched.email && !emailValid;
 
   const EMAIL_ERROR = 'Enter a valid email address.';
 
@@ -281,7 +286,7 @@ export default function Login() {
                     autoComplete="email"
                     aria-invalid={emailInvalid || undefined}
                     aria-describedby={emailInvalid ? 'email-error' : undefined}
-                    className={`${INPUT_CLASS} disabled:opacity-60 disabled:cursor-not-allowed`}
+                    className={`${AUTH_INPUT_CLASS} disabled:opacity-60 disabled:cursor-not-allowed`}
                   />
                   <FieldIcon show={showIcon('email')} valid={emailValid} />
                   {emailInvalid && (
@@ -309,7 +314,7 @@ export default function Login() {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     autoComplete="current-password"
-                    className={`${INPUT_CLASS} pr-16 disabled:opacity-60 disabled:cursor-not-allowed`}
+                    className={`${AUTH_PW_INPUT_CLASS} disabled:opacity-60 disabled:cursor-not-allowed`}
                   />
                   {/* No validity icon, no aria-invalid, no announced message —
                       all deliberate, see the note above the email check. Password
@@ -327,7 +332,7 @@ export default function Login() {
                     // go, but "Show" on its own is a thin accessible name out
                     // of context — this keeps the same word and adds the noun.
                     aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    className="absolute right-0 top-1/2 -translate-y-1/2 px-1 py-2 text-[11px] font-semibold tracking-[0.12em] uppercase text-oxblood transition-opacity duration-300 hover:opacity-70 focus-visible:opacity-70"
+                    className={AUTH_PW_TOGGLE_CLASS}
                   >
                     {showPassword ? 'Hide' : 'Show'}
                   </button>
@@ -386,7 +391,7 @@ export default function Login() {
                     type="button"
                     onClick={() => handleDemoSignIn(door.type)}
                     disabled={Boolean(demoPending) || loading || isLocked}
-                    className={DEMO_DOOR_CLASS}
+                    className={AUTH_DOOR_CLASS}
                   >
                     <span
                       aria-hidden="true"
@@ -435,7 +440,7 @@ export default function Login() {
           display:none anyway, so the source order is what everyone gets. */}
       <aside className="relative hidden md:order-first md:flex overflow-hidden bg-ink text-cream">
         <div
-          className="absolute inset-0 scale-[1.05] hero-bg-login animate-[heroZoom_22s_ease-in-out_infinite_alternate]"
+          className="absolute inset-0 scale-[1.05] hero-bg-login animate-[heroZoom_22s_ease-in-out_infinite_alternate] motion-reduce:animate-none"
         />
         {/* The shared hero gradient bottoms out around 40% opacity across the
             middle of the panel, which was fine behind a short pull-quote but

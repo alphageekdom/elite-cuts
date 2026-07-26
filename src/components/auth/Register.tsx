@@ -1,10 +1,28 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+
+import { EMAIL_RE } from '@/lib/validation';
+import { MIN_PASSWORD_LENGTH, scorePasswordStrength } from '@/lib/auth/password';
+import { FOUNDED_YEAR } from '@/lib/shop-settings/founding';
+import { buildRegisterBenefits } from '@/lib/auth/auth-benefits';
+import { useShopSettings } from '@/context/ShopSettingsContext';
+import {
+  AUTH_INPUT_CLASS,
+  AUTH_PW_INPUT_CLASS,
+  AUTH_PW_TOGGLE_CLASS,
+  AUTH_DOOR_CLASS,
+} from '@/components/auth/authStyles';
+import { FieldValidationIcon as FieldIcon } from '@/components/auth/FieldValidationIcon';
+import EditorialEyebrow from '@/components/ui/EditorialEyebrow';
+import ArrowIcon from '@/components/uielements/ArrowIcon';
+import ChevronIcon from '@/components/uielements/ChevronIcon';
+import UserIcon from '@/components/uielements/UserIcon';
+import { useSignInLockout } from '@/hooks/useSignInLockout';
 
 interface TouchedState {
   name: boolean;
@@ -21,14 +39,6 @@ interface FormState {
   agreeToTerms: boolean;
 }
 
-
-const BENEFITS = [
-  'Order online, pick up at the shop — no lines.',
-  'Save cuts for quick reorder.',
-  'Early access when fresh dry-aged beef hits the case.',
-  'Recipes & cooking tips from our butchers.',
-];
-
 const BAR_COLORS = [
   [],
   ['bg-oxblood', 'bg-line', 'bg-line'],
@@ -36,18 +46,27 @@ const BAR_COLORS = [
   ['bg-green', 'bg-green', 'bg-green'],
 ] as const;
 
-const STRENGTH_LABELS = ['', 'Weak', 'Fair', 'Strong'];
+// Index 0 means the password is under MIN_PASSWORD_LENGTH — `scorePasswordStrength`
+// floors it there — so the slot names the problem rather than sitting empty.
+const STRENGTH_LABELS = ['Too short', 'Weak', 'Fair', 'Strong'] as const;
 
-import { EMAIL_RE } from '@/lib/validation';
-import { MIN_PASSWORD_LENGTH } from '@/lib/auth/password';
-import { FOUNDED_YEAR } from '@/lib/shop-settings/founding';
+// Colour for the strength word sitting beside the Password label. Tracks the
+// bar colours above so the two can't disagree about how strong "Fair" looks.
+const STRENGTH_LABEL_CLASS = [
+  'text-muted',
+  'text-oxblood',
+  'text-camel-deeper',
+  'text-green',
+] as const;
 
-import { FieldValidationIcon as FieldIcon } from '@/components/auth/FieldValidationIcon';
-import EditorialEyebrow from '@/components/ui/EditorialEyebrow';
-import { useSignInLockout } from '@/hooks/useSignInLockout';
-
-const INPUT_CLASS =
-  'w-full border-0 border-b border-line bg-transparent text-ink text-base py-2 pb-3.5 pr-6 outline-none placeholder:text-muted focus:border-oxblood transition-colors duration-300';
+// Each message names the specific problem, and the password one reads from the
+// same constant the server enforces.
+const FIELD_ERROR: Record<keyof TouchedState, string> = {
+  name: 'Enter your name.',
+  email: 'Enter a valid email address.',
+  password: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`,
+  confirmPassword: 'Passwords do not match.',
+};
 
 export default function Register() {
   const router = useRouter();
@@ -74,6 +93,13 @@ export default function Register() {
     confirmPassword: false,
   });
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Panel benefits and the address line both read from the shop's own settings
+  // — see `buildRegisterBenefits` for which claims that keeps honest, including
+  // the two that were false on this page before.
+  const shopSettings = useShopSettings();
+  const benefits = buildRegisterBenefits(shopSettings);
 
   // A failed `signIn` after a soft-deleted-restore attempt routes through
   // authorize()'s lockout counter, so we share the same sessionStorage-
@@ -86,15 +112,7 @@ export default function Register() {
   const showIcon = (field: keyof TouchedState) =>
     touched[field] || (anyTouched && formData[field].length > 0);
 
-  const strengthScore = useMemo(() => {
-    const p = formData.password;
-    if (!p) return 0;
-    let score = 0;
-    if (p.length >= MIN_PASSWORD_LENGTH) score++;
-    if (/[A-Z]/.test(p) && /[a-z]/.test(p)) score++;
-    if (/\d/.test(p) && /[^A-Za-z0-9]/.test(p)) score++;
-    return score;
-  }, [formData.password]);
+  const strengthScore = scorePasswordStrength(formData.password);
 
   const validity = {
     name: formData.name.trim().length > 0,
@@ -106,17 +124,14 @@ export default function Register() {
   };
 
   // The check/X icon is aria-hidden, so a screen reader hears nothing from it.
-  // A field reads as invalid on exactly the same condition the X shows, driving
-  // aria-invalid and an sr-only message named for the specific problem.
+  // The announced half — aria-invalid plus an sr-only message naming the
+  // problem — deliberately waits for the field's own blur instead of tracking
+  // the icon. While it shared `showIcon`, one keystroke into a field was
+  // enough to fire an assertive "Passwords do not match" the moment any other
+  // field had been blurred, interrupting the customer mid-word about a problem
+  // that wasn't real yet. The visual icon still updates as you type.
   const fieldInvalid = (field: keyof TouchedState) =>
-    showIcon(field) && !validity[field];
-
-  const FIELD_ERROR: Record<keyof TouchedState, string> = {
-    name: 'Enter your name.',
-    email: 'Enter a valid email address.',
-    password: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`,
-    confirmPassword: 'Passwords do not match.',
-  };
+    touched[field] && !validity[field];
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const { name } = e.target;
@@ -143,7 +158,7 @@ export default function Register() {
       return;
     }
     if (!EMAIL_RE.test(formData.email)) {
-      toast.error('Invalid email address');
+      toast.error('Enter a valid email address');
       return;
     }
 
@@ -206,53 +221,10 @@ export default function Register() {
 
   return (
     <div className="grid min-h-[calc(100vh-5rem)] md:grid-cols-2">
-      {/* Visual Side */}
-      <aside className="relative hidden md:flex overflow-hidden bg-ink text-cream">
-        <div
-          className="absolute inset-0 scale-[1.05] hero-bg-register animate-[heroZoom_22s_ease-in-out_infinite_alternate]"
-        />
-        <div className="relative z-10 flex flex-col justify-between w-full h-full p-12 xl:p-14">
-          <div className="max-w-[36ch]">
-            <div className="inline-flex items-center gap-3 text-[11px] font-medium tracking-[0.22em] uppercase mb-7 opacity-85">
-              <span className="w-7 h-px bg-current opacity-60" />
-              Member benefits
-            </div>
-            <h2 className="font-display text-[clamp(28px,2.6vw,38px)] font-normal leading-[1.15] tracking-[-0.02em] mb-9">
-              Join the <em className="italic text-camel-soft">counter</em> —<br />
-              get the good cuts first.
-            </h2>
-            <ul className="flex flex-col gap-4.5">
-              {BENEFITS.map((benefit) => (
-                <li
-                  key={benefit}
-                  className="flex items-start gap-3.5 text-[15px] leading-relaxed opacity-90"
-                >
-                  <span className="shrink-0 w-5.5 h-5.5 rounded-full border border-camel-soft bg-camel/25 grid place-items-center mt-0.5">
-                    <svg
-                      width="11"
-                      height="11"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#D4B391"
-                      strokeWidth="2.5"
-                    >
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  </span>
-                  {benefit}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="flex justify-between text-[11px] tracking-[0.18em] uppercase opacity-60">
-            <span>EC · New Account</span>
-            <span>Est. {FOUNDED_YEAR}</span>
-          </div>
-        </div>
-      </aside>
-
-      {/* Form Side */}
+      {/* Form Side. First in the DOM because it's what the page is for — a
+          screen reader lands on the signup form rather than wading through
+          the marketing panel, and the h1 precedes the panel's h2. Same shape
+          the sign-in page landed on. */}
       <section className="flex flex-col px-8 py-8 md:px-14">
         <div className="flex justify-end text-sm">
           <span className="text-muted">
@@ -274,9 +246,15 @@ export default function Register() {
             <h1 className="auth-reveal font-display font-normal text-[clamp(40px,4.5vw,56px)] leading-[1.05] tracking-tight mb-4 [animation-delay:200ms]">
               Welcome to the <em className="italic text-oxblood">counter.</em>
             </h1>
+            {/* Both claims are the privacy page's own words. The line used to
+                offer an opt-out from emails, which was the same shape as the
+                "Newsletter: Subscribed" row this branch deletes: no marketing
+                list exists, no consent field, and no opt-out control anywhere
+                — the only emails contemplated are order receipts, which nobody
+                can opt out of. Don't re-add an opt-out without a control. */}
             <p className="auth-reveal text-ink-soft mb-11 text-[15px] leading-relaxed max-w-[40ch] [animation-delay:300ms]">
-              Takes about 30 seconds. We&apos;ll never share your details, and you
-              can opt out of emails any time.
+              Takes about 30 seconds. We&apos;ll never share your details, and we
+              don&apos;t send marketing email.
             </p>
 
             <form onSubmit={handleSubmit}>
@@ -301,7 +279,7 @@ export default function Register() {
                     autoComplete="name"
                     aria-invalid={fieldInvalid('name') || undefined}
                     aria-describedby={fieldInvalid('name') ? 'name-error' : undefined}
-                    className={INPUT_CLASS}
+                    className={AUTH_INPUT_CLASS}
                   />
                   <FieldIcon show={showIcon('name')} valid={validity.name} />
                   {fieldInvalid('name') && (
@@ -333,7 +311,7 @@ export default function Register() {
                     autoComplete="email"
                     aria-invalid={fieldInvalid('email') || undefined}
                     aria-describedby={fieldInvalid('email') ? 'email-error' : undefined}
-                    className={INPUT_CLASS}
+                    className={AUTH_INPUT_CLASS}
                   />
                   <FieldIcon show={showIcon('email')} valid={validity.email} />
                   {fieldInvalid('email') && (
@@ -346,17 +324,36 @@ export default function Register() {
 
               {/* Password + strength meter */}
               <div className="auth-reveal mb-6.5 [animation-delay:450ms]">
-                <label
-                  htmlFor="password"
-                  className="block text-[11px] font-medium tracking-[0.22em] uppercase text-muted mb-3"
-                >
-                  Password
-                </label>
+                <div className="flex items-baseline justify-between gap-3 mb-3">
+                  <label
+                    htmlFor="password"
+                    className="block text-[11px] font-medium tracking-[0.22em] uppercase text-muted"
+                  >
+                    Password
+                  </label>
+                  {/* The container stays mounted so the live region is
+                      established before the first score lands — a region that
+                      appears at the same moment its text does is unreliably
+                      announced. The sr-only prefix keeps the spoken form
+                      self-describing ("Password strength: Strong") while the
+                      visual stays a single word. */}
+                  <span
+                    role="status"
+                    className={`text-[11.5px] font-semibold ${STRENGTH_LABEL_CLASS[strengthScore]}`}
+                  >
+                    {formData.password && (
+                      <>
+                        <span className="sr-only">Password strength: </span>
+                        {STRENGTH_LABELS[strengthScore]}
+                      </>
+                    )}
+                  </span>
+                </div>
                 <div className="relative">
                   <input
                     id="password"
                     name="password"
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     placeholder={`At least ${MIN_PASSWORD_LENGTH} characters`}
                     required
                     value={formData.password}
@@ -364,10 +361,33 @@ export default function Register() {
                     onBlur={handleBlur}
                     autoComplete="new-password"
                     aria-invalid={fieldInvalid('password') || undefined}
-                    aria-describedby={fieldInvalid('password') ? 'password-error' : undefined}
-                    className={INPUT_CLASS}
+                    // The composition rule is always part of the field's
+                    // description, not just once you've started typing —
+                    // otherwise a screen-reader user only meets the rule after
+                    // breaking it.
+                    aria-describedby={
+                      fieldInvalid('password')
+                        ? 'password-hint password-error'
+                        : 'password-hint'
+                    }
+                    className={AUTH_PW_INPUT_CLASS}
                   />
-                  <FieldIcon show={showIcon('password')} valid={validity.password} />
+                  {/* No validity tick here, unlike the other three fields: the
+                      strength meter below says more than a binary check could,
+                      and stacking both against the Show toggle crowds the
+                      field. `aria-invalid` and the sr-only message stay. */}
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    aria-controls="password confirmPassword"
+                    // Plural: this one control reveals the confirm field too,
+                    // so a singular label would leave a screen-reader user
+                    // unaware their second field is now plaintext as well.
+                    aria-label={showPassword ? 'Hide passwords' : 'Show passwords'}
+                    className={AUTH_PW_TOGGLE_CLASS}
+                  >
+                    {showPassword ? 'Hide' : 'Show'}
+                  </button>
                   {fieldInvalid('password') && (
                     <p id="password-error" role="alert" className="sr-only">
                       {FIELD_ERROR.password}
@@ -375,36 +395,57 @@ export default function Register() {
                   )}
                 </div>
                 {formData.password && (
-                  <div className="mt-2.5">
-                    <div className="flex gap-1">
-                      {([0, 1, 2] as const).map((i) => (
-                        <span
-                          key={i}
-                          className={`flex-1 h-0.5 rounded-full transition-colors duration-300 ${BAR_COLORS[strengthScore][i] ?? 'bg-line'}`}
-                        />
-                      ))}
-                    </div>
-                    <p className="text-[12px] text-muted mt-2 tracking-[0.02em]">
-                      {STRENGTH_LABELS[strengthScore]} — use 8+ characters with
-                      letters, numbers &amp; symbols.
-                    </p>
+                  <div className="mt-2.5 flex gap-1">
+                    {([0, 1, 2] as const).map((i) => (
+                      <span
+                        key={i}
+                        className={`flex-1 h-0.5 rounded-full transition-colors duration-300 ${BAR_COLORS[strengthScore][i] ?? 'bg-line'}`}
+                      />
+                    ))}
                   </div>
                 )}
+                {/* Always rendered. It's the field's description, so it has to
+                    exist before the customer types — otherwise a screen-reader
+                    user only meets the rule after breaking it — and a stable id
+                    keeps aria-describedby from pointing at nothing. The three
+                    conditions named here are exactly the three the meter
+                    scores; keep them in step. */}
+                <p
+                  id="password-hint"
+                  className="text-[12px] text-muted mt-2 tracking-[0.02em]"
+                >
+                  Use {MIN_PASSWORD_LENGTH}+ characters with upper &amp; lower
+                  case, a number &amp; a symbol.
+                </p>
               </div>
 
               {/* Confirm password */}
               <div className="auth-reveal mb-3 [animation-delay:500ms]">
-                <label
-                  htmlFor="confirmPassword"
-                  className="block text-[11px] font-medium tracking-[0.22em] uppercase text-muted mb-3"
-                >
-                  Confirm password
-                </label>
+                <div className="flex items-baseline justify-between gap-3 mb-3">
+                  <label
+                    htmlFor="confirmPassword"
+                    className="block text-[11px] font-medium tracking-[0.22em] uppercase text-muted"
+                  >
+                    Confirm password
+                  </label>
+                  {/* Mirrors the strength word opposite. Purely visual — the
+                      field's own aria-invalid and sr-only message already tell
+                      a screen reader the same thing, so announcing it twice
+                      would just be noise. */}
+                  {formData.confirmPassword && (
+                    <span
+                      aria-hidden="true"
+                      className={`text-[11.5px] font-semibold ${validity.confirmPassword ? 'text-green' : 'text-oxblood'}`}
+                    >
+                      {validity.confirmPassword ? 'Matches' : "Doesn't match"}
+                    </span>
+                  )}
+                </div>
                 <div className="relative">
                   <input
                     id="confirmPassword"
                     name="confirmPassword"
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     placeholder="Re-enter your password"
                     required
                     value={formData.confirmPassword}
@@ -415,7 +456,7 @@ export default function Register() {
                     aria-describedby={
                       fieldInvalid('confirmPassword') ? 'confirmPassword-error' : undefined
                     }
-                    className={INPUT_CLASS}
+                    className={AUTH_INPUT_CLASS}
                   />
                   <FieldIcon
                     show={showIcon('confirmPassword')}
@@ -448,7 +489,14 @@ export default function Register() {
                   <Link href="/privacy" className="text-oxblood border-b border-oxblood">
                     Privacy Policy
                   </Link>
-                  , and I&apos;m at least 18 years old.
+                  {/* No age attestation belongs here: nothing states an age
+                      requirement — not the Terms page, not the user model,
+                      nothing enforced — so asserting one would ask the customer
+                      to affirm a rule the shop doesn't have. A separate age
+                      tick is the convention for age-restricted goods; general
+                      retail states any minimum inside the Terms and keeps the
+                      checkbox to agreeing with them. */}
+                  .
                 </span>
               </label>
 
@@ -459,23 +507,109 @@ export default function Register() {
                 className="auth-reveal w-full flex items-center justify-center gap-3 px-7 py-4.5 bg-ink text-cream rounded-full text-sm font-medium tracking-[0.04em] hover:bg-oxblood hover:-translate-y-px transition-all duration-300 disabled:opacity-60 [animation-delay:600ms]"
               >
                 {loading ? 'Creating account…' : 'Create my account'}
-                {!loading && (
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M5 12h14M13 5l7 7-7 7" />
-                  </svg>
-                )}
+                {!loading && <ArrowIcon className="w-3.5 h-3.5" />}
               </button>
+              {/* The button swaps its own label to "Creating account…", which a
+                  screen reader has no reason to re-read, and focus stays on a
+                  now-disabled control. This says it once in the in-flight
+                  window before the toast lands — same shape as the sign-in
+                  page's demo doors. */}
+              <p className="sr-only" role="status" aria-live="polite">
+                {loading ? 'Creating your account, please wait…' : ''}
+              </p>
             </form>
+
+            {/* An account isn't required to browse or even to check out as a
+                guest, so the page says so rather than implying a wall. */}
+            <div className="auth-reveal mt-8 [animation-delay:700ms]">
+              <div className="relative mb-5 flex items-center">
+                <span aria-hidden="true" className="flex-1 border-t border-line" />
+                <span className="px-3 text-[11px] font-medium tracking-[0.22em] uppercase text-muted">
+                  Not ready yet
+                </span>
+                <span aria-hidden="true" className="flex-1 border-t border-line" />
+              </div>
+              <Link href="/products" className={AUTH_DOOR_CLASS}>
+                <span
+                  aria-hidden="true"
+                  className="grid size-9 shrink-0 place-items-center rounded-full bg-cream-deep text-oxblood"
+                >
+                  <UserIcon className="w-4.5 h-4.5" />
+                </span>
+                <span className="flex-1 text-left">
+                  <span className="block text-[14.5px] font-semibold text-ink">
+                    Look around first
+                  </span>
+                  <span className="mt-0.5 block text-[12.5px] text-muted">
+                    Browse the case or check out as a guest — no account needed.
+                  </span>
+                </span>
+                <ChevronIcon
+                  direction="right"
+                  className="w-4 h-4 shrink-0 text-camel-deeper"
+                />
+              </Link>
+            </div>
           </div>
         </div>
       </section>
+
+      {/* Visual Side. Second in the DOM, first on screen from md up — see the
+          note on the form above. */}
+      <aside className="relative hidden md:order-first md:flex overflow-hidden bg-ink text-cream">
+        <div
+          className="absolute inset-0 scale-[1.05] hero-bg-register animate-[heroZoom_22s_ease-in-out_infinite_alternate] motion-reduce:animate-none"
+        />
+        {/* The shared hero gradient bottoms out around 40% across the middle of
+            the panel, which leaves four benefits' worth of body copy sitting on
+            raw photography. Same scrim the sign-in panel uses. */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-linear-to-t from-ink/95 via-ink/75 to-ink/25"
+        />
+        <div className="relative z-10 flex flex-col justify-end w-full h-full gap-11 p-12 xl:p-14">
+          <div className="max-w-[42ch]">
+            <div className="inline-flex items-center gap-3 text-[11px] font-medium tracking-[0.22em] uppercase mb-6 text-camel-soft">
+              <span aria-hidden="true" className="w-6.5 h-px bg-camel" />
+              Joining is free
+            </div>
+            <h2 className="font-display text-[clamp(30px,3vw,46px)] font-normal leading-[1.06] tracking-[-0.02em] mb-8">
+              The counter starts{' '}
+              <em className="italic text-camel-soft">remembering.</em>
+            </h2>
+            <dl className="flex flex-col">
+              {benefits.map((benefit) => (
+                <div
+                  key={benefit.num}
+                  className="flex items-start gap-4 border-t border-cream/15 py-3.5"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="font-display shrink-0 pt-0.5 text-[14px] text-camel"
+                  >
+                    {benefit.num}
+                  </span>
+                  <div>
+                    <dt className="text-[15px] font-semibold text-cream/95">
+                      {benefit.title}
+                    </dt>
+                    <dd className="mt-1 text-[13.5px] leading-normal text-cream/70">
+                      {benefit.body}
+                    </dd>
+                  </div>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          <div className="flex justify-between gap-4 border-t border-cream/15 pt-6 text-[11px] tracking-[0.18em] uppercase text-cream/60">
+            <span>
+              {shopSettings.street} · {shopSettings.city}
+            </span>
+            <span className="shrink-0">Est · {FOUNDED_YEAR}</span>
+          </div>
+        </div>
+      </aside>
     </div>
   );
 }
