@@ -1,5 +1,3 @@
-import Link from 'next/link';
-
 type Props = {
   email: string;
   joinedAt: string;
@@ -36,17 +34,13 @@ export default function ProfileAccountInfo({ email, joinedAt }: Props) {
       </h3>
       <p className="text-[13px] text-cream/60 mb-5">What we have on your account</p>
 
+      {/* Email and join date are the only two facts the shop actually holds
+          about an account. A hardcoded "Newsletter: Subscribed" row and a
+          "Birthday: Add" row were removed as fiction — there is no mailing
+          list and no consent field on the user, and no surface anywhere
+          collects a birthday. Neither goes back without a field behind it. */}
       <InfoRow label="Email" value={<span title={email}>{email}</span>} truncate />
       <InfoRow label="Member since" value={formatJoined(joinedAt)} />
-      <InfoRow
-        label="Birthday"
-        value={
-          <Link href="/profile?tab=settings" className="text-camel-deep text-xs font-medium border-b border-current">
-            Add
-          </Link>
-        }
-      />
-      <InfoRow label="Newsletter" value="Subscribed" />
     </div>
   );
 }
