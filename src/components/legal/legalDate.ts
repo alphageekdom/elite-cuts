@@ -1,4 +1,4 @@
-// Shared by both legal shells so the two can't drift on this.
+// Shared by both legal pages so the two can't drift on this.
 //
 // The `T00:00:00Z` suffix and the matching `timeZone: 'UTC'` are load-bearing
 // together: a bare `new Date('2026-05-20')` is already UTC midnight, so

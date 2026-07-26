@@ -91,6 +91,12 @@ const QUICK_LINKS = [
   { label: 'Contact', href: '/contact' },
 ] as const;
 
+// The three column headings below are h3, not h4. As h4 they skipped a level
+// on most routes — the heading immediately above the footer is an h2 on
+// /rewards, /our-story, /contact, /login and the legal pages, though / and
+// /products do end on an h3, where h4 was legal. h3 is correct in both cases,
+// since no content heading anywhere on the site goes deeper than h3. The class
+// carries all the styling, so the level is free to be correct.
 const COLUMN_HEADING =
   'mb-6 font-sans text-xs font-medium tracking-[0.16em] uppercase text-camel';
 const COLUMN_LINK =
@@ -126,7 +132,7 @@ const Footer = async () => {
             </div>
 
             <div>
-              <h4 className={COLUMN_HEADING}>Visit</h4>
+              <h3 className={COLUMN_HEADING}>Visit</h3>
               <p className='mb-4 text-sm leading-[1.7] opacity-85'>
                 {settings.street}
                 {settings.suite && (
@@ -150,7 +156,7 @@ const Footer = async () => {
             </div>
 
             <div>
-              <h4 className={COLUMN_HEADING}>Contact</h4>
+              <h3 className={COLUMN_HEADING}>Contact</h3>
               <ul className='flex flex-col gap-3'>
                 <li>
                   <a href={formatPhoneHref(settings.phone)} className={COLUMN_LINK}>
@@ -166,7 +172,7 @@ const Footer = async () => {
             </div>
 
             <div>
-              <h4 className={COLUMN_HEADING}>Quick Links</h4>
+              <h3 className={COLUMN_HEADING}>Quick Links</h3>
               <ul className='flex flex-col gap-3'>
                 {QUICK_LINKS.map(({ label, href }) => (
                   <li key={label}>
