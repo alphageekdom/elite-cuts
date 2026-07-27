@@ -13,7 +13,7 @@ export default function OurStoryCover() {
               fill
               className='object-cover contrast-[1.04] saturate-[0.92]'
               sizes='(max-width: 768px) 100vw, 90vw'
-              priority
+              preload
             />
             <div className='bg-ink/65 text-cream before:bg-camel absolute bottom-4 left-4 inline-flex items-center gap-2.5 rounded-full px-3.5 py-2 font-mono text-[11px] tracking-[0.18em] uppercase backdrop-blur-sm before:h-px before:w-4 before:opacity-80 sm:bottom-6 sm:left-7'>
               The shop · San Diego, March 2018

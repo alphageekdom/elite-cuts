@@ -19,7 +19,7 @@ export default function GrillEventHero({ event }: Props) {
       className="relative -mt-20 flex min-h-[clamp(640px,100vh,960px)] items-center overflow-hidden pt-30 pb-16 text-cream"
     >
       <div className="absolute inset-0 -z-10 scale-105 animate-[heroZoom_20s_ease-in-out_infinite_alternate] motion-reduce:animate-none">
-        <Image src={GrillHeroBg} alt="" fill priority sizes="100vw" className="object-cover" />
+        <Image src={GrillHeroBg} alt="" fill preload sizes="100vw" className="object-cover" />
       </div>
       <div
         aria-hidden="true"
