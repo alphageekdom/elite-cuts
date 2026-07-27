@@ -89,7 +89,11 @@ const PaymentMethodSelector = ({
   // Skip the fetch when the demo Card tile is gated off — picking a saved
   // card routes through that path, and without it the strip should stay
   // empty (Stripe's hosted page handles saved-card pay).
-  const { cards: savedCards } = useSavedCards({
+  const {
+    cards: savedCards,
+    loadError: savedCardsError,
+    retry: retrySavedCards,
+  } = useSavedCards({
     enabled: isLoggedIn && demoCardEnabled,
   });
 
@@ -126,6 +130,28 @@ const PaymentMethodSelector = ({
           Encrypted by Stripe
         </span>
       </div>
+
+      {/* Without this the strip just renders empty on a failed load, which
+          reads as "you have no saved cards" and sends the customer off to
+          re-enter one they already saved. */}
+      {savedCardsError && (
+        <p className='mb-6 text-[12px] text-muted'>
+          Couldn&rsquo;t load your saved cards.{' '}
+          <button
+            type='button'
+            onClick={retrySavedCards}
+            // Unlike the drawer and profile panels — where the retry is the
+            // only control in a block headed by its own error text — this one
+            // sits mid-sentence among the method tiles and card fields, so
+            // tabbing to it would otherwise announce a bare "Try again".
+            aria-label='Try loading your saved cards again'
+            className='underline decoration-line underline-offset-3 transition-colors hover:text-ink focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-ink focus-visible:outline-none'
+          >
+            Try again
+          </button>{' '}
+          or enter a card below.
+        </p>
+      )}
 
       {savedCards.length > 0 && (
         <div className='mb-6'>

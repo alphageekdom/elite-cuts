@@ -24,7 +24,16 @@ type MutationResult = { ok: true } | { ok: false; message: string };
 export type UseSavedCards = {
   cards: SavedCardSummary[];
   loaded: boolean;
-  error: string | null;
+  // Set only by the initial load (and by a failed retry); mutations report
+  // failure through their own MutationResult. Cleared by a successful load
+  // and nothing else — deliberately not by a successful mutation, which
+  // proves the server is reachable but says nothing about `cards` being
+  // complete. A failed load leaves `cards` empty, so clearing on an add
+  // would swap an honest error for a list claiming the customer has exactly
+  // one card. Consumers must render this *instead of* the list and offer
+  // `retry`, which is the only thing that makes the list trustworthy again.
+  loadError: string | null;
+  retry: () => void;
   add: (details: AddCardDetails) => Promise<MutationResult>;
   remove: (id: string) => Promise<MutationResult>;
   updateExpiry: (id: string, expMonth: number, expYear: number) => Promise<MutationResult>;
@@ -33,7 +42,10 @@ export type UseSavedCards = {
 export function useSavedCards({ enabled = true }: { enabled?: boolean } = {}): UseSavedCards {
   const [cards, setCards] = useState<SavedCardSummary[]>([]);
   const [fetched, setFetched] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  // Bumped by `retry` to re-run the load effect. A counter rather than an
+  // imperative loader so the retry keeps the effect's cancellation guard.
+  const [attempt, setAttempt] = useState(0);
   // Disabled callers don't wait on the fetch — derive loaded from enabled so
   // we never need a synchronous setState in the effect body to short-circuit.
   const loaded = !enabled || fetched;
@@ -48,10 +60,11 @@ export function useSavedCards({ enabled = true }: { enabled?: boolean } = {}): U
         const data = (await res.json()) as { items: SavedCardSummary[] };
         if (cancelled) return;
         setCards(data.items);
+        setLoadError(null);
       } catch (err) {
         console.error('[useSavedCards] load failed', err);
         if (cancelled) return;
-        setError('Could not load saved cards.');
+        setLoadError('Could not load saved cards.');
       } finally {
         if (!cancelled) setFetched(true);
       }
@@ -59,17 +72,15 @@ export function useSavedCards({ enabled = true }: { enabled?: boolean } = {}): U
     return () => {
       cancelled = true;
     };
-  }, [enabled]);
+  }, [enabled, attempt]);
 
-  async function refresh(): Promise<void> {
-    try {
-      const res = await fetch('/api/me/payment-methods');
-      if (!res.ok) return;
-      const data = (await res.json()) as { items: SavedCardSummary[] };
-      setCards(data.items);
-    } catch (err) {
-      console.error('[useSavedCards] refresh failed', err);
-    }
+  // Clears the error and drops back to the loading state so a failed load
+  // isn't terminal. Consumers render the error instead of the list, so
+  // without this the only way out is a full page reload.
+  function retry() {
+    setLoadError(null);
+    setFetched(false);
+    setAttempt((n) => n + 1);
   }
 
   async function add(details: AddCardDetails): Promise<MutationResult> {
@@ -83,9 +94,18 @@ export function useSavedCards({ enabled = true }: { enabled?: boolean } = {}): U
         const data = (await res.json().catch(() => ({}))) as { message?: string };
         return { ok: false, message: data.message ?? 'Could not add card' };
       }
-      // Refetch so the newly-added card surfaces with whatever id the server
-      // minted — easier than constructing a synthetic row from the response.
-      await refresh();
+      // The POST echoes the created row, so insert it rather than refetching.
+      // The list is newest-first, so the new card goes on the front.
+      //
+      // A 2xx means the card is saved, so the result stays `ok` even if the
+      // body can't be read — reporting failure there would push the customer
+      // to add it again and hit the duplicate conflict. Worst case the row is
+      // missing until the next load, which is what refetching used to risk.
+      const body = (await res.json().catch(() => null)) as {
+        data?: SavedCardSummary;
+      } | null;
+      const card = body?.data;
+      if (card) setCards((prev) => [card, ...prev]);
       return { ok: true };
     } catch (err) {
       console.error('[useSavedCards] add failed', err);
@@ -135,5 +155,5 @@ export function useSavedCards({ enabled = true }: { enabled?: boolean } = {}): U
     }
   }
 
-  return { cards, loaded, error, add, remove, updateExpiry };
+  return { cards, loaded, loadError, retry, add, remove, updateExpiry };
 }

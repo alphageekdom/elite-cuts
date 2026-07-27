@@ -39,7 +39,8 @@ export const GET = async () => {
 // Real Stripe mode for production would require Stripe Elements / a
 // SetupIntent flow on its own page (PCI scope). This portfolio writes to the
 // local SavedCard collection regardless of mode, same as the Card-tile demo
-// save — the row only surfaces in stub mode (real mode reads from Stripe).
+// save — and `listSavedCards` reads those rows back in both modes, merging
+// them with Stripe-attached cards in real mode, so the row surfaces either way.
 export const POST = async (request: NextRequest) => {
   const sessionUser = await getSessionUser();
   if (!sessionUser?.userId) {
@@ -65,7 +66,7 @@ export const POST = async (request: NextRequest) => {
 
   try {
     const result = await recordTypedCardSave(sessionUser.userId, details);
-    if (result === 'duplicate') {
+    if (result.status === 'duplicate') {
       return NextResponse.json(
         {
           message: `You already have a saved ${details.brand} ending ${details.last4} with that expiry. Use Edit on the existing row to update it.`,
@@ -73,10 +74,10 @@ export const POST = async (request: NextRequest) => {
         { status: 409 },
       );
     }
-    // Existing consumer (useSavedCards) refetches via GET after a successful
-    // POST, so the response body just needs to advertise success. The
-    // `recordTypedCardSave` helper doesn't return the inserted row's id today.
-    return NextResponse.json({ data: { saved: true }, message: 'Card saved' });
+    // Returns the created row so the client can insert it directly instead of
+    // refetching — a failed refetch used to leave the customer with a "Card
+    // added" toast over a list that didn't contain it.
+    return NextResponse.json({ data: result.card, message: 'Card saved' });
   } catch (error) {
     console.error('[me/payment-methods POST]', error);
     return NextResponse.json(

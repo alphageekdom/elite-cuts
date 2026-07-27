@@ -290,7 +290,12 @@ export const validateTypedCardDetails = (
   return { cardholderName, brand, last4, expMonth, expYear };
 };
 
-export type RecordTypedCardResult = 'created' | 'duplicate';
+// The created branch carries the row so callers can render it without a
+// follow-up GET — the id is the one actually written, so Remove/Edit on a
+// freshly-added row hit a real record rather than a synthetic guess.
+export type RecordTypedCardResult =
+  | { status: 'created'; card: SavedCardSummary }
+  | { status: 'duplicate' };
 
 // Writes a SavedCard from typed-in display fields after a Card-tile demo
 // order completes or from the profile Add-card form. The Card tile never
@@ -304,17 +309,18 @@ export const recordTypedCardSave = async (
   details: TypedCardDetails,
 ): Promise<RecordTypedCardResult> => {
   await connectDB();
+  const stubCardId = `card_typed_${randomBytes(8).toString('hex')}`;
   try {
     await SavedCard.create({
       user: userId,
-      stubCardId: `card_typed_${randomBytes(8).toString('hex')}`,
+      stubCardId,
       cardholderName: details.cardholderName,
       brand: details.brand,
       last4: details.last4,
       expMonth: details.expMonth,
       expYear: details.expYear,
     });
-    return 'created';
+    return { status: 'created', card: { id: stubCardId, ...details } };
   } catch (err) {
     // MongoDB duplicate-key error from the unique compound index. Treated as
     // a soft conflict so the checkout path can silently ignore it (the order
@@ -325,7 +331,7 @@ export const recordTypedCardSave = async (
       'code' in err &&
       (err as { code: unknown }).code === 11000
     ) {
-      return 'duplicate';
+      return { status: 'duplicate' };
     }
     throw err;
   }
