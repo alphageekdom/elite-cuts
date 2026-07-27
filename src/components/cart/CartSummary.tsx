@@ -6,12 +6,13 @@ import { useSession } from 'next-auth/react';
 
 import { useCartContext } from '@/context/CartContext';
 import { useShopSettings } from '@/context/ShopSettingsContext';
-import { computeTotals, fmtPrice } from '@/lib/pricing';
+import { computeTotals, fmtPrice, MEMBER_DISCOUNT_RATE } from '@/lib/pricing';
+import { countCartCuts } from '@/lib/cart/counts';
 import { formatReadyIn } from '@/lib/shop-settings/pickup-format';
 import { formatDaysUntil } from '@/lib/announcements/holidays';
 import StoreInfoModal from '@/components/ui/StoreInfoModal';
 import ArrowIcon from '@/components/uielements/ArrowIcon';
-import { CTA_ARROW } from '@/lib/styles';
+import { CTA_ARROW, FOCUS_RING } from '@/lib/styles';
 
 type Props = {
   activeHoliday?: { name: string; daysUntil: number } | null;
@@ -23,10 +24,9 @@ const CartSummary = ({ activeHoliday }: Props) => {
   const { leadTime } = useShopSettings();
   const isLoggedIn = Boolean(session?.user);
 
-  const itemCount = cartItems.reduce(
-    (acc, line) => acc + line.quantity,
-    0,
-  );
+  // Cuts, not lines and not sum-of-quantities — the same number the items
+  // panel prints, so the two can't disagree about what's in the cart.
+  const cutCount = countCartCuts(cartItems);
   const lineCount = cartItems.length;
 
   const totals = useMemo(
@@ -50,7 +50,7 @@ const CartSummary = ({ activeHoliday }: Props) => {
         <dl className='space-y-2.5'>
           <div className='flex items-baseline justify-between text-sm'>
             <dt className='text-ink-soft'>
-              Subtotal{itemCount > 0 ? ` (${itemCount} item${itemCount === 1 ? '' : 's'})` : ''}
+              Subtotal{cutCount > 0 ? ` (${cutCount} cut${cutCount === 1 ? '' : 's'})` : ''}
             </dt>
             <dd className='font-mono text-[13px]'>${fmtPrice(totals.subtotal)}</dd>
           </div>
@@ -60,7 +60,9 @@ const CartSummary = ({ activeHoliday }: Props) => {
           </div>
           {isLoggedIn && (
             <div className='flex items-baseline justify-between text-sm'>
-              <dt className='text-ink-soft'>Member discount (5%)</dt>
+              <dt className='text-ink-soft'>
+                Member discount ({MEMBER_DISCOUNT_RATE * 100}%)
+              </dt>
               <dd className='font-mono text-[13px] text-green'>
                 −${fmtPrice(totals.memberDiscount)}
               </dd>
@@ -85,7 +87,8 @@ const CartSummary = ({ activeHoliday }: Props) => {
         </div>
         {anyEstimated && (
           <p className='mt-2 text-[12px] leading-relaxed text-muted'>
-            Some items are priced by weight. Final price may vary slightly based on actual weight.
+            Some cuts are priced by weight — the final price may vary slightly
+            once they&rsquo;re weighed.
           </p>
         )}
 
@@ -108,13 +111,23 @@ const CartSummary = ({ activeHoliday }: Props) => {
             </p>
           </>
         ) : (
-          <Link
-            href='/checkout'
-            className='group/cta mt-6 flex items-center justify-center gap-3 rounded-full bg-ink px-7 py-4 text-[15px] font-medium tracking-[0.02em] text-cream transition-[background-color,transform] duration-300 hover:-translate-y-px hover:bg-oxblood motion-reduce:transition-none motion-reduce:hover:translate-y-0'
-          >
-            Continue to checkout
-            <ArrowIcon className={CTA_ARROW} />
-          </Link>
+          <>
+            <Link
+              href='/checkout'
+              className='group/cta mt-6 flex items-center justify-center gap-3 rounded-full bg-ink px-7 py-4 text-[15px] font-medium tracking-[0.02em] text-cream transition-[background-color,transform] duration-300 hover:-translate-y-px hover:bg-oxblood motion-reduce:transition-none motion-reduce:hover:translate-y-0'
+            >
+              Continue to checkout
+              <ArrowIcon className={CTA_ARROW} />
+            </Link>
+            {/* "Keep shopping" is the one phrasing — the drawer and the
+                confirmation page both use it. */}
+            <Link
+              href='/products'
+              className={`mt-3 block rounded-sm py-1 text-center text-[13px] text-muted transition-colors duration-300 hover:text-oxblood motion-reduce:transition-none ${FOCUS_RING}`}
+            >
+              Keep shopping
+            </Link>
+          </>
         )}
       </div>
 

@@ -186,16 +186,16 @@ export function useCartExpiry(): CartExpiryState {
   // once the stored expiry is cleared, so this can't re-fire.
   //
   // The announcement waits on the clear rather than racing it: firing first
-  // meant an offline cart showed "items have been released" and "Failed to
-  // clear cart" side by side, with every item still listed behind them.
+  // meant an offline cart claimed it had been cleared while "Failed to clear
+  // cart" sat beside it and every item was still listed behind them.
   useEffect(() => {
     if (secondsLeft !== 0) return;
     setStoredExpiry(null);
     void clearCart({ silent: true }).then((cleared) => {
       toast.error(
         cleared
-          ? 'Your cart has expired — items have been released.'
-          : "Your reservation lapsed, but we couldn't clear the cart — check your connection.",
+          ? 'Your cart timed out and has been cleared.'
+          : "Your cart timed out, but we couldn't clear it — check your connection.",
       );
     });
   }, [secondsLeft, clearCart]);

@@ -14,7 +14,7 @@ import useHandleAddToCart from '@/hooks/useHandleAddToCart';
 import useHandleBookmark from '@/hooks/useHandleBookmark';
 import { productImageSrc, formatMoney } from '@/lib/format';
 import { productPath } from '@/lib/products/paths';
-import { MAX_PER_LINE } from '@/lib/shop-settings/config';
+import { LOW_STOCK_THRESHOLD, MAX_PER_LINE } from '@/lib/shop-settings/config';
 
 import { type SerializedProduct } from '@/models/Product';
 import CartIcon from '@/components/uielements/CartIcon';
@@ -90,9 +90,12 @@ const ProductCard = ({ product, sizes = DEFAULT_SIZES }: ProductCardProps) => {
     weightLabel && product.pricingType !== 'bundle',
   );
 
-  // Stock derivation: > 5 → in stock (green), 1-5 → low (camel), 0 → out (camel + disabled).
+  // Stock derivation: above the low threshold → in stock (green), at or below
+  // it → low (camel), 0 → out (camel + disabled). The cart line reads the same
+  // threshold so a cut can't be called low here and go quiet there.
   const outOfStock = product.stockCount <= 0;
-  const lowStock = product.stockCount > 0 && product.stockCount <= 5;
+  const lowStock =
+    product.stockCount > 0 && product.stockCount <= LOW_STOCK_THRESHOLD;
   const stockLabel = outOfStock
     ? 'Sold out'
     : lowStock

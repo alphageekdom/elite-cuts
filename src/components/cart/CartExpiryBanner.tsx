@@ -26,19 +26,22 @@ export default function CartExpiryBanner({ onVisibleChange }: Props) {
     >
       {/* Announce state transitions only — a live region around the ticking
           countdown would re-announce the whole sentence every second. */}
+      {/* "Reserved / released" overstated what happens: nothing is held back
+          server-side and stock only decrements when an order completes. The
+          cart simply clears, which is what the drawer says. */}
       <span role='status' className='sr-only'>
         {isWarning
-          ? 'Cart reservation expiring soon'
-          : 'Cart items reserved for a limited time'}
+          ? 'Cart clearing soon'
+          : 'Cart is kept for a limited time'}
       </span>
       <div className="max-w-7xl mx-auto flex items-center justify-between px-4 py-2.5 gap-4">
         <p className="text-[13px] font-medium tracking-wide">
           {isWarning ? '⚠ ' : ''}
-          Cart reserved for{' '}
+          Cart&rsquo;s good for{' '}
           <span className="font-mono tabular-nums font-semibold">
             {formatSecondsClock(secondsLeft)}
           </span>
-          {' '}— then items are released.
+          {' '}— after that it clears.
         </p>
 
         <div className="flex items-center gap-3 shrink-0">
