@@ -24,6 +24,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
+    # next.config.mjs refuses to load without this — it scopes the Cloudinary
+    # image pattern to a single account, and quietly falling back to '/**' when
+    # unset would reopen the hole the guard exists to close. Not a secret: the
+    # cloud name appears in every delivery URL. Nothing in this job resolves an
+    # image, so a placeholder satisfies the guard without pinning the real value
+    # into a tracked file.
+    env:
+      CLOUDINARY_CLOUD_NAME: ci-placeholder
+
     steps:
       - uses: actions/checkout@v5
 
@@ -39,7 +48,8 @@ jobs:
       # next-env.d.ts is gitignored but sits in tsconfig's include, so a fresh
       # checkout has no ambient next/image-types declarations and typecheck
       # fails with TS2307 on the static image imports. `next typegen` restores
-      # them without a full build — no env vars, no database.
+      # them without a full build and without a database. It does load
+      # next.config.mjs, which is why the job sets CLOUDINARY_CLOUD_NAME above.
       - name: Generate Next.js types
         run: npx next typegen
 

@@ -173,7 +173,7 @@ export default function ProductGallery({
           fill
           sizes='(min-width: 1280px) 680px, (min-width: 768px) 55vw, 100vw'
           className='object-cover'
-          priority
+          preload
         />
 
         {/* Zoom affordance — signals the image opens full-screen. */}
@@ -222,11 +222,19 @@ export default function ProductGallery({
                     : 'hover:border-line border-transparent'
                 }`}
               >
+                {/* The active thumb sits above the fold beside the main
+                    stage, so lazy was always the wrong value for it. It
+                    also points at the same file, so the two resolve to one
+                    URL — and Next's dev LCP check keys its image map by
+                    that URL, so the lazy thumb, rendered second, overwrote
+                    the main image's eager entry and warned that the LCP
+                    image was lazy. */}
                 <Image
                   src={src}
                   alt=''
                   fill
                   sizes='80px'
+                  loading={isActive ? 'eager' : 'lazy'}
                   className='object-cover'
                 />
               </button>
