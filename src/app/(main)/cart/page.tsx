@@ -102,10 +102,19 @@ const CartPage = async () => {
         </nav>
 
         <header className='flex flex-wrap items-end justify-between gap-8 pt-8 pb-12'>
-          <h1 className='font-display text-[clamp(48px,6vw,84px)] leading-[0.95] font-normal tracking-[-0.03em]'>
-            Your{' '}
-            <em className='font-normal italic text-oxblood'>cart.</em>
-          </h1>
+          <div>
+            <h1 className='font-display text-[clamp(48px,6vw,84px)] leading-[0.95] font-normal tracking-[-0.03em]'>
+              Your{' '}
+              <em className='font-normal italic text-oxblood'>cart.</em>
+            </h1>
+            {/* Names checkout as where the pickup time gets chosen — that
+                control lives there, and saying so here stops the cart page
+                looking like it's missing one. */}
+            <p className='mt-4 max-w-[42ch] text-[15px] leading-relaxed text-ink-soft'>
+              Everything here is cut to order. Look it over, then pick your
+              pickup time at checkout.
+            </p>
+          </div>
 
           <div
             aria-hidden='true'

@@ -342,7 +342,7 @@ export default async function ConfirmationPage({ searchParams }: Props) {
               href='/products'
               className='flex-1 rounded-full bg-ink px-7 py-4 text-center text-[15px] font-medium text-cream transition-colors duration-300 hover:bg-oxblood focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oxblood focus-visible:ring-offset-2 focus-visible:ring-offset-cream motion-reduce:transition-none'
             >
-              Continue shopping
+              Keep shopping
             </Link>
             {!isGuestOrder && (
               <Link
