@@ -55,12 +55,17 @@ export function parseLeadMinutes(value: string): number | null {
 }
 
 // How long until an order is ready, phrased for customer copy — "about 30 min",
-// or "shortly" when the configured lead time doesn't parse. Shared so the
+// or "a short while" when the configured lead time doesn't parse. Shared so the
 // pickup note on a product page and the member benefit on the sign-in panel
 // can't drift on either the wording or the fallback.
+//
+// Every caller composes this after "ready in" / "Pickup ready in", so the
+// fallback has to read grammatically in that slot: "shortly" produced "ready
+// in shortly". Unreachable through the admin select, which offers three
+// parseable options, but leadTime is a free string at the schema layer.
 export function formatReadyIn(leadTime: string): string {
   return parseLeadMinutes(leadTime) === null
-    ? 'shortly'
+    ? 'a short while'
     : `about ${leadTime.trim()}`;
 }
 

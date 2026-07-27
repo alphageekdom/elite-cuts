@@ -45,7 +45,13 @@ export type CartLineProduct = Pick<
   | 'unitPrice'
   | 'bundlePrice'
   | 'includedItems'
->;
+> & {
+  // Deliberately optional rather than part of the Pick: guest carts persisted
+  // to localStorage before this field existed won't carry it, so a missing
+  // value has to mean "stock unknown" (fall back to the per-line cap) rather
+  // than "zero in stock".
+  stockCount?: number;
+};
 
 // Wire / state shape for a cart line. Identical for guest (localStorage) and
 // logged-in (API) paths so every consumer can read one shape regardless of
@@ -71,13 +77,17 @@ type CartContextValue = {
   cartCount: number;
   cartUpdatedAt: Date | null;
   loading: boolean;
+  // True when the last server fetch failed, so consumers can distinguish "cart
+  // is empty" from "we don't know what's in the cart".
+  loadError: boolean;
+  retryLoadCart: () => void;
   addItemToCart: (item: AddItemArg, opts?: { silent?: boolean }) => Promise<void>;
   removeItemFromCart: (
     productId: string,
     opts?: { silent?: boolean },
   ) => Promise<void>;
   setItemQuantity: (productId: string, quantity: number) => Promise<void>;
-  clearCart: (opts?: { silent?: boolean }) => Promise<void>;
+  clearCart: (opts?: { silent?: boolean }) => Promise<boolean>;
   // Local-only reset for flows where the server cart is already known to be
   // empty (e.g. immediately after a successful order). Skips the DELETE call
   // so we don't race a failed network reply into a snapshot-restore that puts
@@ -101,12 +111,22 @@ const readGuestCart = (): CartLine[] => {
   }
 };
 
+// Warned about once per page load: a guest whose storage is blocked or full
+// still sees the item land in the cart, but it won't survive a refresh, and
+// silently losing a built-up cart is worse than saying so.
+let warnedAboutGuestStorage = false;
+
 const writeGuestCart = (items: CartLine[]): void => {
   if (typeof window === 'undefined') return;
   try {
     window.localStorage.setItem(GUEST_CART_KEY, JSON.stringify(items));
   } catch {
-    // localStorage may be disabled / over quota — fail silently
+    if (!warnedAboutGuestStorage) {
+      warnedAboutGuestStorage = true;
+      toast.error(
+        "Your browser is blocking storage — your cart won't survive a refresh.",
+      );
+    }
   }
 };
 
@@ -175,6 +195,30 @@ const setQuantityOnLines = (
 const removeFromLines = (lines: CartLine[], productId: string): CartLine[] =>
   lines.filter((l) => l.product._id !== productId);
 
+// The API's envelope messages are already written for customers ("Only 6 in
+// stock") and pass straight through. The two that aren't: a 401, which arrives
+// as the bare word "Unauthorized", and a dropped connection, where fetch
+// rejects with a TypeError whose message is "Failed to fetch". Both used to be
+// shown verbatim, and the 401 left the drawer looking functional while every
+// press failed with no hint that signing in again was the fix.
+const SESSION_EXPIRED = 'Your session expired — sign in again to keep your cart.';
+const NETWORK_DOWN =
+  "Couldn't reach the shop — check your connection and try again.";
+
+const cartRequestError = async (
+  res: Response,
+  fallback: string,
+): Promise<Error> => {
+  if (res.status === 401) return new Error(SESSION_EXPIRED);
+  const err = (await res.json().catch(() => null)) as { message?: string } | null;
+  return new Error(err?.message ?? fallback);
+};
+
+const cartToastMessage = (error: unknown, fallback: string): string => {
+  if (error instanceof TypeError) return NETWORK_DOWN;
+  return error instanceof Error ? error.message : fallback;
+};
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const { data: session, status } = useSession();
   const isLoggedIn = Boolean(session?.user);
@@ -186,6 +230,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [cartItems, setCartItems] = useState<CartLine[]>([]);
   const [cartUpdatedAt, setCartUpdatedAt] = useState<Date | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   // Tracks the previous auth status across renders so we can detect the
   // unauthenticated → authenticated transition and run merge-on-login exactly
@@ -210,8 +255,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const data = (await res.json()) as CartApiResponse;
       setCartItems(dedupeLines(data.items ?? []));
       setCartUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : null);
+      setLoadError(false);
       clearGuestCart();
     } catch (error) {
+      // Surfaced so the drawer can say "we couldn't load your cart" instead of
+      // rendering the empty state, which told customers with items on the
+      // server that their cart was empty.
+      setLoadError(true);
       console.error('Error loading cart:', error);
     } finally {
       hydratingRef.current = false;
@@ -337,18 +387,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
           credentials: 'include',
           body: JSON.stringify({ productId: product._id, quantity: addBy }),
         });
-        if (!res.ok) {
-          const err = (await res.json().catch(() => null)) as { message?: string } | null;
-          throw new Error(err?.message ?? 'Failed to add item to cart');
-        }
+        if (!res.ok) throw await cartRequestError(res, 'Failed to add item to cart');
         const data = (await res.json()) as CartApiResponse;
         setCartItems(data.items ?? []);
         setCartUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : null);
+        // A successful round trip proves the server is reachable, so a stale
+        // load failure must not keep claiming the cart couldn't be loaded —
+        // otherwise emptying the cart after a recovered failure shows the
+        // error panel instead of the empty state.
+        setLoadError(false);
         if (!silent) toast.success('Item added to cart');
       } catch (error) {
         setCartItems(snapshot);
         console.error('Error adding item to cart:', error);
-        toast.error(error instanceof Error ? error.message : 'Failed to add item to cart');
+        toast.error(cartToastMessage(error, 'Failed to add item to cart'));
       }
     },
     [isLoggedIn, cartItems],
@@ -378,17 +430,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
           credentials: 'include',
           body: JSON.stringify({ productId, quantity: next }),
         });
-        if (!res.ok) {
-          const err = (await res.json().catch(() => null)) as { message?: string } | null;
-          throw new Error(err?.message ?? 'Failed to update quantity');
-        }
+        if (!res.ok) throw await cartRequestError(res, 'Failed to update quantity');
         const data = (await res.json()) as CartApiResponse;
         setCartItems(data.items ?? []);
         setCartUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : null);
+        // A successful round trip proves the server is reachable, so a stale
+        // load failure must not keep claiming the cart couldn't be loaded —
+        // otherwise emptying the cart after a recovered failure shows the
+        // error panel instead of the empty state.
+        setLoadError(false);
       } catch (error) {
         setCartItems(snapshot);
         console.error('Error updating quantity:', error);
-        toast.error(error instanceof Error ? error.message : 'Failed to update quantity');
+        toast.error(cartToastMessage(error, 'Failed to update quantity'));
       }
     },
     [isLoggedIn, cartItems],
@@ -418,15 +472,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
           credentials: 'include',
           body: JSON.stringify({ productId }),
         });
-        if (!res.ok) throw new Error('Failed to remove item');
+        if (!res.ok) throw await cartRequestError(res, 'Failed to remove item');
         const data = (await res.json()) as CartApiResponse;
         setCartItems(data.items ?? []);
         setCartUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : null);
+        // A successful round trip proves the server is reachable, so a stale
+        // load failure must not keep claiming the cart couldn't be loaded —
+        // otherwise emptying the cart after a recovered failure shows the
+        // error panel instead of the empty state.
+        setLoadError(false);
         if (!silent) toast.success('Item removed from cart');
       } catch (error) {
         setCartItems(snapshot);
         console.error('Error removing item:', error);
-        toast.error('Failed to remove item from cart');
+        toast.error(cartToastMessage(error, 'Failed to remove item from cart'));
       }
     },
     [isLoggedIn, cartItems],
@@ -438,6 +497,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     clearGuestCart();
   }, []);
 
+  // Resolves to whether the cart actually cleared, so callers that announce the
+  // outcome (the expiry timer) can't claim a release that failed.
   const clearCart = useCallback(async (opts?: { silent?: boolean }) => {
     const silent = opts?.silent ?? false;
 
@@ -446,7 +507,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setCartItems([]);
       setCartUpdatedAt(null);
       if (!silent) toast.success('Cart cleared');
-      return;
+      return true;
     }
 
     // Logged-in: single atomic DELETE (no body = clear all) avoids concurrent
@@ -456,19 +517,28 @@ export function CartProvider({ children }: { children: ReactNode }) {
       snapshot = prev;
       return [];
     });
-    setCartUpdatedAt(null);
+    let updatedAtSnapshot: Date | null = null;
+    setCartUpdatedAt((prev) => {
+      updatedAtSnapshot = prev;
+      return null;
+    });
     try {
       const res = await fetch('/api/cart', {
         method: 'DELETE',
         credentials: 'include',
       });
-      if (!res.ok) throw new Error('Failed to clear cart');
+      if (!res.ok) throw await cartRequestError(res, 'Failed to clear cart');
       if (!silent) toast.success('Cart cleared');
+      return true;
     } catch (error) {
       setCartItems(snapshot);
-      setCartUpdatedAt(new Date());
+      // Restore the original timestamp rather than stamping now: a fresh `new
+      // Date()` here re-anchored a full 30-minute reservation off the back of a
+      // failure, so an offline cart never actually expired — it just looped.
+      setCartUpdatedAt(updatedAtSnapshot);
       console.error('Error clearing cart:', error);
-      toast.error('Failed to clear cart');
+      toast.error(cartToastMessage(error, 'Failed to clear cart'));
+      return false;
     }
   }, [isLoggedIn]);
 
@@ -478,6 +548,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
       cartCount: cartItems.length,
       cartUpdatedAt,
       loading,
+      loadError,
+      retryLoadCart: fetchServerCart,
       addItemToCart,
       removeItemFromCart,
       setItemQuantity,
@@ -488,6 +560,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
       cartItems,
       cartUpdatedAt,
       loading,
+      loadError,
+      fetchServerCart,
       addItemToCart,
       removeItemFromCart,
       setItemQuantity,

@@ -1,5 +1,12 @@
 @import 'tailwindcss';
 
+/* Height-based variant for surfaces with pinned chrome. The cart drawer pins a
+   header and a footer around a scrolling middle; below this height their
+   combined height exceeded the viewport and pushed the checkout button off
+   screen entirely on landscape phones. 600px clears portrait phones (the
+   shortest, iPhone SE, is 667) so only genuinely short viewports degrade. */
+@custom-variant short (@media (max-height: 600px));
+
 @theme {
   --color-cream: #f4eee4;
   --color-cream-deep: #ebe3d5;
@@ -30,6 +37,20 @@
 }
 
 @layer base {
+  /* Reserve the scrollbar gutter permanently so opening a modal — which locks
+     the body with `overflow: hidden` — doesn't reclaim the scrollbar's width
+     and shift the whole page sideways underneath the overlay. Affects every
+     `useScrollLock` consumer (cart drawer, mobile menu, admin drawer, the two
+     modals) at once.
+
+     Done in CSS rather than by padding the body in JS: the padding approach
+     has to measure the current padding to add to it, which compounds if the
+     effect ever re-runs while locked — measured at double on a 15px scrollbar.
+     Invisible on macOS/iOS, which use overlay scrollbars and reserve nothing. */
+  html {
+    scrollbar-gutter: stable;
+  }
+
   /* Tailwind's preflight leaves placeholders at `currentColor` mixed 50% with
      transparent. Against our ink-on-cream forms that lands around 3.3:1 —
      under the 4.5:1 floor — and it applies to every input that doesn't set a

@@ -17,7 +17,7 @@ import ProfileExpiryEditForm from './ProfileExpiryEditForm';
 export default function ProfilePaymentMethods() {
   const { data: session } = useSession();
   const isDemo = Boolean(session?.user?.isDemo);
-  const { cards, loaded, error, add, remove, updateExpiry } = useSavedCards();
+  const { cards, loaded, loadError, retry, add, remove, updateExpiry } = useSavedCards();
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -71,10 +71,19 @@ export default function ProfilePaymentMethods() {
     toast.success('Expiry updated');
   }
 
-  if (error) {
+  // Renders instead of the list, never alongside it — a failed load leaves
+  // `cards` empty, and an empty list here would read as "no cards on file".
+  if (loadError) {
     return (
-      <div className='bg-paper border border-line-soft rounded p-6 text-[14px] text-ink-soft'>
-        {error}
+      <div className='bg-paper border border-line-soft rounded p-6'>
+        <p className='text-[14px] text-ink-soft'>{loadError}</p>
+        <button
+          type='button'
+          onClick={retry}
+          className='mt-3 text-[12px] tracking-[0.08em] uppercase text-ink hover:text-oxblood transition-colors border-b border-current pb-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:rounded-sm'
+        >
+          Try again
+        </button>
       </div>
     );
   }

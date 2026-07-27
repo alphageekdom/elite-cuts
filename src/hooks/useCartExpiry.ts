@@ -10,8 +10,19 @@ import {
 import { toast } from 'sonner';
 import { useCartContext } from '@/context/CartContext';
 
-const CART_TTL_MS = 30 * 60 * 1000;
+// The reservation window, shared so the countdown and any copy quoting the
+// figure ("held for 30 minutes") can't drift apart.
+export const CART_TTL_MS = 30 * 60 * 1000;
+export const CART_TTL_MINUTES = CART_TTL_MS / 60_000;
+
 const EXPIRY_KEY = 'cartExpiresAt';
+
+// "12:41". Shared by the global banner and the drawer's own chip so the two
+// countdowns on screen at once can't format the same second differently.
+export function formatSecondsClock(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes}:${String(seconds % 60).padStart(2, '0')}`;
+}
 
 // expiresAt lives in localStorage so the cart timer survives page navigation and
 // stays consistent across tabs. A module-level subscription set notifies React
@@ -25,12 +36,21 @@ function subscribeExpiry(listener: () => void) {
   };
 }
 
+// Both storage helpers swallow access errors the way the guest-cart helpers in
+// CartContext already do. `getStoredExpiry` is the useSyncExternalStore
+// snapshot, so it runs during render on every page that mounts the cart chrome
+// — an unguarded throw (Chrome's "block all cookies", strict webviews) took the
+// whole site down via the root error boundary, not just the cart.
 function getStoredExpiry(): number | null {
   if (typeof window === 'undefined') return null;
-  const stored = window.localStorage.getItem(EXPIRY_KEY);
-  if (!stored) return null;
-  const ts = parseInt(stored, 10);
-  return Number.isFinite(ts) ? ts : null;
+  try {
+    const stored = window.localStorage.getItem(EXPIRY_KEY);
+    if (!stored) return null;
+    const ts = parseInt(stored, 10);
+    return Number.isFinite(ts) ? ts : null;
+  } catch {
+    return null;
+  }
 }
 
 function getServerExpiry(): number | null {
@@ -39,28 +59,40 @@ function getServerExpiry(): number | null {
 
 function setStoredExpiry(value: number | null) {
   if (typeof window === 'undefined') return;
-  if (value === null) {
-    window.localStorage.removeItem(EXPIRY_KEY);
-  } else {
-    window.localStorage.setItem(EXPIRY_KEY, String(value));
+  try {
+    if (value === null) {
+      window.localStorage.removeItem(EXPIRY_KEY);
+    } else {
+      window.localStorage.setItem(EXPIRY_KEY, String(value));
+    }
+  } catch {
+    // Storage blocked or over quota — the timer degrades to the static hold
+    // copy, which under-promises rather than lying.
   }
   expiryListeners.forEach((l) => l());
 }
 
-export type CartExpiryState = {
+export type CartExpiryClock = {
+  expiresAt: number | null;
   secondsLeft: number | null;
   percentLeft: number;
   isWarning: boolean;
+};
+
+export type CartExpiryState = CartExpiryClock & {
   dismissed: boolean;
   dismiss: () => void;
 };
 
-export function useCartExpiry(): CartExpiryState {
-  const { cartItems, cartUpdatedAt, clearCart } = useCartContext();
+// Read-only view of the reservation timer: subscribes to the stored expiry and
+// ticks a local clock, nothing more. Deliberately owns none of the anchoring or
+// expiry cleanup — those stay in `useCartExpiry` below, which exactly one
+// consumer mounts. A second reader running the full hook would fire the expiry
+// toast twice and call clearCart twice when the timer crossed zero.
+export function useCartExpiryClock(): CartExpiryClock {
+  const { cartItems } = useCartContext();
   const hasItems = cartItems.length > 0;
 
-  // expiresAt is sourced from localStorage; React state is for the tick clock
-  // and the per-anchor dismissal flag.
   const expiresAt = useSyncExternalStore(
     subscribeExpiry,
     getStoredExpiry,
@@ -71,6 +103,45 @@ export function useCartExpiry(): CartExpiryState {
     typeof window === 'undefined' ? 0 : Date.now(),
   );
 
+  // Tick the clock once per second while the timer is live.
+  useEffect(() => {
+    if (expiresAt === null || !hasItems) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [expiresAt, hasItems]);
+
+  // Capped at the TTL: `now` only advances while the interval runs, so a timer
+  // re-anchored after an idle stretch would otherwise render a remaining time
+  // larger than the window the copy promises ("30:11" against a 30-minute
+  // hold). The ceil also makes a freshly-anchored timer read 30:01 without it.
+  const secondsLeft =
+    expiresAt === null || !hasItems || now === 0
+      ? null
+      : Math.min(
+          CART_TTL_MS / 1000,
+          Math.max(0, Math.ceil((expiresAt - now) / 1000)),
+        );
+
+  const percentLeft =
+    expiresAt !== null && now > 0
+      ? Math.max(0, Math.min(100, ((expiresAt - now) / CART_TTL_MS) * 100))
+      : 100;
+
+  const isWarning = secondsLeft !== null && secondsLeft <= 300;
+
+  return { expiresAt, secondsLeft, percentLeft, isWarning };
+}
+
+// Full timer: the clock above plus ownership of anchoring, expiry cleanup and
+// the per-anchor dismissal flag. Mount this in exactly one place
+// (CartExpiryBanner); every other reader wants `useCartExpiryClock`.
+export function useCartExpiry(): CartExpiryState {
+  const { cartItems, cartUpdatedAt, clearCart } = useCartContext();
+  const hasItems = cartItems.length > 0;
+
+  const clock = useCartExpiryClock();
+  const { expiresAt, secondsLeft } = clock;
+
   // dismissed is keyed by the anchor it was dismissed against — when the anchor
   // changes (new cart mutation), the warning re-appears automatically without a
   // reset effect.
@@ -79,13 +150,6 @@ export function useCartExpiry(): CartExpiryState {
   // Tracks whether we've already processed the initial cartUpdatedAt for this
   // session so subsequent changes are treated as real mutations (timer reset).
   const initializedRef = useRef(false);
-
-  // Tick the clock once per second while the timer is live.
-  useEffect(() => {
-    if (expiresAt === null || !hasItems) return;
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, [expiresAt, hasItems]);
 
   // When the cart empties: clear stored expiry and let the next add re-init.
   useEffect(() => {
@@ -118,31 +182,29 @@ export function useCartExpiry(): CartExpiryState {
     setStoredExpiry(Date.now() + CART_TTL_MS);
   }, [cartUpdatedAt, hasItems, clearCart]);
 
-  // Cleanup when the timer crosses zero.
+  // Cleanup when the timer crosses zero. secondsLeft floors at 0 and goes null
+  // once the stored expiry is cleared, so this can't re-fire.
+  //
+  // The announcement waits on the clear rather than racing it: firing first
+  // meant an offline cart showed "items have been released" and "Failed to
+  // clear cart" side by side, with every item still listed behind them.
   useEffect(() => {
-    if (expiresAt === null || !hasItems) return;
-    if (now < expiresAt) return;
+    if (secondsLeft !== 0) return;
     setStoredExpiry(null);
-    toast.error('Your cart has expired — items have been released.');
-    void clearCart({ silent: true });
-  }, [now, expiresAt, hasItems, clearCart]);
+    void clearCart({ silent: true }).then((cleared) => {
+      toast.error(
+        cleared
+          ? 'Your cart has expired — items have been released.'
+          : "Your reservation lapsed, but we couldn't clear the cart — check your connection.",
+      );
+    });
+  }, [secondsLeft, clearCart]);
 
   const dismiss = useCallback(() => {
     setDismissedFor(expiresAt);
   }, [expiresAt]);
 
-  const secondsLeft =
-    expiresAt === null || !hasItems || now === 0
-      ? null
-      : Math.max(0, Math.ceil((expiresAt - now) / 1000));
-
-  const percentLeft =
-    expiresAt !== null && now > 0
-      ? Math.max(0, Math.min(100, ((expiresAt - now) / CART_TTL_MS) * 100))
-      : 100;
-
-  const isWarning = secondsLeft !== null && secondsLeft <= 300;
   const dismissed = dismissedFor !== null && dismissedFor === expiresAt;
 
-  return { secondsLeft, percentLeft, isWarning, dismissed, dismiss };
+  return { ...clock, dismissed, dismiss };
 }
