@@ -107,6 +107,23 @@ describe('computeAward', () => {
       computeAward(10, settings({ weekendMultiplier: 0.5 }), SATURDAY),
     ).toBe(10);
   });
+
+  // The cart drawer shows an earn estimate before the order exists, but the
+  // real award lands at fulfillment and applies the multiplier for *that*
+  // date. Estimating with the multiplier neutralised keeps the shown number a
+  // floor the shop can always honour: browse Saturday with a 2× weekend rate,
+  // pick up Monday, and the drawer must not have promised the doubled figure.
+  it('yields a floor estimate when the weekend multiplier is neutralised', () => {
+    const live = settings({ pointsPerDollar: 1, weekendMultiplier: 2 });
+    const neutralised = { ...live, weekendMultiplier: 1 };
+
+    expect(computeAward(100, live, SATURDAY)).toBe(200);
+    expect(computeAward(100, neutralised, SATURDAY)).toBe(100);
+    // And the floor never exceeds what a weekday fulfillment actually awards.
+    expect(computeAward(100, neutralised, SATURDAY)).toBe(
+      computeAward(100, live, FRIDAY),
+    );
+  });
 });
 
 describe('computeRedemption', () => {

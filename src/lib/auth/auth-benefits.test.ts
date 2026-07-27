@@ -84,9 +84,12 @@ describe('the pickup lead time', () => {
   });
 
   // Shares the product page's fallback rather than printing a broken string.
+  // The phrase has to survive being composed after "ready in" elsewhere (the
+  // cart drawer, the catalog hero), which the previous "shortly" did not —
+  // it read as "ready in shortly".
   it('degrades to a vague phrase when the lead time is unparseable', () => {
     expect(titleOf({ ...base, leadTime: 'whenever' }, '02')).toBe(
-      'Pickup shortly',
+      'Pickup a short while',
     );
   });
 });

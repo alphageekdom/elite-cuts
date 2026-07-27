@@ -4,9 +4,12 @@ type Stat = { value: string; label: string };
 
 type CatalogHeroProps = {
   stats: readonly Stat[];
+  // Settings-derived ("about 30 min"); the copy used to hard-code "about an
+  // hour", double the configured lead time.
+  readyIn: string;
 };
 
-const CatalogHero = ({ stats }: CatalogHeroProps) => (
+const CatalogHero = ({ stats, readyIn }: CatalogHeroProps) => (
   <section className='bg-cream pt-36 pb-20 md:pt-40 md:pb-24'>
     <div className='mx-auto w-full max-w-7xl px-6 md:px-8'>
       <SectionEyebrow label='The Shop' className='mb-12' />
@@ -16,8 +19,8 @@ const CatalogHero = ({ stats }: CatalogHeroProps) => (
           The <em className='font-normal italic text-oxblood'>counter.</em>
         </h1>
         <p className='max-w-[42ch] pb-3 text-[16px] leading-[1.65] text-ink-soft'>
-          Browse our full case — fresh today, hand-cut to order. Pickup ready in
-          about an hour, or schedule it for whenever suits.
+          Browse our full case — fresh today, hand-cut to order. Pickup ready in{' '}
+          {readyIn}, or schedule it for whenever suits.
         </p>
       </div>
 

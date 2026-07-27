@@ -2,17 +2,11 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { useCartExpiry } from '@/hooks/useCartExpiry';
+import { useCartExpiry, formatSecondsClock } from '@/hooks/useCartExpiry';
 
 type Props = {
   onVisibleChange?: (visible: boolean) => void;
 };
-
-function fmt(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${String(s).padStart(2, '0')}`;
-}
 
 export default function CartExpiryBanner({ onVisibleChange }: Props) {
   const { secondsLeft, percentLeft, isWarning, dismissed, dismiss } = useCartExpiry();
@@ -42,7 +36,7 @@ export default function CartExpiryBanner({ onVisibleChange }: Props) {
           {isWarning ? '⚠ ' : ''}
           Cart reserved for{' '}
           <span className="font-mono tabular-nums font-semibold">
-            {fmt(secondsLeft)}
+            {formatSecondsClock(secondsLeft)}
           </span>
           {' '}— then items are released.
         </p>

@@ -16,6 +16,8 @@ import ResultsBar from '@/components/product/ResultsBar';
 import HolidayBanner from '@/components/holiday/HolidayBanner';
 import GrillEventBanner from '@/components/grill-event/GrillEventBanner';
 import { getActiveEvent } from '@/lib/events/queries';
+import { getShopSettings } from '@/lib/shop-settings/queries';
+import { formatReadyIn } from '@/lib/shop-settings/pickup-format';
 import {
   PAGE_SIZE,
   isCategoryFilter,
@@ -215,9 +217,11 @@ const ProductsPage = async ({
     { value: avgRating > 0 ? avgRating.toFixed(1) : '—', label: 'Avg rating' },
   ] as const;
 
+  const shopSettings = await getShopSettings();
+
   return (
     <>
-      <CatalogHero stats={stats} />
+      <CatalogHero stats={stats} readyIn={formatReadyIn(shopSettings.leadTime)} />
       <div className='space-y-2 bg-cream'>
         {activeEvent && <GrillEventBanner event={activeEvent} />}
         <HolidayBanner activeEvent={activeEvent} />

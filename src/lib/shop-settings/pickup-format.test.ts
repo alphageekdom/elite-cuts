@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { ShopHoursDay } from '@/models/ShopHours';
 import {
   formatClockMinutes,
+  formatReadyIn,
   getPickupNote,
   parseClockMinutes,
   parseLeadMinutes,
@@ -161,5 +162,26 @@ describe('getPickupNote', () => {
       now: WED_NOON,
     });
     expect(note.timing).toBe('Same-day pickup');
+  });
+});
+
+describe('formatReadyIn', () => {
+  it('prefixes a parseable lead time with "about"', () => {
+    expect(formatReadyIn('30 min')).toBe('about 30 min');
+    expect(formatReadyIn('2 hours')).toBe('about 2 hours');
+  });
+
+  it('trims surrounding whitespace from the configured value', () => {
+    expect(formatReadyIn('  45 min  ')).toBe('about 45 min');
+  });
+
+  // Every caller composes this after "ready in" / "Pickup ready in", so the
+  // fallback has to be grammatical in that slot. The previous 'shortly' read
+  // as "ready in shortly" on the cart drawer and the catalog hero.
+  it('falls back to a phrase that reads correctly after "ready in"', () => {
+    expect(`ready in ${formatReadyIn('whenever')}`).toBe(
+      'ready in a short while',
+    );
+    expect(formatReadyIn('')).toBe('a short while');
   });
 });

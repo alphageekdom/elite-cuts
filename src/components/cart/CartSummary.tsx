@@ -5,7 +5,9 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 
 import { useCartContext } from '@/context/CartContext';
+import { useShopSettings } from '@/context/ShopSettingsContext';
 import { computeTotals, fmtPrice } from '@/lib/pricing';
+import { formatReadyIn } from '@/lib/shop-settings/pickup-format';
 import { formatDaysUntil } from '@/lib/announcements/holidays';
 import StoreInfoModal from '@/components/ui/StoreInfoModal';
 import ArrowIcon from '@/components/uielements/ArrowIcon';
@@ -18,6 +20,7 @@ type Props = {
 const CartSummary = ({ activeHoliday }: Props) => {
   const { cartItems } = useCartContext();
   const { data: session } = useSession();
+  const { leadTime } = useShopSettings();
   const isLoggedIn = Boolean(session?.user);
 
   const itemCount = cartItems.reduce(
@@ -155,7 +158,7 @@ const CartSummary = ({ activeHoliday }: Props) => {
             <circle cx='12' cy='12' r='9' />
             <polyline points='12 6 12 12 16 14' />
           </svg>
-          ~1 hr pickup
+          Ready in {formatReadyIn(leadTime)}
         </li>
       </ul>
 
