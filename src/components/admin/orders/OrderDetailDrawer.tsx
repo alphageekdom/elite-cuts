@@ -12,6 +12,7 @@ import {
   realizedOrderTotal,
 } from '@/lib/orders/line';
 import { DELIVERY_FEE } from '@/lib/pricing';
+import { formatPickupLocation } from '@/lib/shop-settings/pickup-slots';
 import AdminEyebrow from '@/components/admin/AdminEyebrow';
 import SortPopover, { type SortOption } from '@/components/ui/SortPopover';
 import type { OrderTableRow } from '@/types/admin';
@@ -568,7 +569,7 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
           <div className="flex flex-col gap-2">
             {[
               { l: 'Method', v: order.fulfillmentType === 'delivery' ? 'DELIVERY' : 'PICKUP' },
-              { l: 'Location', v: order.pickupLocation || 'San Diego, CA' },
+              { l: 'Location', v: formatPickupLocation(order.pickupLocation || 'San Diego, CA') },
               { l: 'Paid with', v: order.paymentMethod || '—' },
               { l: 'Payment', v: (order.paymentStatus ?? (order.isPaid ? 'Completed' : 'Pending')).toUpperCase() },
               { l: 'Picked up', v: order.pickedUp ? 'Yes' : 'Awaiting' },

@@ -11,6 +11,7 @@ import { EMAIL_RE } from '@/lib/validation';
 import { validatePromo } from '@/lib/promos/validate';
 import { MAX_PER_LINE } from '@/lib/shop-settings/config';
 import { getShopSettings } from '@/lib/shop-settings/queries';
+import { isPickupSlotId } from '@/lib/shop-settings/pickup-slots';
 import { applyRedemption } from '@/lib/rewards/calculator';
 import {
   buildOrderItemsFromCart,
@@ -172,6 +173,13 @@ export const POST = async (request: NextRequest) => {
     }
     if (body.orderNotes && body.orderNotes.length > 1000) {
       return NextResponse.json({ message: 'orderNotes too long' }, { status: 400 });
+    }
+    // The receipt, the admin order drawer and the admin schedule's pickup
+    // buckets all parse this back into a Date. Anything else stored here
+    // surfaces as "Invalid Date" or a NaN hour on those surfaces, so refuse
+    // it at the door rather than making each reader defend itself.
+    if (body.pickupSlot && !isPickupSlotId(body.pickupSlot)) {
+      return NextResponse.json({ message: 'Invalid pickupSlot format' }, { status: 400 });
     }
 
     const userId = sessionUser?.userId;

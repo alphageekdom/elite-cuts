@@ -15,6 +15,7 @@ import {
   formatWebsiteDisplay,
   getShopSettings,
 } from '@/lib/shop-settings/queries';
+import { formatPickupWindow } from '@/lib/shop-settings/pickup-slots';
 import { RECEIPT_ORDER_STATUS_STYLES } from '@/lib/orders/status';
 import ReceiptToolbar from './ReceiptToolbar';
 import ReceiptHeader from './ReceiptHeader';
@@ -102,11 +103,7 @@ export default async function ReceiptPage({ params }: Props) {
   const displayPhone = order.contactPhone ?? null;
 
   const pickupWindow = order.pickupSlot
-    ? (() => {
-        const d = new Date(order.pickupSlot!);
-        const next = new Date(d.getTime() + 3600000);
-        return `${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} – ${next.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
-      })()
+    ? formatPickupWindow(order.pickupSlot)
     : null;
 
   const pillCls = RECEIPT_ORDER_STATUS_STYLES[order.orderStatus] ?? 'bg-line-soft text-muted';
