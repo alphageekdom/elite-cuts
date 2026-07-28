@@ -1,63 +1,55 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useCheckoutContext } from '@/context/CheckoutContext';
 import { useShopSettings } from '@/context/ShopSettingsContext';
 import { formatShopAddress } from '@/lib/shop-settings/format';
 import { formatReadyIn } from '@/lib/shop-settings/pickup-format';
+import type { PickupDay } from '@/lib/shop-settings/pickup-slots';
 import { BLOCK_LABEL_CLASS } from '@/components/checkout/checkoutStyles';
 import DeliveryAddressForm from '@/components/checkout/DeliveryAddressForm';
 import { DELIVERY_RADIUS_MILES } from '@/lib/shop-settings/config';
+import { DELIVERY_FEE } from '@/lib/pricing';
 
-const SLOT_DEFINITIONS = [
-  { id: '10-11a', label: '10–11a', startHour: 10 },
-  { id: '11a-12p', label: '11a–12p', startHour: 11, spots: 5 },
-  { id: '12-1p', label: '12–1p', startHour: 12 },
-  { id: '1-2p', label: '1–2p', startHour: 13 },
-  { id: '2-3p', label: '2–3p', startHour: 14 },
-  { id: '3-4p', label: '3–4p', startHour: 15 },
-  { id: '4-5p', label: '4–5p', startHour: 16 },
-  { id: '5-6p', label: '5–6p', startHour: 17 },
-] as const;
+type FulfillmentToggleProps = {
+  // Built on the server from real shop hours — see pickup-slots.ts for why
+  // this isn't derived here.
+  pickupDays: PickupDay[];
+  // Why today isn't among them, when it isn't. Null on an ordinary day.
+  todayNote: string | null;
+};
 
-const FulfillmentToggle = () => {
+const FulfillmentToggle = ({
+  pickupDays,
+  todayNote,
+}: FulfillmentToggleProps) => {
   const { state, dispatch } = useCheckoutContext();
   const { fulfillment, pickupSlot } = state;
   const shopSettings = useShopSettings();
   const shopAddress = formatShopAddress(shopSettings);
 
-  const currentHour = useMemo(() => new Date().getHours(), []);
+  const [selectedDayId, setSelectedDayId] = useState(pickupDays[0]?.id ?? '');
 
-  const todayLabel = useMemo(
-    () =>
-      new Date().toLocaleDateString('en-US', {
-        weekday: 'long',
-        month: 'short',
-        day: 'numeric',
-      }),
-    [],
-  );
+  // Derived, not synced: if the selection no longer matches a day the server
+  // sent, the first one wins rather than leaving the grid pointing at nothing.
+  const activeDay =
+    pickupDays.find((day) => day.id === selectedDayId) ?? pickupDays[0];
 
-  const slots = useMemo(
-    () =>
-      SLOT_DEFINITIONS.map((s) => ({
-        ...s,
-        past: currentHour >= s.startHour,
-      })),
-    [currentHour],
-  );
-
-  // Persist the auto-selected slot to context so the POST body always includes it
+  // Keep context holding a slot that actually exists on the visible day, so
+  // the POST body can never carry a window from a day the customer moved off.
   useEffect(() => {
-    if (fulfillment !== 'pickup' || pickupSlot) return;
-    const firstAvailable = slots.find((s) => !s.past);
-    if (firstAvailable) {
-      dispatch({ type: 'SET_PICKUP_SLOT', payload: firstAvailable.id });
+    if (fulfillment !== 'pickup' || !activeDay) return;
+    const stillValid = activeDay.slots.some((slot) => slot.id === pickupSlot);
+    if (!stillValid) {
+      dispatch({ type: 'SET_PICKUP_SLOT', payload: activeDay.slots[0].id });
     }
-  }, [fulfillment, pickupSlot, slots, dispatch]);
+  }, [fulfillment, pickupSlot, activeDay, dispatch]);
 
-  const effectiveSlot = pickupSlot || (slots.find((s) => !s.past)?.id ?? '');
+  const effectiveSlot =
+    activeDay?.slots.some((slot) => slot.id === pickupSlot) === true
+      ? pickupSlot
+      : (activeDay?.slots[0]?.id ?? '');
 
   return (
     <div className='rounded-sm border border-line-soft bg-paper px-5 py-7 sm:px-8 sm:py-8'>
@@ -147,65 +139,99 @@ const FulfillmentToggle = () => {
                 fulfillment === 'delivery' ? 'text-camel-soft' : 'text-muted'
               }`}
             >
-              $8 · SAME DAY
+              ${DELIVERY_FEE} · SAME DAY
             </div>
           </div>
         </button>
       </div>
 
-      {fulfillment === 'pickup' && (
-        <div>
-          <label className={BLOCK_LABEL_CLASS}>
-            Pickup time · {todayLabel}
-          </label>
-          <div className='mb-8 grid grid-cols-2 gap-2 sm:grid-cols-4'>
-            {slots.map((slot) => {
-              const isSelected = effectiveSlot === slot.id;
-              const meta = slot.past
-                ? 'PAST'
-                : isSelected
-                  ? 'SELECTED'
-                  : 'spots' in slot
-                    ? `${slot.spots} LEFT`
-                    : 'OPEN';
+      {fulfillment === 'pickup' &&
+        (activeDay ? (
+          <div>
+            <div className='mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2'>
+              <label className={`${BLOCK_LABEL_CLASS} mb-0`} id='pickup-time-label'>
+                Pickup time
+              </label>
+              {pickupDays.length > 1 ? (
+                <div
+                  role='group'
+                  aria-label='Pickup day'
+                  className='flex flex-wrap gap-2'
+                >
+                  {pickupDays.map((day) => {
+                    const isActive = day.id === activeDay.id;
+                    return (
+                      <button
+                        key={day.id}
+                        type='button'
+                        aria-pressed={isActive}
+                        onClick={() => setSelectedDayId(day.id)}
+                        className={`inline-flex min-h-11 items-center rounded-full border px-3.5 text-[12px] transition-[background-color,border-color,color] duration-300 motion-reduce:transition-none ${
+                          isActive
+                            ? 'border-camel-deep bg-camel/12 text-camel-deep'
+                            : 'border-line text-ink-soft hover:border-ink hover:text-ink'
+                        }`}
+                      >
+                        {day.relativeLabel} · {day.dateLabel}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <span className='text-[12px] text-muted'>
+                  {activeDay.relativeLabel} · {activeDay.dateLabel}
+                </span>
+              )}
+            </div>
 
-              return (
-                <button
-                  key={slot.id}
-                  type='button'
-                  disabled={slot.past}
-                  onClick={() => dispatch({ type: 'SET_PICKUP_SLOT', payload: slot.id })}
-                  className={`rounded-sm border px-2.5 py-3 text-center transition-[background-color,border-color,color] duration-300 motion-reduce:transition-none ${
-                    slot.past
-                      ? 'cursor-not-allowed border-line opacity-35'
-                      : isSelected
+            {todayNote && (
+              <p className='mb-3 text-[12px] text-muted'>{todayNote}</p>
+            )}
+
+            <div
+              role='group'
+              aria-labelledby='pickup-time-label'
+              className='mb-8 grid grid-cols-2 gap-2 sm:grid-cols-4'
+            >
+              {activeDay.slots.map((slot) => {
+                const isSelected = effectiveSlot === slot.id;
+                return (
+                  <button
+                    key={slot.id}
+                    type='button'
+                    aria-pressed={isSelected}
+                    onClick={() =>
+                      dispatch({ type: 'SET_PICKUP_SLOT', payload: slot.id })
+                    }
+                    className={`rounded-sm border px-2.5 py-3 text-center transition-[background-color,border-color,color] duration-300 motion-reduce:transition-none ${
+                      isSelected
                         ? 'border-ink bg-ink text-cream'
                         : 'border-line bg-cream text-ink hover:border-ink'
-                  }`}
-                >
-                  <div className='mb-0.5 font-display text-[14px] font-medium'>
-                    {slot.label}
-                  </div>
-                  <div
-                    className={`text-[10px] tracking-[0.08em] ${
-                      isSelected ? 'text-cream/65' : 'text-muted'
                     }`}
                   >
-                    {meta}
-                  </div>
-                </button>
-              );
-            })}
+                    <div className='mb-0.5 font-display text-[14px] font-medium'>
+                      {slot.label}
+                    </div>
+                    <div
+                      className={`text-[10px] tracking-[0.08em] ${
+                        isSelected ? 'text-cream/65' : 'text-muted'
+                      }`}
+                    >
+                      {isSelected ? 'SELECTED' : 'OPEN'}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-
-          {slots.every((s) => s.past) && (
-            <p className='mb-6 text-[13px] text-muted'>
-              Pickup orders are no longer available for today. Please check back
-              tomorrow.
-            </p>
-          )}
-        </div>
-      )}
+        ) : (
+          // Only reachable when the shop has no open day in the next week —
+          // every window past is handled by rolling to the next open day.
+          <p className='mb-8 text-[13px] text-muted'>
+            No pickup windows are open at the moment. Choose local delivery, or
+            give the shop a call and we&apos;ll sort a time.
+          </p>
+        ))}
 
       {fulfillment === 'delivery' && <DeliveryAddressForm />}
     </div>

@@ -21,7 +21,12 @@ import {
 import { getSessionUser } from '@/lib/auth/session';
 import { isDemoCardTileEnabled } from '@/lib/features';
 import { getShopSettings } from '@/lib/shop-settings/queries';
-import { formatReadyIn } from '@/lib/shop-settings/pickup-format';
+import { getShopHours } from '@/lib/shop-settings/hours-queries';
+import {
+  formatReadyIn,
+  getPickupNote,
+} from '@/lib/shop-settings/pickup-format';
+import { buildPickupDays } from '@/lib/shop-settings/pickup-slots';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,6 +45,36 @@ export default async function CheckoutPage() {
   const demoCardEnabled = isDemoCardTileEnabled({
     isDemoUser: sessionUser?.user?.isDemo === true,
   });
+
+  // Pickup windows are derived here rather than in the picker: the shop's
+  // clock is what decides which are still bookable, and a client component
+  // only has the customer's. Computing it server-side also means the markup
+  // hydrates identically instead of the grid shifting on first paint.
+  const [shopSettings, hoursDays] = await Promise.all([
+    getShopSettings(),
+    getShopHours(),
+  ]);
+  const now = new Date();
+  const pickupDays = buildPickupDays({
+    days: hoursDays,
+    leadTime: shopSettings.leadTime,
+    timezone: shopSettings.timezone,
+    maxBookingWindow: shopSettings.maxBookingWindow,
+    now,
+  });
+
+  // Today drops out of the picker silently when the shop is shut or the
+  // cutoff has passed, which left a Monday customer reading "Tomorrow" with
+  // no idea why. Same wording the product page already uses.
+  const todayNote =
+    pickupDays[0]?.relativeLabel === 'Today'
+      ? null
+      : getPickupNote({
+          days: hoursDays,
+          leadTime: shopSettings.leadTime,
+          timezone: shopSettings.timezone,
+          now,
+        }).timing;
 
   // Prefill + empty-cart guard only run for signed-in users. Guests have no
   // server cart (theirs lives in localStorage) so the server can't make the
@@ -111,7 +146,10 @@ export default async function CheckoutPage() {
               <CheckoutContactCard />
 
               {/* Card 02: Fulfillment */}
-              <FulfillmentToggle />
+              <FulfillmentToggle
+                pickupDays={pickupDays}
+                todayNote={todayNote}
+              />
 
               {/* Card 03: Order notes */}
               <CheckoutOrderNotes />
@@ -140,7 +178,8 @@ export default async function CheckoutPage() {
                 >
                   Privacy Policy
                 </Link>
-                . We don&apos;t charge until your order is hand-cut and ready.
+                . Payment is taken now, before your cuts are weighed and
+                wrapped.
               </p>
             </div>
 

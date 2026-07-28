@@ -10,6 +10,7 @@ import { formatMoney, productImageSrc } from '@/lib/format';
 import { DELIVERY_FEE } from '@/lib/pricing';
 import { getShopSettings, formatShopAddress } from '@/lib/shop-settings/queries';
 import { formatReadyIn } from '@/lib/shop-settings/pickup-format';
+import { formatPickupWindow } from '@/lib/shop-settings/pickup-slots';
 import {
   orderHasRealizedDifference,
   realizedOrderTotal,
@@ -148,7 +149,9 @@ export default async function ConfirmationPage({ searchParams }: Props) {
               {isPickup ? (
                 <>
                   <p className='text-[15px] font-medium text-ink'>
-                    {order.pickupSlot ? `Slot: ${order.pickupSlot}` : 'Today'}
+                    {order.pickupSlot
+                      ? formatPickupWindow(order.pickupSlot)
+                      : 'Today'}
                   </p>
                   <p className='mt-1 text-[13px] text-ink-soft'>{shopAddress}</p>
                   <p className='mt-1 font-mono text-[11px] tracking-[0.06em] text-green'>
