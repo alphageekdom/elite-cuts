@@ -16,6 +16,7 @@ import {
   getShopSettings,
 } from '@/lib/shop-settings/queries';
 import { formatPickupWindow } from '@/lib/shop-settings/pickup-slots';
+import { orderRef as formatOrderRef } from '@/lib/orders/reference';
 import { RECEIPT_ORDER_STATUS_STYLES } from '@/lib/orders/status';
 import ReceiptToolbar from './ReceiptToolbar';
 import ReceiptHeader from './ReceiptHeader';
@@ -27,8 +28,7 @@ type Props = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const ref = `#EC-${id.slice(-4).toUpperCase()}`;
-  return { title: `Receipt ${ref}` };
+  return { title: `Receipt ${formatOrderRef(id)}` };
 }
 
 // ── helpers ─────────────────────────────────────────────────────────────────
@@ -61,7 +61,7 @@ export default async function ReceiptPage({ params }: Props) {
   if (!rawOrder) notFound();
 
   const order = rawOrder!;
-  const orderRef = `#EC-${id.slice(-4).toUpperCase()}`;
+  const orderRef = formatOrderRef(id);
   const user = order.user as { _id: string; name: string; email: string; rewardPoints: number };
   const rewardPoints = user?.rewardPoints ?? 0;
   const tier = getTierLabel(rewardPoints);

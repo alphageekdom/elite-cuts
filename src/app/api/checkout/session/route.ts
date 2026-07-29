@@ -24,6 +24,7 @@ import { isVariableWeightLine } from '@/lib/orders/line';
 import { getStripe, dollarsToCents, isStubMode } from '@/lib/payments/stripe';
 import { completeSessionForOrder } from '@/lib/payments/completeSession';
 import { isDemoCardTileEnabled } from '@/lib/features';
+import { orderRefBare } from '@/lib/orders/reference';
 import {
   getOrCreateStripeCustomer,
   getSavedCard,
@@ -386,7 +387,7 @@ export const POST = async (request: NextRequest) => {
       );
     }
 
-    const orderRef = `EC-${String(order._id).slice(-4).toUpperCase()}`;
+    const orderRef = orderRefBare(String(order._id));
     const origin = request.nextUrl.origin;
 
     // Card-form demo path — flip the order to paid via the shared completion

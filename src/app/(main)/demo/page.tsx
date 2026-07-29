@@ -3,9 +3,9 @@ import { redirect } from 'next/navigation';
 
 import connectDB from '@/config/database';
 import Product from '@/models/Product';
+import User from '@/models/User';
 import { VISIBLE_PRODUCT_FILTER } from '@/lib/products/constants';
 import { getSessionUser } from '@/lib/auth/session';
-import { DEMO_STARTING_POINTS } from '@/lib/demo/reset';
 import DemoDoors from '@/components/demo/DemoDoors';
 import DemoGroundRules from '@/components/demo/DemoGroundRules';
 import DemoTour from '@/components/demo/DemoTour';
@@ -34,7 +34,18 @@ export default async function DemoPage() {
   // Counted, not typed in. The same filter and pattern the catalog and Our
   // Story pages use, so the three surfaces can't quote different totals.
   await connectDB();
-  const cutCount = await Product.countDocuments(VISIBLE_PRODUCT_FILTER);
+  const [cutCount, demoCustomer] = await Promise.all([
+    Product.countDocuments(VISIBLE_PRODUCT_FILTER),
+    // The account's live balance, not a constant. It used to be the fixed
+    // number the nightly reset wrote, which was wrong twice over: the reset
+    // now derives the balance from what the seeded orders earned, and the demo
+    // account is shared — a visitor who redeems at checkout leaves less on it
+    // for the next one. Quoting what is actually there covers both.
+    User.findOne({ isDemo: true, demoType: 'customer' })
+      .select('rewardPoints')
+      .lean<{ rewardPoints?: number } | null>(),
+  ]);
+  const pointsOnAccount = demoCustomer?.rewardPoints ?? 0;
 
   const heroFacts = [
     { label: 'Ways in', value: 'Customer · Owner' },
@@ -87,14 +98,14 @@ export default async function DemoPage() {
           <Reveal>
             <DemoDoors
               cutCount={cutCount}
-              startingPoints={DEMO_STARTING_POINTS}
+              pointsOnAccount={pointsOnAccount}
             />
           </Reveal>
         </div>
       </section>
 
       <DemoGroundRules cutCount={cutCount} />
-      <DemoTour startingPoints={DEMO_STARTING_POINTS} />
+      <DemoTour pointsOnAccount={pointsOnAccount} />
       <DemoFaq />
       <DemoCtaBand />
     </div>

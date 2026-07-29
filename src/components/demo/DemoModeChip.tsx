@@ -36,7 +36,7 @@ export default function DemoModeChip() {
   const tooltip =
     demoType === 'admin'
       ? "You're exploring as a demo admin. Catalog and settings reset nightly."
-      : "You're exploring as a demo customer. Your cart and orders clear nightly.";
+      : "You're exploring as a demo customer. This account resets nightly.";
 
   return (
     <div ref={containerRef} className="relative">

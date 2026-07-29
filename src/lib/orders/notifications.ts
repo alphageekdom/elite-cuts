@@ -4,6 +4,7 @@ import Notification from '@/models/Notification';
 import User from '@/models/User';
 import { getShopSettings } from '@/lib/shop-settings/queries';
 import { formatMoney } from '@/lib/format';
+import { orderRef as formatOrderRef } from '@/lib/orders/reference';
 
 // Fire-and-forget admin alert when a new order lands. Gated on the
 // notifNewOrder admin setting; getShopSettings fails open so a settings
@@ -20,11 +21,11 @@ export const notifyAdminsOfNewOrder = async (
   if (excludeUserId) adminFilter._id = { $ne: excludeUserId };
   const admins = await User.find(adminFilter, '_id').lean();
   if (!admins.length) return;
-  const orderRef = `#EC-${orderId.slice(-4).toUpperCase()}`;
+  const ref = formatOrderRef(orderId);
   const docs = admins.map((a) => ({
     type: 'new_order' as const,
     title: 'New order placed',
-    body: `${orderRef} — ${formatMoney(totalCost)}`,
+    body: `${ref} — ${formatMoney(totalCost)}`,
     userId: a._id,
     readAt: null,
   }));
@@ -41,11 +42,11 @@ export const notifyAdminsOfSettlementFailure = async (args: {
 }): Promise<void> => {
   const admins = await User.find({ isAdmin: true }, '_id').lean();
   if (!admins.length) return;
-  const orderRef = `#EC-${args.orderId.slice(-4).toUpperCase()}`;
+  const ref = formatOrderRef(args.orderId);
   const docs = admins.map((a) => ({
     type: 'settlement_failed' as const,
     title: 'Auto-settle failed',
-    body: `${orderRef} — ${args.error.slice(0, 140)} Settle in-store.`,
+    body: `${ref} — ${args.error.slice(0, 140)} Settle in-store.`,
     userId: a._id,
     readAt: null,
   }));

@@ -13,20 +13,33 @@ import {
   emptyCatalogCounts,
   type CatalogCounts,
 } from './restore';
+import {
+  seedDemoCustomerData,
+  emptyCustomerSeedCounts,
+  type CustomerSeedCounts,
+} from './seed-customer';
+import { DEMO_HISTORY_DAYS } from './seed/orders';
+
+/**
+ * Balance left behind when `resetDemoCustomerState` runs on its own.
+ *
+ * Not the number the demo actually opens with — `resetDemoData` seeds order
+ * history and overwrites this with the sum of what those orders earned at the
+ * shop's configured rate. It exists so the standalone function still leaves a
+ * coherent account: points are only ever awarded when an admin fulfils an
+ * order, and order writes are closed to demo admins, so a demo customer at
+ * zero could never earn one and the rewards half of the shop would be
+ * undemonstrable.
+ *
+ * Deliberately not quoted anywhere customer-facing. It used to be, as
+ * `DEMO_STARTING_POINTS` on /demo, which is what let a fixed balance drift
+ * away from the history underneath it.
+ */
+export const DEMO_FALLBACK_POINTS = 420;
 
 // Per-collection touch counts returned by `resetDemoCustomerState`. The
 // values are surfaced verbatim in the cron + admin endpoints so a manual
 // trigger can confirm a normal reset ran without combing the server logs.
-// Balance the demo customer starts each day with. Chosen against the default
-// thresholds (Connoisseur 250, Master Cut 1000) so the demo opens mid-ladder:
-// far enough in to hold a tier, far enough out that the progress bar toward
-// the next one is visibly partial rather than empty or full. At the default
-// 100 points = $5 rate it is also worth a real discount at checkout, so the
-// redemption flow has something to bite on.
-//
-// Exported so /demo can quote the figure instead of hardcoding a second copy.
-export const DEMO_STARTING_POINTS = 420;
-
 export type ResetCounts = {
   ordersDeleted: number;
   cartDeleted: number;
@@ -41,7 +54,7 @@ export type ResetCounts = {
 
 // Shape returned by `resetDemoData` — surfaced by the cron + admin endpoint
 // so the toast / log can report what the run actually cleared.
-export type DemoResetCounts = ResetCounts & CatalogCounts;
+export type DemoResetCounts = ResetCounts & CatalogCounts & CustomerSeedCounts;
 
 // Idempotent wipe of every Mongo record owned by the seeded demo customer.
 // Composed by `resetDemoData` below alongside `restoreDemoCatalog`; the
@@ -114,35 +127,44 @@ export async function resetDemoCustomerState(): Promise<ResetCounts> {
   // Phase B's scan exclusion into anything unexpected. `isDemo` and
   // `demoType` are immutable in the schema, so they don't need to be set.
   //
-  // Rewards are seeded rather than zeroed. Points are only ever awarded when
-  // an admin fulfils an order, and order writes stay closed to demo admins,
-  // so a demo customer starting at zero could never earn a single point —
-  // which would make the rewards half of the shop undemonstrable and the
-  // "earn and redeem points" claim on /demo false. A seeded balance lets a
-  // visitor actually redeem at checkout and watch the tier bar move.
+  // Rewards are seeded rather than zeroed — see `DEMO_FALLBACK_POINTS` for
+  // why a demo customer can never earn a point on their own.
+  //
+  // Both the balance and the single entry written here are a fallback.
+  // `resetDemoData` replaces them with one entry per seeded order and the sum
+  // of what those orders earned, so every row is a real award against a real
+  // order rather than one row captioned "Adjustment" with nothing behind it.
+  // Calling this function on its own still leaves a coherent account, which is
+  // what the fallback is for.
   const now = new Date();
+  // Back-dated so the seeded order history sits inside the qualifying window.
+  // `getQualifyingPoints` only counts entries at or after the period start, so
+  // an anniversary stamped `now` would leave the tier bar reading zero beside
+  // a non-zero balance.
+  const periodStart = new Date(now.getTime());
+  periodStart.setDate(periodStart.getDate() - DEMO_HISTORY_DAYS);
+
   await User.updateOne(
     { _id: demoId },
     {
       $set: {
         savedCuts: [],
         addresses: [],
-        rewardPoints: DEMO_STARTING_POINTS,
-        lifetimePoints: DEMO_STARTING_POINTS,
+        rewardPoints: DEMO_FALLBACK_POINTS,
+        lifetimePoints: DEMO_FALLBACK_POINTS,
         // `order_fulfilled` is the only reason that counts toward tier
-        // qualification, and the entry is dated now so it falls inside the
-        // rolling window that `tierAnniversaryAt` opens. `expiresAt: null`
-        // keeps it out of the expiry sweep — the balance is rewritten nightly
-        // anyway, so an expiry date would only ever be noise.
+        // qualification. `expiresAt: null` keeps it out of the expiry sweep —
+        // the balance is rewritten nightly anyway, so an expiry date would
+        // only ever be noise.
         pointsHistory: [
           {
-            delta: DEMO_STARTING_POINTS,
+            delta: DEMO_FALLBACK_POINTS,
             reason: 'order_fulfilled',
             expiresAt: null,
             createdAt: now,
           },
         ],
-        tierAnniversaryAt: now,
+        tierAnniversaryAt: periodStart,
         currentTier: null,
         dormancyWarnedAt: null,
         lastActiveAt: null,
@@ -186,9 +208,50 @@ export async function resetDemoData(): Promise<DemoResetCounts> {
   // install's products, staff, shifts and shop settings with a snapshot meant
   // for a demo that doesn't exist. Bail with zeroed catalog counts instead.
   if (!customer.userReset) {
-    return { ...customer, ...emptyCatalogCounts() };
+    return {
+      ...customer,
+      ...emptyCatalogCounts(),
+      ...emptyCustomerSeedCounts(),
+    };
   }
 
   const catalog = await restoreDemoCatalog();
-  return { ...customer, ...catalog };
+
+  // Order history goes back last, after the catalog restore has settled every
+  // product `_id` an order line points at.
+  const demo = await User.findOne({
+    isDemo: true,
+    demoType: 'customer',
+  }).select('_id');
+
+  if (!demo) {
+    return { ...customer, ...catalog, ...emptyCustomerSeedCounts() };
+  }
+
+  const seeded = await seedDemoCustomerData(demo._id);
+
+  // One write for everything that lives on the User document. Swapping the
+  // fallback ledger entry for one row per seeded order is what makes the
+  // rewards activity list name orders the customer can actually open, instead
+  // of a single row captioned "Adjustment".
+  //
+  // The balance is the sum of those rows, not a constant they were reverse-
+  // engineered to match. That is the whole point: the rewards tab prints the
+  // configured earn rate directly above this ledger, and every row now follows
+  // from a subtotal at that rate.
+  const embedded: Record<string, unknown> = {
+    savedCuts: seeded.savedCuts,
+    addresses: seeded.addresses,
+  };
+  if (seeded.pointsHistory.length > 0) {
+    const earned = seeded.pointsHistory.reduce((sum, e) => sum + e.delta, 0);
+    embedded.pointsHistory = seeded.pointsHistory;
+    embedded.rewardPoints = earned;
+    // Lifetime is what drives the tier, and nothing has been redeemed on a
+    // freshly reset account, so the two start equal.
+    embedded.lifetimePoints = earned;
+  }
+  await User.updateOne({ _id: demo._id }, { $set: embedded });
+
+  return { ...customer, ...catalog, ...seeded.counts };
 }

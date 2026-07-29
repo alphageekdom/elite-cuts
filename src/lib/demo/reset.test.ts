@@ -94,6 +94,37 @@ vi.mock('./restore', () => ({
   })),
 }));
 
+// The customer seed has its own suite in ./seed-customer.test.ts. Mocked here for
+// the same reason as the restore: importing it for real drags `server-only`
+// and the Product/Order models in.
+vi.mock('./seed-customer', () => ({
+  emptyCustomerSeedCounts: () => ({
+    ordersSeeded: 0,
+    pointsEntriesSeeded: 0,
+    savedCutsSeeded: 0,
+    savedCardsSeeded: 0,
+    addressesSeeded: 0,
+  }),
+  seedDemoCustomerData: vi.fn(async () => ({
+    counts: {
+      ordersSeeded: 6,
+      pointsEntriesSeeded: 5,
+      savedCutsSeeded: 3,
+      savedCardsSeeded: 2,
+      addressesSeeded: 2,
+    },
+    // Two rows with deltas that sum to something other than the fallback, so
+    // a balance assertion can tell "summed the ledger" from "kept the
+    // constant". 89 + 27 = 116.
+    pointsHistory: [
+      { delta: 89, reason: 'order_fulfilled', orderId: 'order-1', expiresAt: null, createdAt: new Date(0) },
+      { delta: 27, reason: 'order_fulfilled', orderId: 'order-2', expiresAt: null, createdAt: new Date(0) },
+    ],
+    savedCuts: ['cut-1', 'cut-2', 'cut-3'],
+    addresses: [{ label: 'Home' }, { label: 'Work' }],
+  })),
+}));
+
 // Match the chained `.select('_id')` on the findOne result — return a
 // thenable so `await` resolves to the user (or null).
 const findOneChain = (result: unknown) => ({
@@ -194,21 +225,22 @@ describe('resetDemoCustomerState — demo customer found', () => {
   });
 
   it('seeds a redeemable points balance rather than zeroing it', async () => {
-    const { resetDemoCustomerState, DEMO_STARTING_POINTS } = await import(
+    const { resetDemoCustomerState, DEMO_FALLBACK_POINTS } = await import(
       './reset'
     );
     await resetDemoCustomerState();
 
     const [, update] = mocks.userUpdateOne.mock.calls[0];
-    expect(update.$set.rewardPoints).toBe(DEMO_STARTING_POINTS);
-    expect(update.$set.lifetimePoints).toBe(DEMO_STARTING_POINTS);
+    expect(update.$set.rewardPoints).toBe(DEMO_FALLBACK_POINTS);
+    expect(update.$set.lifetimePoints).toBe(DEMO_FALLBACK_POINTS);
 
     // Points are only awarded when an admin fulfils an order, and order
     // writes are closed to demo admins — so a demo customer starting at zero
     // could never earn one. Without this the rewards half of the shop is
-    // undemonstrable.
+    // undemonstrable. `resetDemoData` overwrites all three with values derived
+    // from the seeded orders; this is the standalone-call fallback.
     const [entry] = update.$set.pointsHistory;
-    expect(entry.delta).toBe(DEMO_STARTING_POINTS);
+    expect(entry.delta).toBe(DEMO_FALLBACK_POINTS);
     // Only `order_fulfilled` counts toward tier qualification; an
     // `admin_adjustment` would leave the tier bar stuck at zero.
     expect(entry.reason).toBe('order_fulfilled');
@@ -333,6 +365,11 @@ describe('resetDemoData', () => {
       shiftsRestored: 49,
       eventsDeleted: 0,
       settingsRestored: true,
+      ordersSeeded: 6,
+      pointsEntriesSeeded: 5,
+      savedCutsSeeded: 3,
+      savedCardsSeeded: 2,
+      addressesSeeded: 2,
     });
   });
 
@@ -348,9 +385,11 @@ describe('resetDemoData', () => {
 
     const { resetDemoData } = await import('./reset');
     const restore = await import('./restore');
+    const seed = await import('./seed-customer');
     // Created inside the `vi.mock` factory, so the shared beforeEach — which
     // only walks `mocks` — never resets it and calls accumulate across tests.
     vi.mocked(restore.restoreDemoCatalog).mockClear();
+    vi.mocked(seed.seedDemoCustomerData).mockClear();
 
     const counts = await resetDemoData();
 
@@ -358,8 +397,87 @@ describe('resetDemoData', () => {
     // overwrite this install's real products, staff, shifts and settings with
     // a snapshot meant for a demo that doesn't exist.
     expect(restore.restoreDemoCatalog).not.toHaveBeenCalled();
+    // Same guarantee for the order seed, and a sharper one: there is no demo
+    // customer to own these orders, so seeding would write history against
+    // nobody — or worse, against whatever id a later bug supplied.
+    expect(seed.seedDemoCustomerData).not.toHaveBeenCalled();
     expect(counts.userReset).toBe(false);
     expect(counts.productsRestored).toBe(0);
     expect(counts.settingsRestored).toBe(false);
+    expect(counts.ordersSeeded).toBe(0);
+    expect(counts.pointsEntriesSeeded).toBe(0);
+  });
+
+  it('seeds order history only after the catalog restore has settled product ids', async () => {
+    const { resetDemoData } = await import('./reset');
+    const restore = await import('./restore');
+    const seed = await import('./seed-customer');
+    vi.mocked(restore.restoreDemoCatalog).mockClear();
+    vi.mocked(seed.seedDemoCustomerData).mockClear();
+
+    await resetDemoData();
+
+    // Order lines hold product ids. The restore upserts on a natural key, so
+    // running the seed first would race the step that settles those ids.
+    const restoreOrder =
+      vi.mocked(restore.restoreDemoCatalog).mock.invocationCallOrder[0];
+    const seedOrder = vi.mocked(seed.seedDemoCustomerData).mock.invocationCallOrder[0];
+    expect(restoreOrder).toBeLessThan(seedOrder);
+  });
+
+  it('replaces the fallback ledger entry with one row per seeded order', async () => {
+    const { resetDemoData } = await import('./reset');
+    await resetDemoData();
+
+    // Two writes: the wipe's fallback entry, then the real history. The
+    // fallback exists so `resetDemoCustomerState` alone leaves a coherent
+    // account; the second write is what makes the rewards rows add up to the
+    // headline balance.
+    expect(mocks.userUpdateOne).toHaveBeenCalledTimes(2);
+    const [, secondWrite] = mocks.userUpdateOne.mock.calls;
+    expect(secondWrite[1].$set.pointsHistory).toHaveLength(2);
+    expect(secondWrite[1].$set.pointsHistory[0].orderId).toBe('order-1');
+  });
+
+  it('banks the sum of the seeded awards, not the fallback constant', async () => {
+    const { resetDemoData, DEMO_FALLBACK_POINTS } = await import('./reset');
+    await resetDemoData();
+
+    const [, secondWrite] = mocks.userUpdateOne.mock.calls;
+    // 89 + 27 from the seed mock. The balance used to be a fixed number the
+    // per-order awards were reverse-engineered to match, which put rows like
+    // "+212" against a $159.99 order under a heading reading the shop's real
+    // one-point-per-dollar rate. Summing the ledger is what closes that.
+    expect(secondWrite[1].$set.rewardPoints).toBe(116);
+    // Nothing has been redeemed on a fresh account, so lifetime tracks it.
+    expect(secondWrite[1].$set.lifetimePoints).toBe(116);
+    expect(secondWrite[1].$set.rewardPoints).not.toBe(DEMO_FALLBACK_POINTS);
+  });
+
+  it('leaves the fallback balance alone when the seed produced no orders', async () => {
+    const seed = await import('./seed-customer');
+    vi.mocked(seed.seedDemoCustomerData).mockResolvedValueOnce({
+      counts: {
+        ordersSeeded: 0,
+        pointsEntriesSeeded: 0,
+        savedCutsSeeded: 3,
+        savedCardsSeeded: 2,
+        addressesSeeded: 2,
+      },
+      pointsHistory: [],
+      savedCuts: [],
+      addresses: [],
+    } as unknown as Awaited<ReturnType<typeof seed.seedDemoCustomerData>>);
+
+    const { resetDemoData } = await import('./reset');
+    await resetDemoData();
+
+    // An empty catalog seeds no orders. Writing a zero balance over the
+    // fallback would leave the rewards tab with nothing to demonstrate, so
+    // the second write must not touch the points fields at all.
+    const [, secondWrite] = mocks.userUpdateOne.mock.calls;
+    expect(secondWrite[1].$set).not.toHaveProperty('rewardPoints');
+    expect(secondWrite[1].$set).not.toHaveProperty('lifetimePoints');
+    expect(secondWrite[1].$set).not.toHaveProperty('pointsHistory');
   });
 });

@@ -220,6 +220,46 @@ export function applyRedemption({
   };
 }
 
+// What a balance is actually worth, in whole dollars.
+//
+// `applyRedemption` floors the spend to whole `redemptionPoints` blocks before
+// converting, so a partial block buys nothing. Display code that divides first
+// and floors the dollars afterwards over-states the balance: at the default
+// 100 pts = $5, a 420 balance is 4 whole blocks = $20, but `floor(420 / 100 *
+// 5)` reports $21 — a dollar the customer can never spend. Both the profile
+// and any other surface quoting a balance's worth must come through here.
+export function redeemableValueDollars(
+  points: number,
+  settings: Pick<ShopSettings, 'redemptionPoints' | 'redemptionDollars'>,
+): number {
+  if (!Number.isFinite(points) || points <= 0) return 0;
+  const block = Math.max(1, Math.floor(settings.redemptionPoints));
+  const blocks = Math.floor(points / block);
+  return blocks * Math.max(0, settings.redemptionDollars);
+}
+
+// The per-order ceiling stated without an order in hand.
+//
+// The real cap is `min(percent × subtotal, flat $)` and needs a subtotal, which
+// the profile doesn't have. Quoting the balance's worth without saying a cap
+// exists is the overstatement this returns the words for: the flat ceiling is
+// a fixed number worth naming, and the percentage is the part that bites on
+// small orders. Returns null when the shop has configured neither.
+export function describeRedemptionCap(
+  settings: Pick<ShopSettings, 'maxRedemptionPercent' | 'maxRedemptionDollars'>,
+): string | null {
+  const pct = Math.max(0, Math.min(100, settings.maxRedemptionPercent ?? 0));
+  const flat = Math.max(0, settings.maxRedemptionDollars ?? 0);
+  const hasPct = pct > 0 && pct < 100;
+  const hasFlat = flat > 0;
+  if (!hasPct && !hasFlat) return null;
+  if (hasPct && hasFlat) {
+    return `up to $${flat} an order, and never more than ${pct}% of the subtotal`;
+  }
+  if (hasFlat) return `up to $${flat} an order`;
+  return `never more than ${pct}% of an order's subtotal`;
+}
+
 // Format helper for the redemption rate so settings, the marketing page, and
 // the checkout block all show the same wording without hand-templating.
 export function formatRedemptionRate(

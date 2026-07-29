@@ -1,78 +1,54 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import type { Types } from 'mongoose';
+
+import connectDB from '@/config/database';
+import { getSessionUser } from '@/lib/auth/session';
+import User, { type PointsHistoryEntry, type TierValue } from '@/models/User';
+import Product, { type SerializedProduct } from '@/models/Product';
+import Order from '@/models/Order';
+import MessageModel from '@/models/Message';
+import { convertToSerializableObject } from '@/lib/convertToObject';
+import { getShopSettings } from '@/lib/shop-settings/queries';
+import {
+  describeRedemptionCap,
+  getEffectiveBalance,
+  getTierView,
+  redeemableValueDollars,
+  type TierInfo,
+  type TierView,
+} from '@/lib/rewards/calculator';
+import {
+  buildHabits,
+  findActiveOrder,
+  tallyRepeatCuts,
+} from '@/lib/profile/dashboard';
+import { VISIBLE_PRODUCT_FILTER } from '@/lib/products/constants';
+import type { ProfileOrder } from '@/types/profile';
+import type { SerializedAddress } from '@/types/address';
+import ProfileSidebar from '@/components/profile/dashboard/ProfileSidebar';
+import OverviewTab from '@/components/profile/dashboard/OverviewTab';
+import AccountTab from '@/components/profile/dashboard/AccountTab';
+import { resolveTab } from '@/components/profile/dashboard/tabs';
+import type { RepeatCut } from '@/components/profile/dashboard/BuyItAgain';
+import ProfileOrderList from '@/components/profile/ProfileOrderList';
+import ProfileSavedCuts from '@/components/profile/ProfileSavedCuts';
+import ProfileRewards from '@/components/profile/ProfileRewards';
+import ProfileMessages, {
+  type SerializedMessage,
+} from '@/components/profile/ProfileMessages';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Profile',
+  title: 'Account',
   robots: { index: false, follow: false },
 };
-import connectDB from '@/config/database';
-import { getSessionUser } from '@/lib/auth/session';
-import User, { type PointsHistoryEntry, type TierValue } from '@/models/User';
-import Product from '@/models/Product';
-import Order from '@/models/Order';
-import { convertToSerializableObject } from '@/lib/convertToObject';
-import { getShopSettings } from '@/lib/shop-settings/queries';
-import {
-  getEffectiveBalance,
-  getTierView,
-  type TierView,
-  type TierInfo,
-} from '@/lib/rewards/calculator';
-import type { SerializedProduct } from '@/models/Product';
-import type { OrderStatus, PaymentMethod } from '@/models/Order';
-import type { PricingType } from '@/lib/products/constants';
-import type { Types } from 'mongoose';
-import ProfileHero from '@/components/profile/ProfileHero';
-import ProfileStats from '@/components/profile/ProfileStats';
-import ProfileTabs from '@/components/profile/ProfileTabs';
-import ProfileOrderList from '@/components/profile/ProfileOrderList';
-import ProfileSavedCuts from '@/components/profile/ProfileSavedCuts';
-import ProfileLoyaltyCard from '@/components/profile/ProfileLoyaltyCard';
-import ProfileAccountInfo from '@/components/profile/ProfileAccountInfo';
-import ProfileRecentlyViewed from '@/components/profile/ProfileRecentlyViewed';
-import ProfileAddresses from '@/components/profile/ProfileAddresses';
-import ProfilePaymentMethods from '@/components/profile/ProfilePaymentMethods';
-import ProfileInfoForm from '@/components/profile/ProfileInfoForm';
-import UpdateProfile from '@/components/profile/UpdateProfile';
-import DeleteAccountSection from '@/components/profile/DeleteAccountSection';
-import ProfileRewards from '@/components/profile/ProfileRewards';
-import ProfileMessages from '@/components/profile/ProfileMessages';
-import type { SerializedMessage } from '@/components/profile/ProfileMessages';
-import MessageModel from '@/models/Message';
-import type { SerializedAddress } from '@/types/address';
 
-export type ProfileOrder = {
-  _id: string;
-  orderItems: {
-    product: string;
-    name: string;
-    qty: number;
-    image: string;
-    price: number;
-    productType: string;
-    refunded: boolean;
-    pricingType?: PricingType;
-    pricePerLb?: number;
-    realizedWeightLb?: number;
-  }[];
-  subtotal: number;
-  tax: number;
-  totalCost: number;
-  isPaid: boolean;
-  orderStatus: OrderStatus;
-  paymentMethod: PaymentMethod;
-  pickupLocation: string;
-  pickedUp: boolean;
-  // Phase 4 — auto-settle status surfaced on the profile order card so
-  // the customer can tell at a glance whether the settlement charge has
-  // been applied to their card.
-  settlementStatus?: 'pending' | 'settled' | 'failed';
-  createdAt: string;
-  updatedAt: string;
-};
+// How many recent orders feed "Buy it again", and how many cuts it offers.
+const REPEAT_LOOKBACK = 5;
+const REPEAT_LIMIT = 4;
 
 type Props = {
   searchParams: Promise<{ tab?: string }>;
@@ -85,7 +61,7 @@ export default async function ProfilePage({ searchParams }: Props) {
   await connectDB();
 
   const params = await searchParams;
-  const activeTab = params.tab ?? 'overview';
+  const activeTab = resolveTab(params.tab);
   const { userId } = sessionUser;
 
   const rawUser = await User.findById(userId).lean<{
@@ -138,8 +114,6 @@ export default async function ProfilePage({ searchParams }: Props) {
     });
   }
 
-  // Keep the TierInfo shape for components that still take it (loyalty card,
-  // hero, stats). Maps from the view.
   const tier: TierInfo = {
     tier: tierView.tier,
     label: tierView.label,
@@ -159,6 +133,7 @@ export default async function ProfilePage({ searchParams }: Props) {
     pointsToNext: tierView.pointsToNext,
     progress: tierView.progress,
   };
+
   const serializedRecentHistory = effective.recentHistory.map((e) => ({
     delta: e.delta,
     reason: e.reason,
@@ -166,44 +141,39 @@ export default async function ProfilePage({ searchParams }: Props) {
     createdAt: new Date(e.createdAt).toISOString(),
   }));
 
-  const serializedAddresses: SerializedAddress[] = (rawUser.addresses ?? []).map((a) => ({
-    _id: a._id.toString(),
-    label: a.label,
-    address1: a.address1,
-    ...(a.address2 ? { address2: a.address2 } : {}),
-    city: a.city,
-    state: a.state,
-    zip: a.zip,
-    isDefault: a.isDefault,
-  }));
+  const serializedAddresses: SerializedAddress[] = (rawUser.addresses ?? []).map(
+    (a) => ({
+      _id: a._id.toString(),
+      label: a.label,
+      address1: a.address1,
+      ...(a.address2 ? { address2: a.address2 } : {}),
+      city: a.city,
+      state: a.state,
+      zip: a.zip,
+      isDefault: a.isDefault,
+    }),
+  );
 
   const savedCutIds = rawUser.savedCuts ?? [];
-  const rawProducts =
+
+  const [rawSavedCuts, rawOrders, rawMessages] = await Promise.all([
     savedCutIds.length > 0
-      ? await Product.find({ _id: { $in: savedCutIds } }).lean()
-      : [];
-  const serializedSavedCuts = rawProducts.map((p) =>
-    convertToSerializableObject(p as unknown as Record<string, unknown>),
-  ) as SerializedProduct[];
-
-  // Stub: fetch 3 in-stock products as "recently viewed" (no tracking yet)
-  const rawRecent = await Product.find({ stockCount: { $gt: 0 } })
-    .sort({ createdAt: -1 })
-    .limit(3)
-    .lean();
-  const recentProducts = rawRecent.map((p) =>
-    convertToSerializableObject(p as unknown as Record<string, unknown>),
-  ) as SerializedProduct[];
-
-  const [rawOrders, rawMessages] = await Promise.all([
-    Order.find({ user: userId })
-      .sort({ createdAt: -1 })
-      .limit(activeTab === 'orders' ? 50 : 5)
-      .lean(),
-    MessageModel.find({ user: userId })
-      .sort({ createdAt: -1 })
-      .lean(),
+      ? Product.find({ _id: { $in: savedCutIds } }).lean()
+      : [],
+    // The full history, not a page of it: "Spent all time" and "Orders this
+    // year" sum across every order, so a capped fetch would quietly understate
+    // both. Every consumer of this list is a server component, so none of it
+    // crosses to the client — the cost is one lean query per render. If a real
+    // customer ever accumulates enough orders for that to matter, the answer is
+    // to move the habit totals into an aggregation rather than to cap the fetch
+    // and let the numbers go wrong.
+    Order.find({ user: userId }).sort({ createdAt: -1 }).lean(),
+    MessageModel.find({ user: userId }).sort({ createdAt: -1 }).lean(),
   ]);
+
+  const serializedSavedCuts = rawSavedCuts.map((p) =>
+    convertToSerializableObject(p as unknown as Record<string, unknown>),
+  ) as SerializedProduct[];
 
   const serializedOrders: ProfileOrder[] = rawOrders.map((o) => ({
     _id: String(o._id),
@@ -227,6 +197,8 @@ export default async function ProfilePage({ searchParams }: Props) {
     paymentMethod: o.paymentMethod,
     pickupLocation: o.pickupLocation,
     pickedUp: o.pickedUp,
+    fulfillmentType: o.fulfillmentType,
+    pickupSlot: o.pickupSlot,
     settlementStatus: o.paymentResult?.settlementStatus,
     createdAt: (o.createdAt as Date).toISOString(),
     updatedAt: (o.updatedAt as Date).toISOString(),
@@ -241,140 +213,134 @@ export default async function ProfilePage({ searchParams }: Props) {
     createdAt: (m.createdAt as Date).toISOString(),
   }));
 
-  const createdAt = (rawUser.createdAt as Date).toISOString();
+  // ── Overview derivations ────────────────────────────────────────────────
+  const activeOrder = findActiveOrder(serializedOrders);
+  const habits = buildHabits(serializedOrders, settings.timezone);
+
+  // Repeat cuts are tallied from order history, then resolved against the
+  // live catalog — a cut the shop has since withdrawn or deactivated drops
+  // out rather than being offered back to someone known to want it.
+  // Cuts already in the active order are left out — they are named in the
+  // card at the top of the page and listed again under recent orders, so
+  // offering them a third time reads as the page repeating itself rather than
+  // as a suggestion.
+  const tallies = tallyRepeatCuts(serializedOrders, {
+    lookback: REPEAT_LOOKBACK,
+    excludeProductIds: activeOrder?.orderItems.map((i) => i.product) ?? [],
+  });
+  let repeatCuts: RepeatCut[] = [];
+  if (tallies.length > 0) {
+    const liveDocs = await Product.find({
+      ...VISIBLE_PRODUCT_FILTER,
+      _id: { $in: tallies.map((t) => t.productId) },
+    }).lean();
+    const byId = new Map(
+      liveDocs.map((doc) => {
+        const product = convertToSerializableObject(
+          doc as unknown as Record<string, unknown>,
+        ) as SerializedProduct;
+        return [product._id, product];
+      }),
+    );
+    repeatCuts = tallies
+      .map((t) => {
+        const product = byId.get(t.productId);
+        return product ? { product, times: t.times } : null;
+      })
+      .filter((c): c is RepeatCut => c !== null)
+      .slice(0, REPEAT_LIMIT);
+  }
+
   const displayName = sessionUser.user.name ?? rawUser.name ?? 'Member';
   const displayEmail = sessionUser.user.email ?? rawUser.email ?? '';
-  const totalSpent = serializedOrders.reduce((s, o) => s + o.totalCost, 0);
-  const joinedMs = Date.now() - rawUser.createdAt.getTime();
-  const joinedMonths = Math.max(1, Math.round(joinedMs / (1000 * 60 * 60 * 24 * 30)));
+  const firstName = displayName.split(/\s+/)[0] || displayName;
+  const isDemo = Boolean(sessionUser.user.isDemo);
+  const isAdmin = rawUser.isAdmin ?? false;
+
+  const openMessages = serializedMessages.filter(
+    (m) => m.status === 'open',
+  ).length;
 
   return (
     <div className="bg-cream min-h-[calc(100vh-5rem)]">
-      <div className="max-w-300 mx-auto px-5 md:px-8">
+      <div className="mx-auto max-w-350 px-5 md:px-8">
+        <div className="grid grid-cols-1 items-start gap-0 lg:grid-cols-[250px_1fr] lg:gap-10">
+          <ProfileSidebar
+            name={displayName}
+            email={displayEmail}
+            userId={userId}
+            isAdmin={isAdmin}
+            isDemo={isDemo}
+            tier={tier}
+            qualifying={tierView.qualifying}
+            activeTab={activeTab}
+            counts={{
+              orders: serializedOrders.length,
+              saved: serializedSavedCuts.length,
+              messages: openMessages,
+            }}
+          />
 
-        <ProfileHero
-          name={displayName}
-          email={displayEmail}
-          createdAt={createdAt}
-          userId={userId}
-          tierLabel={tier.label}
-          isAdmin={rawUser.isAdmin ?? false}
-        />
-
-        <ProfileStats
-          orderCount={serializedOrders.length}
-          totalSpent={totalSpent}
-          savedCuts={serializedSavedCuts.length}
-          joinedMonths={joinedMonths}
-          rewardPoints={effective.balance}
-          tier={tier}
-        />
-
-        <ProfileTabs
-          activeTab={activeTab}
-          orderCount={serializedOrders.length}
-          savedCount={serializedSavedCuts.length}
-          addressCount={serializedAddresses.length}
-          messageCount={serializedMessages.length}
-        />
-
-        {/* Main grid */}
-        <div className="pt-8 pb-16 sm:pt-12 sm:pb-20 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-12 items-start">
-
-          {/* Left: content */}
-          <div>
-            {(activeTab === 'overview' || activeTab === 'orders') && (
-              <section className={activeTab === 'orders' ? '' : 'mb-14'}>
-                <div className="flex items-end justify-between mb-7 gap-5">
-                  <div>
-                    {activeTab === 'orders' ? (
-                      <h2 className="font-display text-[28px] font-normal tracking-tight leading-tight">
-                        Your <em className="italic text-oxblood">orders</em>
-                        {serializedOrders.length > 0 && (
-                          <span className="ml-3 font-sans text-[15px] font-normal text-muted align-middle">
-                            ({serializedOrders.length})
-                          </span>
-                        )}
-                      </h2>
-                    ) : (
-                      <h2 className="font-display text-[28px] font-normal tracking-tight leading-tight">
-                        Recent <em className="italic text-oxblood">orders</em>
-                      </h2>
-                    )}
-                  </div>
-                  {serializedOrders.length > 0 && activeTab === 'overview' && (
-                    <Link
-                      href="?tab=orders"
-                      className="text-[13px] font-medium text-ink-soft inline-flex items-center gap-1.5 border-b border-current pb-px hover:text-oxblood hover:gap-2.5 transition-all"
-                    >
-                      View all
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M13 5l7 7-7 7" /></svg>
-                    </Link>
-                  )}
-                </div>
-                <ProfileOrderList orders={serializedOrders} showAll={activeTab === 'orders'} />
-              </section>
-            )}
-
-            {(activeTab === 'overview' || activeTab === 'saved') && (
-              <section>
-                <div className="flex items-end justify-between mb-7 gap-5">
-                  <div>
-                    {activeTab === 'saved' ? (
-                      <h2 className="font-display text-[28px] font-normal tracking-tight leading-tight">
-                        Your saved <em className="italic text-oxblood">cuts</em>
-                        {serializedSavedCuts.length > 0 && (
-                          <span className="ml-3 font-sans text-[15px] font-normal text-muted align-middle">
-                            ({serializedSavedCuts.length})
-                          </span>
-                        )}
-                      </h2>
-                    ) : (
-                      <h2 className="font-display text-[28px] font-normal tracking-tight leading-tight">
-                        Your saved <em className="italic text-oxblood">cuts</em>
-                      </h2>
-                    )}
-                  </div>
-                  {serializedSavedCuts.length > 3 && activeTab === 'overview' && (
-                    <Link
-                      href="?tab=saved"
-                      className="text-[13px] font-medium text-ink-soft inline-flex items-center gap-1.5 border-b border-current pb-px hover:text-oxblood hover:gap-2.5 transition-all"
-                    >
-                      See all {serializedSavedCuts.length}
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M13 5l7 7-7 7" /></svg>
-                    </Link>
-                  )}
-                </div>
-                <ProfileSavedCuts savedCuts={serializedSavedCuts} showAll={activeTab === 'saved'} />
-              </section>
-            )}
-
-            {activeTab === 'addresses' && (
-              <ProfileAddresses addresses={serializedAddresses} />
-            )}
-
-            {activeTab === 'paymentMethods' && (
-              <section>
-                <div className="mb-7">
-                  <h2 className="font-display text-[28px] font-normal tracking-tight leading-tight">
-                    Payment <em className="italic text-oxblood">methods</em>
-                  </h2>
-                  <p className="mt-2 text-[13px] text-ink-soft">
-                    Cards saved at checkout. Add a new one by ticking Save this card on your next Stripe checkout.
-                  </p>
-                </div>
-                <ProfilePaymentMethods />
-              </section>
-            )}
-
-            {activeTab === 'messages' && (
-              <ProfileMessages
-                messages={serializedMessages}
-                userId={userId}
-                name={displayName}
-                rewardPoints={effective.balance}
-                isAdmin={rawUser.isAdmin ?? false}
+          {/* A plain div, not <main>: the (main) route-group layout already
+              wraps every page in one, and <main> must not descend from <main>
+              — it was announcing two main landmarks on this page alone. */}
+          <div className="min-w-0 py-8 lg:py-10">
+            {activeTab === 'overview' && (
+              <OverviewTab
+                firstName={firstName}
+                orders={serializedOrders}
+                activeOrder={activeOrder}
+                repeatCuts={repeatCuts}
+                habits={habits}
+                leadTime={settings.leadTime}
+                timezone={settings.timezone}
+                points={effective.balance}
+                worthDollars={redeemableValueDollars(
+                  effective.balance,
+                  settings,
+                )}
+                capNote={describeRedemptionCap(settings)}
               />
+            )}
+
+            {activeTab === 'orders' && (
+              <section>
+                <h1 className="font-display text-[34px] leading-none tracking-tight sm:text-[40px]">
+                  Your <em className="italic text-oxblood">orders</em>
+                </h1>
+                <p className="mt-3 text-[14px] text-muted">
+                  {serializedOrders.length === 0
+                    ? 'Nothing here yet.'
+                    : `${serializedOrders.length} order${serializedOrders.length === 1 ? '' : 's'} · every one collected at the counter.`}
+                </p>
+                <div className="mt-7">
+                  <ProfileOrderList orders={serializedOrders} showAll />
+                </div>
+              </section>
+            )}
+
+            {activeTab === 'saved' && (
+              <section>
+                <div className="flex flex-wrap items-end justify-between gap-4">
+                  <div>
+                    <h1 className="font-display text-[34px] leading-none tracking-tight sm:text-[40px]">
+                      Saved <em className="italic text-oxblood">cuts</em>
+                    </h1>
+                    <p className="mt-3 text-[14px] text-muted">
+                      Anything you tapped the heart on.
+                    </p>
+                  </div>
+                  <Link
+                    href="/products"
+                    className="inline-flex min-h-11 items-center rounded-full border border-line px-4.5 py-2.5 text-[13px] text-ink-soft transition-colors hover:border-ink hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-cream"
+                  >
+                    Browse cuts
+                  </Link>
+                </div>
+                <div className="mt-7">
+                  <ProfileSavedCuts savedCuts={serializedSavedCuts} showAll />
+                </div>
+              </section>
             )}
 
             {activeTab === 'rewards' && (
@@ -390,43 +356,32 @@ export default async function ProfilePage({ searchParams }: Props) {
                 redemptionDollars={settings.redemptionDollars}
                 pointsExpiryMonths={settings.pointsExpiryMonths}
                 weekendMultiplier={settings.weekendMultiplier}
+                maxRedemptionPercent={settings.maxRedemptionPercent}
+                maxRedemptionDollars={settings.maxRedemptionDollars}
+                pointsPerDollar={settings.pointsPerDollar}
               />
             )}
 
-            {activeTab === 'settings' && (
-              <div className="space-y-6">
-                {/* Profile info */}
-                <div className="bg-paper border border-line-soft rounded p-6 sm:p-8">
-                  <h2 className="font-display text-[28px] font-normal tracking-tight leading-tight mb-6">
-                    Profile <em className="italic text-oxblood">info</em>
-                  </h2>
-                  <ProfileInfoForm initialName={displayName} initialEmail={displayEmail} initialPhone={rawUser.phone ?? ''} />
-                </div>
+            {activeTab === 'messages' && (
+              <ProfileMessages
+                messages={serializedMessages}
+                userId={userId}
+                name={displayName}
+                isAdmin={isAdmin}
+                isMember={tier.tier !== 'regular'}
+              />
+            )}
 
-                {/* Password */}
-                <div className="bg-paper border border-line-soft rounded p-6 sm:p-8">
-                  <h2 className="font-display text-[28px] font-normal tracking-tight leading-tight mb-6">
-                    Change <em className="italic text-oxblood">password</em>
-                  </h2>
-                  <UpdateProfile />
-                </div>
-
-                {/* Danger zone — kept off-admins; admins can't self-delete. */}
-                {!rawUser.isAdmin && <DeleteAccountSection />}
-              </div>
+            {activeTab === 'account' && (
+              <AccountTab
+                name={displayName}
+                email={displayEmail}
+                phone={rawUser.phone ?? ''}
+                addresses={serializedAddresses}
+                isAdmin={isAdmin}
+              />
             )}
           </div>
-
-          {/* Right: sidebar */}
-          <aside className="space-y-4">
-            <ProfileLoyaltyCard
-              points={tierView.qualifying}
-              tier={tier}
-              periodEndsAt={tierView.periodEndsAt?.toISOString() ?? null}
-            />
-            <ProfileAccountInfo email={displayEmail} joinedAt={createdAt} />
-            <ProfileRecentlyViewed products={recentProducts} />
-          </aside>
         </div>
       </div>
     </div>

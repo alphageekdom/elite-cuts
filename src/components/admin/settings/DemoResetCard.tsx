@@ -39,8 +39,11 @@ export default function DemoResetCard() {
       if (!counts) {
         toast.success('Demo data reset.');
       } else {
+        // "Cleared" alone under-reports now that history is put back — an
+        // admin who read "6 orders cleared" and then found six orders on the
+        // demo account would reasonably think the reset had failed.
         const customerPart = counts.userReset
-          ? `${counts.ordersDeleted} order${counts.ordersDeleted === 1 ? '' : 's'} cleared`
+          ? `${counts.ordersDeleted} order${counts.ordersDeleted === 1 ? '' : 's'} cleared, ${counts.ordersSeeded} reseeded`
           : 'no demo customer found';
         const catalogPart = `${counts.productsRestored} cut${counts.productsRestored === 1 ? '' : 's'} restored`;
         toast.success(`Demo data reset · ${customerPart} · ${catalogPart}.`);
@@ -60,11 +63,12 @@ export default function DemoResetCard() {
         Demo <em className="italic text-oxblood font-normal">data</em>
       </h2>
       <p className={sectionSubCls}>
-        Wipes the demo customer&apos;s orders, cart, bookmarks, addresses,
-        saved cards, notifications, and rewards balance. Seeded products,
-        reviews, promos, staff, and shifts are left in place so the rest
-        of the shop stays populated. Runs automatically every night at
-        3am ET; this button lets you re-prep the demo on demand.
+        Clears the demo customer&apos;s cart, notifications and reviews, then
+        puts their order history, saved cuts, saved cards, addresses and
+        rewards balance back to the seeded starting state. The catalog, promos,
+        staff and shifts are restored from the snapshot alongside. Runs
+        automatically every night; this button lets you re-prep the demo on
+        demand.
       </p>
       {!confirming ? (
         <button

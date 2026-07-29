@@ -7,9 +7,15 @@ import type { SerializedAddress } from '@/types/address';
 
 type Props = {
   addresses: SerializedAddress[];
+  /**
+   * Drops the section's own heading. The Account tab wraps this in a card that
+   * already supplies one, and two headings for one list reads as two lists —
+   * and puts a stray level in the page's heading order.
+   */
+  headless?: boolean;
 };
 
-export default function ProfileAddresses({ addresses }: Props) {
+export default function ProfileAddresses({ addresses, headless = false }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<SerializedAddress | undefined>(undefined);
 
@@ -30,15 +36,17 @@ export default function ProfileAddresses({ addresses }: Props) {
 
   return (
     <section>
-      <div className="flex items-center justify-between mb-7 gap-5">
-        <h2 className="font-display text-[28px] font-normal tracking-tight leading-tight">
-          Saved <em className="italic text-oxblood">addresses</em>
-          {addresses.length > 0 && (
-            <span className="ml-3 font-sans text-[15px] font-normal text-muted align-middle">
-              ({addresses.length})
-            </span>
-          )}
-        </h2>
+      <div className={`flex items-center gap-5 ${headless ? 'justify-end' : 'justify-between mb-7'}`}>
+        {!headless && (
+          <h2 className="font-display text-[28px] font-normal tracking-tight leading-tight">
+            Saved <em className="italic text-oxblood">addresses</em>
+            {addresses.length > 0 && (
+              <span className="ml-3 font-sans text-[15px] font-normal text-muted align-middle">
+                ({addresses.length})
+              </span>
+            )}
+          </h2>
+        )}
         {!showForm && (
           <button
             onClick={openNew}
@@ -56,7 +64,7 @@ export default function ProfileAddresses({ addresses }: Props) {
       )}
 
       {addresses.length === 0 && !showForm ? (
-        <div className="bg-paper border border-dashed border-line rounded p-14 text-center">
+        <div className={`bg-paper border border-dashed border-line rounded text-center ${headless ? 'p-8 mt-4' : 'p-14'}`}>
           <div className="w-14 h-14 rounded-full bg-cream-deep text-ink-soft flex items-center justify-center mx-auto mb-5" aria-hidden="true">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
@@ -75,7 +83,7 @@ export default function ProfileAddresses({ addresses }: Props) {
           </button>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className={`space-y-4 ${headless ? 'mt-4' : ''}`}>
           {addresses.map((addr) => (
             <AddressCard key={addr._id} address={addr} onEdit={openEdit} />
           ))}
