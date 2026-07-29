@@ -34,6 +34,18 @@ export const RECEIPT_ORDER_STATUS_STYLES: Record<string, string> = {
   'Cancelled':        'bg-red-soft text-oxblood',
 };
 
+// The customer-facing profile palette. Was a fourth copy living as a private
+// `statusChip` switch inside ProfileOrderList — exactly the drift this module
+// exists to prevent — so it moves here with its existing colours intact.
+export const PROFILE_ORDER_STATUS_STYLES: Record<string, string> = {
+  'Order Placed':     'bg-ink/10 text-muted',
+  'Preparing':        'bg-ink/10 text-muted',
+  'Ready for Pickup': 'bg-camel/15 text-camel-deep',
+  'Out for Delivery': 'bg-camel/15 text-camel-deep',
+  'Completed':        'bg-green/10 text-green',
+  'Cancelled':        'bg-oxblood/10 text-oxblood',
+};
+
 export type TableOrderStatusPill = {
   bg: string;
   text: string;

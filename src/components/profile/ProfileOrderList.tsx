@@ -1,8 +1,9 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { formatMoney, productImageSrc } from '@/lib/format';
-import type { ProfileOrder } from '@/app/(main)/profile/page';
-import type { OrderStatus } from '@/models/Order';
+import type { ProfileOrder } from '@/types/profile';
+import { orderRef } from '@/lib/orders/reference';
+import { PROFILE_ORDER_STATUS_STYLES } from '@/lib/orders/status';
 import { hasRealizedWeight, realizedLineTotal, estimatedLineTotal } from '@/lib/orders/line';
 import OrderHelpButton from './OrderHelpButton';
 
@@ -11,25 +12,12 @@ type Props = {
   showAll?: boolean;
 };
 
-function statusChip(status: OrderStatus): string {
-  switch (status) {
-    case 'Completed':       return 'bg-green/10 text-green';
-    case 'Ready for Pickup': return 'bg-camel/15 text-camel-deep';
-    case 'Cancelled':       return 'bg-oxblood/10 text-oxblood';
-    default:                return 'bg-ink/10 text-muted';
-  }
-}
-
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
   });
-}
-
-function shortId(id: string): string {
-  return `#EC-${id.slice(-4).toUpperCase()}`;
 }
 
 export default function ProfileOrderList({ orders, showAll = false }: Props) {
@@ -45,7 +33,7 @@ export default function ProfileOrderList({ orders, showAll = false }: Props) {
             <path d="M16 10a4 4 0 01-8 0" />
           </svg>
         </div>
-        <h3 className="font-display font-medium text-[22px] tracking-tight mb-2">Nothing here yet</h3>
+        <h2 className="font-display font-medium text-[22px] tracking-tight mb-2">Nothing here yet</h2>
         <p className="text-muted text-sm mb-6 max-w-[32ch] mx-auto">
           Your order history starts with your first cut.
         </p>
@@ -108,7 +96,7 @@ export default function ProfileOrderList({ orders, showAll = false }: Props) {
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2 mb-1.5">
                 <span className="font-mono text-[11px] text-ink-soft bg-cream-deep px-2 py-0.5 rounded">
-                  {shortId(order._id)}
+                  {orderRef(order._id)}
                 </span>
                 <span className="text-[11px] tracking-[0.14em] uppercase text-muted">
                   {formatDate(order.createdAt)}
@@ -129,7 +117,7 @@ export default function ProfileOrderList({ orders, showAll = false }: Props) {
 
             {/* Status + price + help */}
             <div className="flex flex-col items-end gap-1.5 shrink-0">
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium tracking-[0.04em] whitespace-nowrap ${statusChip(order.orderStatus)}`}>
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium tracking-[0.04em] whitespace-nowrap ${PROFILE_ORDER_STATUS_STYLES[order.orderStatus]}`}>
                 <span className="w-1.5 h-1.5 rounded-full bg-current" aria-hidden="true" />
                 {order.orderStatus}
               </span>
@@ -149,7 +137,7 @@ export default function ProfileOrderList({ orders, showAll = false }: Props) {
                   {order.settlementStatus === 'failed' && ' · settle in-store'}
                 </p>
               )}
-              <OrderHelpButton orderId={order._id} orderRef={order._id.slice(-4).toUpperCase()} />
+              <OrderHelpButton orderId={order._id} />
             </div>
           </div>
         );

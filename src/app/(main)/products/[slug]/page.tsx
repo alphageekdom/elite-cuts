@@ -14,6 +14,7 @@ import { resolveProductByParam } from '@/lib/products/resolve';
 import { convertToSerializableObject } from '@/lib/convertToObject';
 import { getSessionUser } from '@/lib/auth/session';
 import ProductGallery from '@/components/product/detail/ProductGallery';
+import RecentlyViewedTracker from '@/components/product/detail/RecentlyViewedTracker';
 import BuyBlock from '@/components/product/detail/BuyBlock';
 import Stars from '@/components/product/detail/Stars';
 import ProductCard from '@/components/product/ProductCard';
@@ -322,6 +323,7 @@ export default async function ProductPage({ params }: PageProps) {
 
   return (
     <div className='bg-cream min-h-screen'>
+      <RecentlyViewedTracker slug={product.slug} />
       <div className='mx-auto max-w-7xl px-5 md:px-8'>
         {/* ── Breadcrumb ── */}
         <nav

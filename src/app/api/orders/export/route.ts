@@ -7,6 +7,7 @@ import { withAdmin } from '@/lib/api-handler';
 import { toCsv, csvFilename } from '@/lib/csv/build';
 import { refundSummary } from '@/lib/orders/refunds';
 import { excludeDemoOrders } from '@/lib/demo/exclude';
+import { orderRef } from '@/lib/orders/reference';
 import {
   DAY_MS,
   RANGE_DAYS,
@@ -97,7 +98,7 @@ export const GET = withAdmin(async (req) => {
     if (search) {
       const q = search.toLowerCase();
       orders = orders.filter((o) => {
-        const ref = `#EC-${o._id.toString().slice(-4).toUpperCase()}`.toLowerCase();
+        const ref = orderRef(o._id.toString()).toLowerCase();
         const name = (o.user?.name ?? '').toLowerCase();
         const email = (o.user?.email ?? '').toLowerCase();
         return ref.includes(q) || name.includes(q) || email.includes(q);
@@ -105,7 +106,7 @@ export const GET = withAdmin(async (req) => {
     }
 
     const csv = toCsv(orders, [
-      { header: 'orderRef', value: (o) => `#EC-${o._id.toString().slice(-4).toUpperCase()}` },
+      { header: 'orderRef', value: (o) => orderRef(o._id.toString()) },
       { header: 'status', value: (o) => o.orderStatus },
       { header: 'customerName', value: (o) => o.user?.name ?? '' },
       { header: 'customerEmail', value: (o) => o.user?.email ?? '' },

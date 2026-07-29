@@ -2,6 +2,7 @@ import type { ProductTableRow, OrderTableRow, CustomerTableRow } from '@/types/a
 import type { ProductCategory } from '@/lib/admin/constants';
 import type { MeatQualityTier, PricingType } from '@/lib/products/constants';
 import { refundSummary } from '@/lib/orders/refunds';
+import { orderRef } from '@/lib/orders/reference';
 
 // Minimal shape of a lean Product document returned from ProductModel.find().lean()
 type RawProduct = {
@@ -162,7 +163,7 @@ export function serializeOrderRow(order: RawOrder): OrderTableRow {
   });
   return {
     id: idStr,
-    orderRef: `#EC-${idStr.slice(-4).toUpperCase()}`,
+    orderRef: orderRef(idStr),
     customerName: order.user?.name ?? 'Unknown',
     customerEmail: order.user?.email ?? '',
     isDemo: Boolean(order.user?.isDemo),

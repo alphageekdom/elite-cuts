@@ -118,6 +118,33 @@ export function shopWeekdayIndex(timezone: string, now: Date): number {
   return toMondayFirst(now.getDay());
 }
 
+// Which calendar year an instant falls in at the shop, not on the server.
+//
+// The runtime is UTC on Vercel, so for the eight hours between midnight UTC
+// and midnight Pacific on New Year's Eve the server has already rolled over
+// while the shop has not. Anything phrased "this year" would tick over early
+// — the "Orders this year" habit stat resetting to zero while the counter is
+// still trading on the 31st.
+//
+// Degrades to the runtime's year on an unrecognised zone, matching
+// shopWeekdayIndex rather than shopMinutesOfDay: a year is always needed, and
+// the server's is the same answer this had before the zone was consulted.
+export function shopYear(timezone: string, instant: Date): number {
+  const zone = timezone.trim().split(' ')[0];
+  try {
+    const year = Number(
+      new Intl.DateTimeFormat('en-US', {
+        timeZone: zone,
+        year: 'numeric',
+      }).format(instant),
+    );
+    if (Number.isFinite(year)) return year;
+  } catch {
+    // Invalid IANA zone — fall through to the server's local year.
+  }
+  return instant.getFullYear();
+}
+
 // Minutes since midnight at the shop, not on the server — the companion to
 // shopWeekdayIndex for gating same-day pickup on the shop-local clock. Returns
 // null for an unrecognised zone so the caller can treat it as "unknown" and

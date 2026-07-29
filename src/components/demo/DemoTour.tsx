@@ -15,14 +15,14 @@ type Step = {
   href: string;
 };
 
-type Props = { startingPoints: number };
+type Props = { pointsOnAccount: number };
 
 const TAB_LABELS = ['For shoppers', 'For owners'] as const;
 
 // Three steps per door, each one a flow that completes today. The owner set
 // deliberately avoids the order queue — it is read-only in the demo, and a
 // tour step that dead-ends in a 403 is worse than no tour step.
-function buildTours(startingPoints: number): Step[][] {
+function buildTours(pointsOnAccount: number): Step[][] {
   return [
     [
       {
@@ -37,7 +37,17 @@ function buildTours(startingPoints: number): Step[][] {
         num: '02',
         time: '~1 min',
         title: 'Spend your points.',
-        body: `The demo account opens with ${startingPoints} points on it. Apply them at checkout and watch the total — and the tier bar on your profile — move.`,
+        // Not "the tier bar on your profile": the bar measures *qualifying*
+        // points, and redemption deliberately doesn't touch those — spending
+        // points must never cost a customer their tier. Redeeming moves the
+        // spendable balance and the order total, and nothing else. The bar
+        // sits in the account sidebar on every tab now, so a visitor who
+        // followed this step would have watched it not move.
+        // The live balance rather than a fixed figure: the account is shared,
+        // so a visitor who redeems at checkout leaves less on it for the next.
+        body: pointsOnAccount > 0
+          ? `The demo account is carrying ${pointsOnAccount} points right now. Apply them at checkout and watch the order total — and your balance on the account page — move.`
+          : 'Points land on the account as past orders are fulfilled. Apply them at checkout and watch the order total — and your balance on the account page — move.',
         cta: 'See how rewards work',
         href: '/rewards',
       },
@@ -82,10 +92,10 @@ function buildTours(startingPoints: number): Step[][] {
   ];
 }
 
-export default function DemoTour({ startingPoints }: Props) {
+export default function DemoTour({ pointsOnAccount }: Props) {
   const [active, setActive] = useState(0);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const tours = buildTours(startingPoints);
+  const tours = buildTours(pointsOnAccount);
 
   // Roving tabindex per the WAI tabs pattern — matches OurStoryTimeline.
   const onKeyDown = (event: React.KeyboardEvent) => {

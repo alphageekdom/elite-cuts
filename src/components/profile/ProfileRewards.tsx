@@ -3,7 +3,12 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { FOCUS_RING } from '@/lib/styles';
-import type { TierInfo } from '@/lib/rewards/calculator';
+import {
+  describeRedemptionCap,
+  redeemableValueDollars,
+  type TierInfo,
+} from '@/lib/rewards/calculator';
+import { orderRef } from '@/lib/orders/reference';
 import type { PointsHistoryReason } from '@/models/User';
 
 const LOCKED_PERKS = ['15% off dry-aged cuts', "Quarterly butcher's box"];
@@ -31,6 +36,9 @@ type Props = {
   redemptionDollars: number;
   pointsExpiryMonths: number;
   weekendMultiplier: number;
+  maxRedemptionPercent: number;
+  maxRedemptionDollars: number;
+  pointsPerDollar: number;
 };
 
 const fmt = (n: number) => n.toLocaleString('en-US');
@@ -68,6 +76,9 @@ export default function ProfileRewards({
   redemptionDollars,
   pointsExpiryMonths,
   weekendMultiplier,
+  maxRedemptionPercent,
+  maxRedemptionDollars,
+  pointsPerDollar,
 }: Props) {
   const [filter, setFilter] = useState<Filter>('all');
 
@@ -86,7 +97,20 @@ export default function ProfileRewards({
   const atMax = tier.nextTier === null;
   const target = tier.nextThreshold ?? tier.threshold;
   const progressPct = atMax ? 100 : Math.round(tier.progress * 100);
-  const dollarValue = Math.floor((points / Math.max(1, redemptionPoints)) * redemptionDollars);
+  // Was `floor(points / redemptionPoints * redemptionDollars)`, which divides
+  // first and floors the dollars afterwards — that reported a 420 balance as
+  // "$21 off" when redemption only spends whole 100-point blocks, so $20 is
+  // the most it can ever buy. The shared helper floors the blocks instead.
+  const dollarValue = redeemableValueDollars(points, {
+    redemptionPoints,
+    redemptionDollars,
+  });
+  // The per-order ceiling. Quoting a balance's worth without it overstates
+  // what the customer can actually take off any single order.
+  const capNote = describeRedemptionCap({
+    maxRedemptionPercent,
+    maxRedemptionDollars,
+  });
   const nextTierLabel = tier.nextTier === 'masterCut' ? 'Master Cut' : 'Connoisseur';
   const tierLevel = tier.tier === 'masterCut' ? '03' : tier.tier === 'connoisseur' ? '02' : '01';
   // Progress bar reflects qualifying points this period. Falls back to
@@ -106,9 +130,22 @@ export default function ProfileRewards({
   return (
     <div>
       <div className='flex flex-wrap items-end justify-between gap-4 mb-7'>
-        <h2 className='font-display text-[28px] font-normal tracking-tight leading-tight'>
-          Your <em className='italic text-oxblood'>rewards</em>
-        </h2>
+        <div>
+          {/* Page-level heading now that the shared hero is gone — the tab
+              body owns the h1 on every section. */}
+          <h1 className='font-display text-[34px] font-normal tracking-tight leading-none sm:text-[40px]'>
+            Your <em className='italic text-oxblood'>rewards</em>
+          </h1>
+          <p className='mt-3 text-[14px] text-muted'>
+            {pointsPerDollar === 1
+              ? 'One point per dollar'
+              : `${pointsPerDollar} points per dollar`}
+            {weekendMultiplier > 1 && `, ${weekendMultiplier}× at weekends`}.{' '}
+            {pointsExpiryMonths > 0
+              ? `Points expire ${pointsExpiryMonths} months after they're earned.`
+              : 'Points never expire.'}
+          </p>
+        </div>
         <Link
           href='/rewards'
           className='text-[13px] font-medium text-ink-soft inline-flex items-center gap-1.5 border-b border-current pb-px hover:text-oxblood hover:gap-2.5 transition-all focus-visible:outline-none focus-visible:text-oxblood'
@@ -145,10 +182,21 @@ export default function ProfileRewards({
                   <em className='ml-1 font-normal italic text-camel-deep text-2xl'>pts</em>
                 </span>
               </div>
-              <p className='text-[13px] text-cream/65'>
-                That&apos;s{' '}
-                <strong className='font-medium text-cream'>${dollarValue} off</strong>{' '}
-                your next order.
+              <p className='text-[13px] leading-relaxed text-cream/65'>
+                {dollarValue > 0 ? (
+                  <>
+                    That&apos;s{' '}
+                    <strong className='font-medium text-cream'>
+                      ${dollarValue} off
+                    </strong>{' '}
+                    {capNote ? `— ${capNote}.` : 'your next order.'}
+                  </>
+                ) : (
+                  <>
+                    {fmt(Math.max(0, redemptionPoints - points))} more points and
+                    you can start taking money off an order.
+                  </>
+                )}
               </p>
               <p className='mt-2 text-[12px] text-cream/60'>
                 Lifetime earned: <strong className='text-cream/70 font-medium'>{fmt(lifetimePoints)}</strong>
@@ -203,9 +251,9 @@ export default function ProfileRewards({
         {/* Perks card — light */}
         <div className='rounded border border-line-soft bg-paper p-6 sm:p-8'>
           <div className='mb-6'>
-            <h3 className='font-display text-xl font-medium tracking-tight leading-tight mb-1'>
+            <h2 className='font-display text-xl font-medium tracking-tight leading-tight mb-1'>
               Your <em className='font-normal italic text-oxblood'>perks</em>
-            </h3>
+            </h2>
             <p className='text-[13px] text-muted'>
               {pointsExpiryMonths > 0
                 ? `Unlocked. Points expire after ${pointsExpiryMonths} months.`
@@ -247,9 +295,9 @@ export default function ProfileRewards({
       {/* Activity */}
       <div className='overflow-hidden rounded border border-line-soft bg-paper'>
         <div className='flex flex-wrap items-center justify-between gap-3 border-b border-line-soft px-5 py-4 sm:px-8 sm:py-5'>
-          <h3 className='font-display text-xl font-medium tracking-tight leading-tight'>
+          <h2 className='font-display text-xl font-medium tracking-tight leading-tight'>
             Points <em className='font-normal italic text-oxblood'>activity</em>
-          </h3>
+          </h2>
           <div
             role='group'
             aria-label='Filter activity'
@@ -285,7 +333,9 @@ export default function ProfileRewards({
           ) : (
             visible.map((row, i) => {
               const { title, kind } = reasonLabel(row.reason);
-              const meta = row.orderId ? `Order ${row.orderId.slice(-6).toUpperCase()}` : 'Adjustment';
+              // Was the last six characters, bare — a third spelling of the
+              // reference on a page whose order list prints `#EC-` + last 4.
+              const meta = row.orderId ? `Order ${orderRef(row.orderId)}` : 'Adjustment';
               return (
                 <div
                   key={`${row.createdAt}-${i}`}

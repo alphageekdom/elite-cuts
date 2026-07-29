@@ -13,6 +13,7 @@ import DashboardRecentOrders from '@/components/admin/dashboard/DashboardRecentO
 import type { OrderRow } from '@/components/admin/dashboard/DashboardRecentOrders';
 import RevenueCard from '@/components/admin/analytics/RevenueCard';
 import { excludeDemoOrders } from '@/lib/demo/exclude';
+import { orderRef } from '@/lib/orders/reference';
 import {
   DAY_MS,
   RANGE_DAYS,
@@ -148,7 +149,7 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
 
     return {
       id: idStr,
-      orderRef: `#EC-${idStr.slice(-4).toUpperCase()}`,
+      orderRef: orderRef(idStr),
       customerName: user?.name ?? 'Unknown',
       customerEmail: user?.email ?? '',
       cut: firstItem ? `${firstItem.name} · ${firstItem.qty}${firstItem.qty > 1 ? 'x' : ''}` : 'Unknown',

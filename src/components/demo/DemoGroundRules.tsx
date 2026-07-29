@@ -42,7 +42,7 @@ const buildRules = (cutCount: number): Rule[] => [
     pill: 'Resets',
     tone: 'reset',
     title: 'Overnight, every night',
-    body: 'The catalog and shop settings go back to the snapshot, and everything the demo customer owns — cart, orders, reviews, points — clears. Break what you like.',
+    body: 'The catalog and shop settings go back to the snapshot, and the demo shopper’s account — cart, orders, reviews, saved cuts, cards, points — returns to the same starting state. Break what you like.',
   },
 ];
 

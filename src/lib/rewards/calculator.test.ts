@@ -7,10 +7,12 @@ import {
   computeAward,
   computeRedemption,
   computeRedemptionCap,
+  describeRedemptionCap,
   getQualifyingPoints,
   getTier,
   getTierView,
   projectRewards,
+  redeemableValueDollars,
   tierRank,
 } from './calculator';
 
@@ -136,6 +138,88 @@ describe('computeRedemption', () => {
   it('returns 0 for non-positive points', () => {
     expect(computeRedemption(0, settings())).toBe(0);
     expect(computeRedemption(-50, settings())).toBe(0);
+  });
+});
+
+describe('redeemableValueDollars', () => {
+  // The bug this exists to prevent. The profile displayed the seeded demo
+  // balance as "$21 off" using `floor(420 / 100 * 5)`, but `applyRedemption`
+  // floors the spend to whole 100-point blocks first, so 420 buys four blocks
+  // — $20. The customer could never spend that twenty-first dollar.
+  it('floors to whole redemption blocks, not to whole dollars', () => {
+    expect(redeemableValueDollars(420, settings())).toBe(20);
+  });
+
+  it('agrees with what applyRedemption would actually grant', () => {
+    const s = settings({ minToRedeem: 100, maxRedemptionPercent: 100 });
+    const result = applyRedemption({
+      pointsToRedeem: 420,
+      currentBalance: 420,
+      settings: s,
+    });
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.valueCents).toBe(redeemableValueDollars(420, s) * 100);
+    }
+  });
+
+  it('is zero below a single block', () => {
+    expect(redeemableValueDollars(99, settings())).toBe(0);
+    expect(redeemableValueDollars(0, settings())).toBe(0);
+  });
+
+  it('handles a non-default conversion rate', () => {
+    expect(
+      redeemableValueDollars(
+        250,
+        settings({ redemptionPoints: 50, redemptionDollars: 2 }),
+      ),
+    ).toBe(10);
+  });
+
+  it('ignores negative and non-finite balances', () => {
+    expect(redeemableValueDollars(-500, settings())).toBe(0);
+    expect(redeemableValueDollars(Number.NaN, settings())).toBe(0);
+  });
+});
+
+describe('describeRedemptionCap', () => {
+  it('names both limits when the shop sets both', () => {
+    expect(
+      describeRedemptionCap({
+        maxRedemptionPercent: 50,
+        maxRedemptionDollars: 50,
+      }),
+    ).toBe('up to $50 an order, and never more than 50% of the subtotal');
+  });
+
+  it('names only the flat ceiling when the percentage does not bite', () => {
+    expect(
+      describeRedemptionCap({
+        maxRedemptionPercent: 100,
+        maxRedemptionDollars: 25,
+      }),
+    ).toBe('up to $25 an order');
+  });
+
+  it('names only the percentage when there is no flat ceiling', () => {
+    expect(
+      describeRedemptionCap({
+        maxRedemptionPercent: 40,
+        maxRedemptionDollars: 0,
+      }),
+    ).toBe("never more than 40% of an order's subtotal");
+  });
+
+  // Nothing to disclose is not the same as a cap of zero — the caller drops
+  // the clause entirely rather than printing "up to $0 an order".
+  it('returns null when the shop caps nothing', () => {
+    expect(
+      describeRedemptionCap({
+        maxRedemptionPercent: 100,
+        maxRedemptionDollars: 0,
+      }),
+    ).toBeNull();
   });
 });
 

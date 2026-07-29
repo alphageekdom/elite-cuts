@@ -9,7 +9,7 @@ import CheckIcon from '@/components/uielements/CheckIcon';
 
 type Feature = { text: string; tag: string };
 
-type Props = { cutCount: number; startingPoints: number };
+type Props = { cutCount: number; pointsOnAccount: number };
 
 // Every bullet below is a flow that completes in the demo today. The owner
 // list stops at what a demo admin can actually write: the order queue is
@@ -24,14 +24,23 @@ const ownerFeatures: Feature[] = [
   { text: 'Read every dashboard and export to CSV', tag: 'Analytics' },
 ];
 
-export default function DemoDoors({ cutCount, startingPoints }: Props) {
+export default function DemoDoors({ cutCount, pointsOnAccount }: Props) {
   const { pending, start } = useDemoStart();
 
   const shopperFeatures: Feature[] = [
     { text: `Browse ${cutCount} cuts with live search and filters`, tag: 'Catalog' },
     { text: 'Build a cart and pick a pickup slot', tag: 'Checkout' },
     { text: 'Save cuts to your list', tag: 'Account' },
-    { text: `Spend the ${startingPoints} points you start with`, tag: 'Rewards' },
+    // The live balance, so the bullet drops rather than promising nothing —
+    // the account is shared, and a visitor can redeem it down at checkout.
+    ...(pointsOnAccount > 0
+      ? [
+          {
+            text: `Spend the ${pointsOnAccount} points already on the account`,
+            tag: 'Rewards',
+          },
+        ]
+      : []),
     { text: 'Leave a review on any cut', tag: 'Reviews' },
   ];
 

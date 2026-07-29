@@ -24,6 +24,7 @@ import {
   orderHasRealizedDifference,
   realizedOrderTotal,
 } from '@/lib/orders/line';
+import { orderRefBare } from '@/lib/orders/reference';
 import { FOCUS_RING } from '@/lib/styles';
 import CheckoutStepRail from '@/components/checkout/CheckoutStepRail';
 import ConfirmationCartReset from '@/components/checkout/ConfirmationCartReset';
@@ -116,7 +117,11 @@ export default async function ConfirmationPage({ searchParams }: Props) {
   const firstName = contactName.split(/\s+/)[0] ?? '';
   const hasName = firstName.length > 0;
 
-  const shortId = String(order._id).slice(-8).toUpperCase();
+  // The hero supplies the leading '#', so this is the bare form. Was the
+  // last eight characters with no 'EC-' prefix, which made this page the one
+  // surface printing a different reference for the order than the receipt,
+  // the profile list and the counter's own admin row.
+  const shortId = orderRefBare(String(order._id));
   const isPickup = order.fulfillmentType !== 'delivery';
   const isPaid = order.paymentResult?.status === 'Completed';
 

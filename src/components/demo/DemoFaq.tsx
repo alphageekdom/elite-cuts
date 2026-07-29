@@ -26,7 +26,7 @@ const FAQS: AccordionItem[] = [
   },
   {
     q: 'What happens to the changes I make?',
-    a: 'They stick for as long as you’re here, then clear overnight. The catalog and shop settings go back to their snapshot, and everything the demo customer owns — cart, orders, reviews, saved cuts, points — is wiped. Delete a cut, break a price; it’ll be back tomorrow.',
+    a: 'They stick for as long as you’re here, then go back overnight. The catalog and shop settings return to their snapshot, and the demo shopper’s account — cart, orders, reviews, saved cuts, saved cards, addresses, points — is cleared and re-seeded to the same starting state you found it in. Delete a cut, break a price, spend the points; it’ll all be back tomorrow.',
   },
   {
     q: 'Is this a real butcher shop?',

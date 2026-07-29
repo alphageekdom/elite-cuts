@@ -113,7 +113,7 @@ export default function ProfileSavedCuts({ savedCuts: initial, showAll = false }
             <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
           </svg>
         </div>
-        <h3 className="font-display font-medium text-[22px] tracking-tight mb-2">No saved cuts yet</h3>
+        <h2 className="font-display font-medium text-[22px] tracking-tight mb-2">No saved cuts yet</h2>
         <p className="text-muted text-sm mb-6 max-w-[32ch] mx-auto">
           Browse the cuts and save anything worth coming back for.
         </p>

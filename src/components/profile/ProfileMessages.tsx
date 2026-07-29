@@ -29,8 +29,11 @@ type Props = {
   messages: SerializedMessage[];
   userId: string;
   name: string;
-  rewardPoints: number;
   isAdmin: boolean;
+  /** Drives the avatar palette only. Was derived here from a raw points
+      balance against a hardcoded 250, which quietly re-implemented the tier
+      thresholds the shop keeps in settings. */
+  isMember: boolean;
 };
 
 function statusPill(status: MessageStatus) {
@@ -47,8 +50,7 @@ function formatDate(iso: string): string {
   });
 }
 
-export default function ProfileMessages({ messages, userId, name, rewardPoints, isAdmin }: Props) {
-  const isMember = rewardPoints >= 250;
+export default function ProfileMessages({ messages, userId, name, isAdmin, isMember }: Props) {
   const avatarColor = isAdmin
     ? ADMIN_AVATAR_COLOR
     : avatarColorForId(userId, isMember ? MEMBER_AVATAR_COLORS : AVATAR_COLORS);
@@ -162,15 +164,21 @@ export default function ProfileMessages({ messages, userId, name, rewardPoints, 
   return (
     <>
       <section>
-        <div className="flex items-end justify-between mb-7 gap-5">
-          <h2 className="font-display text-[28px] font-normal tracking-tight leading-tight">
-            Your <em className="italic text-oxblood">messages</em>
-            {items.length > 0 && (
-              <span className="ml-3 font-sans text-[15px] font-normal text-muted align-middle">
-                ({items.length})
-              </span>
-            )}
-          </h2>
+        <div className="flex flex-wrap items-end justify-between mb-7 gap-4">
+          <div>
+            <h1 className="font-display text-[34px] font-normal tracking-tight leading-none sm:text-[40px]">
+              Your <em className="italic text-oxblood">messages</em>
+            </h1>
+            {/* The design's subtitle was "Straight to the counter. Someone
+                reads these all day." The same claim was removed from the
+                confirmation page a feature ago — the shop is shut on Mondays,
+                and nothing notifies staff when a message lands. This says only
+                what happens: it reaches the shop, and a reply is not in-app. */}
+            <p className="mt-3 text-[14px] text-muted">
+              Questions for the counter. Replies come from the shop directly,
+              not back into this page.
+            </p>
+          </div>
           <button
             type="button"
             onClick={() => setModalOpen(true)}
@@ -190,7 +198,7 @@ export default function ProfileMessages({ messages, userId, name, rewardPoints, 
                 <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
               </svg>
             </div>
-            <h3 className="font-display font-medium text-[22px] tracking-tight mb-2">No messages yet</h3>
+            <h2 className="font-display font-medium text-[22px] tracking-tight mb-2">No messages yet</h2>
             <p className="text-muted text-sm mb-6 max-w-[32ch] mx-auto">
               Have a question or need help with an order? We&apos;re here.
             </p>
