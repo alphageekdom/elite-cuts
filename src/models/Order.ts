@@ -98,6 +98,9 @@ export type OrderItem = {
   // regardless of qty. When present (and pricingType is variable-weight),
   // the line's realized total replaces the estimate everywhere.
   realizedWeightLb?: number;
+  // Bundle contents at purchase, so cuts can be counted without reaching
+  // back to the product. Absent on non-bundle lines and on older orders.
+  includedItems?: string[];
 };
 
 export type PaymentResult = {
@@ -259,6 +262,13 @@ const OrderItemSchema = new Schema<OrderItem>(
     displayPriceLabel:  { type: String, trim: true },
     displayWeightLabel: { type: String, trim: true },
     realizedWeightLb:   { type: Number, min: 0 },
+
+    // What a bundle contains, snapshotted like name and price beside it. The
+    // confirmation page counts cuts as well as lines, and reading it off the
+    // referenced Product would report today's contents rather than what was
+    // bought — and nothing at all once that product is deleted. Absent on
+    // orders placed before this shipped, and on every non-bundle line.
+    includedItems: { type: [String], default: undefined },
   },
   {
     _id: false,

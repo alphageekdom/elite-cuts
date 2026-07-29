@@ -22,6 +22,10 @@
   --color-ink: #1c1814;
   --color-ink-soft: #2d2722;
   --color-muted: #71695d;
+  /* Deeper neutral for muted text on the cream-deep tint, where `muted` erodes
+     to 4.25:1. Passes 4.65:1 there and stays quieter than `ink-soft`, which
+     would flatten an eyebrow against the body text it labels. */
+  --color-muted-deep: #6b6357;
   --color-line: rgba(28, 24, 20, 0.12);
   --color-line-soft: rgba(28, 24, 20, 0.08);
   --color-green: #4a6b3a;

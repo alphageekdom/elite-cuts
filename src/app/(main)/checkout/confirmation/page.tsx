@@ -1,22 +1,43 @@
 import type { Metadata } from 'next';
-import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import connectDB from '@/config/database';
 import OrderModel from '@/models/Order';
+import Product, { type SerializedProduct } from '@/models/Product';
+import { convertToSerializableObject } from '@/lib/convertToObject';
 import { getSessionUser } from '@/lib/auth/session';
-import { formatMoney, productImageSrc } from '@/lib/format';
 import { DELIVERY_FEE } from '@/lib/pricing';
-import { getShopSettings, formatShopAddress } from '@/lib/shop-settings/queries';
-import { formatReadyIn } from '@/lib/shop-settings/pickup-format';
-import { formatPickupWindow } from '@/lib/shop-settings/pickup-slots';
+import { formatOrderCount } from '@/lib/cart/counts';
+import { computeAward } from '@/lib/rewards/calculator';
+import {
+  formatPhoneHref,
+  formatShopAddress,
+  getShopSettings,
+} from '@/lib/shop-settings/queries';
+import { getShopHours } from '@/lib/shop-settings/hours-queries';
+import { formatShopHoursCondensed } from '@/lib/shop-settings/hours-format';
+import { formatInShopZone } from '@/lib/shop-settings/pickup-format';
+import { formatPickupWindowParts } from '@/lib/shop-settings/pickup-slots';
+import { VISIBLE_PRODUCT_FILTER } from '@/lib/products/constants';
 import {
   orderHasRealizedDifference,
   realizedOrderTotal,
 } from '@/lib/orders/line';
+import { FOCUS_RING } from '@/lib/styles';
 import CheckoutStepRail from '@/components/checkout/CheckoutStepRail';
 import ConfirmationCartReset from '@/components/checkout/ConfirmationCartReset';
+import {
+  CARD_CLASS,
+  EYEBROW_CLASS,
+  EYEBROW_ON_TINT,
+} from './confirmationStyles';
+import ConfirmationHero from './ConfirmationHero';
+import ConfirmationReceipt from './ConfirmationReceipt';
+import ConfirmationSuggestions from './ConfirmationSuggestions';
+import ConfirmationTimeline, {
+  type TimelineStep,
+} from './ConfirmationTimeline';
 
 export const metadata: Metadata = {
   title: 'Order Confirmed',
@@ -33,9 +54,6 @@ export default async function ConfirmationPage({ searchParams }: Props) {
   if (!orderId) redirect('/cart');
 
   const sessionUser = await getSessionUser();
-  const shopSettings = await getShopSettings();
-  const shopAddress = formatShopAddress(shopSettings);
-  const readyIn = formatReadyIn(shopSettings.leadTime);
 
   await connectDB();
 
@@ -51,13 +69,56 @@ export default async function ConfirmationPage({ searchParams }: Props) {
     redirect('/cart');
   }
 
+  // Suggestions strip: the shop's current featured cuts, minus anything in
+  // this order so the page doesn't invite a repeat purchase of what was just
+  // bought. Excluded in the query rather than after it, so `limit` is exact —
+  // the previous over-fetch-and-slice could still come up short for a customer
+  // who ordered several featured cuts. VISIBLE_PRODUCT_FILTER keeps a
+  // soft-deleted cut from being recommended.
+  const orderedIds = order.orderItems.map((line) => line.product);
+
+  const [shopSettings, hoursDays, featuredDocs] = await Promise.all([
+    getShopSettings(),
+    getShopHours(),
+    Product.find({
+      ...VISIBLE_PRODUCT_FILTER,
+      isFeatured: true,
+      stockCount: { $gt: 0 },
+      _id: { $nin: orderedIds },
+    })
+      .limit(3)
+      .lean(),
+  ]);
+  const shopAddress = formatShopAddress(shopSettings);
+  const suggestions = featuredDocs.map(
+    convertToSerializableObject,
+  ) as SerializedProduct[];
+
   const isGuestOrder = !order.user;
-  const displayName = order.contactName ?? order.guestContact?.name ?? '—';
-  const displayEmail = order.contactEmail ?? order.guestContact?.email ?? '—';
-  const displayPhone = order.contactPhone ?? order.guestContact?.phone;
+  // `??` only falls back on null/undefined, and an admin-created order can
+  // carry an empty string — which would render as a blank value beside its
+  // label rather than the placeholder. Normalise once so the placeholder, the
+  // contact block and the first-name check all read the same resolved value.
+  const contactName = (
+    order.contactName ??
+    order.guestContact?.name ??
+    ''
+  ).trim();
+  const contactEmail = (
+    order.contactEmail ??
+    order.guestContact?.email ??
+    ''
+  ).trim();
+  const displayName = contactName || '—';
+  const displayEmail = contactEmail || '—';
+  const displayPhone =
+    (order.contactPhone ?? order.guestContact?.phone)?.trim() || null;
+  const firstName = contactName.split(/\s+/)[0] ?? '';
+  const hasName = firstName.length > 0;
 
   const shortId = String(order._id).slice(-8).toUpperCase();
   const isPickup = order.fulfillmentType !== 'delivery';
+  const isPaid = order.paymentResult?.status === 'Completed';
 
   // "Final at pickup" copy — only renders once an admin has weighed at
   // least one variable-weight line and its realized total differs from
@@ -72,249 +133,317 @@ export default async function ConfirmationPage({ searchParams }: Props) {
     pointsRedemptionValueCents: order.pointsRedemptionValueCents,
     deliveryFee: isPickup ? 0 : DELIVERY_FEE,
   });
+  const realizedLabel =
+    order.paymentResult?.settlementStatus === 'settled'
+      ? 'Settled at pickup (after weighing)'
+      : order.paymentResult?.settlementStatus === 'failed'
+        ? 'Final at pickup (settle in-store)'
+        : 'Final at pickup (after weighing)';
+
+  const pickupWindow = order.pickupSlot
+    ? formatPickupWindowParts(order.pickupSlot)
+    : null;
+
+  // Points are awarded when the order is handed over, not when it is placed —
+  // `awardOrderCompletion` runs on the transition to Completed. So this is
+  // what the customer *will* earn, phrased the way the receipt page already
+  // phrases it. Guests earn nothing, so they see no card at all.
+  //
+  // Estimated at multiplier 1 for the reason the cart drawer documents: the
+  // weekend multiplier keys off the award date, which may not be today, so a
+  // floor is the only number the shop can always honour. Passing the view
+  // date instead would promise 2x on a Sunday order collected on Tuesday —
+  // and would change the number on every reload.
+  const pendingPoints = isGuestOrder
+    ? 0
+    : computeAward(order.subtotal, { ...shopSettings, weekendMultiplier: 1 });
+
+  const timeline: TimelineStep[] = [
+    {
+      time: formatInShopZone(order.createdAt, shopSettings.timezone, {
+        hour: 'numeric',
+        minute: '2-digit',
+      }),
+      title: 'Order received',
+      body: "It's on the board in the cutting room.",
+      done: true,
+    },
+    {
+      title: 'Cut and wrapped',
+      body: order.orderNotes
+        ? 'Portioned to your note, then wrapped in paper.'
+        : 'Portioned by hand, then wrapped in paper.',
+      done: false,
+    },
+    isPickup
+      ? {
+          time: pickupWindow?.time,
+          title: 'Ready at the counter',
+          body: 'Give your name or the reference above.',
+          done: false,
+        }
+      : {
+          title: 'Out for delivery',
+          body: 'Someone should be in to take it — it needs refrigerating.',
+          done: false,
+        },
+  ];
 
   return (
     <div className='bg-cream'>
       <ConfirmationCartReset />
       <CheckoutStepRail currentStep={3} />
 
-      <div className='mx-auto max-w-300 px-6 pb-24 sm:px-8'>
-        {/* Hero */}
-        <div className='mb-12 pt-12 text-center'>
-          <div className='mx-auto mb-5 grid h-14 w-14 place-items-center rounded-full bg-green/15 text-green'>
-            <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2} aria-hidden='true' className='h-7 w-7'>
-              <polyline points='20 6 9 17 4 12' />
-            </svg>
-          </div>
-          <p className='mb-3 text-[11px] font-medium uppercase tracking-[0.22em] text-muted'>
-            Order placed
-          </p>
-          <h1 className='font-display text-[clamp(36px,5vw,60px)] font-normal leading-[1.05] tracking-tight'>
-            You&apos;re all <em className='text-oxblood'>set.</em>
-          </h1>
-          {/* Both halves of the previous copy here were false. No mail service
-              is connected to this project, so nothing was ever sent; and every
-              notification type in the system (`new_order`, `low_stock`,
-              `new_event`, `settlement_failed`) is written only to users with
-              `isAdmin: true`, so no customer has ever been told their order is
-              ready by any channel. The Privacy page now states plainly that the
-              shop sends no email, and this page sat three clicks away
-              contradicting it.
-              Branched on guest, because "check your order history" is only
-              true for someone who has one — a guest's order isn't attached to
-              an account until they register with the same email, which the
-              block further down the page already offers. */}
-          <p className='mx-auto mt-3.5 max-w-[42ch] text-[15px] text-ink-soft'>
-            {isGuestOrder
-              ? "We've got your order. Your reference is just below — that's what the counter will ask for."
-              : "Your order is saved to your order history — that's where you'll see it move to ready for pickup."}
-          </p>
-        </div>
+      <ConfirmationHero
+        eyebrow={isPaid ? 'Order confirmed · paid' : 'Order received'}
+        headline={hasName ? "We're on it," : "We're"}
+        headlineAccent={hasName ? `${firstName}.` : 'on it.'}
+        sub={
+          isPickup
+            ? "Your order is with the cutting room. Come to the counter, give your name or the reference, and it'll be wrapped and waiting."
+            : // A plain string prop, not JSX text — an HTML entity would render
+              // literally here.
+              'Your order is with the cutting room. We’ll bring it out to the address below once it’s cut and wrapped.'
+        }
+        reference={shortId}
+        facts={[
+          {
+            label: 'Placed',
+            // Shop zone, not the server's — see formatInShopZone. Without it
+            // this line contradicts the pickup window a few inches below.
+            value: formatInShopZone(order.createdAt, shopSettings.timezone, {
+              weekday: 'short',
+              month: 'short',
+              day: 'numeric',
+              hour: 'numeric',
+              minute: '2-digit',
+            }),
+          },
+          { label: 'Payment', value: order.paymentMethod },
+          {
+            label: 'Under the name',
+            value: displayName,
+          },
+        ]}
+      />
 
-        <div className='mx-auto max-w-170 space-y-5'>
-          {/* Order ref */}
-          <div className='flex items-center justify-between rounded-sm border border-line-soft bg-paper px-6 py-5'>
-            <div>
-              <p className='mb-0.5 text-[11px] font-medium uppercase tracking-[0.18em] text-muted'>
-                Order reference
-              </p>
-              <p className='font-mono text-[20px] font-medium tracking-widest text-ink'>
-                #{shortId}
-              </p>
-            </div>
-            <span className='rounded-full bg-green/10 px-3.5 py-1.5 text-[12px] font-medium text-green'>
-              Confirmed
-            </span>
-          </div>
-
-          {/* Contact + fulfillment */}
-          <div className='grid grid-cols-1 gap-5 sm:grid-cols-2'>
-            {/* Contact */}
-            <div className='rounded-sm border border-line-soft bg-paper px-6 py-5'>
-              <p className='mb-3.5 text-[11px] font-medium uppercase tracking-[0.18em] text-muted'>
-                Contact
-              </p>
-              <p className='text-[15px] font-medium text-ink'>{displayName}</p>
-              <p className='mt-1 text-[13px] text-ink-soft'>{displayEmail}</p>
-              {displayPhone && (
-                <p className='mt-0.5 text-[13px] text-ink-soft'>{displayPhone}</p>
-              )}
-            </div>
-
-            {/* Fulfillment */}
-            <div className='rounded-sm border border-line-soft bg-paper px-6 py-5'>
-              <p className='mb-3.5 text-[11px] font-medium uppercase tracking-[0.18em] text-muted'>
-                {isPickup ? 'Pickup details' : 'Delivery address'}
-              </p>
-              {isPickup ? (
-                <>
-                  <p className='text-[15px] font-medium text-ink'>
-                    {order.pickupSlot
-                      ? formatPickupWindow(order.pickupSlot)
-                      : 'Today'}
-                  </p>
-                  <p className='mt-1 text-[13px] text-ink-soft'>{shopAddress}</p>
-                  <p className='mt-1 font-mono text-[11px] tracking-[0.06em] text-green'>
-                    FREE · {readyIn.toUpperCase()}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className='text-[15px] font-medium text-ink'>
-                    {order.deliveryAddress?.address1}
-                  </p>
-                  {order.deliveryAddress?.address2 && (
-                    <p className='text-[13px] text-ink-soft'>{order.deliveryAddress.address2}</p>
-                  )}
-                  <p className='text-[13px] text-ink-soft'>
-                    {[
-                      order.deliveryAddress?.city,
-                      order.deliveryAddress?.state,
-                      order.deliveryAddress?.zip,
-                    ]
-                      .filter(Boolean)
-                      .join(', ')}
-                  </p>
-                  <p className='mt-1 font-mono text-[11px] tracking-[0.06em] text-muted'>
-                    $8 · SAME DAY
-                  </p>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Payment */}
-          <div className='rounded-sm border border-line-soft bg-paper px-6 py-5'>
-            <p className='mb-3.5 text-[11px] font-medium uppercase tracking-[0.18em] text-muted'>
-              Payment
-            </p>
-            <div className='flex items-baseline justify-between gap-4'>
-              <p className='text-[15px] font-medium text-ink'>
-                {order.paymentMethod}
-              </p>
-              <p
-                className={`font-mono text-[11px] tracking-[0.06em] ${
-                  order.paymentResult?.status === 'Completed'
-                    ? 'text-green'
-                    : 'text-muted'
-                }`}
-              >
-                {(order.paymentResult?.status ?? 'PENDING').toUpperCase()}
-              </p>
-            </div>
-            {order.paymentResult?.paymentIntentId && (
-              <p className='mt-1.5 font-mono text-[12px] text-ink-soft'>
-                {order.paymentResult.paymentIntentId.slice(0, 14)}…
-              </p>
-            )}
-          </div>
-
-          {/* Order items */}
-          <div className='rounded-sm border border-line-soft bg-paper px-6 py-5'>
-            <p className='mb-4 text-[11px] font-medium uppercase tracking-[0.18em] text-muted'>
-              Items ({order.orderItems.reduce((s, i) => s + i.qty, 0)})
-            </p>
-            <ul className='divide-y divide-line-soft'>
-              {order.orderItems.map((item, i) => {
-                const imgSrc = productImageSrc(item.image);
-                return (
-                <li key={i} className='flex items-center gap-4 py-3.5 first:pt-0 last:pb-0'>
-                  {imgSrc && (
-                    <div className='relative h-14 w-14 shrink-0 overflow-hidden rounded-sm bg-cream-deep'>
-                      <Image
-                        src={imgSrc}
-                        alt={item.name}
-                        fill
-                        className='object-cover'
-                        sizes='56px'
-                      />
-                    </div>
-                  )}
-                  <div className='min-w-0 flex-1'>
-                    <p className='line-clamp-2 text-[14px] font-medium text-ink'>{item.name}</p>
-                    <p className='mt-1 text-[12px] text-muted'>
-                      {item.productType} · qty {item.qty}
+      <div className='mx-auto grid max-w-300 grid-cols-1 items-start gap-6 px-6 pt-10 pb-24 sm:px-8 lg:grid-cols-[1fr_380px] lg:gap-8'>
+        {/* Left column */}
+        <div className='flex flex-col gap-5'>
+          {/* When + where */}
+          <section className='overflow-hidden rounded-sm border border-line-soft bg-paper'>
+            <div className='grid grid-cols-1 sm:grid-cols-2'>
+              <div className='border-b border-line-soft px-6 py-6 sm:border-r sm:border-b-0'>
+                <h2 className={EYEBROW_CLASS}>
+                  {isPickup ? 'Ready for pickup' : 'Delivery'}
+                </h2>
+                {isPickup ? (
+                  <>
+                    {pickupWindow?.day && (
+                      <p className='mt-3 font-display text-[32px] leading-none tracking-tight sm:text-[36px]'>
+                        {pickupWindow.day}
+                      </p>
+                    )}
+                    <p className='mt-1.5 font-display text-[32px] leading-none tracking-tight text-oxblood sm:text-[36px]'>
+                      {pickupWindow?.time ?? 'Any time'}
                     </p>
-                  </div>
-                  <p className='shrink-0 font-mono text-[14px] text-ink'>
-                    {formatMoney(item.price * item.qty)}
+                    {/* Without a slot there is no window to arrive inside, so
+                        the copy falls back to the shop's opening hours rather
+                        than naming a day the order never recorded. */}
+                    <p className='mt-3.5 text-[13.5px] leading-relaxed text-ink-soft'>
+                      {pickupWindow
+                        ? "Arrive any time in the window — we'll have it cut and wrapped before it starts."
+                        : "Come by whenever we're open — we'll have it cut and wrapped."}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    {/* Nothing schedules a delivery day: the order carries an
+                        address and no time, and delivery isn't gated by shop
+                        hours. So the headline answers "where", and the body
+                        carries the only "when" the shop can stand behind. */}
+                    <p className='mt-3 font-display text-[32px] leading-none tracking-tight text-oxblood sm:text-[36px]'>
+                      To your door
+                    </p>
+                    <p className='mt-3.5 text-[13.5px] leading-relaxed text-ink-soft'>
+                      We&apos;ll bring it out once it&apos;s cut and wrapped.
+                    </p>
+                  </>
+                )}
+              </div>
+
+              <div className='px-6 py-6'>
+                <h2 className={EYEBROW_CLASS}>
+                  {isPickup ? 'Collect from' : 'Delivering to'}
+                </h2>
+                {isPickup ? (
+                  <>
+                    <p className='mt-3 text-[16px] leading-snug text-ink'>
+                      {shopSettings.shopName}
+                    </p>
+                    <p className='mt-1 text-[14px] leading-relaxed text-ink-soft'>
+                      {shopAddress}
+                    </p>
+                    {/* The shop's lead time belongs on checkout, where it's
+                        read before a window is chosen. Here it sits beside a
+                        committed window and contradicts it whenever the picker
+                        has rolled forward to tomorrow. */}
+                    <p className='mt-3 font-mono text-[11.5px] tracking-[0.06em] text-green'>
+                      FREE PICKUP
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className='mt-3 text-[16px] leading-snug text-ink'>
+                      {order.deliveryAddress?.address1}
+                      {order.deliveryAddress?.address2
+                        ? `, ${order.deliveryAddress.address2}`
+                        : ''}
+                    </p>
+                    <p className='mt-1 text-[14px] leading-relaxed text-ink-soft'>
+                      {/* "San Diego, CA 92102" — the zip follows the state on a
+                          space, not another comma, which is what the previous
+                          blanket join produced. */}
+                      {[
+                        order.deliveryAddress?.city,
+                        [
+                          order.deliveryAddress?.state,
+                          order.deliveryAddress?.zip,
+                        ]
+                          .filter(Boolean)
+                          .join(' '),
+                      ]
+                        .filter(Boolean)
+                        .join(', ')}
+                    </p>
+                    <p className='mt-3 font-mono text-[11.5px] tracking-[0.06em] text-muted'>
+                      ${DELIVERY_FEE} · SAME DAY
+                    </p>
+                  </>
+                )}
+
+                <div className='mt-5 border-t border-line-soft pt-5'>
+                  <h3 className={EYEBROW_CLASS}>Contact</h3>
+                  {/* An email has no spaces to wrap on, and the section clips
+                      its overflow, so a long address loses its tail silently
+                      on a narrow phone unless it may break mid-word. */}
+                  <p className='mt-2.5 text-[15px] wrap-break-word text-ink'>
+                    {displayEmail}
                   </p>
-                </li>
-                );
-              })}
-            </ul>
-
-            {/* Totals */}
-            <div className='mt-5 space-y-2 border-t border-line-soft pt-5'>
-              <div className='flex justify-between text-[13px] text-ink-soft'>
-                <span>Subtotal</span>
-                <span>{formatMoney(order.subtotal)}</span>
+                  {displayPhone && (
+                    <p className='mt-1 text-[13.5px] wrap-break-word text-ink-soft'>
+                      {displayPhone}
+                    </p>
+                  )}
+                </div>
               </div>
-              {!isPickup && (
-                <div className='flex justify-between text-[13px] text-ink-soft'>
-                  <span>Delivery</span>
-                  <span>{formatMoney(DELIVERY_FEE)}</span>
-                </div>
-              )}
-              {(order.memberDiscount ?? 0) > 0 && (
-                <div className='flex justify-between text-[13px] text-green'>
-                  <span>Member discount</span>
-                  <span>−{formatMoney(order.memberDiscount ?? 0)}</span>
-                </div>
-              )}
-              {(order.promoDiscount ?? 0) > 0 && (
-                <div className='flex justify-between text-[13px] text-green'>
-                  <span>Promo{order.promoCode ? ` — ${order.promoCode}` : ''}</span>
-                  <span>−{formatMoney(order.promoDiscount ?? 0)}</span>
-                </div>
-              )}
-              {(order.pointsRedemptionValueCents ?? 0) > 0 && (
-                <div className='flex justify-between text-[13px] text-green'>
-                  <span>Points redeemed ({(order.pointsRedeemed ?? 0).toLocaleString('en-US')} pts)</span>
-                  <span>−{formatMoney((order.pointsRedemptionValueCents ?? 0) / 100)}</span>
-                </div>
-              )}
-              <div className='flex justify-between text-[13px] text-ink-soft'>
-                <span>Tax</span>
-                <span>{formatMoney(order.tax)}</span>
-              </div>
-              <div className='flex justify-between border-t border-line-soft pt-3 text-[15px] font-semibold text-ink'>
-                <span>Total</span>
-                <span>{formatMoney(order.totalCost)}</span>
-              </div>
-              {showRealizedAtPickup && (
-                <div className='flex justify-between text-[12px] text-camel-deep'>
-                  <span className='italic'>
-                    {order.paymentResult?.settlementStatus === 'settled'
-                      ? 'Settled at pickup (after weighing)'
-                      : order.paymentResult?.settlementStatus === 'failed'
-                      ? 'Final at pickup (settle in-store)'
-                      : 'Final at pickup (after weighing)'}
-                  </span>
-                  <span className='font-mono'>{formatMoney(realizedTotalAtPickup)}</span>
-                </div>
-              )}
             </div>
-          </div>
+          </section>
 
-          {/* Notes */}
+          <ConfirmationTimeline steps={timeline} />
+
           {order.orderNotes && (
-            <div className='rounded-sm border border-line-soft bg-paper px-6 py-5'>
-              <p className='mb-2 text-[11px] font-medium uppercase tracking-[0.18em] text-muted'>
-                Notes for the butcher
+            <section className='rounded-sm border border-line-soft bg-cream-deep px-6 py-6'>
+              <h2 className={EYEBROW_ON_TINT}>Your note to the butcher</h2>
+              <blockquote className='mt-3 font-display text-[19px] leading-relaxed text-ink-soft italic'>
+                “{order.orderNotes}”
+              </blockquote>
+              <p className='mt-3 text-[12.5px] text-muted-deep'>
+                The counter has this with your order.
               </p>
-              <p className='text-[14px] leading-relaxed text-ink-soft'>{order.orderNotes}</p>
-            </div>
+            </section>
           )}
 
-          {isGuestOrder && (
-            <div className='rounded-sm border border-line-soft bg-paper px-6 py-5 text-[13px] leading-relaxed text-ink-soft'>
-              <p className='mb-1.5 text-[11px] font-medium uppercase tracking-[0.18em] text-muted'>
-                Heads up
+          <ConfirmationSuggestions products={suggestions} />
+        </div>
+
+        {/* Right column */}
+        <div className='flex flex-col gap-4'>
+          <ConfirmationReceipt
+            lines={order.orderItems}
+            countLabel={formatOrderCount(order.orderItems)}
+            subtotal={order.subtotal}
+            tax={order.tax}
+            total={order.totalCost}
+            deliveryFee={isPickup ? null : DELIVERY_FEE}
+            memberDiscount={order.memberDiscount ?? 0}
+            promoDiscount={order.promoDiscount ?? 0}
+            promoCode={order.promoCode}
+            pointsRedeemed={order.pointsRedeemed ?? 0}
+            pointsRedemptionValueCents={order.pointsRedemptionValueCents ?? 0}
+            realized={
+              showRealizedAtPickup
+                ? { label: realizedLabel, total: realizedTotalAtPickup }
+                : null
+            }
+            totalLabel={isPaid ? 'Paid' : 'Total'}
+            payNote={
+              isPaid
+                ? `Paid in full when you placed the order.${
+                    order.paymentResult?.paymentIntentId
+                      ? ` Reference ${order.paymentResult.paymentIntentId.slice(0, 14)}…`
+                      : ''
+                  }`
+                : 'Payment is still processing. Your reference above stays the same.'
+            }
+          />
+
+          {pendingPoints > 0 && (
+            <section className='rounded-sm border border-line-soft bg-cream-deep px-6 py-5'>
+              <h2 className={EYEBROW_ON_TINT}>Rewards</h2>
+              <p className='mt-3 flex items-baseline gap-2'>
+                <span className='font-display text-[32px] leading-none tracking-tight text-oxblood'>
+                  {pendingPoints.toLocaleString('en-US')}
+                </span>
+                <span className='text-[13.5px] text-ink-soft'>
+                  points from this order
+                </span>
               </p>
-              <p className='mb-3'>
-                Create an account with this email and this order will show up
-                in your history. (No points are awarded retroactively.)
+              {/* Deliberately future tense. Points land when the order is
+                  handed over, not now — the balance has not moved yet. */}
+              <p className='mt-3 text-[13px] leading-relaxed text-ink-soft'>
+                You&apos;ll earn these once we hand the order over.{' '}
+                <Link
+                  href='/rewards'
+                  className={`border-b border-current pb-px text-oxblood transition-colors duration-300 hover:text-ink motion-reduce:transition-none ${FOCUS_RING} focus-visible:ring-offset-cream-deep`}
+                >
+                  How rewards work
+                </Link>
+              </p>
+            </section>
+          )}
+
+          <section className={CARD_CLASS}>
+            <h2 className={EYEBROW_CLASS}>Something wrong?</h2>
+            {/* The hours print directly below this line, closing days
+                included, so it can't claim all-day coverage. */}
+            <p className='mt-3 text-[13.5px] leading-relaxed text-ink-soft'>
+              Call the counter and quote your reference — someone is on the
+              floor whenever we&apos;re open.
+            </p>
+            <p className='mt-3.5 font-display text-[22px] tracking-tight'>
+              <a
+                href={formatPhoneHref(shopSettings.phone)}
+                className={`transition-colors duration-300 hover:text-oxblood motion-reduce:transition-none ${FOCUS_RING} focus-visible:ring-offset-paper`}
+              >
+                {shopSettings.phone}
+              </a>
+            </p>
+            <div className='mt-2.5 space-y-0.5'>
+              {formatShopHoursCondensed(hoursDays).map((row) => (
+                <p key={row.label} className='text-[12.5px] text-muted'>
+                  {row.label} {row.value}
+                </p>
+              ))}
+            </div>
+          </section>
+
+          {isGuestOrder && (
+            <section className={CARD_CLASS}>
+              <h2 className={EYEBROW_CLASS}>Keep this order</h2>
+              <p className='mt-3 text-[13.5px] leading-relaxed text-ink-soft'>
+                Create an account with this email and this order will show up in
+                your history. No points are awarded retroactively.
               </p>
               <Link
                 // Invariant: isGuestOrder is `!order.user`, and the Order
@@ -322,40 +451,38 @@ export default async function ConfirmationPage({ searchParams }: Props) {
                 // whenever user is absent. So the field is always populated
                 // by the time this branch renders.
                 href={`/register?email=${encodeURIComponent(order.guestContact!.email)}`}
-                className='inline-flex items-center gap-2 border-b border-current pb-px text-oxblood transition-colors duration-300 hover:text-ink focus-visible:outline-none focus-visible:text-ink motion-reduce:transition-none'
+                className={`mt-3.5 inline-flex items-center border-b border-current pb-px text-[13.5px] text-oxblood transition-colors duration-300 hover:text-ink motion-reduce:transition-none ${FOCUS_RING} focus-visible:ring-offset-paper`}
               >
                 Create an account
-                <svg
-                  viewBox='0 0 24 24'
-                  fill='none'
-                  stroke='currentColor'
-                  strokeWidth={2}
-                  aria-hidden='true'
-                  className='h-3 w-3'
-                >
-                  <path d='M5 12h14M13 5l7 7-7 7' />
-                </svg>
               </Link>
-            </div>
+            </section>
           )}
 
-          {/* CTAs */}
-          <div className='flex flex-col gap-3 sm:flex-row'>
+          <div className='flex flex-col gap-3'>
             <Link
               href='/products'
-              className='flex-1 rounded-full bg-ink px-7 py-4 text-center text-[15px] font-medium text-cream transition-colors duration-300 hover:bg-oxblood focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oxblood focus-visible:ring-offset-2 focus-visible:ring-offset-cream motion-reduce:transition-none'
+              className={`rounded-sm bg-ink px-7 py-4 text-center text-[15px] font-medium text-cream transition-colors duration-300 hover:bg-oxblood motion-reduce:transition-none ${FOCUS_RING} focus-visible:ring-offset-cream`}
             >
-              Keep shopping
+              Back to the shop
             </Link>
             {!isGuestOrder && (
               <Link
                 href='/profile?tab=orders'
-                className='flex-1 rounded-full border border-line-soft px-7 py-4 text-center text-[15px] font-medium text-ink transition-colors duration-300 hover:border-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oxblood focus-visible:ring-offset-2 focus-visible:ring-offset-cream motion-reduce:transition-none'
+                className={`rounded-sm border border-line px-7 py-4 text-center text-[15px] font-medium text-ink transition-colors duration-300 hover:border-ink motion-reduce:transition-none ${FOCUS_RING} focus-visible:ring-offset-cream`}
               >
                 View my orders
               </Link>
             )}
           </div>
+
+          {/* Only the demo customer's data is cleared overnight; a registered
+              customer's order stays put, so the nightly clause is scoped to
+              the session it actually applies to. */}
+          <p className='rounded-sm border border-dashed border-line px-5 py-4 text-[12.5px] leading-relaxed text-muted'>
+            This is a portfolio demo — no card was charged and no order reached
+            a real shop.
+            {sessionUser?.user?.isDemo && ' Demo data clears nightly.'}
+          </p>
         </div>
       </div>
     </div>
