@@ -69,6 +69,32 @@ export function formatReadyIn(leadTime: string): string {
     : `about ${leadTime.trim()}`;
 }
 
+// Formats a real instant in the shop's own zone.
+//
+// A stored timestamp like `order.createdAt` is a UTC instant, so formatting it
+// without a `timeZone` prints in whatever zone the server happens to run in —
+// UTC on Vercel. The confirmation page would then stamp a San Diego order
+// "4:39 PM" beside a pickup window correctly reading 11 AM, and from a Tokyo
+// runtime it would land on the wrong day entirely. Pickup slot ids sidestep
+// this because they carry wall time with no zone; a timestamp cannot.
+export function formatInShopZone(
+  instant: Date,
+  timezone: string,
+  options: Intl.DateTimeFormatOptions,
+): string {
+  const zone = timezone.trim().split(' ')[0];
+  try {
+    return new Intl.DateTimeFormat('en-US', {
+      ...options,
+      timeZone: zone,
+    }).format(instant);
+  } catch {
+    // Invalid IANA zone — fall back to the runtime's, the same way
+    // shopWeekdayIndex degrades rather than throwing on a bad setting.
+    return new Intl.DateTimeFormat('en-US', options).format(instant);
+  }
+}
+
 // Which row of `ShopHoursDay[]` is "today" at the shop, not on the server.
 // Shop hours index 0 = Monday; `Date#getDay` indexes 0 = Sunday, hence the
 // rotation. The stored timezone is `"America/Los_Angeles (PT)"` — an IANA

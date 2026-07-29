@@ -34,6 +34,7 @@ export type OrderProductLean = {
   bundlePrice?: number;
   displayPriceLabel?: string;
   displayWeightLabel?: string;
+  includedItems?: string[];
 };
 
 // Per-line shape persisted on Order.orderItems. Kept here so the route and
@@ -59,6 +60,9 @@ export type OrderLine = {
   maxWeightLb?: number;
   displayPriceLabel?: string;
   displayWeightLabel?: string;
+  // Bundle contents, snapshotted for the same reason as name and price: the
+  // order has to stay readable after the product is edited or deleted.
+  includedItems?: string[];
 };
 
 // Either a successful build with order lines + stock errors (route maps the
@@ -113,6 +117,7 @@ export const buildLine = (product: OrderProductLean, qty: number): OrderLine => 
     : {}),
   ...(product.displayPriceLabel && { displayPriceLabel: product.displayPriceLabel }),
   ...(product.displayWeightLabel && { displayWeightLabel: product.displayWeightLabel }),
+  ...(product.includedItems?.length && { includedItems: product.includedItems }),
 });
 
 const stockErrorFor = (product: OrderProductLean, qty: number): string | null =>
@@ -167,7 +172,7 @@ export async function buildOrderItemsFromGuestItems(
     { _id: { $in: items.map((it) => it.productId) } },
     'name price images category stockCount pricingType packagePrice pricePerLb ' +
       'estimatedWeightLb averageWeightLb minWeightLb maxWeightLb unitPrice bundlePrice ' +
-      'displayPriceLabel displayWeightLabel',
+      'displayPriceLabel displayWeightLabel includedItems',
   ).lean<OrderProductLean[]>();
 
   const productMap = new Map(products.map((p) => [p._id.toString(), p]));

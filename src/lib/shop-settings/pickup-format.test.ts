@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { ShopHoursDay } from '@/models/ShopHours';
 import {
   formatClockMinutes,
+  formatInShopZone,
   formatReadyIn,
   getPickupNote,
   parseClockMinutes,
@@ -183,5 +184,49 @@ describe('formatReadyIn', () => {
       'ready in a short while',
     );
     expect(formatReadyIn('')).toBe('a short while');
+  });
+});
+
+describe('formatInShopZone', () => {
+  const PT = 'America/Los_Angeles (PT)';
+  // A San Diego order placed at 9:39 AM local.
+  const placed = new Date('2026-07-28T16:39:00Z');
+  const stamp = {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  } as const;
+
+  it('reads in the shop zone, not the runtime one', () => {
+    // The suite runs under whatever TZ the machine has, and CI runs UTC. This
+    // has to be the shop's 9:39 AM either way — without the timeZone option a
+    // UTC runtime prints 4:39 PM and a Tokyo one rolls to the next day.
+    expect(formatInShopZone(placed, PT, stamp)).toBe('Tue, Jul 28, 9:39 AM');
+  });
+
+  it('honours a different shop zone', () => {
+    // Proves the zone is actually being applied rather than coincidentally
+    // matching the runtime.
+    expect(formatInShopZone(placed, 'America/New_York (ET)', stamp)).toBe(
+      'Tue, Jul 28, 12:39 PM',
+    );
+  });
+
+  it('strips the parenthesised abbreviation the setting carries', () => {
+    expect(formatInShopZone(placed, PT, stamp)).toBe(
+      formatInShopZone(placed, 'America/Los_Angeles', stamp),
+    );
+  });
+
+  it('falls back to the runtime zone on an unusable setting', () => {
+    // Matches how shopWeekdayIndex degrades — a bad setting must not throw on
+    // a page a customer has already paid on. Asserting the actual fallback
+    // value rather than just "doesn't throw", which would still pass if the
+    // catch returned an empty string or a placeholder.
+    expect(formatInShopZone(placed, 'Not/AZone', stamp)).toBe(
+      new Intl.DateTimeFormat('en-US', stamp).format(placed),
+    );
   });
 });

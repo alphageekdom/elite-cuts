@@ -274,6 +274,37 @@ describe('buildLine snapshot', () => {
     expect(line.pricingType).toBeUndefined();
     expect(line.pricePerLb).toBeUndefined();
   });
+
+  // The write side of the bundle cut count. `countOrderCuts` reads
+  // `includedItems` off the order line, so if the snapshot never lands the
+  // confirmation page counts a bundle as one cut and contradicts the cart
+  // the customer saw moments earlier.
+  it('snapshots the contents of a bundle onto the order line', () => {
+    const line = buildLine(
+      product({
+        pricingType: 'bundle',
+        bundlePrice: 89.99,
+        includedItems: ['ribeye', 'sirloin', 'brisket'],
+      }),
+      1,
+    );
+    expect(line.includedItems).toEqual(['ribeye', 'sirloin', 'brisket']);
+  });
+
+  it('omits includedItems for a product that has none', () => {
+    // Absent rather than `[]`: the legacy fallback in `countOrderCuts` keys
+    // off the field being missing, and the schema declares a default of
+    // undefined so old order docs stay clean.
+    const line = buildLine(product({ pricingType: 'per_lb' }), 1);
+    expect('includedItems' in line).toBe(false);
+  });
+
+  it('omits includedItems when the product carries an empty array', () => {
+    // A non-bundle can arrive with `includedItems: []`; the length guard has
+    // to catch that too, or every single-cut line carries a dead field.
+    const line = buildLine(product({ includedItems: [] }), 1);
+    expect('includedItems' in line).toBe(false);
+  });
 });
 
 // ---- refund math (uses realizedLineTotal) ----

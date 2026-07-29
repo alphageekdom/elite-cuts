@@ -4,6 +4,7 @@ import {
   buildPickupDays,
   formatPickupLocation,
   formatPickupWindow,
+  formatPickupWindowParts,
   isPickupSlotId,
   PICKUP_LOCATION_SEPARATOR,
 } from '@/lib/shop-settings/pickup-slots';
@@ -240,16 +241,16 @@ describe('isPickupSlotId', () => {
 describe('formatPickupWindow', () => {
   it('renders an id as a dated hour window', () => {
     expect(formatPickupWindow('2026-07-28T09:00')).toBe(
-      'Tue Jul 28 · 9:00 AM – 10:00 AM',
+      'Tue Jul 28 · 9 AM – 10 AM',
     );
   });
 
   it('crosses noon and midnight-adjacent hours without wrapping wrong', () => {
     expect(formatPickupWindow('2026-07-28T11:00')).toBe(
-      'Tue Jul 28 · 11:00 AM – 12:00 PM',
+      'Tue Jul 28 · 11 AM – 12 PM',
     );
     expect(formatPickupWindow('2026-07-28T18:00')).toBe(
-      'Tue Jul 28 · 6:00 PM – 7:00 PM',
+      'Tue Jul 28 · 6 PM – 7 PM',
     );
   });
 
@@ -257,7 +258,7 @@ describe('formatPickupWindow', () => {
     // The id carries no zone: parsing and formatting both use the runtime's,
     // so they cancel. If this ever renders 4:00 PM somewhere, something has
     // appended a 'Z' or passed a timeZone option.
-    expect(formatPickupWindow('2026-07-28T09:00')).toContain('9:00 AM');
+    expect(formatPickupWindow('2026-07-28T09:00')).toContain('9 AM');
   });
 
   it('passes legacy labels and admin free text through untouched', () => {
@@ -273,13 +274,45 @@ describe('formatPickupWindow', () => {
   });
 });
 
+describe('formatPickupWindowParts', () => {
+  it('splits the day from the hours', () => {
+    expect(formatPickupWindowParts('2026-07-28T09:00')).toEqual({
+      day: 'Tue Jul 28',
+      time: '9 AM – 10 AM',
+    });
+  });
+
+  it('keeps the minutes when a window does not start on the hour', () => {
+    // Dropping ":00" is a display tidy for whole hours, not a loss of
+    // precision — a shop opening at half past still reads exactly.
+    expect(formatPickupWindowParts('2026-07-28T09:30').time).toBe(
+      '9:30 AM – 10:30 AM',
+    );
+  });
+
+  it('returns a legacy label as the time with no day', () => {
+    // Nothing in "4-5p" says which day, so there is no day to render.
+    expect(formatPickupWindowParts('4-5p')).toEqual({
+      day: null,
+      time: '4-5p',
+    });
+  });
+
+  it('recomposes into exactly what the single-line formatter returns', () => {
+    for (const value of ['2026-07-28T09:00', '2026-07-28T18:00', '4-5p', 'whenever']) {
+      const { day, time } = formatPickupWindowParts(value);
+      expect(day ? `${day} · ${time}` : time).toBe(formatPickupWindow(value));
+    }
+  });
+});
+
 describe('formatPickupLocation', () => {
   const address = '3045 30th Street, San Diego, CA 92104';
 
   it('formats the slot prefix and keeps the address', () => {
     expect(
       formatPickupLocation(`2026-07-28T09:00${PICKUP_LOCATION_SEPARATOR}${address}`),
-    ).toBe(`Tue Jul 28 · 9:00 AM – 10:00 AM${PICKUP_LOCATION_SEPARATOR}${address}`);
+    ).toBe(`Tue Jul 28 · 9 AM – 10 AM${PICKUP_LOCATION_SEPARATOR}${address}`);
   });
 
   it('leaves a bare address alone', () => {
@@ -295,7 +328,7 @@ describe('formatPickupLocation', () => {
     const [day] = build(TUESDAY_11AM_PT);
     const written = `${day.slots[0].id}${PICKUP_LOCATION_SEPARATOR}${address}`;
     expect(formatPickupLocation(written)).toBe(
-      `Tue Jul 28 · 12:00 PM – 1:00 PM${PICKUP_LOCATION_SEPARATOR}${address}`,
+      `Tue Jul 28 · 12 PM – 1 PM${PICKUP_LOCATION_SEPARATOR}${address}`,
     );
   });
 });

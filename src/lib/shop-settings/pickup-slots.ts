@@ -87,9 +87,18 @@ export function isPickupSlotId(value: string): boolean {
 //
 // The date is part of the output because the picker can now offer more than
 // one day — a bare time range no longer says which one.
-export function formatPickupWindow(value: string): string {
+// Split form, for surfaces that set the day and the hours on separate lines.
+// `day` is null when the stored value isn't a slot id — a legacy label has no
+// date in it to show, so the caller renders `time` alone and gets exactly what
+// was recorded.
+export type PickupWindowParts = {
+  day: string | null;
+  time: string;
+};
+
+export function formatPickupWindowParts(value: string): PickupWindowParts {
   const trimmed = value.trim();
-  if (!isPickupSlotId(trimmed)) return trimmed;
+  if (!isPickupSlotId(trimmed)) return { day: null, time: trimmed };
   const start = new Date(`${trimmed}:00`);
   const end = new Date(start.getTime() + SLOT_MINUTES * 60_000);
   const day = new Intl.DateTimeFormat('en-US', {
@@ -99,9 +108,21 @@ export function formatPickupWindow(value: string): string {
   })
     .format(start)
     .replace(',', '');
-  const time = (at: Date) =>
-    at.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-  return `${day} · ${time(start)} – ${time(end)}`;
+  // Windows land on the hour unless the shop opens at half past, so ":00" is
+  // usually dead weight — and it is what pushed "11:00 AM – 12:00 PM" onto two
+  // lines in the confirmation page's large display. Minutes still print when
+  // there are any.
+  const at = (moment: Date) =>
+    moment.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      ...(moment.getMinutes() === 0 ? {} : { minute: '2-digit' }),
+    });
+  return { day, time: `${at(start)} – ${at(end)}` };
+}
+
+export function formatPickupWindow(value: string): string {
+  const { day, time } = formatPickupWindowParts(value);
+  return day ? `${day} · ${time}` : time;
 }
 
 // Checkout stamps the chosen window onto `pickupLocation` because the admin

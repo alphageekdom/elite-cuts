@@ -3,14 +3,23 @@ import { describe, expect, it } from 'vitest';
 import {
   countCartCuts,
   countCartItems,
+  countOrderCuts,
+  countOrderItems,
   formatCartCount,
+  formatOrderCount,
   type CountableCartLine,
+  type CountableOrderLine,
 } from './counts';
 
 const line = (
   quantity: number,
   includedItems?: string[],
 ): CountableCartLine => ({ quantity, product: { includedItems } });
+
+const orderLine = (
+  qty: number,
+  includedItems?: string[],
+): CountableOrderLine => ({ qty, includedItems });
 
 describe('countCartCuts', () => {
   it('counts a plain cut as one piece', () => {
@@ -82,5 +91,32 @@ describe('formatCartCount', () => {
 
   it('singularises both nouns', () => {
     expect(formatCartCount([line(1, ['a', 'b'])])).toBe('1 item · 2 cuts');
+  });
+});
+
+// The confirmation page reads the order snapshot, not the cart, and must land
+// on the same sentence for the same basket — otherwise the two pages disagree
+// moments apart.
+describe('order lines', () => {
+  it('counts lines and cuts the same way the cart does', () => {
+    expect(countOrderItems([orderLine(1, ['a', 'b', 'c', 'd', 'e']), orderLine(1)])).toBe(2);
+    expect(countOrderCuts([orderLine(1, ['a', 'b', 'c', 'd', 'e']), orderLine(1)])).toBe(6);
+  });
+
+  it('agrees with the cart on the same basket', () => {
+    const cart = [line(1, ['a', 'b', 'c', 'd', 'e']), line(2)];
+    const order = [orderLine(1, ['a', 'b', 'c', 'd', 'e']), orderLine(2)];
+    expect(formatOrderCount(order)).toBe(formatCartCount(cart));
+    expect(formatOrderCount(order)).toBe('2 items · 7 cuts');
+  });
+
+  it('treats an order placed before bundles were snapshotted as one cut per unit', () => {
+    // No includedItems on the line — the honest fallback, and the same answer
+    // those orders gave before this field existed.
+    expect(formatOrderCount([orderLine(1), orderLine(2)])).toBe('2 items · 3 cuts');
+  });
+
+  it('reads an empty order as Empty', () => {
+    expect(formatOrderCount([])).toBe('Empty');
   });
 });
