@@ -3,6 +3,7 @@ import { useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { GiMeatCleaver } from 'react-icons/gi';
 import AdminNavLinks from './AdminNavLinks';
+import AdminUserMenu from './AdminUserMenu';
 
 type Props = {
   name: string;
@@ -124,21 +125,7 @@ export default function AdminSidebarClient({ name, initial, criticalInventoryCou
       {/* User card */}
       <div className="h-px bg-cream/15 mx-3 my-1 shrink-0" />
       <div className={`pt-3 pb-5 ${collapsed ? 'px-2' : 'px-4'}`}>
-        <div
-          className={`flex items-center gap-2.5 p-2 rounded-lg hover:bg-cream/8 transition-colors cursor-pointer ${
-            collapsed ? 'justify-center' : ''
-          }`}
-        >
-          <div className="w-9 h-9 rounded-full bg-camel text-ink grid place-items-center font-display font-semibold text-sm shrink-0">
-            {initial}
-          </div>
-          {!collapsed && (
-            <div className="flex-1 min-w-0">
-              <div className="text-[13px] font-medium text-cream truncate">{name}</div>
-              <div className="text-[11px] text-cream/55 tracking-[0.06em] uppercase">Admin</div>
-            </div>
-          )}
-        </div>
+        <AdminUserMenu name={name} initial={initial} collapsed={collapsed} />
       </div>
     </aside>
   );

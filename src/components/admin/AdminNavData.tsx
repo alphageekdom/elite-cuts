@@ -12,8 +12,8 @@ export default async function AdminNavData({ badges }: { badges: NavBadges }) {
 
   return (
     <>
-      <AdminTabletRail initial={initial} criticalInventoryCount={criticalInventoryCount} openMessageCount={openMessageCount} />
-      <AdminMobileBottomNav criticalInventoryCount={criticalInventoryCount} openMessageCount={openMessageCount} />
+      <AdminTabletRail name={name} initial={initial} criticalInventoryCount={criticalInventoryCount} openMessageCount={openMessageCount} />
+      <AdminMobileBottomNav name={name} initial={initial} criticalInventoryCount={criticalInventoryCount} openMessageCount={openMessageCount} />
     </>
   );
 }
