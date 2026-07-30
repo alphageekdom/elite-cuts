@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
-import ArrowIcon from '@/components/uielements/ArrowIcon';
-import Reveal from '@/components/uielements/Reveal';
+import ArrowIcon from '@/components/ui/icons/ArrowIcon';
+import Reveal from '@/components/ui/Reveal';
 
 type Props = {
   // Day-range label for the open days, e.g. "Tue–Sat" — derived from the live

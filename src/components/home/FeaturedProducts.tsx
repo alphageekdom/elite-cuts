@@ -1,9 +1,9 @@
 import Link from 'next/link';
 
-import ArrowIcon from '@/components/uielements/ArrowIcon';
+import ArrowIcon from '@/components/ui/icons/ArrowIcon';
 import { CTA_ARROW } from '@/lib/styles';
 import connectDB from '@/config/database';
-import Reveal from '@/components/uielements/Reveal';
+import Reveal from '@/components/ui/Reveal';
 import Product, { type SerializedProduct } from '@/models/Product';
 import { convertToSerializableObject } from '@/lib/convertToObject';
 import { PRODUCT_CATEGORIES } from '@/lib/admin/constants';

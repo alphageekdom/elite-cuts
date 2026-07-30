@@ -7,7 +7,7 @@ import { useCheckoutContext } from '@/context/CheckoutContext';
 import CheckoutFieldCheck from '@/components/checkout/CheckoutFieldCheck';
 import CheckoutInlineSignIn from '@/components/checkout/CheckoutInlineSignIn';
 import { FIELD_CLASS, LABEL_CLASS } from '@/components/checkout/checkoutStyles';
-import { isNameValid, isEmailValid, isPhoneValid } from '@/lib/checkoutValidation';
+import { isNameValid, isEmailValid, isPhoneValid } from '@/lib/checkout/validation';
 
 type Mode = 'contact' | 'signin';
 

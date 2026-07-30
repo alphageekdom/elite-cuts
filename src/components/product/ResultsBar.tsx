@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import CheckIcon from '@/components/uielements/CheckIcon';
+import CheckIcon from '@/components/ui/icons/CheckIcon';
 import LinkPendingDot from '@/components/product/LinkPendingDot';
 
 type ActiveFilter = {

@@ -1,10 +1,10 @@
 import Image from 'next/image';
 
-import Reveal from '@/components/uielements/Reveal';
-import ArrowIcon from '@/components/uielements/ArrowIcon';
-import PinIcon from '@/components/uielements/PinIcon';
-import ClockIcon from '@/components/uielements/ClockIcon';
-import PhoneIcon from '@/components/uielements/PhoneIcon';
+import Reveal from '@/components/ui/Reveal';
+import ArrowIcon from '@/components/ui/icons/ArrowIcon';
+import PinIcon from '@/components/ui/icons/PinIcon';
+import ClockIcon from '@/components/ui/icons/ClockIcon';
+import PhoneIcon from '@/components/ui/icons/PhoneIcon';
 import { FOCUS_RING } from '@/lib/styles';
 import {
   formatDirectionsUrl,

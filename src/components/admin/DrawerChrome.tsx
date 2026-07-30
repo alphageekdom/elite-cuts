@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { labelCls } from './AdminForm';
 import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
-import XIcon from '@/components/uielements/XIcon';
+import XIcon from '@/components/ui/icons/XIcon';
 
 // Shared chrome for every admin form drawer: header, scrolling body, footer.
 //

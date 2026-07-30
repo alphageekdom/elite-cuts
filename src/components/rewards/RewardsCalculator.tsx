@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 import SectionHead from '@/components/ui/SectionHead';
-import Reveal from '@/components/uielements/Reveal';
+import Reveal from '@/components/ui/Reveal';
 import { FOCUS_RING } from '@/lib/styles';
 import { projectRewards, formatRedemptionRate } from '@/lib/rewards/calculator';
 import type { RewardsPublicSettings } from '@/lib/rewards/calculator';

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
 import AdminSidebar from '@/components/admin/AdminSidebar';
-import AdminNavData from '@/components/admin/AdminNavData';
+import AdminNavSurfaces from '@/components/admin/AdminNavSurfaces';
 import AdminTopbar from '@/components/admin/AdminTopbar';
 import { getSessionUser } from '@/lib/auth/session';
 import { fetchNavBadges } from '@/lib/admin/nav-data';
@@ -15,7 +15,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   return (
     <div className="flex min-h-screen bg-cream">
       <AdminSidebar />
-      <AdminNavData badges={badges} />
+      <AdminNavSurfaces badges={badges} />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
         <AdminTopbar openMessageCount={badges.openMessageCount} />

@@ -2,7 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 import StoreInfoModal from '@/components/ui/StoreInfoModal';
-import Reveal from '@/components/uielements/Reveal';
+import Reveal from '@/components/ui/Reveal';
 import GrillHeroBg from '@/assets/images/grill-hero.jpg';
 import { formatGrillHour, type SerializedEvent } from '@/lib/events/config';
 

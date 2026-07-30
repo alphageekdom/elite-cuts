@@ -1,5 +1,5 @@
-import CheckIcon from '@/components/uielements/CheckIcon';
-import Reveal from '@/components/uielements/Reveal';
+import CheckIcon from '@/components/ui/icons/CheckIcon';
+import Reveal from '@/components/ui/Reveal';
 import SectionHead from '@/components/ui/SectionHead';
 import type { ShopSettings } from '@/models/ShopSettings';
 

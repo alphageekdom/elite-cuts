@@ -4,7 +4,7 @@ import { useRef, useState } from 'react';
 import Link from 'next/link';
 
 import { FOCUS_RING, CTA_ARROW } from '@/lib/styles';
-import ArrowIcon from '@/components/uielements/ArrowIcon';
+import ArrowIcon from '@/components/ui/icons/ArrowIcon';
 
 type Step = {
   num: string;

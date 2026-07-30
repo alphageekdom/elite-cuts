@@ -5,10 +5,10 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 
-import MinusIcon from '@/components/uielements/MinusIcon';
-import PlusIcon from '@/components/uielements/PlusIcon';
-import SpinnerIcon from '@/components/uielements/SpinnerIcon';
-import StarIcon from '@/components/uielements/StarIcon';
+import MinusIcon from '@/components/ui/icons/MinusIcon';
+import PlusIcon from '@/components/ui/icons/PlusIcon';
+import SpinnerIcon from '@/components/ui/icons/SpinnerIcon';
+import StarIcon from '@/components/ui/icons/StarIcon';
 import { useCartContext } from '@/context/CartContext';
 import useHandleAddToCart from '@/hooks/useHandleAddToCart';
 import useHandleBookmark from '@/hooks/useHandleBookmark';
@@ -17,8 +17,8 @@ import { productPath } from '@/lib/products/paths';
 import { LOW_STOCK_THRESHOLD, MAX_PER_LINE } from '@/lib/shop-settings/config';
 
 import { type SerializedProduct } from '@/models/Product';
-import CartIcon from '@/components/uielements/CartIcon';
-import HeartIcon from '@/components/uielements/HeartIcon';
+import CartIcon from '@/components/ui/icons/CartIcon';
+import HeartIcon from '@/components/ui/icons/HeartIcon';
 
 type TagVariant = 'featured' | 'aged' | 'new';
 

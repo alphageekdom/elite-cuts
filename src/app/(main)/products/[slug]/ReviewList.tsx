@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import Stars from '@/components/product/detail/Stars';
-import CheckIcon from '@/components/uielements/CheckIcon';
+import CheckIcon from '@/components/ui/icons/CheckIcon';
 import SortPopover, { type SortOption } from '@/components/ui/SortPopover';
 import { avatarColorForId } from '@/lib/format';
 import { AVATAR_COLORS, MEMBER_AVATAR_COLORS } from '@/lib/admin/constants';

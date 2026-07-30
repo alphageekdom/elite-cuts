@@ -19,9 +19,9 @@ import {
 } from '@/components/auth/authStyles';
 import { FieldValidationIcon as FieldIcon } from '@/components/auth/FieldValidationIcon';
 import EditorialEyebrow from '@/components/ui/EditorialEyebrow';
-import ArrowIcon from '@/components/uielements/ArrowIcon';
-import ChevronIcon from '@/components/uielements/ChevronIcon';
-import UserIcon from '@/components/uielements/UserIcon';
+import ArrowIcon from '@/components/ui/icons/ArrowIcon';
+import ChevronIcon from '@/components/ui/icons/ChevronIcon';
+import UserIcon from '@/components/ui/icons/UserIcon';
 import { useSignInLockout } from '@/hooks/useSignInLockout';
 
 interface TouchedState {

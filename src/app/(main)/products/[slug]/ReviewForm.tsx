@@ -6,8 +6,8 @@ import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
-import CheckIcon from '@/components/uielements/CheckIcon';
-import StarIcon from '@/components/uielements/StarIcon';
+import CheckIcon from '@/components/ui/icons/CheckIcon';
+import StarIcon from '@/components/ui/icons/StarIcon';
 
 type OwnReview = { _id: string; rating: number; comment: string };
 

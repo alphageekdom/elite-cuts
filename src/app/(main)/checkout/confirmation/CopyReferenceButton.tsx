@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { FOCUS_RING_DARK } from '@/lib/styles';
-import CheckIcon from '@/components/uielements/CheckIcon';
+import CheckIcon from '@/components/ui/icons/CheckIcon';
 
 type Props = {
   // The bare reference, without the leading '#'. That character is decoration

@@ -1,8 +1,8 @@
 import Link from 'next/link';
 
 import { FOCUS_RING } from '@/lib/styles';
-import Accordion, { type AccordionItem } from '@/components/uielements/Accordion';
-import Reveal from '@/components/uielements/Reveal';
+import Accordion, { type AccordionItem } from '@/components/ui/Accordion';
+import Reveal from '@/components/ui/Reveal';
 
 // The read-only question is the one that earns its place here: the owner door
 // writes almost everywhere, and the single exception is better stated up front

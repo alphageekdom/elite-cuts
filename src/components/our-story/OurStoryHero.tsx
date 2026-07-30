@@ -1,4 +1,4 @@
-import Reveal from '@/components/uielements/Reveal';
+import Reveal from '@/components/ui/Reveal';
 import { FOUNDED_YEAR } from '@/lib/shop-settings/founding';
 import { PARTNER_COUNT } from '@/lib/our-story/partners';
 

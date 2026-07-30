@@ -9,8 +9,8 @@ import { formatMoney } from '@/lib/format';
 import { unitPrice } from '@/lib/products/pricing';
 import { MAX_PER_LINE } from '@/lib/shop-settings/config';
 import type { SerializedProduct } from '@/models/Product';
-import CartIcon from '@/components/uielements/CartIcon';
-import HeartIcon from '@/components/uielements/HeartIcon';
+import CartIcon from '@/components/ui/icons/CartIcon';
+import HeartIcon from '@/components/ui/icons/HeartIcon';
 
 type Props = {
   product: Pick<

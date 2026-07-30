@@ -9,7 +9,7 @@ import { getActiveHoliday } from '@/lib/announcements/holidays';
 import CartItemsPanel from '@/components/cart/CartItemsPanel';
 import CartSuggestions from '@/components/cart/CartSuggestions';
 import CartSummary from '@/components/cart/CartSummary';
-import ChevronIcon from '@/components/uielements/ChevronIcon';
+import ChevronIcon from '@/components/ui/icons/ChevronIcon';
 import { CRUMB_CHEVRON } from '@/lib/styles';
 
 export const dynamic = 'force-dynamic';

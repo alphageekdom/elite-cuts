@@ -1,5 +1,5 @@
-import CheckIcon from '@/components/uielements/CheckIcon';
-import XIcon from '@/components/uielements/XIcon';
+import CheckIcon from '@/components/ui/icons/CheckIcon';
+import XIcon from '@/components/ui/icons/XIcon';
 
 export function FieldValidationIcon({ show, valid }: { show: boolean; valid: boolean }) {
   if (!show) return null;

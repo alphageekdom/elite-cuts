@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import Reveal from '@/components/uielements/Reveal';
+import Reveal from '@/components/ui/Reveal';
 
 export default function OurStoryCover() {
   return (

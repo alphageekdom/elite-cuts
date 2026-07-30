@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 
-import CheckIcon from '@/components/uielements/CheckIcon';
-import ArrowIcon from '@/components/uielements/ArrowIcon';
-import Reveal from '@/components/uielements/Reveal';
+import CheckIcon from '@/components/ui/icons/CheckIcon';
+import ArrowIcon from '@/components/ui/icons/ArrowIcon';
+import Reveal from '@/components/ui/Reveal';
 import { FOCUS_RING_DARK } from '@/lib/styles';
 import { getTier } from '@/lib/rewards/calculator';
 import type { RewardsPublicSettings } from '@/lib/rewards/calculator';

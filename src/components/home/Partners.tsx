@@ -1,9 +1,9 @@
 import Image, { type StaticImageData } from 'next/image';
 
-import ArrowIcon from '@/components/uielements/ArrowIcon';
+import ArrowIcon from '@/components/ui/icons/ArrowIcon';
 import GrillImage from '@/assets/images/grill.jpg';
 import KnivesImage from '@/assets/images/knives.jpg';
-import Reveal from '@/components/uielements/Reveal';
+import Reveal from '@/components/ui/Reveal';
 
 import SectionEyebrow from './SectionEyebrow';
 

@@ -107,11 +107,14 @@ src/
 │   ├── (auth)/             # Login, Register pages
 │   ├── (main)/             # Customer-facing pages
 │   │   ├── page.tsx        # Home
-│   │   ├── products/       # Catalog + detail
+│   │   ├── products/       # Catalog + [slug] detail
 │   │   ├── cart/
-│   │   ├── checkout/
+│   │   ├── checkout/       # + confirmation, stripe-mock
 │   │   ├── profile/
+│   │   ├── receipt/[id]/
 │   │   ├── rewards/
+│   │   ├── our-story/
+│   │   ├── contact/
 │   │   ├── demo/           # Demo account landing
 │   │   ├── privacy/
 │   │   └── terms/
@@ -119,16 +122,32 @@ src/
 │   │                       # inventory, promos, analytics, messages,
 │   │                       # schedule, staff, settings
 │   └── api/                # API route handlers
-├── components/             # Feature-organized React components
-├── models/                 # Mongoose schemas (User, Product, Order, Cart, Review)
+├── components/
+│   ├── ui/                 # Generic primitives — SelectField, Accordion, Reveal
+│   │   └── icons/          # Shared icon set (ArrowIcon, CheckIcon, …)
+│   ├── admin/              # Admin shell + one folder per dashboard tab
+│   └── [feature]/          # cart, checkout, product, profile, navbar,
+│                           # footer, home, our-story, rewards, legal,
+│                           # demo, auth, holiday, grill-event
+├── lib/
+│   ├── [feature]/          # Domain logic paired with its components folder —
+│   │                       # orders, products, promos, checkout, payments,
+│   │                       # rewards, admin, auth, shop-settings, demo, …
+│   └── *.ts                # Cross-domain helpers (money, pricing, format,
+│                           # api-handler, rateLimit, styles, validation)
+├── models/                 # Mongoose schemas (User, Product, Order, Cart, …)
 ├── config/                 # DB connection, Cloudinary setup
-├── utils/                  # Auth options, session helpers, form parsing
-├── hooks/                  # useHandleAddToCart, useHandleBookmark, useReveal
-├── actions/                # Server Actions (checkout, addresses)
-├── context/                # CartContext, CheckoutContext, GlobalContext
-├── lib/                    # Validation helpers, pricing, style utilities
-└── types/                  # TypeScript type extensions (next-auth.d.ts, address.ts)
+├── hooks/                  # useHandleAddToCart, useCartExpiry, useReveal, …
+├── context/                # CartContext, CheckoutContext, ShopSettingsContext
+├── actions/                # Server Actions (addresses, promos)
+├── jobs/                   # Cron job bodies (dormancy scan, purge deleted)
+├── types/                  # Shared types + next-auth module augmentation
+└── assets/images/          # Imported (non-public) images
 ```
+
+Two conventions worth knowing: a feature's UI lives in `components/[feature]/`
+and its logic in the matching `lib/[feature]/`, and tests sit next to the file
+they cover as `*.test.ts` rather than in a separate tree.
 
 ---
 
@@ -211,6 +230,11 @@ src/
 
 ## API Routes
 
+The core domains are below. The full surface is larger (53 handlers) — checkout
+and Stripe webhooks, orders, promos, reviews, messages, staff, shifts, events,
+inventory/deliveries/stocktakes, notifications, settings, CSV import/export and
+the cron jobs all have their own routes under `src/app/api/`.
+
 ### Auth
 | Method | Route | Description |
 |---|---|---|
@@ -225,13 +249,14 @@ src/
 | GET | `/api/products/[id]` | Get single product |
 | PUT | `/api/products/[id]` | Update product (admin) |
 | DELETE | `/api/products/[id]` | Delete product (admin) |
-| GET | `/api/products/featured` | Get featured products |
+| GET | `/api/products/by-slug` | Resolve a product by its durable slug |
 
 ### Cart
 | Method | Route | Description |
 |---|---|---|
 | GET | `/api/cart` | Get user's cart |
-| POST | `/api/cart` | Add or update cart item |
+| POST | `/api/cart` | Add a cart item |
+| PATCH | `/api/cart` | Update a cart item's quantity |
 | DELETE | `/api/cart` | Remove cart item |
 
 ### Saved Cuts
@@ -246,14 +271,14 @@ src/
 |---|---|---|
 | GET | `/api/users` | List all users |
 | POST | `/api/users` | Create user |
-| DELETE | `/api/users` | Delete user |
 | GET | `/api/users/[id]` | Get user by ID |
 | PUT | `/api/users/[id]` | Update user by ID |
+| PATCH | `/api/users/[id]` | Cancel a pending deletion or dormancy warning |
+| DELETE | `/api/users/[id]` | Delete user by ID |
 
-### Admin
-| Method | Route | Description |
-|---|---|---|
-| GET | `/api/dashboard` | Dashboard statistics |
+There is no aggregate `/api/dashboard` endpoint — admin pages read from MongoDB
+directly in their server components. Settings is the one exception, reading and
+writing shop config through `/api/settings`.
 
 ---
 

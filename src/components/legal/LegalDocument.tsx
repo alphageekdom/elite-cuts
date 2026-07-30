@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 
 import SectionLabel from '@/components/ui/SectionLabel';
-import ArrowIcon from '@/components/uielements/ArrowIcon';
+import ArrowIcon from '@/components/ui/icons/ArrowIcon';
 import { formatLegalDate } from './legalDate';
 import LegalToc, { type LegalTocItem } from './LegalToc';
 
