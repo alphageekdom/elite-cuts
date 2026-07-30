@@ -18,6 +18,11 @@ export default function AdminNavLinks({ criticalInventoryCount, openMessageCount
   const linkCls = (href: string) =>
     [
       'flex items-center rounded-lg text-sm transition-colors w-full min-h-11',
+      // Camel is the focus colour on dark surfaces here (oxblood is the light-
+      // surface one and would barely read on ink). Outset rather than the
+      // inset offset the cut-list rows use, because these links sit inside
+      // container padding rather than running edge to edge.
+      'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-camel',
       collapsed ? 'justify-center py-2.5' : 'gap-3 px-3 py-2.5',
       isActive(href) ? 'bg-oxblood text-cream' : 'text-cream/75 hover:bg-cream/8 hover:text-cream',
     ].join(' ');
@@ -25,7 +30,7 @@ export default function AdminNavLinks({ criticalInventoryCount, openMessageCount
   return (
     <>
       {/* Workspace */}
-      <div className="mb-6">
+      <div className="mb-3">
         {!collapsed && (
           <div className="text-[10px] font-medium tracking-[0.22em] uppercase text-cream/60 mb-3.5 px-3">
             Workspace
@@ -50,13 +55,20 @@ export default function AdminNavLinks({ criticalInventoryCount, openMessageCount
         </ul>
       </div>
 
-      {/* Divider — collapsed only */}
-      {collapsed && <div className="my-2 mx-2 h-px bg-cream/15" />}
+      {/* Section divider between Workspace and Operations.
+          Was collapsed-only, which left the expanded sidebar as the single
+          admin nav surface with no rule here — the tablet rail has always
+          drawn one unconditionally.
+          The nav container's padding already puts this at 12px from the aside
+          edge when expanded, matching the brand and user-card rules. Collapsed,
+          that padding drops to 8px, so `mx-1` makes up the difference and all
+          three rules stay on the same 12px line in both states. */}
+      <div className={`h-px bg-cream/15 my-3 ${collapsed ? 'mx-1' : ''}`} />
 
       {/* Operations */}
       <div>
         {!collapsed && (
-          <div className="text-[10px] font-medium tracking-[0.22em] uppercase text-cream/60 mb-3.5 px-3 mt-2">
+          <div className="text-[10px] font-medium tracking-[0.22em] uppercase text-cream/60 mb-3.5 px-3">
             Operations
           </div>
         )}

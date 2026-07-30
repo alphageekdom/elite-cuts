@@ -24,7 +24,11 @@ export default function AdminTabletRail({ initial, criticalInventoryCount, openM
 
   return (
     <aside
-      className="hidden md:flex lg:hidden flex-col bg-ink text-cream sticky top-0 h-screen w-16 shrink-0"
+      // `scheme-dark scrollbar-ink` for the same reason as the desktop sidebar:
+      // this rail is the same dark nav at tablet width and its icon list
+      // scrolls, so without them the scrollbar renders light against `bg-ink`,
+      // then dark grey rather than in the rail's own colour.
+      className="scheme-dark scrollbar-ink hidden md:flex lg:hidden flex-col bg-ink text-cream sticky top-0 h-screen w-16 shrink-0"
       aria-label="Admin navigation"
     >
       {/* Logo */}

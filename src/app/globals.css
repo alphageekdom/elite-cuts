@@ -74,6 +74,39 @@
   box-shadow: rgb(38, 57, 77) 0px 20px 30px -10px;
 }
 
+/* Scrollbar track painted in the nav's own `ink` rather than the browser's
+   generic dark grey, so the gutter reads as part of the panel instead of as a
+   channel cut into it. `scheme-dark` gets a dark scrollbar but not this colour.
+
+   Both classes stay on the dark nav surfaces: `scrollbar-color` is unsupported
+   in Safari before 18.2, where `scheme-dark` is still what keeps the bar dark.
+
+   The track is the point of this utility, but `scrollbar-color` is a shorthand
+   with no "keep the browser's thumb" value, so the thumb has to be restated —
+   and restating it is the only way to get it wrong. It is therefore matched to
+   the brightness the browser was already giving us: Chromium's dark-scheme
+   thumb sampled at #8e8c8a, 5.27:1 against ink, and 58% resolves to #918b84 for
+   5.23:1. So the thumb keeps roughly the prominence it had and only the track
+   changes, which is the whole intent. A 3:1 "it's a draggable control" floor
+   was tried first and rejected — it cleared the guideline while being visibly
+   dimmer than the default it replaced.
+
+   That sample came from an overlay scrollbar (the macOS default), so treat it
+   as a calibration point rather than a constant — a classic scrollbar's
+   dark-scheme thumb may sit elsewhere. It does not need to match exactly; what
+   matters is that 5.23:1 is comfortably visible on ink either way.
+
+   Mixing cream into ink rather than layering translucent cream over it: a thumb
+   with alpha composites against the page behind the scrollbar, not against the
+   track, so it would shift colour as the nav scrolls past different content.
+
+   Inherits, so one class on the scroll container's ancestor covers any
+   scrollable descendant. */
+@utility scrollbar-ink {
+  scrollbar-color: color-mix(in oklab, var(--color-cream) 58%, var(--color-ink))
+    var(--color-ink);
+}
+
 /* Hero backgrounds for the auth pages — the linear-gradient + remote
    image-url combo is too long to read as a Tailwind arbitrary class,
    so the styles live here and the JSX just toggles the utility. */

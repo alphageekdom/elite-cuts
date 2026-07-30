@@ -44,19 +44,55 @@ export default function AdminSidebarClient({ name, initial, criticalInventoryCou
   }
 
   return (
+    // `scheme-dark` sets `color-scheme: dark`, which is what makes the browser
+    // paint the nav's scrollbar dark instead of in its light default — a white
+    // bar down an almost-black panel, visible whenever the window is short
+    // enough for the links to overflow. `scrollbar-ink` then takes the track
+    // from the browser's generic dark grey to the nav's own `bg-ink`. Both
+    // inherit, so one pair here covers the scrolling div below, and the sidebar
+    // has no form controls for the dark scheme to restyle unintentionally.
     <aside
-      className={`hidden lg:flex flex-col bg-ink text-cream sticky top-0 h-screen shrink-0 overflow-hidden transition-[width] duration-300 ease-in-out ${
+      className={`scheme-dark scrollbar-ink hidden lg:flex flex-col bg-ink text-cream sticky top-0 h-screen shrink-0 overflow-hidden transition-[width] duration-300 ease-in-out ${
         collapsed ? 'w-16' : 'w-60'
       }`}
     >
       {/* Brand */}
-      <div className={`shrink-0 pt-5 pb-5 flex flex-col gap-4 ${collapsed ? 'items-center px-0' : 'px-6'}`}>
-        {/* Toggle — always at the top, same position in both states */}
-        <div className={`flex w-full ${collapsed ? 'justify-center' : 'justify-end'}`}>
+      <div className={`shrink-0 py-5 flex flex-col gap-1 ${collapsed ? 'items-center px-0' : 'px-6'}`}>
+        {/* Mark, wordmark and toggle share a row when expanded, and stack when
+            collapsed so the toggle sits under the mark.
+            The toggle holds the SAME place in the DOM in both states — only the
+            flex direction changes. Moving it between parents would unmount and
+            remount it, so a keyboard user who pressed it would lose focus every
+            time they collapsed or expanded. */}
+        <div className={`flex gap-3 ${collapsed ? 'flex-col items-center' : 'items-center'}`}>
+          <Link
+            href="/"
+            // Named explicitly because the wordmark unmounts when collapsed,
+            // leaving the link holding nothing but an `aria-hidden` icon — a
+            // screen reader announced a bare "link". Unconditional rather than
+            // collapsed-only: it matches the tablet rail's identical link, and
+            // the name still contains the visible "EliteCuts" when expanded.
+            aria-label="EliteCuts home"
+            className="flex items-center gap-3 font-display font-semibold tracking-tight text-cream hover:opacity-90 transition-opacity overflow-hidden rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-camel"
+          >
+            <span className="w-9 h-9 rounded-full bg-oxblood grid place-items-center shrink-0">
+              <GiMeatCleaver className="text-xl text-cream" aria-hidden="true" />
+            </span>
+            {!collapsed && (
+              <span className="text-[22px] whitespace-nowrap">EliteCuts</span>
+            )}
+          </Link>
           <button
             onClick={toggle}
+            // The label swap alone doesn't announce the result: a name change
+            // on the already-focused element the user just pressed is not
+            // reliably re-read, so pressing it appeared to do nothing.
+            // `aria-expanded` is a state change, which is announced.
+            aria-expanded={!collapsed}
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            className="w-7 h-7 rounded-full grid place-items-center text-cream/60 hover:text-cream hover:bg-cream/10 transition-colors shrink-0"
+            className={`w-7 h-7 rounded-full grid place-items-center text-cream/60 hover:text-cream hover:bg-cream/10 transition-colors shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-camel ${
+              collapsed ? '' : 'ml-auto'
+            }`}
           >
             <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               {collapsed
@@ -67,25 +103,11 @@ export default function AdminSidebarClient({ name, initial, criticalInventoryCou
           </button>
         </div>
 
-        {/* Logo */}
-        <div className={`flex flex-col ${collapsed ? 'items-center gap-0' : 'gap-1'}`}>
-          <Link
-            href="/"
-            className="flex items-center gap-3 font-display font-semibold tracking-tight text-cream hover:opacity-90 transition-opacity overflow-hidden"
-          >
-            <span className="w-9 h-9 rounded-full bg-oxblood grid place-items-center shrink-0">
-              <GiMeatCleaver className="text-xl text-cream" aria-hidden="true" />
-            </span>
-            {!collapsed && (
-              <span className="text-[22px] whitespace-nowrap">EliteCuts</span>
-            )}
-          </Link>
-          {!collapsed && (
-            <div className="text-[10px] tracking-[0.22em] uppercase text-camel ml-12">
-              Admin
-            </div>
-          )}
-        </div>
+        {!collapsed && (
+          <div className="text-[10px] tracking-[0.22em] uppercase text-camel ml-12">
+            Admin
+          </div>
+        )}
       </div>
 
       <div className="h-px bg-cream/15 mx-3 my-1 shrink-0" />
