@@ -88,16 +88,16 @@ export default function CustomerDetailDrawer({
           {editing ? (
             <div className="space-y-3">
               <div>
-                <label className={labelCls}>Name</label>
-                <input type="text" value={editName} onChange={(e) => setField('name', e.target.value)} className={inputCls} />
+                <label htmlFor="customer-edit-name" className={labelCls}>Name</label>
+                <input id="customer-edit-name" type="text" value={editName} onChange={(e) => setField('name', e.target.value)} className={inputCls} />
               </div>
               <div>
-                <label className={labelCls}>Email</label>
-                <input type="email" value={editEmail} onChange={(e) => setField('email', e.target.value)} className={inputCls} />
+                <label htmlFor="customer-edit-email" className={labelCls}>Email</label>
+                <input id="customer-edit-email" type="email" value={editEmail} onChange={(e) => setField('email', e.target.value)} className={inputCls} />
               </div>
               <div>
-                <label className={labelCls}>Phone</label>
-                <input type="tel" value={editPhone} onChange={(e) => setField('phone', e.target.value)} placeholder="Optional" className={inputCls} />
+                <label htmlFor="customer-edit-phone" className={labelCls}>Phone</label>
+                <input id="customer-edit-phone" type="tel" value={editPhone} onChange={(e) => setField('phone', e.target.value)} placeholder="Optional" className={inputCls} />
               </div>
               <div className="flex gap-2 pt-1">
                 <button

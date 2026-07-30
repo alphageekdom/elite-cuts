@@ -16,6 +16,9 @@ import type { PickupSlotRow } from '@/components/admin/schedule/SchedulePickupSl
 import { getMondayOf, SLOT_LABELS } from '@/lib/shifts/schedule';
 import { normalizeWeekStart } from '@/lib/shifts/queries';
 import { bucketPickupSlotCounts } from '@/lib/admin/schedule';
+import { slotRangeForDay } from '@/lib/admin/cut-list';
+import { getShopSettings } from '@/lib/shop-settings/queries';
+import { shopDateKey } from '@/lib/shop-settings/pickup-format';
 import { getPastEvents, getUpcomingEvents } from '@/lib/events/queries';
 
 export const dynamic = 'force-dynamic';
@@ -35,17 +38,27 @@ export default async function AdminSchedulePage() {
   const weekStart = normalizeWeekStart(getMondayOf(new Date()));
   const weekEnd = new Date(weekStart.getTime() + 7 * 86400000);
 
-  // Today's date range for pickup slot counts
-  const todayStart = new Date();
+  // Deliveries store real timestamps, so they are bounded by the server's own
+  // midnight. Pickup slots do not — they are shop-local wall time with no
+  // zone, so they get wall-time bounds built from the shop's date instead.
+  const now = new Date();
+  const todayStart = new Date(now);
   todayStart.setHours(0, 0, 0, 0);
   const todayEnd = new Date(todayStart.getTime() + 86400000);
+
+  const shopSettings = await getShopSettings();
+  // The shop's date is derived from the current instant, never from
+  // `todayStart`: server-local midnight is an instant that falls on
+  // *yesterday* in shop time for most of a UTC server's day, so passing it
+  // here showed yesterday's slots from midnight shop time until midnight UTC.
+  const todaySlots = slotRangeForDay(shopDateKey(shopSettings.timezone, now));
 
   const [rawShifts, shopHoursDoc, settingsDoc, pickupOrders, deliveryCount, upcomingEvents, pastEvents, rawStaff] = await Promise.all([
     ShiftModel.find({ weekStart: { $gte: weekStart, $lt: weekEnd } }).lean(),
     ShopHoursModel.findOneAndUpdate({}, {}, { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }).lean(),
     ShopSettingsModel.findOneAndUpdate({}, {}, { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }).lean(),
     Order.find({
-      pickupSlot: { $gte: todayStart.toISOString(), $lt: todayEnd.toISOString() },
+      pickupSlot: { $gte: todaySlots.start, $lt: todaySlots.end },
     }).select('pickupSlot totalCost').lean(),
     DeliveryModel.countDocuments({ deliveryDate: { $gte: todayStart, $lt: todayEnd } }),
     getUpcomingEvents(20),

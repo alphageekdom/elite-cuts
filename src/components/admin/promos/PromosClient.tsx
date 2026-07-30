@@ -8,6 +8,7 @@ import { enablePromo, disablePromo } from '@/actions/promos';
 import { btnPrimary } from '@/components/admin/AdminForm';
 import AdminStatStrip, { type StatCell } from '@/components/admin/AdminStatStrip';
 import SlideDrawer from '@/components/admin/SlideDrawer';
+import { DRAWER_WIDTH } from '@/components/admin/DrawerChrome';
 import PromoFormDrawer, { type PromoFormRow } from '@/components/admin/promos/PromoFormDrawer';
 import PromosPageHeader from '@/components/admin/promos/PromosPageHeader';
 import { useStatFilter } from '@/hooks/useStatFilter';
@@ -327,7 +328,7 @@ export default function PromosClient({ promos, savingsByPromoId }: Props) {
         open={drawerOpen}
         onClose={closeDrawer}
         ariaLabelledBy="promo-form-title"
-        widthClass="max-w-150"
+        widthClass={DRAWER_WIDTH.default}
       >
         {drawerOpen && (
           <PromoFormDrawer

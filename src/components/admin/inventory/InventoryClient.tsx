@@ -9,6 +9,7 @@ import AdminPagination from '@/components/admin/AdminPagination';
 import SortPopover from '@/components/ui/SortPopover';
 import AdminStatStrip from '@/components/admin/AdminStatStrip';
 import SlideDrawer from '@/components/admin/SlideDrawer';
+import { DRAWER_WIDTH } from '@/components/admin/DrawerChrome';
 import { PRODUCT_CATEGORIES } from '@/lib/admin/constants';
 import InventoryAgingRoom, { type AgingCutRow } from './InventoryAgingRoom';
 import InventoryUpcomingDeliveries, { type DeliveryRow, type ReceivedDeliveryRow } from './InventoryUpcomingDeliveries';
@@ -316,7 +317,7 @@ export default function InventoryClient({
       <SlideDrawer
         open={!!table.reorder.row}
         onClose={table.reorder.close}
-        widthClass="max-w-md"
+        widthClass={DRAWER_WIDTH.narrow}
         ariaLabelledBy="reorder-form-title"
       >
         {table.reorder.row && (
@@ -327,7 +328,7 @@ export default function InventoryClient({
       <SlideDrawer
         open={stocktakeOpen}
         onClose={() => setStocktakeOpen(false)}
-        widthClass="max-w-2xl"
+        widthClass={DRAWER_WIDTH.wide}
         ariaLabelledBy="stocktake-form-title"
       >
         {stocktakeOpen && (
@@ -338,7 +339,7 @@ export default function InventoryClient({
       <SlideDrawer
         open={logDeliveryOpen}
         onClose={() => setLogDeliveryOpen(false)}
-        widthClass="max-w-md"
+        widthClass={DRAWER_WIDTH.narrow}
         ariaLabelledBy="reorder-form-title"
       >
         {logDeliveryOpen && (

@@ -60,3 +60,17 @@ export const TABLE_ORDER_STATUS_PILL: Record<string, TableOrderStatusPill> = {
   'Completed':        { bg: 'bg-green-soft', text: 'text-green',    label: 'Completed' },
   'Cancelled':        { bg: 'bg-red-soft',   text: 'text-oxblood',  label: 'Cancelled' },
 };
+
+// Dark-surface variant, for the dashboard cut list sitting on `bg-ink`.
+// The light palettes above all fail on it — `text-green` at 4.9:1 on cream
+// drops to 1.9:1 on ink, and `text-ink-soft` disappears entirely. These use
+// the bright/soft tokens the rewards contrast sweep introduced for exactly
+// this case, so a dark surface never hand-rolls its own rgba again.
+export const CUTLIST_ORDER_STATUS_PILL: Record<string, TableOrderStatusPill> = {
+  'Order Placed':     { bg: 'bg-cream/10',       text: 'text-cream/75',  label: 'Placed' },
+  'Preparing':        { bg: 'bg-camel/20',       text: 'text-camel-soft', label: 'Preparing' },
+  'Ready for Pickup': { bg: 'bg-green-bright/15', text: 'text-green-bright', label: 'Ready' },
+  'Out for Delivery': { bg: 'bg-green-bright/15', text: 'text-green-bright', label: 'Out for delivery' },
+  'Completed':        { bg: 'bg-cream/8',        text: 'text-cream/55',  label: 'Collected' },
+  'Cancelled':        { bg: 'bg-oxblood/30',     text: 'text-cream/80',  label: 'Cancelled' },
+};

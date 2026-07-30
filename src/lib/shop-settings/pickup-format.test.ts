@@ -8,6 +8,7 @@ import {
   getPickupNote,
   parseClockMinutes,
   parseLeadMinutes,
+  shopDateKey,
   shopWeekdayIndex,
 } from './pickup-format';
 
@@ -227,6 +228,38 @@ describe('formatInShopZone', () => {
     // catch returned an empty string or a placeholder.
     expect(formatInShopZone(placed, 'Not/AZone', stamp)).toBe(
       new Intl.DateTimeFormat('en-US', stamp).format(placed),
+    );
+  });
+});
+
+describe('shopDateKey', () => {
+  const PT = 'America/Los_Angeles (PT)';
+
+  it('reads the date at the shop, not on the server', () => {
+    // 00:30 UTC on the 30th is still 17:30 on the 29th in California — the
+    // counter is mid-afternoon and the board must still be showing the 29th.
+    expect(shopDateKey(PT, new Date('2026-07-30T00:30:00Z'))).toBe('2026-07-29');
+  });
+
+  it('rolls over when the shop rolls over, not when UTC does', () => {
+    expect(shopDateKey(PT, new Date('2026-07-30T06:59:00Z'))).toBe('2026-07-29');
+    expect(shopDateKey(PT, new Date('2026-07-30T07:01:00Z'))).toBe('2026-07-30');
+  });
+
+  it('zero-pads single-digit months and days', () => {
+    expect(shopDateKey(PT, new Date('2026-03-05T20:00:00Z'))).toBe('2026-03-05');
+  });
+
+  it('strips the parenthesised abbreviation the setting carries', () => {
+    const instant = new Date('2026-07-30T00:30:00Z');
+    expect(shopDateKey(PT, instant)).toBe(shopDateKey('America/Los_Angeles', instant));
+  });
+
+  it('falls back to the runtime date on an unusable setting', () => {
+    const instant = new Date('2026-07-30T00:30:00Z');
+    const pad = (n: number) => String(n).padStart(2, '0');
+    expect(shopDateKey('Not/AZone', instant)).toBe(
+      `${instant.getFullYear()}-${pad(instant.getMonth() + 1)}-${pad(instant.getDate())}`,
     );
   });
 });

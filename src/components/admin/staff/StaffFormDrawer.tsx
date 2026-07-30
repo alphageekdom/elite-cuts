@@ -5,11 +5,15 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 import { type ShiftColor } from '@/lib/shifts/constants';
-import SlideDrawer from '@/components/admin/SlideDrawer';
 import { labelCls } from '@/components/admin/AdminForm';
+import {
+  DrawerHeader,
+  DrawerBody,
+  DrawerFooter,
+  DrawerDeleteConfirm,
+} from '@/components/admin/DrawerChrome';
 import { SelectField } from '@/components/ui/SelectField';
 import ColorSwatchPicker from '@/components/admin/ColorSwatchPicker';
-import AdminEyebrow from '@/components/admin/AdminEyebrow';
 import {
   FORM_FIELD_CLS,
   ROLE_COLOR,
@@ -53,26 +57,14 @@ function isEmailShapeValid(value: string): boolean {
 }
 
 type Props = {
-  open: boolean;
   staff: StaffRow | null;  // null = create mode
   onClose: () => void;
 };
 
-export default function StaffFormDrawer(props: Props) {
-  const { open, onClose } = props;
-  return (
-    <SlideDrawer
-      open={open}
-      onClose={onClose}
-      widthClass="max-w-md"
-      ariaLabelledBy="staff-form-title"
-    >
-      {open && <StaffFormBody {...props} />}
-    </SlideDrawer>
-  );
-}
-
-function StaffFormBody({ staff, onClose }: Props) {
+// Drawer body — wrapped in `SlideDrawer` by the parent for focus trap +
+// Escape, matching the other seven admin drawers. `staff-form-title` must
+// match the `ariaLabelledBy` SlideDrawer is configured with.
+export default function StaffFormDrawer({ staff, onClose }: Props) {
   const router = useRouter();
   const isEdit = staff !== null;
 
@@ -103,7 +95,6 @@ function StaffFormBody({ staff, onClose }: Props) {
   const [notes, setNotes] = useState(staff?.notes ?? '');
 
   const [saving, setSaving] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   // Smart-default chain: changing the role auto-fills color from the role map.
@@ -235,38 +226,20 @@ function StaffFormBody({ staff, onClose }: Props) {
   }
 
   return (
-    <>
-      <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-line-soft shrink-0">
-        <div className="pr-4">
-          <AdminEyebrow size="drawer" className="mb-1.5">
-            {isEdit ? 'Edit staff' : 'New staff'}
-          </AdminEyebrow>
-          <h2
-            id="staff-form-title"
-            className="font-display text-[20px] font-normal tracking-tight leading-snug"
-          >
-            {isEdit ? staff.name : 'Add a staff member'}
-          </h2>
-          <p className="mt-1 text-[12px] text-muted">
-            {isEdit ? 'Update or remove this staff record' : 'Roster entry — no login created'}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close"
-          className="w-8 h-8 rounded-full grid place-items-center text-muted hover:text-ink hover:bg-cream-deep transition-colors shrink-0 mt-1"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M18 6L6 18M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
+    <form onSubmit={handleSubmit} className="flex h-full flex-col">
+      <DrawerHeader
+        eyebrow={isEdit ? 'Edit staff' : 'New staff'}
+        title={isEdit ? staff.name : 'Add a staff member'}
+        titleId="staff-form-title"
+        sub={isEdit ? 'Update or remove this staff record' : 'Roster entry — no login created'}
+        onClose={onClose}
+      />
 
-      <form onSubmit={handleSubmit} className="flex flex-col flex-1 px-6 py-5 gap-5 overflow-y-auto">
+      <DrawerBody>
         <div>
-          <label className={labelCls}>Name</label>
+          <label htmlFor="staff-name" className={labelCls}>Name</label>
           <input
+            id="staff-name"
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -278,8 +251,9 @@ function StaffFormBody({ staff, onClose }: Props) {
         </div>
 
         <div>
-          <label className={labelCls}>Role</label>
+          <label htmlFor="staff-role" className={labelCls}>Role</label>
           <SelectField
+            id="staff-role"
             value={roleMode}
             onChange={(e) => handleRoleChange(e.target.value)}
           >
@@ -302,8 +276,9 @@ function StaffFormBody({ staff, onClose }: Props) {
         </div>
 
         <div>
-          <label className={labelCls}>Station</label>
+          <label htmlFor="staff-station" className={labelCls}>Station</label>
           <input
+            id="staff-station"
             type="text"
             value={station}
             onChange={(e) => setStation(e.target.value)}
@@ -313,14 +288,17 @@ function StaffFormBody({ staff, onClose }: Props) {
           />
         </div>
 
-        <div>
-          <label className={labelCls}>Color</label>
+        {/* A swatch picker is a set of buttons, not one labelable control, so
+            this heads a group rather than pointing `htmlFor` at nothing. */}
+        <div role="group" aria-labelledby="staff-color-label">
+          <span id="staff-color-label" className={labelCls}>Color</span>
           <ColorSwatchPicker value={color} onChange={setColor} />
         </div>
 
         <div>
-          <label className={labelCls}>Status</label>
+          <label htmlFor="staff-status" className={labelCls}>Status</label>
           <SelectField
+            id="staff-status"
             value={status}
             onChange={(e) => setStatus(e.target.value as StaffStatus)}
           >
@@ -331,8 +309,9 @@ function StaffFormBody({ staff, onClose }: Props) {
         </div>
 
         <div>
-          <label className={labelCls}>Email</label>
+          <label htmlFor="staff-email" className={labelCls}>Email</label>
           <input
+            id="staff-email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -347,8 +326,9 @@ function StaffFormBody({ staff, onClose }: Props) {
         </div>
 
         <div>
-          <label className={labelCls}>Notes</label>
+          <label htmlFor="staff-notes" className={labelCls}>Notes</label>
           <textarea
+            id="staff-notes"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Anything worth knowing about this staff member"
@@ -358,50 +338,23 @@ function StaffFormBody({ staff, onClose }: Props) {
           />
         </div>
 
-        <div className="mt-auto pt-4 border-t border-line-soft space-y-3">
-          <button
-            type="submit"
-            disabled={submitDisabled}
-            className="w-full bg-ink text-cream text-[13px] font-medium tracking-[0.04em] py-3 rounded-full hover:bg-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Create staff'}
-          </button>
-          {isEdit && !isDirty && !saving && (
-            <p className="text-[11px] text-muted text-center -mt-1">No changes yet</p>
-          )}
+      </DrawerBody>
 
-          {isEdit && (
-            confirmDelete ? (
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setConfirmDelete(false)}
-                  disabled={deleting}
-                  className="text-[12px] font-medium tracking-[0.04em] py-2.5 rounded-full border border-line text-ink-soft hover:border-ink hover:text-ink transition-colors disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  disabled={deleting}
-                  className="text-[12px] font-medium tracking-[0.04em] py-2.5 rounded-full bg-oxblood text-cream hover:bg-oxblood/90 transition-colors disabled:opacity-50"
-                >
-                  {deleting ? 'Deleting…' : 'Confirm delete'}
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setConfirmDelete(true)}
-                className="w-full text-[12px] font-medium tracking-[0.04em] py-2.5 rounded-full border border-oxblood/30 text-oxblood hover:bg-oxblood/5 transition-colors"
-              >
-                Delete staff
-              </button>
-            )
-          )}
-        </div>
-      </form>
-    </>
+      <DrawerFooter
+        blocker={
+          !name.trim() ? 'Add a name'
+          : !emailValid ? 'Fix the email address'
+          : null
+        }
+        hint={isEdit && !isDirty ? 'No changes yet' : null}
+        onCancel={onClose}
+        submitType="submit"
+        submitLabel={isEdit ? 'Save changes' : 'Create staff'}
+        busyLabel="Saving…"
+        busy={saving}
+        disabled={submitDisabled}
+        extra={isEdit ? <DrawerDeleteConfirm onDelete={handleDelete} busy={deleting} /> : null}
+      />
+    </form>
   );
 }

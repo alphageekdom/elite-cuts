@@ -2,8 +2,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { EMAIL_RE } from '@/lib/validation';
-import { inputCls } from '@/components/admin/AdminForm';
-import AdminEyebrow from '@/components/admin/AdminEyebrow';
+import { inputCls, labelCls, DrawerField } from '@/components/admin/AdminForm';
+import { DrawerHeader, DrawerBody, DrawerFooter } from '@/components/admin/DrawerChrome';
 import type { CustomerTableRow } from '@/types/admin';
 
 type Props = {
@@ -90,36 +90,21 @@ export default function CustomerCreateDrawer({ onClose, onCreated }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col h-full">
-      <div className="relative bg-ink text-cream px-8 py-7 shrink-0 overflow-hidden">
-        <div className="absolute -top-30 -right-30 w-64 h-64 rounded-full pointer-events-none bg-[radial-gradient(circle,rgba(184,137,90,0.18)_0%,transparent_60%)]" />
-        <div className="relative z-10 flex items-start justify-between">
-          <div>
-            <AdminEyebrow size="drawer" className="mb-1">New customer</AdminEyebrow>
-            <div id="customer-create-title" className="font-display text-[26px] font-medium tracking-tight leading-tight">
-              Add a customer
-            </div>
-            <div className="font-mono text-[11px] text-cream/55 tracking-[0.04em] mt-1.5">
-              The customer gets a temp password they can change on sign-in.
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-9 h-9 rounded-full border border-cream/15 bg-cream/8 text-cream grid place-items-center hover:border-cream/30 transition-colors shrink-0"
-            aria-label="Close"
-          >
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        </div>
-      </div>
+      {/* Was a dark ink header with a radial glow, mirroring the customer
+          *detail* drawer's hero. That hero earns its treatment by carrying the
+          customer's KPI strip; this one carried a title, so it was decoration
+          that made the create drawer the only form in the admin not opening
+          like the other eight. `CustomerDetailHero` is untouched. */}
+      <DrawerHeader
+        eyebrow="New customer"
+        title="Add a customer"
+        titleId="customer-create-title"
+        sub="You get a temp password to pass on. They can change it from their profile."
+        onClose={onClose}
+      />
 
-      <div className="flex-1 overflow-y-auto px-8 py-6 space-y-5">
-        <div>
-          <label className="block text-[11px] font-medium tracking-[0.18em] uppercase text-muted mb-1.5">
-            Name <span className="text-oxblood">·</span>
-          </label>
+      <DrawerBody>
+        <DrawerField label="Name">
           <input
             ref={nameInputRef}
             type="text"
@@ -130,13 +115,12 @@ export default function CustomerCreateDrawer({ onClose, onCreated }: Props) {
             required
             className={inputCls}
           />
-        </div>
+        </DrawerField>
 
         <div>
-          <label className="block text-[11px] font-medium tracking-[0.18em] uppercase text-muted mb-1.5">
-            Email <span className="text-oxblood">·</span>
-          </label>
+          <label className={labelCls} htmlFor="customer-create-email">Email</label>
           <input
+            id="customer-create-email"
             type="email"
             value={email}
             onChange={(e) => { setEmail(e.target.value); setEmailError(''); }}
@@ -146,17 +130,18 @@ export default function CustomerCreateDrawer({ onClose, onCreated }: Props) {
             }}
             placeholder="customer@example.com"
             required
+            aria-invalid={emailError ? true : undefined}
+            aria-describedby={emailError ? 'customer-create-email-error' : undefined}
             className={inputCls}
           />
           {emailError && (
-            <div className="mt-1.5 text-[12px] text-oxblood">{emailError}</div>
+            <p id="customer-create-email-error" className="mt-1.5 text-[12px] text-oxblood">
+              {emailError}
+            </p>
           )}
         </div>
 
-        <div>
-          <label className="block text-[11px] font-medium tracking-[0.18em] uppercase text-muted mb-1.5">
-            Phone
-          </label>
+        <DrawerField label="Phone">
           <input
             type="tel"
             value={phone}
@@ -164,12 +149,9 @@ export default function CustomerCreateDrawer({ onClose, onCreated }: Props) {
             placeholder="Optional"
             className={inputCls}
           />
-        </div>
+        </DrawerField>
 
-        <div>
-          <label className="block text-[11px] font-medium tracking-[0.18em] uppercase text-muted mb-1.5">
-            Internal note
-          </label>
+        <DrawerField label="Internal note">
           <textarea
             value={adminNote}
             onChange={(e) => setAdminNote(e.target.value)}
@@ -178,25 +160,22 @@ export default function CustomerCreateDrawer({ onClose, onCreated }: Props) {
             maxLength={1000}
             className={`${inputCls} resize-y`}
           />
-        </div>
-      </div>
+        </DrawerField>
+      </DrawerBody>
 
-      <div className="px-8 py-4.5 bg-paper border-t border-line-soft shrink-0 flex gap-2">
-        <button
-          type="button"
-          onClick={onClose}
-          className="flex-1 px-4 py-2.5 rounded-full border border-line text-ink-soft text-[13px] font-medium hover:border-ink hover:text-ink transition-colors"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={!canSubmit || saving}
-          className="flex-1 px-4 py-2.5 rounded-full bg-ink text-cream text-[13px] font-medium hover:bg-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {saving ? 'Creating…' : 'Create customer'}
-        </button>
-      </div>
+      <DrawerFooter
+        blocker={
+          !name.trim() ? 'Add a name'
+          : !email.trim() ? 'Add an email'
+          : emailError ? 'Fix the email address'
+          : null
+        }
+        onCancel={onClose}
+        submitType="submit"
+        submitLabel="Create customer"
+        busyLabel="Creating…"
+        busy={saving}
+      />
     </form>
   );
 }

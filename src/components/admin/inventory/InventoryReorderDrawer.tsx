@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import type { InventoryRow } from '@/lib/inventory';
 import { deliveryCreateSchema } from '@/lib/deliveries/schema';
 import { SelectField } from '@/components/ui/SelectField';
+import { DrawerHeader, DrawerBody, DrawerFooter } from '@/components/admin/DrawerChrome';
 
 export type ReorderDrawerMode = 'reorder' | 'log-delivery';
 
@@ -128,42 +129,29 @@ export default function InventoryReorderDrawer({ row, mode = 'reorder', rows = [
   const submitDisabled = saving || !supplier.trim() || !date || (!row && !productId);
 
   return (
-    <>
-      {/* Header */}
-      <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-line-soft shrink-0">
-        <div className="pr-4">
-          <div className="text-[11px] tracking-widest uppercase text-muted mb-1.5">{eyebrow}</div>
-          <h2 id="reorder-form-title" className="font-display text-[20px] font-normal tracking-tight leading-snug">
-            {headline}
-          </h2>
-          {row?.deliveryStatus && (
-            <div className="flex items-center gap-2 mt-2">
-              <span className="text-[11px] text-muted">Existing delivery:</span>
-              <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium ${
-                row.deliveryStatus === 'confirmed' ? 'bg-green-soft text-green' :
-                row.deliveryStatus === 'pending'   ? 'bg-amber-soft text-amber' :
-                'bg-ink/6 text-muted'
-              }`}>
-                <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                {row.deliveryStatus.charAt(0).toUpperCase() + row.deliveryStatus.slice(1)}
-              </span>
-            </div>
-          )}
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close"
-          className="w-8 h-8 rounded-full grid place-items-center text-muted hover:text-ink hover:bg-cream-deep transition-colors shrink-0 mt-1"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M18 6L6 18M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
+    <form onSubmit={handleSubmit} className="flex h-full flex-col">
+      <DrawerHeader
+        eyebrow={eyebrow}
+        title={headline}
+        titleId="reorder-form-title"
+        onClose={onClose}
+      >
+        {row?.deliveryStatus && (
+          <div className="mt-2 flex items-center gap-2">
+            <span className="text-[11px] text-muted">Existing delivery:</span>
+            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
+              row.deliveryStatus === 'confirmed' ? 'bg-green-soft text-green' :
+              row.deliveryStatus === 'pending'   ? 'bg-amber-soft text-amber' :
+              'bg-ink/6 text-muted'
+            }`}>
+              <span className="h-1.5 w-1.5 rounded-full bg-current" />
+              {row.deliveryStatus.charAt(0).toUpperCase() + row.deliveryStatus.slice(1)}
+            </span>
+          </div>
+        )}
+      </DrawerHeader>
 
-      {/* Form */}
-      <form onSubmit={handleSubmit} className="flex flex-col flex-1 px-6 py-5 gap-5">
+      <DrawerBody>
         {!row && isLogDelivery && (
           <div>
             <label htmlFor="reorder-cut" className="block text-[12px] font-medium text-ink-soft tracking-widest uppercase mb-1.5">
@@ -269,16 +257,21 @@ export default function InventoryReorderDrawer({ row, mode = 'reorder', rows = [
           </div>
         )}
 
-        <div className="mt-auto pt-4 border-t border-line-soft">
-          <button
-            type="submit"
-            disabled={submitDisabled}
-            className="w-full bg-ink text-cream text-[13px] font-medium tracking-[0.04em] py-3 rounded-full hover:bg-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {submitLabel}
-          </button>
-        </div>
-      </form>
-    </>
+      </DrawerBody>
+
+      <DrawerFooter
+        blocker={
+          !row && !productId ? 'Pick which cut arrived'
+          : !supplier.trim() ? 'Add a supplier'
+          : !date ? 'Set a date'
+          : null
+        }
+        onCancel={onClose}
+        submitType="submit"
+        submitLabel={submitLabel}
+        busy={saving}
+        disabled={submitDisabled}
+      />
+    </form>
   );
 }

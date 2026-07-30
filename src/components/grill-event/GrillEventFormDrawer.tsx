@@ -17,6 +17,7 @@ import {
   type SerializedEvent,
 } from '@/lib/events/config';
 import SlideDrawer from '@/components/admin/SlideDrawer';
+import { DRAWER_WIDTH } from '@/components/admin/DrawerChrome';
 import { labelCls } from '@/components/admin/AdminForm';
 import { SelectField } from '@/components/ui/SelectField';
 
@@ -37,7 +38,7 @@ export default function GrillEventFormDrawer(props: Props) {
     <SlideDrawer
       open={open}
       onClose={onClose}
-      widthClass="max-w-md"
+      widthClass={DRAWER_WIDTH.narrow}
       ariaLabelledBy="grill-event-form-title"
     >
       {open && <GrillEventFormBody {...props} />}
@@ -158,8 +159,9 @@ function GrillEventFormBody({ event, defaultDate, onClose }: Props) {
 
       <form onSubmit={handleSubmit} className="flex flex-col flex-1 px-6 py-5 gap-5 overflow-y-auto">
         <div>
-          <label className={labelCls}>Date</label>
+          <label htmlFor="grill-date" className={labelCls}>Date</label>
           <input
+            id="grill-date"
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
@@ -171,8 +173,9 @@ function GrillEventFormBody({ event, defaultDate, onClose }: Props) {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className={labelCls}>Start</label>
+            <label htmlFor="grill-start" className={labelCls}>Start</label>
             <SelectField
+              id="grill-start"
               value={startHour}
               onChange={(e) => setStartHour(Number(e.target.value))}
             >
@@ -182,8 +185,9 @@ function GrillEventFormBody({ event, defaultDate, onClose }: Props) {
             </SelectField>
           </div>
           <div>
-            <label className={labelCls}>End</label>
+            <label htmlFor="grill-end" className={labelCls}>End</label>
             <SelectField
+              id="grill-end"
               value={endHour}
               onChange={(e) => setEndHour(Number(e.target.value))}
             >
@@ -195,10 +199,11 @@ function GrillEventFormBody({ event, defaultDate, onClose }: Props) {
         </div>
 
         <div>
-          <label className={labelCls}>
+          <label htmlFor="grill-message" className={labelCls}>
             Customer message
           </label>
           <textarea
+            id="grill-message"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             maxLength={EVENT_MESSAGE_MAX}

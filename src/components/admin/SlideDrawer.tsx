@@ -10,7 +10,13 @@ type Props = {
   onClose: () => void;
   ariaLabelledBy?: string;
   ariaLabel?: string;
-  widthClass?: string;
+  /**
+   * A tier from `DRAWER_WIDTH`. Required rather than defaulted: the old
+   * default was `max-w-135`, a fourth width belonging to none of the three
+   * tiers, which a caller could pick up by saying nothing. All fifteen
+   * callers pass a tier, so nothing relied on it.
+   */
+  widthClass: string;
   children: ReactNode;
 };
 
@@ -23,7 +29,7 @@ export default function SlideDrawer({
   onClose,
   ariaLabelledBy,
   ariaLabel,
-  widthClass = 'max-w-135',
+  widthClass,
   children,
 }: Props) {
   const asideRef = useRef<HTMLElement>(null);

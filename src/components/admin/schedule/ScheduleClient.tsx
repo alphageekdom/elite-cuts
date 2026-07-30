@@ -8,6 +8,8 @@ import SchedulePickupSlots, { type PickupSlotRow } from './SchedulePickupSlots';
 import ScheduleShopHours from './ScheduleShopHours';
 import ScheduleCalendarGrid from './ScheduleCalendarGrid';
 import ShiftFormDrawer from './ShiftFormDrawer';
+import SlideDrawer from '@/components/admin/SlideDrawer';
+import { DRAWER_WIDTH } from '@/components/admin/DrawerChrome';
 import { MONTH_ABBR } from '@/lib/format';
 import type { ShopHoursDay } from '@/models/ShopHours';
 import {
@@ -130,16 +132,24 @@ export default function ScheduleClient({
         </div>
       </div>
 
-      <ShiftFormDrawer
+      <SlideDrawer
         open={drawer.kind !== 'closed'}
-        shift={drawer.kind === 'edit' ? drawer.shift : null}
-        defaultDayOfWeek={drawer.kind === 'create' ? (drawer.dayOfWeek ?? todayMondayIndex) : undefined}
-        defaultHourIndex={drawer.kind === 'create' ? drawer.hourIndex : undefined}
-        weekStart={weekStart}
-        staffUsers={staffUsers}
         onClose={closeDrawer}
-        onSaved={refetch}
-      />
+        widthClass={DRAWER_WIDTH.narrow}
+        ariaLabelledBy="shift-form-title"
+      >
+        {drawer.kind !== 'closed' && (
+          <ShiftFormDrawer
+            shift={drawer.kind === 'edit' ? drawer.shift : null}
+            defaultDayOfWeek={drawer.kind === 'create' ? (drawer.dayOfWeek ?? todayMondayIndex) : undefined}
+            defaultHourIndex={drawer.kind === 'create' ? drawer.hourIndex : undefined}
+            weekStart={weekStart}
+            staffUsers={staffUsers}
+            onClose={closeDrawer}
+            onSaved={refetch}
+          />
+        )}
+      </SlideDrawer>
     </div>
   );
 }

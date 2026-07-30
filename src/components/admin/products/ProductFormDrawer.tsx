@@ -19,7 +19,7 @@ import { coerceProductInput } from '@/lib/products/parse-form-input';
 import { checkPriceBand, PRICE_BAND_FIELD } from '@/lib/products/price-bands';
 import { inputCls, Toggle, DrawerSection, DrawerField } from '@/components/admin/AdminForm';
 import { SelectField } from '@/components/ui/SelectField';
-import AdminEyebrow from '@/components/admin/AdminEyebrow';
+import { DrawerHeader, DrawerBody, DrawerFooter } from '@/components/admin/DrawerChrome';
 import type { ProductTableRow } from '@/types/admin';
 
 type Props = {
@@ -230,32 +230,18 @@ export default function ProductFormDrawer({ product, onClose, onSave }: Props) {
 
   return (
     <>
-      {/* Head */}
-      <div className="flex items-center justify-between gap-4 px-8 py-6 border-b border-line-soft bg-paper shrink-0">
-        <div>
-          <AdminEyebrow size="drawer" className="mb-1">
-            {isEdit ? 'Edit product' : 'Add new'}
-          </AdminEyebrow>
-          <div id="product-form-title" className="font-display text-[22px] font-medium tracking-[-0.015em]">
-            {isEdit ? (
-              <><em className="italic text-oxblood font-normal">{product.name}</em></>
-            ) : (
-              <>New <em className="italic text-oxblood font-normal">product</em></>
-            )}
-          </div>
-        </div>
-        <button
-          onClick={onClose}
-          className="w-9 h-9 rounded-full bg-cream border border-line text-ink grid place-items-center hover:border-ink transition-colors shrink-0"
-        >
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
-      </div>
+      <DrawerHeader
+        eyebrow={isEdit ? 'Edit product' : 'Add new'}
+        title={
+          isEdit
+            ? <em className="italic font-normal text-oxblood">{product.name}</em>
+            : <>New <em className="italic font-normal text-oxblood">product</em></>
+        }
+        titleId="product-form-title"
+        onClose={onClose}
+      />
 
-      {/* Body */}
-      <div className="flex-1 overflow-y-auto px-8 py-7 space-y-8">
+      <DrawerBody>
 
         <DrawerSection label="Basic information">
           <DrawerField label="Product name">
@@ -560,29 +546,15 @@ export default function ProductFormDrawer({ product, onClose, onSave }: Props) {
             onToggle={() => setField('isNewArrival', !state.isNewArrival)}
           />
         </DrawerSection>
-      </div>
+      </DrawerBody>
 
-      {/* Footer */}
-      <div className="flex gap-2 px-8 py-4.5 bg-paper border-t border-line-soft shrink-0">
-        <button
-          onClick={onClose}
-          className="flex-1 inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-full bg-paper border border-line text-ink-soft text-[13px] font-medium hover:border-ink hover:text-ink transition-colors"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex-1 inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-full bg-ink text-cream text-[13px] font-medium hover:bg-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {!saving && (
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          )}
-          {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Save product'}
-        </button>
-      </div>
+      <DrawerFooter
+        onCancel={onClose}
+        onSubmit={handleSave}
+        submitLabel={isEdit ? 'Save changes' : 'Save product'}
+        busyLabel="Saving…"
+        busy={saving}
+      />
     </>
   );
 }

@@ -64,10 +64,26 @@ export function useOrdersTable(initialOrders: OrderTableRow[]) {
     const target = orders.find((o) => o.id === openOrderId);
     // Defer to a task tick so the setState inside openDrawer lands async
     // (rule-clean) instead of synchronously from the effect body.
-    const id = target ? setTimeout(() => openDrawer(target), 0) : null;
-    router.replace(pathname);
+    //
+    // The strip has to happen INSIDE the same task, after the open. Calling
+    // `router.replace` from the effect body changed `searchParams`, which
+    // changed this effect's own deps, which ran the cleanup below and
+    // `clearTimeout`-ed the pending open before it ever fired — so the drawer
+    // never appeared. Deep links had been silently dead since the timeout was
+    // introduced; the cleanup is now a no-op by the time the replace lands.
+    const id = setTimeout(() => {
+      if (target) openDrawer(target);
+      router.replace(pathname);
+    }, 0);
     return () => {
-      if (id !== null) clearTimeout(id);
+      clearTimeout(id);
+      // Release the claim. StrictMode runs this cleanup between its two dev
+      // mounts, so a guard that stayed claimed made the second run bail while
+      // the first run's timer had already been cancelled — the deep link then
+      // did nothing at all, in dev and after any incidental effect re-run.
+      if (handledDeepLinkRef.current === openOrderId) {
+        handledDeepLinkRef.current = null;
+      }
     };
   }, [openOrderId, orders, openDrawer, pathname, router]);
 

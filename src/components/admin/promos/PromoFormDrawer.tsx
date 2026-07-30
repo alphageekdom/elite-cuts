@@ -4,8 +4,14 @@ import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { createPromo, updatePromo, deletePromo } from '@/actions/promos';
-import { btnPrimary, btnGhost, btnDanger } from '@/components/admin/AdminForm';
 import { SelectField } from '@/components/ui/SelectField';
+import {
+  DrawerHeader,
+  DrawerBody,
+  DrawerFooter,
+  DrawerDeleteConfirm,
+} from '@/components/admin/DrawerChrome';
+import { labelCls } from '@/components/admin/AdminForm';
 import { flattenPromoIssues, promoInputSchema } from '@/lib/promos/schema';
 import type { PromoType } from '@/models/Promo';
 
@@ -50,8 +56,9 @@ const dateForInput = (iso: string | null) => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
-const fieldLabel =
-  'block text-[11px] font-medium tracking-[0.14em] uppercase text-muted mb-1.5';
+// Alias kept because the file references it ~20 times; the value is the
+// canonical one so it can no longer drift from every other drawer.
+const fieldLabel = `block ${labelCls}`;
 const textInput =
   'w-full rounded-sm border border-line bg-cream px-3 py-2 text-[14px] text-ink outline-none transition-colors focus:border-ink disabled:opacity-50';
 const fieldError = 'mt-1 text-[11px] text-oxblood';
@@ -77,7 +84,6 @@ export default function PromoFormDrawer({ promo, onClose, onSaved }: Props) {
   const [excludesMember, setExcludesMember] = useState(promo?.excludesMember ?? false);
   const [isActive, setIsActive] = useState(promo?.isActive ?? true);
   const [isPublic, setIsPublic] = useState(promo?.isPublic ?? false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -171,27 +177,19 @@ export default function PromoFormDrawer({ promo, onClose, onSaved }: Props) {
 
   return (
     <form onSubmit={onSubmit} className="flex h-full flex-col">
-      <header className="flex items-center justify-between border-b border-line-soft px-8 py-6">
-        <div>
-          <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted">
-            → {isEdit ? 'Edit promo' : 'New promo'}
-          </p>
-          <h2 id="promo-form-title" className="mt-1 font-display text-[22px] font-medium tracking-tight">
-            {isEdit ? promo!.code : 'Create a code'}
-          </h2>
-        </div>
-        <button type="button" onClick={onClose} aria-label="Close" className="text-muted hover:text-ink">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
-            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
-      </header>
+      <DrawerHeader
+        eyebrow={isEdit ? 'Edit promo' : 'New promo'}
+        title={isEdit ? promo!.code : 'Create a code'}
+        titleId="promo-form-title"
+        onClose={onClose}
+      />
 
-      <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
+      <DrawerBody>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className={fieldLabel}>Code</label>
+            <label htmlFor="promo-code" className={fieldLabel}>Code</label>
             <input
+              id="promo-code"
               type="text"
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
@@ -216,8 +214,9 @@ export default function PromoFormDrawer({ promo, onClose, onSaved }: Props) {
         </div>
 
         <div>
-          <label className={fieldLabel}>Description (admin only)</label>
+          <label htmlFor="promo-description" className={fieldLabel}>Description (admin only)</label>
           <textarea
+            id="promo-description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
@@ -231,8 +230,9 @@ export default function PromoFormDrawer({ promo, onClose, onSaved }: Props) {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className={fieldLabel}>Type</label>
+            <label htmlFor="promo-type" className={fieldLabel}>Type</label>
             <SelectField
+              id="promo-type"
               value={type}
               onChange={(e) => setType(e.target.value as PromoType)}
             >
@@ -241,10 +241,11 @@ export default function PromoFormDrawer({ promo, onClose, onSaved }: Props) {
             </SelectField>
           </div>
           <div>
-            <label className={fieldLabel}>
+            <label htmlFor="promo-value" className={fieldLabel}>
               Value {type === 'percent' ? '(%)' : '($)'}
             </label>
             <input
+              id="promo-value"
               type="number"
               inputMode="decimal"
               step={type === 'percent' ? 1 : 0.01}
@@ -262,8 +263,9 @@ export default function PromoFormDrawer({ promo, onClose, onSaved }: Props) {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className={fieldLabel}>Minimum subtotal ($)</label>
+            <label htmlFor="promo-min-subtotal" className={fieldLabel}>Minimum subtotal ($)</label>
             <input
+              id="promo-min-subtotal"
               type="number"
               inputMode="decimal"
               step={0.01}
@@ -278,8 +280,9 @@ export default function PromoFormDrawer({ promo, onClose, onSaved }: Props) {
           </div>
           {type === 'percent' && (
             <div>
-              <label className={fieldLabel}>Max discount cap ($)</label>
+              <label htmlFor="promo-max-discount" className={fieldLabel}>Max discount cap ($)</label>
               <input
+                id="promo-max-discount"
                 type="number"
                 inputMode="decimal"
                 step={0.01}
@@ -298,8 +301,9 @@ export default function PromoFormDrawer({ promo, onClose, onSaved }: Props) {
         <div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={fieldLabel}>Starts at</label>
+              <label htmlFor="promo-starts-at" className={fieldLabel}>Starts at</label>
               <input
+                id="promo-starts-at"
                 type="datetime-local"
                 value={startsAt}
                 onChange={(e) => setStartsAt(e.target.value)}
@@ -307,8 +311,9 @@ export default function PromoFormDrawer({ promo, onClose, onSaved }: Props) {
               />
             </div>
             <div>
-              <label className={fieldLabel}>Ends at</label>
+              <label htmlFor="promo-ends-at" className={fieldLabel}>Ends at</label>
               <input
+                id="promo-ends-at"
                 type="datetime-local"
                 value={endsAt}
                 onChange={(e) => setEndsAt(e.target.value)}
@@ -325,8 +330,9 @@ export default function PromoFormDrawer({ promo, onClose, onSaved }: Props) {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className={fieldLabel}>Usage limit (total)</label>
+            <label htmlFor="promo-usage-limit" className={fieldLabel}>Usage limit (total)</label>
             <input
+              id="promo-usage-limit"
               type="number"
               inputMode="numeric"
               step={1}
@@ -345,8 +351,9 @@ export default function PromoFormDrawer({ promo, onClose, onSaved }: Props) {
             )}
           </div>
           <div>
-            <label className={fieldLabel}>Per-customer limit</label>
+            <label htmlFor="promo-per-customer" className={fieldLabel}>Per-customer limit</label>
             <input
+              id="promo-per-customer"
               type="number"
               inputMode="numeric"
               step={1}
@@ -401,7 +408,7 @@ export default function PromoFormDrawer({ promo, onClose, onSaved }: Props) {
 
         {preview && (
           <div className="rounded-sm border border-line-soft bg-cream px-4 py-3">
-            <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.18em] text-muted">
+            <p className={`mb-2 ${labelCls}`}>
               Live savings preview
             </p>
             <div className="space-y-1 text-[13px]">
@@ -416,51 +423,17 @@ export default function PromoFormDrawer({ promo, onClose, onSaved }: Props) {
             </div>
           </div>
         )}
-      </div>
+      </DrawerBody>
 
-      <footer className="flex items-center justify-between gap-3 border-t border-line-soft px-8 py-5">
-        <div>
-          {isEdit && !confirmDelete && (
-            <button
-              type="button"
-              onClick={() => setConfirmDelete(true)}
-              disabled={saving}
-              className={btnDanger}
-            >
-              Delete
-            </button>
-          )}
-          {isEdit && confirmDelete && (
-            <div className="flex items-center gap-2">
-              <span className="text-[12px] text-oxblood">Delete this promo?</span>
-              <button
-                type="button"
-                onClick={onDelete}
-                disabled={saving}
-                className={btnDanger}
-              >
-                Yes, delete
-              </button>
-              <button
-                type="button"
-                onClick={() => setConfirmDelete(false)}
-                disabled={saving}
-                className={btnGhost}
-              >
-                Cancel
-              </button>
-            </div>
-          )}
-        </div>
-        <div className="flex items-center gap-3">
-          <button type="button" onClick={onClose} disabled={saving} className={btnGhost}>
-            Cancel
-          </button>
-          <button type="submit" disabled={saving} className={btnPrimary}>
-            {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Create promo'}
-          </button>
-        </div>
-      </footer>
+      <DrawerFooter
+        blocker={!code.trim() ? 'Enter a code' : null}
+        onCancel={onClose}
+        submitType="submit"
+        submitLabel={isEdit ? 'Save changes' : 'Create promo'}
+        busyLabel="Saving…"
+        busy={saving}
+        extra={isEdit ? <DrawerDeleteConfirm onDelete={onDelete} disabled={saving} /> : null}
+      />
     </form>
   );
 }

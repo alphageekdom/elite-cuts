@@ -25,8 +25,8 @@ export default function RewardsTab({ values, onChange, onSave, onDiscard, saving
         <p className={sectionSubCls}>Configure how customers earn and redeem points. Changes apply to all future transactions — existing point balances are not affected.</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-5">
           <div>
-            <label className={labelCls}>Points per $1</label>
-            <input
+            <label htmlFor="rewards-points-per-dollar" className={labelCls}>Points per $1</label>
+            <input id="rewards-points-per-dollar"
               type="number"
               min={0}
               value={values.pointsPerDollar}
@@ -35,8 +35,8 @@ export default function RewardsTab({ values, onChange, onSave, onDiscard, saving
             />
           </div>
           <div>
-            <label className={labelCls}>Weekend multiplier</label>
-            <SelectField
+            <label htmlFor="rewards-weekend-multiplier" className={labelCls}>Weekend multiplier</label>
+            <SelectField id="rewards-weekend-multiplier"
               value={values.weekendMultiplier}
               onChange={(e) => onChange({ weekendMultiplier: numberFromInput(e.target.value, 1) })}
             >
@@ -46,8 +46,8 @@ export default function RewardsTab({ values, onChange, onSave, onDiscard, saving
             </SelectField>
           </div>
           <div>
-            <label className={labelCls}>Points expiry</label>
-            <SelectField
+            <label htmlFor="rewards-points-expiry-months" className={labelCls}>Points expiry</label>
+            <SelectField id="rewards-points-expiry-months"
               value={values.pointsExpiryMonths}
               onChange={(e) => onChange({ pointsExpiryMonths: numberFromInput(e.target.value) })}
             >
@@ -59,8 +59,8 @@ export default function RewardsTab({ values, onChange, onSave, onDiscard, saving
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           <div>
-            <label className={labelCls}>Redemption — points</label>
-            <input
+            <label htmlFor="rewards-redemption-points" className={labelCls}>Redemption — points</label>
+            <input id="rewards-redemption-points"
               type="number"
               min={1}
               value={values.redemptionPoints}
@@ -69,8 +69,8 @@ export default function RewardsTab({ values, onChange, onSave, onDiscard, saving
             />
           </div>
           <div>
-            <label className={labelCls}>Redemption — dollars</label>
-            <input
+            <label htmlFor="rewards-redemption-dollars" className={labelCls}>Redemption — dollars</label>
+            <input id="rewards-redemption-dollars"
               type="number"
               min={0}
               step="0.01"
@@ -80,8 +80,8 @@ export default function RewardsTab({ values, onChange, onSave, onDiscard, saving
             />
           </div>
           <div>
-            <label className={labelCls}>Min to redeem</label>
-            <input
+            <label htmlFor="rewards-min-to-redeem" className={labelCls}>Min to redeem</label>
+            <input id="rewards-min-to-redeem"
               type="number"
               min={0}
               value={values.minToRedeem}
@@ -101,8 +101,8 @@ export default function RewardsTab({ values, onChange, onSave, onDiscard, saving
         <p className={sectionSubCls}>Limits how much of an order can be paid with points. Effective cap = min(% of subtotal, flat $). Customers can never redeem more than this on a single order, regardless of balance.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-3">
           <div>
-            <label className={labelCls}>Max % of subtotal</label>
-            <input
+            <label htmlFor="rewards-max-redemption-percent" className={labelCls}>Max % of subtotal</label>
+            <input id="rewards-max-redemption-percent"
               type="number"
               min={1}
               max={100}
@@ -112,8 +112,8 @@ export default function RewardsTab({ values, onChange, onSave, onDiscard, saving
             />
           </div>
           <div>
-            <label className={labelCls}>Max dollars</label>
-            <input
+            <label htmlFor="rewards-max-redemption-dollars" className={labelCls}>Max dollars</label>
+            <input id="rewards-max-redemption-dollars"
               type="number"
               min={0}
               step="0.01"
@@ -137,8 +137,8 @@ export default function RewardsTab({ values, onChange, onSave, onDiscard, saving
         <p className={sectionSubCls}>Points needed to unlock each tier.</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-3">
           <div>
-            <label className={labelCls}>Connoisseur (pts)</label>
-            <input
+            <label htmlFor="rewards-connoisseur-threshold" className={labelCls}>Connoisseur (pts)</label>
+            <input id="rewards-connoisseur-threshold"
               type="number"
               min={0}
               value={values.connoisseurThreshold}
@@ -147,8 +147,8 @@ export default function RewardsTab({ values, onChange, onSave, onDiscard, saving
             />
           </div>
           <div>
-            <label className={labelCls}>Master Cut (pts)</label>
-            <input
+            <label htmlFor="rewards-master-cut-threshold" className={labelCls}>Master Cut (pts)</label>
+            <input id="rewards-master-cut-threshold"
               type="number"
               min={0}
               value={values.masterCutThreshold}
@@ -157,8 +157,8 @@ export default function RewardsTab({ values, onChange, onSave, onDiscard, saving
             />
           </div>
           <div>
-            <label className={labelCls}>Qualifying window (months)</label>
-            <input
+            <label htmlFor="rewards-tier-window-months" className={labelCls}>Qualifying window (months)</label>
+            <input id="rewards-tier-window-months"
               type="number"
               min={0}
               max={120}

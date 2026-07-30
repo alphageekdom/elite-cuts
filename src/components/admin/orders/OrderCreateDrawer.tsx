@@ -5,6 +5,8 @@ import { TAX_RATE } from '@/lib/pricing';
 import { MAX_PER_LINE } from '@/lib/shop-settings/config';
 import { fmtPrice } from '@/lib/pricing';
 import { getInitials } from '@/lib/format';
+import { DrawerHeader, DrawerBody, DrawerFooter } from '@/components/admin/DrawerChrome';
+import { labelCls } from '@/components/admin/AdminForm';
 
 export type AdminOrderCustomer = {
   id: string;
@@ -169,27 +171,17 @@ export default function OrderCreateDrawer({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-start justify-between px-6 py-5 border-b border-line-soft">
-        <div>
-          <div className="text-[11px] font-medium tracking-[0.18em] uppercase text-muted">New order</div>
-          <div id="order-create-title" className="font-display text-[22px] tracking-[-0.01em]">Build an order</div>
-        </div>
-        <button
-          onClick={onClose}
-          aria-label="Close"
-          className="w-8 h-8 rounded-full border border-line text-ink-soft grid place-items-center hover:border-ink hover:bg-cream hover:text-ink transition-colors"
-        >
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
-      </div>
+      <DrawerHeader
+        eyebrow="New order"
+        title="Build an order"
+        titleId="order-create-title"
+        onClose={onClose}
+      />
 
-      {/* Body */}
-      <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+      <DrawerBody>
         {/* Customer */}
         <section>
-          <div className="text-[11px] font-medium tracking-[0.18em] uppercase text-muted mb-2">Customer</div>
+          <div className={labelCls}>Customer</div>
           {selectedCustomer ? (
             <div className="flex items-center justify-between p-3 rounded-md border border-line bg-paper">
               <div className="flex items-center gap-3">
@@ -216,6 +208,7 @@ export default function OrderCreateDrawer({
                 onChange={(e) => setCustomerQuery(e.target.value)}
                 placeholder="Search by name or email…"
                 className="w-full px-3.5 py-2.5 rounded-md border border-line bg-paper text-[14px] outline-none focus:border-ink"
+                aria-label="Search customers"
               />
               <div className="mt-2 max-h-52 overflow-y-auto border border-line-soft rounded-md bg-paper">
                 {filteredCustomers.length === 0 ? (
@@ -223,7 +216,7 @@ export default function OrderCreateDrawer({
                 ) : (
                   <>
                     {!customerQuery.trim() && (
-                      <div className="px-3.5 pt-2 pb-1 text-[10px] font-medium tracking-[0.18em] uppercase text-muted">
+                      <div className={`px-3.5 pt-2 pb-1 ${labelCls}`}>
                         Suggested
                       </div>
                     )}
@@ -256,7 +249,7 @@ export default function OrderCreateDrawer({
 
         {/* Items */}
         <section>
-          <div className="text-[11px] font-medium tracking-[0.18em] uppercase text-muted mb-2">Items</div>
+          <div className={labelCls}>Items</div>
 
           {lines.length > 0 && (
             <div className="space-y-2 mb-3">
@@ -320,6 +313,7 @@ export default function OrderCreateDrawer({
             onChange={(e) => setProductQuery(e.target.value)}
             placeholder="Search cuts to add…"
             className="w-full px-3.5 py-2.5 rounded-md border border-line bg-paper text-[14px] outline-none focus:border-ink"
+            aria-label="Search cuts to add"
           />
           <div className="mt-2 max-h-52 overflow-y-auto border border-line-soft rounded-md bg-paper">
             {filteredProducts.length === 0 ? (
@@ -329,7 +323,7 @@ export default function OrderCreateDrawer({
             ) : (
               <>
                 {!productQuery.trim() && (
-                  <div className="px-3.5 pt-2 pb-1 text-[10px] font-medium tracking-[0.18em] uppercase text-muted">
+                  <div className={`px-3.5 pt-2 pb-1 ${labelCls}`}>
                     Suggested
                   </div>
                 )}
@@ -363,10 +357,11 @@ export default function OrderCreateDrawer({
 
         {/* Pickup details */}
         <section className="space-y-3">
-          <div className="text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Pickup details</div>
+          <div className={labelCls}>Pickup details</div>
           <div>
-            <label className="block text-[12px] text-ink-soft mb-1">Pickup location</label>
+            <label htmlFor="order-pickup-location" className="block text-[12px] text-ink-soft mb-1">Pickup location</label>
             <input
+              id="order-pickup-location"
               type="text"
               value={pickupLocation}
               onChange={(e) => setPickupLocation(e.target.value)}
@@ -374,8 +369,9 @@ export default function OrderCreateDrawer({
             />
           </div>
           <div>
-            <label className="block text-[12px] text-ink-soft mb-1">Pickup slot (optional)</label>
+            <label htmlFor="order-pickup-slot" className="block text-[12px] text-ink-soft mb-1">Pickup slot (optional)</label>
             <input
+              id="order-pickup-slot"
               type="text"
               value={pickupSlot}
               onChange={(e) => setPickupSlot(e.target.value)}
@@ -387,7 +383,7 @@ export default function OrderCreateDrawer({
 
         {/* Initial status */}
         <section>
-          <div className="text-[11px] font-medium tracking-[0.18em] uppercase text-muted mb-2">Initial status</div>
+          <div className={labelCls}>Initial status</div>
           <div className="space-y-1.5">
             {STATUS_OPTIONS.map((opt) => (
               <label
@@ -429,30 +425,17 @@ export default function OrderCreateDrawer({
             </div>
           </section>
         )}
-      </div>
+      </DrawerBody>
 
-      {/* Footer */}
-      <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-line-soft bg-paper">
-        <span className="text-[12px] text-muted truncate" aria-live="polite">
-          {missingHint ?? ''}
-        </span>
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={onClose}
-            disabled={submitting}
-            className="px-4 py-2 rounded-full bg-paper border border-line text-ink-soft text-[13px] hover:border-ink hover:text-ink transition-colors disabled:opacity-50"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={submitDisabled}
-            className="px-4.5 py-2 rounded-full bg-ink text-cream text-[13px] font-medium hover:bg-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {submitting ? 'Creating…' : 'Create order'}
-          </button>
-        </div>
-      </div>
+      <DrawerFooter
+        blocker={missingHint}
+        onCancel={onClose}
+        onSubmit={handleSubmit}
+        submitLabel="Create order"
+        busyLabel="Creating…"
+        busy={submitting}
+        disabled={submitDisabled}
+      />
     </div>
   );
 }

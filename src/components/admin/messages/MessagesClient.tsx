@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import AdminSearchInput from '@/components/admin/AdminSearchInput';
 import AdminStatStrip, { type StatCell } from '@/components/admin/AdminStatStrip';
 import SlideDrawer from '@/components/admin/SlideDrawer';
+import { DRAWER_WIDTH } from '@/components/admin/DrawerChrome';
 import { useAdminDrawer } from '@/hooks/useAdminDrawer';
 import { useStatFilter } from '@/hooks/useStatFilter';
 
@@ -161,7 +162,7 @@ export default function MessagesClient({
       <SlideDrawer
         open={drawer.isOpen}
         onClose={drawer.close}
-        widthClass="max-w-md"
+        widthClass={DRAWER_WIDTH.narrow}
         ariaLabelledBy="message-drawer-title"
       >
         {drawer.item && (

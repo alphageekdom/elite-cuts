@@ -4,11 +4,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { type ShiftColor } from '@/lib/shifts/constants';
-import SlideDrawer from '@/components/admin/SlideDrawer';
 import { labelCls } from '@/components/admin/AdminForm';
+import {
+  DrawerHeader,
+  DrawerBody,
+  DrawerFooter,
+  DrawerDeleteConfirm,
+} from '@/components/admin/DrawerChrome';
 import { SelectField } from '@/components/ui/SelectField';
 import ColorSwatchPicker from '@/components/admin/ColorSwatchPicker';
-import AdminEyebrow from '@/components/admin/AdminEyebrow';
 import { DAY_LABELS_SHORT, HOUR_LABELS } from '@/lib/shifts/schedule';
 import {
   shiftCreateSchema,
@@ -43,7 +47,6 @@ function findMatchingRoleLabel(role: string): string | null {
 }
 
 type Props = {
-  open: boolean;
   shift: ShiftRow | null;          // null = create mode
   defaultDayOfWeek?: number;       // 0-6, prefilled in create mode (e.g. today)
   defaultHourIndex?: number;       // 0-8, optional prefill (used by Phase D empty-cell click)
@@ -53,21 +56,10 @@ type Props = {
   onSaved: () => void;             // parent re-fetches shifts
 };
 
-export default function ShiftFormDrawer(props: Props) {
-  const { open, onClose } = props;
-  return (
-    <SlideDrawer
-      open={open}
-      onClose={onClose}
-      widthClass="max-w-md"
-      ariaLabelledBy="shift-form-title"
-    >
-      {open && <ShiftFormBody {...props} />}
-    </SlideDrawer>
-  );
-}
-
-function ShiftFormBody({
+// Drawer body — wrapped in `SlideDrawer` by the parent for focus trap +
+// Escape, matching the other seven admin drawers. `shift-form-title` must
+// match the `ariaLabelledBy` SlideDrawer is configured with.
+export default function ShiftFormDrawer({
   shift,
   defaultDayOfWeek,
   defaultHourIndex,
@@ -153,7 +145,6 @@ function ShiftFormBody({
   });
 
   const [saving, setSaving] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   // Smart-default chain: picking a staff member fills role, picking a role
@@ -190,6 +181,7 @@ function ShiftFormBody({
   }
 
   const submitDisabled = saving || resolvedStaffName().length === 0;
+  const blockerHint = resolvedStaffName().length === 0 ? 'Pick who is working' : null;
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -264,38 +256,20 @@ function ShiftFormBody({
   }
 
   return (
-    <>
-      <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-line-soft shrink-0">
-        <div className="pr-4">
-          <AdminEyebrow size="drawer" className="mb-1.5">
-            {isEdit ? 'Edit shift' : 'New shift'}
-          </AdminEyebrow>
-          <h2
-            id="shift-form-title"
-            className="font-display text-[20px] font-normal tracking-tight leading-snug"
-          >
-            {isEdit ? shift.staffName : 'Schedule a shift'}
-          </h2>
-          <p className="mt-1 text-[12px] text-muted">
-            {isEdit ? 'Update or remove this hour slot' : 'One staff member, one hour slot'}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close"
-          className="w-8 h-8 rounded-full grid place-items-center text-muted hover:text-ink hover:bg-cream-deep transition-colors shrink-0 mt-1"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M18 6L6 18M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
+    <form onSubmit={handleSubmit} className="flex h-full flex-col">
+      <DrawerHeader
+        eyebrow={isEdit ? 'Edit shift' : 'New shift'}
+        title={isEdit ? shift.staffName : 'Schedule a shift'}
+        titleId="shift-form-title"
+        sub={isEdit ? 'Update or remove this hour slot' : 'One staff member, one hour slot'}
+        onClose={onClose}
+      />
 
-      <form onSubmit={handleSubmit} className="flex flex-col px-6 py-5 gap-5 overflow-y-auto">
+      <DrawerBody>
         <div>
-          <label className={labelCls}>Staff</label>
+          <label htmlFor="shift-staff" className={labelCls}>Staff</label>
           <SelectField
+            id="shift-staff"
             value={staffMode}
             onChange={(e) => handleStaffChange(e.target.value)}
           >
@@ -322,8 +296,9 @@ function ShiftFormBody({
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className={labelCls}>Day</label>
+            <label htmlFor="shift-day" className={labelCls}>Day</label>
             <SelectField
+              id="shift-day"
               value={dayOfWeek}
               onChange={(e) => setDayOfWeek(Number(e.target.value))}
             >
@@ -333,8 +308,9 @@ function ShiftFormBody({
             </SelectField>
           </div>
           <div>
-            <label className={labelCls}>Hour</label>
+            <label htmlFor="shift-hour" className={labelCls}>Hour</label>
             <SelectField
+              id="shift-hour"
               value={hourIndex}
               onChange={(e) => setHourIndex(Number(e.target.value))}
             >
@@ -346,8 +322,9 @@ function ShiftFormBody({
         </div>
 
         <div>
-          <label className={labelCls}>Role</label>
+          <label htmlFor="shift-role" className={labelCls}>Role</label>
           <SelectField
+            id="shift-role"
             value={roleMode}
             onChange={(e) => handleRoleChange(e.target.value)}
           >
@@ -369,52 +346,25 @@ function ShiftFormBody({
           )}
         </div>
 
-        <div>
-          <label className={labelCls}>Color</label>
+        {/* A swatch picker is a set of buttons, not one labelable control, so
+            this heads a group rather than pointing `htmlFor` at nothing. */}
+        <div role="group" aria-labelledby="shift-color-label">
+          <span id="shift-color-label" className={labelCls}>Color</span>
           <ColorSwatchPicker value={color} onChange={setColor} />
         </div>
 
-        <div className="pt-4 border-t border-line-soft space-y-3">
-          <button
-            type="submit"
-            disabled={submitDisabled}
-            className="w-full bg-ink text-cream text-[13px] font-medium tracking-[0.04em] py-3 rounded-full hover:bg-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Create shift'}
-          </button>
+      </DrawerBody>
 
-          {isEdit && (
-            confirmDelete ? (
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setConfirmDelete(false)}
-                  disabled={deleting}
-                  className="text-[12px] font-medium tracking-[0.04em] py-2.5 rounded-full border border-line text-ink-soft hover:border-ink hover:text-ink transition-colors disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  disabled={deleting}
-                  className="text-[12px] font-medium tracking-[0.04em] py-2.5 rounded-full bg-oxblood text-cream hover:bg-oxblood/90 transition-colors disabled:opacity-50"
-                >
-                  {deleting ? 'Deleting…' : 'Confirm delete'}
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setConfirmDelete(true)}
-                className="w-full text-[12px] font-medium tracking-[0.04em] py-2.5 rounded-full border border-oxblood/30 text-oxblood hover:bg-oxblood/5 transition-colors"
-              >
-                Delete shift
-              </button>
-            )
-          )}
-        </div>
-      </form>
-    </>
+      <DrawerFooter
+        blocker={blockerHint}
+        onCancel={onClose}
+        submitType="submit"
+        submitLabel={isEdit ? 'Save changes' : 'Create shift'}
+        busyLabel="Saving…"
+        busy={saving}
+        disabled={submitDisabled}
+        extra={isEdit ? <DrawerDeleteConfirm onDelete={handleDelete} busy={deleting} /> : null}
+      />
+    </form>
   );
 }

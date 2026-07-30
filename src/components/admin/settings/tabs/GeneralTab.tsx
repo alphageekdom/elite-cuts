@@ -39,30 +39,30 @@ export default function GeneralTab({ values, onChange, onSave, onDiscard, saving
         <p className={sectionSubCls}>Appears on your storefront, receipts, and customer emails.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
           <div>
-            <label className={labelCls}>Shop name</label>
-            <input type="text" value={values.shopName} onChange={(e) => onChange({ shopName: e.target.value })} className={inputCls} />
+            <label htmlFor="settings-shop-name" className={labelCls}>Shop name</label>
+            <input id="settings-shop-name" type="text" value={values.shopName} onChange={(e) => onChange({ shopName: e.target.value })} className={inputCls} />
           </div>
           <div>
-            <label className={labelCls}>Tagline</label>
-            <input type="text" value={values.tagline} onChange={(e) => onChange({ tagline: e.target.value })} className={inputCls} />
+            <label htmlFor="settings-tagline" className={labelCls}>Tagline</label>
+            <input id="settings-tagline" type="text" value={values.tagline} onChange={(e) => onChange({ tagline: e.target.value })} className={inputCls} />
           </div>
         </div>
         <div className="mb-5">
-          <label className={labelCls}>Description</label>
-          <textarea value={values.description} onChange={(e) => onChange({ description: e.target.value })} rows={3} className={`${inputCls} resize-y`} />
+          <label htmlFor="settings-description" className={labelCls}>Description</label>
+          <textarea id="settings-description" value={values.description} onChange={(e) => onChange({ description: e.target.value })} rows={3} className={`${inputCls} resize-y`} />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           <div>
-            <label className={labelCls}>Phone</label>
-            <input type="tel" value={values.phone} onChange={(e) => onChange({ phone: e.target.value })} className={inputCls} />
+            <label htmlFor="settings-phone" className={labelCls}>Phone</label>
+            <input id="settings-phone" type="tel" value={values.phone} onChange={(e) => onChange({ phone: e.target.value })} className={inputCls} />
           </div>
           <div>
-            <label className={labelCls}>Email</label>
-            <input type="email" value={values.email} onChange={(e) => onChange({ email: e.target.value })} className={inputCls} />
+            <label htmlFor="settings-email" className={labelCls}>Email</label>
+            <input id="settings-email" type="email" value={values.email} onChange={(e) => onChange({ email: e.target.value })} className={inputCls} />
           </div>
           <div>
-            <label className={labelCls}>Website</label>
-            <input type="url" value={values.website} onChange={(e) => onChange({ website: e.target.value })} className={inputCls} />
+            <label htmlFor="settings-website" className={labelCls}>Website</label>
+            <input id="settings-website" type="url" value={values.website} onChange={(e) => onChange({ website: e.target.value })} className={inputCls} />
           </div>
         </div>
       </section>
@@ -72,28 +72,28 @@ export default function GeneralTab({ values, onChange, onSave, onDiscard, saving
         <p className={sectionSubCls}>Used for pickup instructions, delivery radius calculation, and the map on your Our Story page.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
           <div>
-            <label className={labelCls}>Street address</label>
-            <input type="text" value={values.street} onChange={(e) => onChange({ street: e.target.value })} className={inputCls} />
+            <label htmlFor="settings-street" className={labelCls}>Street address</label>
+            <input id="settings-street" type="text" value={values.street} onChange={(e) => onChange({ street: e.target.value })} className={inputCls} />
           </div>
           <div>
-            <label className={labelCls}>Suite / unit <span className="normal-case tracking-normal text-[11px] text-muted font-normal opacity-70">optional</span></label>
-            <input type="text" value={values.suite} onChange={(e) => onChange({ suite: e.target.value })} placeholder="—" className={inputCls} />
+            <label htmlFor="settings-suite" className={labelCls}>Suite / unit <span className="normal-case tracking-normal text-[11px] text-muted font-normal opacity-70">optional</span></label>
+            <input id="settings-suite" type="text" value={values.suite} onChange={(e) => onChange({ suite: e.target.value })} placeholder="—" className={inputCls} />
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           <div>
-            <label className={labelCls}>City</label>
-            <input type="text" value={values.city} onChange={(e) => onChange({ city: e.target.value })} className={inputCls} />
+            <label htmlFor="settings-city" className={labelCls}>City</label>
+            <input id="settings-city" type="text" value={values.city} onChange={(e) => onChange({ city: e.target.value })} className={inputCls} />
           </div>
           <div>
-            <label className={labelCls}>State</label>
-            <SelectField value={values.state} onChange={(e) => onChange({ state: e.target.value })}>
+            <label htmlFor="settings-state" className={labelCls}>State</label>
+            <SelectField id="settings-state" value={values.state} onChange={(e) => onChange({ state: e.target.value })}>
               {US_STATES.map((s) => <option key={s}>{s}</option>)}
             </SelectField>
           </div>
           <div>
-            <label className={labelCls}>ZIP</label>
-            <input type="text" value={values.zip} onChange={(e) => onChange({ zip: e.target.value })} className={inputCls} />
+            <label htmlFor="settings-zip" className={labelCls}>ZIP</label>
+            <input id="settings-zip" type="text" value={values.zip} onChange={(e) => onChange({ zip: e.target.value })} className={inputCls} />
           </div>
         </div>
       </section>
@@ -103,14 +103,14 @@ export default function GeneralTab({ values, onChange, onSave, onDiscard, saving
         <p className={sectionSubCls}>Controls the time slots available on checkout and what the shop hours card displays on the schedule page.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-3">
           <div>
-            <label className={labelCls}>Timezone</label>
-            <SelectField value={values.timezone} onChange={(e) => onChange({ timezone: e.target.value })}>
+            <label htmlFor="settings-timezone" className={labelCls}>Timezone</label>
+            <SelectField id="settings-timezone" value={values.timezone} onChange={(e) => onChange({ timezone: e.target.value })}>
               {TIMEZONES.map((tz) => <option key={tz}>{tz}</option>)}
             </SelectField>
           </div>
           <div>
-            <label className={labelCls}>Opens at</label>
-            <SelectField value={values.opensAt} onChange={(e) => onChange({ opensAt: e.target.value })}>
+            <label htmlFor="settings-opens-at" className={labelCls}>Opens at</label>
+            <SelectField id="settings-opens-at" value={values.opensAt} onChange={(e) => onChange({ opensAt: e.target.value })}>
               <option>8:00 AM</option><option>9:00 AM</option><option>10:00 AM</option>
             </SelectField>
           </div>
@@ -125,8 +125,8 @@ export default function GeneralTab({ values, onChange, onSave, onDiscard, saving
         <p className={sectionSubCls}>Sets the time slots shown at checkout. Capacity per slot caps orders per hour.</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           <div>
-            <label className={labelCls}>Slots per hour</label>
-            <input
+            <label htmlFor="settings-slots-per-hour" className={labelCls}>Slots per hour</label>
+            <input id="settings-slots-per-hour"
               type="number"
               min={1}
               max={60}
@@ -136,14 +136,14 @@ export default function GeneralTab({ values, onChange, onSave, onDiscard, saving
             />
           </div>
           <div>
-            <label className={labelCls}>Lead time</label>
-            <SelectField value={values.leadTime} onChange={(e) => onChange({ leadTime: e.target.value })}>
+            <label htmlFor="settings-lead-time" className={labelCls}>Lead time</label>
+            <SelectField id="settings-lead-time" value={values.leadTime} onChange={(e) => onChange({ leadTime: e.target.value })}>
               <option>30 min</option><option>1 hour</option><option>2 hours</option>
             </SelectField>
           </div>
           <div>
-            <label className={labelCls}>Max booking window</label>
-            <SelectField value={values.maxBookingWindow} onChange={(e) => onChange({ maxBookingWindow: e.target.value })}>
+            <label htmlFor="settings-max-booking-window" className={labelCls}>Max booking window</label>
+            <SelectField id="settings-max-booking-window" value={values.maxBookingWindow} onChange={(e) => onChange({ maxBookingWindow: e.target.value })}>
               <option>Same day</option><option>3 days</option><option>7 days</option>
             </SelectField>
           </div>
@@ -155,8 +155,8 @@ export default function GeneralTab({ values, onChange, onSave, onDiscard, saving
         <p className={sectionSubCls}>Controls automatic cleanup of customers who haven&apos;t returned in a long time.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div>
-            <label className={labelCls}>Dormancy threshold</label>
-            <SelectField
+            <label htmlFor="settings-dormancy-warning-months" className={labelCls}>Dormancy threshold</label>
+            <SelectField id="settings-dormancy-warning-months"
               value={String(values.dormancyWarningMonths)}
               onChange={(e) =>
                 onChange({ dormancyWarningMonths: numberFromInput(e.target.value, 0) as DormancyThreshold })
