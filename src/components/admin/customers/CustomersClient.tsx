@@ -1,8 +1,8 @@
 'use client';
 import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
-import { useStatFilter } from '@/hooks/useStatFilter';
-import { useCustomersTable } from '@/hooks/useCustomersTable';
+import { useStatFilter } from '@/hooks/admin/useStatFilter';
+import { useCustomersTable } from '@/hooks/admin/useCustomersTable';
 import AdminSearchInput from '@/components/admin/AdminSearchInput';
 import AdminPagination from '@/components/admin/AdminPagination';
 import AdminStatStrip from '@/components/admin/AdminStatStrip';

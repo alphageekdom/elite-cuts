@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 
 import type { ProductCategory } from '@/lib/admin/constants';
 import type { ProductTableRow } from '@/types/admin';
+import { runBulk, partialFailureMessage } from '@/lib/admin/bulk';
 import { useAdminDrawer } from './useAdminDrawer';
 
 // Owns the product list state, the row-level detail drawer, the row-actions
@@ -222,23 +223,33 @@ export function useProductsTable(initialProducts: ProductTableRow[]) {
     }
   }
 
-  async function bulkPatch(body: Record<string, unknown>, label: string) {
+  // Typed to what the bulk bar actually sends (publish/unpublish) so the
+  // successful rows can be patched locally with the same fields — this
+  // handler used to update nothing on success, leaving the status pills
+  // stale until a manual reload.
+  async function bulkPatch(body: { isActive: boolean }, label: string) {
     const ids = [...selectedIds];
     setBulkLoading(label);
     try {
-      await Promise.all(
-        ids.map((id) =>
-          fetch(`/api/products/${id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body),
-          }),
-        ),
+      const { okIds, failCount, firstErrorMessage } = await runBulk(ids, (id) =>
+        fetch(`/api/products/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        }),
+      );
+      const okSet = new Set(okIds);
+      setProducts((prev) =>
+        prev.map((p) => (okSet.has(p.id) ? { ...p, ...body } : p)),
       );
       clearSelection();
-      toast.success(`${ids.length} product${ids.length !== 1 ? 's' : ''} updated`);
-    } catch {
-      toast.error('Failed to update some products');
+      if (failCount === 0) {
+        toast.success(`${ids.length} product${ids.length !== 1 ? 's' : ''} updated`);
+      } else if (okIds.length === 0) {
+        toast.error(firstErrorMessage ?? 'Failed to update products');
+      } else {
+        toast.error(partialFailureMessage('Updated', okIds.length, ids.length));
+      }
     } finally {
       setBulkLoading('');
     }
@@ -248,12 +259,22 @@ export function useProductsTable(initialProducts: ProductTableRow[]) {
     const ids = [...selectedIds];
     setBulkLoading('delete');
     try {
-      await Promise.all(ids.map((id) => fetch(`/api/products/${id}`, { method: 'DELETE' })));
-      setProducts((prev) => prev.filter((p) => !selectedIds.has(p.id)));
+      // Per-response `ok` — a demo session's seeded-cut deletes are refused
+      // with a 403 the old fetch-only path read as success, vanishing rows
+      // that came back on reload.
+      const { okIds, failCount, firstErrorMessage } = await runBulk(ids, (id) =>
+        fetch(`/api/products/${id}`, { method: 'DELETE' }),
+      );
+      const okSet = new Set(okIds);
+      setProducts((prev) => prev.filter((p) => !okSet.has(p.id)));
       clearSelection();
-      toast.success(`${ids.length} product${ids.length !== 1 ? 's' : ''} deleted`);
-    } catch {
-      toast.error('Failed to delete some products');
+      if (failCount === 0) {
+        toast.success(`${ids.length} product${ids.length !== 1 ? 's' : ''} deleted`);
+      } else if (okIds.length === 0) {
+        toast.error(firstErrorMessage ?? 'Failed to delete products');
+      } else {
+        toast.error(partialFailureMessage('Deleted', okIds.length, ids.length));
+      }
     } finally {
       setBulkLoading('');
     }

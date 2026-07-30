@@ -22,7 +22,7 @@ import {
   type ShiftRow,
   type StaffUserOption,
 } from '@/lib/admin/schedule';
-import { useScheduleWeek } from '@/hooks/useScheduleWeek';
+import { useScheduleWeek } from '@/hooks/admin/useScheduleWeek';
 
 type Props = {
   initialShifts: ShiftRow[];

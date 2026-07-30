@@ -1,7 +1,7 @@
 'use client';
 import { useMemo, useState } from 'react';
-import { useStatFilter } from '@/hooks/useStatFilter';
-import { useInventoryTable } from '@/hooks/useInventoryTable';
+import { useStatFilter } from '@/hooks/admin/useStatFilter';
+import { useInventoryTable } from '@/hooks/admin/useInventoryTable';
 import { toast } from 'sonner';
 import { CATEGORY_PAR, DEFAULT_PAR, getStockState, type InventoryRow } from '@/lib/inventory';
 import AdminSearchInput from '@/components/admin/AdminSearchInput';

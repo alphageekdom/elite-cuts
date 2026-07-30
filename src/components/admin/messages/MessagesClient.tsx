@@ -6,8 +6,8 @@ import AdminSearchInput from '@/components/admin/AdminSearchInput';
 import AdminStatStrip, { type StatCell } from '@/components/admin/AdminStatStrip';
 import SlideDrawer from '@/components/admin/SlideDrawer';
 import { DRAWER_WIDTH } from '@/components/admin/DrawerChrome';
-import { useAdminDrawer } from '@/hooks/useAdminDrawer';
-import { useStatFilter } from '@/hooks/useStatFilter';
+import { useAdminDrawer } from '@/hooks/admin/useAdminDrawer';
+import { useStatFilter } from '@/hooks/admin/useStatFilter';
 
 import type { MessageStatus } from '@/lib/messages/constants';
 import { type MessageRow } from '@/lib/admin/messages';

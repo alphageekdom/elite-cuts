@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 
 import { useCartContext, type AddItemArg } from '@/context/CartContext';
 
-const useHandleAddToCart = (
+export const useHandleAddToCart = (
   product: AddItemArg,
   opts?: { silent?: boolean },
 ) => {
@@ -32,5 +32,3 @@ const useHandleAddToCart = (
 
   return { isAddingToCart, handleAddToCart };
 };
-
-export default useHandleAddToCart;

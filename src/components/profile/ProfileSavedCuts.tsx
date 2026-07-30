@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { formatMoney, productImageSrc } from '@/lib/format';
 import { productPath } from '@/lib/products/paths';
 import type { SerializedProduct } from '@/models/Product';
-import useHandleAddToCart from '@/hooks/useHandleAddToCart';
+import { useHandleAddToCart } from '@/hooks/useHandleAddToCart';
 
 type Props = {
   savedCuts: SerializedProduct[];

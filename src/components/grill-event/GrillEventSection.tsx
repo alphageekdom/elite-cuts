@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 
 import GrillEventFormDrawer from './GrillEventFormDrawer';
-import { useAdminDrawer } from '@/hooks/useAdminDrawer';
+import { useAdminDrawer } from '@/hooks/admin/useAdminDrawer';
 import { MONTH_ABBR } from '@/lib/format';
 import { formatGrillHour, type SerializedEvent } from '@/lib/events/config';
 

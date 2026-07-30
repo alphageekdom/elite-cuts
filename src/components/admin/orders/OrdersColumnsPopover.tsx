@@ -4,7 +4,7 @@ import {
   ORDER_COLUMN_OPTIONS,
   type OrderColumnKey,
   type OrderColumnVisibility,
-} from '@/hooks/useOrderColumns';
+} from '@/hooks/admin/useOrderColumns';
 
 type Props = {
   visibleColumns: OrderColumnVisibility;

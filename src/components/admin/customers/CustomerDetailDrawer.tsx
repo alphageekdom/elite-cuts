@@ -1,7 +1,7 @@
 'use client';
 import { toast } from 'sonner';
 import { formatMoney, formatDate, relativeTime } from '@/lib/format';
-import { useDrawerForm } from '@/hooks/useDrawerForm';
+import { useDrawerForm } from '@/hooks/admin/useDrawerForm';
 import { inputCls, labelCls } from '@/components/admin/AdminForm';
 import type { CustomerTableRow } from '@/types/admin';
 import { deriveTags } from './customerUtils';

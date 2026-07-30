@@ -2,9 +2,9 @@
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { useStatFilter } from '@/hooks/useStatFilter';
-import { useOrdersTable } from '@/hooks/useOrdersTable';
-import { useOrderColumns, ORDER_COLUMN_OPTIONS } from '@/hooks/useOrderColumns';
+import { useStatFilter } from '@/hooks/admin/useStatFilter';
+import { useOrdersTable } from '@/hooks/admin/useOrdersTable';
+import { useOrderColumns, ORDER_COLUMN_OPTIONS } from '@/hooks/admin/useOrderColumns';
 import OrderTableRowComponent from './OrderTableRow';
 import OrdersPageHeader from './OrdersPageHeader';
 import OrdersFilterPanel from './OrdersFilterPanel';

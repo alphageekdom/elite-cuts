@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 import type { CustomerTableRow } from '@/types/admin';
+import { runBulk, partialFailureMessage } from '@/lib/admin/bulk';
 import { useAdminDrawer } from './useAdminDrawer';
 
 // Owns the customer list state, the row-level detail drawer, the bulk-action
@@ -159,21 +160,26 @@ export function useCustomersTable(initialCustomers: CustomerTableRow[]) {
     const ids = [...selectedIds];
     setBulkLoading('points');
     try {
-      await Promise.all(
-        ids.map((id) =>
-          fetch(`/api/users/${id}/points`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ delta }),
-          }),
-        ),
+      // Per-response `ok` — the points endpoint refuses demo-admin sessions,
+      // and the old fetch-only path toasted success over those 403s. No local
+      // rows to patch: the table doesn't show a points column.
+      const { okIds, failCount, firstErrorMessage } = await runBulk(ids, (id) =>
+        fetch(`/api/users/${id}/points`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ delta }),
+        }),
       );
       clearSelection();
       setAdjustPointsMode(false);
       setPointsDelta('');
-      toast.success(`Points adjusted for ${ids.length} customer${ids.length !== 1 ? 's' : ''}`);
-    } catch {
-      toast.error('Failed to adjust points');
+      if (failCount === 0) {
+        toast.success(`Points adjusted for ${ids.length} customer${ids.length !== 1 ? 's' : ''}`);
+      } else if (okIds.length === 0) {
+        toast.error(firstErrorMessage ?? 'Failed to adjust points');
+      } else {
+        toast.error(partialFailureMessage('Adjusted', okIds.length, ids.length));
+      }
     } finally {
       setBulkLoading('');
     }

@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { MOBILE_PRIMARY, MOBILE_MORE } from './navItems';
 import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
-import { useAdminSignOut } from '@/hooks/useAdminSignOut';
+import { useAdminSignOut } from '@/hooks/admin/useAdminSignOut';
 import XIcon from '@/components/ui/icons/XIcon';
 import SignOutIcon from '@/components/ui/icons/SignOutIcon';
 

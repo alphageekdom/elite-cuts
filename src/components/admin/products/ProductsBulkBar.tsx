@@ -7,7 +7,7 @@
 
 type Bulk = {
   loading: string;
-  patch: (body: Record<string, unknown>, label: string) => Promise<void>;
+  patch: (body: { isActive: boolean }, label: string) => Promise<void>;
   remove: () => Promise<void>;
 };
 
