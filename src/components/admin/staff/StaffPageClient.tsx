@@ -4,6 +4,7 @@ import type { StaffFilterKey, StaffRow } from '@/lib/staff/display';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import AdminStatStrip, { type StatCell } from '@/components/admin/AdminStatStrip';
 import SlideDrawer from '@/components/admin/SlideDrawer';
+import { DRAWER_WIDTH } from '@/components/admin/DrawerChrome';
 import StaffTable from './StaffTable';
 import StaffMobileCards from './StaffMobileCards';
 import StaffProfileDrawer from './StaffProfileDrawer';
@@ -94,7 +95,7 @@ export default function StaffPageClient({ rows, headerSubtitle }: Props) {
       <SlideDrawer
         open={profileStaff !== null}
         onClose={closeProfile}
-        widthClass="max-w-md"
+        widthClass={DRAWER_WIDTH.narrow}
         ariaLabelledBy="staff-profile-title"
       >
         {profileStaff && (
@@ -106,11 +107,14 @@ export default function StaffPageClient({ rows, headerSubtitle }: Props) {
         )}
       </SlideDrawer>
 
-      <StaffFormDrawer
+      <SlideDrawer
         open={drawerOpen}
-        staff={drawerStaff}
         onClose={closeForm}
-      />
+        widthClass={DRAWER_WIDTH.narrow}
+        ariaLabelledBy="staff-form-title"
+      >
+        {drawerOpen && <StaffFormDrawer staff={drawerStaff} onClose={closeForm} />}
+      </SlideDrawer>
     </>
   );
 }

@@ -1,5 +1,7 @@
 'use client';
 
+import React, { useId } from 'react';
+
 // Shared admin form primitives + style constants. Originally lived inside
 // `components/admin/settings/SettingsUI.tsx` but consumers outside the
 // settings tree (customer drawers, product drawer, promos client + drawer)
@@ -62,12 +64,37 @@ export function DrawerSection({ label, children }: { label: string; children: Re
 }
 
 export function DrawerField({ label, children }: { label: string; children: React.ReactNode }) {
+  const generatedId = useId();
+
+  // The label used to be a bare `<label>` with nothing tying it to the control
+  // beside it, so every field took its accessible name from its placeholder
+  // instead — the customer drawer's Phone field announced itself as "Optional".
+  //
+  // The id is generated and pushed onto the control here rather than asked for
+  // at each of the ~30 call sites, because a matching `htmlFor`/`id` pair that
+  // every caller must remember is exactly how the names went missing in the
+  // first place. A control that already carries an `id` keeps it.
+  //
+  // The control is the first element child by construction: a field is either a
+  // lone input/textarea/select, or that control followed by its error message.
+  const kids = React.Children.toArray(children);
+  const controlIndex = kids.findIndex(React.isValidElement);
+  const control =
+    controlIndex === -1 ? null : (kids[controlIndex] as React.ReactElement<{ id?: string }>);
+  const controlId = control?.props.id ?? generatedId;
+  if (control && !control.props.id) {
+    kids[controlIndex] = React.cloneElement(control, { id: controlId });
+  }
+
   return (
     <div>
-      <label className="block text-[11px] font-medium tracking-[0.22em] uppercase text-muted mb-2">
+      <label
+        htmlFor={control ? controlId : undefined}
+        className="block text-[11px] font-medium tracking-[0.22em] uppercase text-muted mb-2"
+      >
         {label}
       </label>
-      {children}
+      {kids}
     </div>
   );
 }

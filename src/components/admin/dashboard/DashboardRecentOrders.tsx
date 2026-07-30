@@ -1,4 +1,5 @@
 'use client';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getInitials, formatMoney, avatarColorForId } from '@/lib/format';
@@ -17,6 +18,25 @@ type Props = {
 
 export default function DashboardRecentOrders({ orders }: Props) {
   const router = useRouter();
+
+  // The sibling tables gate their scroll-hint on a viewport breakpoint, which
+  // cannot work here: this card sits in a two-column grid above `lg` and runs
+  // full-width below it, so the space it gets does not track the viewport.
+  // Measured, the table fits at 1009px and at 935px but overflows at 805px —
+  // a static breakpoint would show the fade where nothing scrolls, or hide it
+  // where something does. So ask the element itself.
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [scrollable, setScrollable] = useState(false);
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const check = () => setScrollable(el.scrollWidth > el.clientWidth);
+    check();
+    const observer = new ResizeObserver(check);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [orders]);
+
   return (
     <div className="bg-paper rounded-sm px-7.5 py-7 border border-line-soft">
       {/* Card head */}
@@ -38,7 +58,8 @@ export default function DashboardRecentOrders({ orders }: Props) {
       {orders.length === 0 ? (
         <p className="text-muted text-sm py-8 text-center">No orders yet.</p>
       ) : (
-        <div className="overflow-x-auto -mx-2.5">
+        <div className="relative -mx-2.5">
+          <div ref={scrollerRef} className="overflow-x-auto">
           <table className="w-full border-collapse text-[14px]">
             <thead>
               <tr>
@@ -114,6 +135,10 @@ export default function DashboardRecentOrders({ orders }: Props) {
               })}
             </tbody>
           </table>
+          </div>
+          {scrollable && (
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-linear-to-l from-paper to-transparent" />
+          )}
         </div>
       )}
     </div>

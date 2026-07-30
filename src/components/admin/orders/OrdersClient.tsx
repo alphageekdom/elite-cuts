@@ -18,6 +18,7 @@ import AdminStatStrip from '@/components/admin/AdminStatStrip';
 import AdminSearchInput from '@/components/admin/AdminSearchInput';
 import AdminPagination from '@/components/admin/AdminPagination';
 import SlideDrawer from '@/components/admin/SlideDrawer';
+import { DRAWER_WIDTH } from '@/components/admin/DrawerChrome';
 import RangeToggle, { type RangeKey } from '@/components/admin/analytics/RangeToggle';
 import { AVATAR_COLORS } from '@/lib/admin/constants';
 import { downloadCsvFromUrl } from '@/lib/admin/download';
@@ -327,6 +328,7 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
         open={table.drawer.isOpen}
         onClose={table.drawer.close}
         ariaLabelledBy="order-detail-title"
+        widthClass={DRAWER_WIDTH.default}
       >
         {table.drawer.item && (
           <OrderDetailDrawer
@@ -349,6 +351,7 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         ariaLabelledBy="order-create-title"
+        widthClass={DRAWER_WIDTH.default}
       >
         {createOpen && (
           <OrderCreateDrawer

@@ -133,7 +133,10 @@ export default function AdminMobileBottomNav({ criticalInventoryCount, openMessa
             role="dialog"
             aria-modal="true"
             aria-label="More navigation"
-            className="fixed bottom-0 left-0 right-0 z-50 md:hidden flex flex-col bg-ink rounded-t-2xl overflow-hidden pb-[env(safe-area-inset-bottom)] max-h-screen"
+            // `scheme-dark scrollbar-ink` so the sheet's scrolling item list
+            // gets a dark scrollbar tracked in `bg-ink`, matching the sidebar
+            // and tablet rail.
+            className="scheme-dark scrollbar-ink fixed bottom-0 left-0 right-0 z-50 md:hidden flex flex-col bg-ink rounded-t-2xl overflow-hidden pb-[env(safe-area-inset-bottom)] max-h-screen"
           >
             {/* Header — overlay tap and the X button cover dismissal, so no
                 decorative drag handle (it implied swipe-to-close that wasn't

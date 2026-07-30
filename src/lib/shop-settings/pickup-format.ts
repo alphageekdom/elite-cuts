@@ -169,6 +169,42 @@ export function shopMinutesOfDay(timezone: string, now: Date): number | null {
   return null;
 }
 
+// Which calendar day it is at the shop, as `YYYY-MM-DD`.
+//
+// The companion to shopWeekdayIndex for anything that has to bound a day.
+// `pickupSlot` stores shop-local wall time with no zone (`2026-07-29T16:00`),
+// so a range over it has to be built from the shop's date — bounding it with
+// the server's midnight converted through `toISOString()` compares a wall
+// clock against a UTC instant. On a UTC runtime serving a Pacific shop that
+// query rolls over to tomorrow at 5pm shop time, while the counter is still
+// working through today's orders.
+//
+// Degrades to the runtime's date on an unrecognised zone, matching
+// shopWeekdayIndex and shopYear: a date is always needed, and the server's is
+// the same answer this had before the zone was consulted.
+export function shopDateKey(timezone: string, instant: Date): string {
+  const zone = timezone.trim().split(' ')[0];
+  const pad = (n: number) => String(n).padStart(2, '0');
+  try {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: zone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(instant);
+    const read = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+    const year = read('year');
+    const month = read('month');
+    const day = read('day');
+    if (Number.isFinite(year) && Number.isFinite(month) && Number.isFinite(day)) {
+      return `${year}-${pad(month)}-${pad(day)}`;
+    }
+  } catch {
+    // Invalid IANA zone — fall through to the server's local date.
+  }
+  return `${instant.getFullYear()}-${pad(instant.getMonth() + 1)}-${pad(instant.getDate())}`;
+}
+
 export type PickupNote = {
   // "ready in about 30 min"
   readyIn: string;

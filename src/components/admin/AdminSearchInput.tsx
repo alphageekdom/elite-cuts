@@ -13,11 +13,15 @@ export default function AdminSearchInput({ value, onChange, placeholder, classNa
       <svg className="w-3.5 h-3.5 text-muted shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
       </svg>
+      {/* The wrapping label holds only an icon, so it contributes no text and
+          the input was left with an empty accessible name across every admin
+          tab that uses this. The placeholder already says what it searches. */}
       <input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
+        aria-label={placeholder}
         className="flex-1 bg-transparent border-none outline-none text-[13px] text-ink placeholder:text-muted min-w-0"
       />
     </label>

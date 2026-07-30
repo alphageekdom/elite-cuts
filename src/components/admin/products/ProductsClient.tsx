@@ -13,6 +13,7 @@ import AdminPagination from '@/components/admin/AdminPagination';
 import AdminStatStrip from '@/components/admin/AdminStatStrip';
 import SortPopover from '@/components/ui/SortPopover';
 import SlideDrawer from '@/components/admin/SlideDrawer';
+import { DRAWER_WIDTH } from '@/components/admin/DrawerChrome';
 import { PRODUCT_CATEGORIES } from '@/lib/admin/constants';
 import {
   PRODUCT_SORT_OPTIONS,
@@ -274,7 +275,7 @@ export default function ProductsClient({ products, counts, categoryCounts, heade
       <SlideDrawer
         open={drawer.isOpen}
         onClose={drawer.close}
-        widthClass="max-w-150"
+        widthClass={DRAWER_WIDTH.wide}
         ariaLabelledBy="product-form-title"
       >
         {drawer.isOpen && (
@@ -291,7 +292,7 @@ export default function ProductsClient({ products, counts, categoryCounts, heade
       <SlideDrawer
         open={importOpen}
         onClose={() => setImportOpen(false)}
-        widthClass="max-w-150"
+        widthClass={DRAWER_WIDTH.wide}
         ariaLabelledBy="product-import-title"
       >
         {importOpen && (

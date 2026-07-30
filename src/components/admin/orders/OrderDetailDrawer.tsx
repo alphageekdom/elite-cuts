@@ -337,10 +337,18 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
                     </div>
                     {variableWeight && !isRefunded && (
                       <div className="mt-2 flex items-center gap-2">
-                        <label className="text-[10px] font-medium tracking-[0.14em] uppercase text-muted">
+                        {/* One of these per line, so the id carries the index
+                            and the accessible name carries the cut — a dozen
+                            boxes all called "Weighed" say nothing about which
+                            is which. */}
+                        <label
+                          htmlFor={`realized-weight-${i}`}
+                          className="text-[10px] font-medium tracking-[0.14em] uppercase text-muted"
+                        >
                           Weighed
                         </label>
                         <input
+                          id={`realized-weight-${i}`}
                           type="number"
                           inputMode="decimal"
                           step="0.01"
@@ -372,7 +380,10 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
                             handleRealizedWeightSubmit(i, e.target.value);
                           }}
                           disabled={!canEditRealizedWeight || pendingItemIndex !== null}
-                          aria-label={`Realized weight for ${item.name}`}
+                          // Starts with the visible label so speech-input users
+                          // can say what they can see, then names the cut to
+                          // tell a dozen identical boxes apart.
+                          aria-label={`Weighed weight for ${item.name}`}
                           className="w-16 font-mono text-[12px] bg-paper border border-line rounded px-2 py-1 outline-none focus:border-ink disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                         <span className="font-mono text-[11px] text-muted tracking-[0.04em] uppercase">lb</span>

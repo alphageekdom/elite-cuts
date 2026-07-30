@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import type { InventoryRow } from '@/lib/inventory';
+import { DrawerHeader, DrawerFooter } from '@/components/admin/DrawerChrome';
 
 type Props = {
   rows: InventoryRow[];
@@ -115,33 +116,15 @@ export default function StocktakeDrawer({ rows, onClose }: Props) {
     'w-full bg-cream border border-line-soft rounded-lg px-4 py-2 text-[14px] text-ink placeholder:text-muted focus:outline-none focus:border-ink transition-colors';
 
   return (
-    <>
-      {/* Header — tighter padding + smaller h2 + description hidden on phones
-          so the cut list starts higher up on iPhone SE. */}
-      <div className="flex items-start justify-between px-6 pt-4 pb-3 sm:pt-6 sm:pb-4 border-b border-line-soft shrink-0">
-        <div className="pr-4">
-          <div className="text-[11px] tracking-widest uppercase text-muted mb-1 sm:mb-1.5">Stocktake</div>
-          <h2 id="stocktake-form-title" className="font-display text-[20px] sm:text-[22px] font-normal tracking-tight leading-snug">
-            Recount <em className="italic text-oxblood font-normal">all cuts.</em>
-          </h2>
-          <p className="hidden sm:block text-[12px] text-muted mt-1.5 max-w-[44ch]">
-            Edit the count next to any cut that doesn&apos;t match the case.
-            Unchanged rows are skipped; only the differences land in the stocktake record.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close"
-          className="w-8 h-8 rounded-full grid place-items-center text-muted hover:text-ink hover:bg-cream-deep transition-colors shrink-0 mt-1"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M18 6L6 18M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-
-      <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+    <form onSubmit={handleSubmit} className="flex h-full flex-col">
+      <DrawerHeader
+        eyebrow="Stocktake"
+        title="Recount all cuts"
+        titleId="stocktake-form-title"
+        hideSubOnMobile
+        sub="Edit the count next to any cut that doesn't match the case. Unchanged rows are skipped; only the differences land in the stocktake record."
+        onClose={onClose}
+      />
           {/* Filter + Note stacked above the scroll list so the Note is
               visible without scrolling past 30 rows. */}
           <div className="px-6 pt-5 pb-3 shrink-0 space-y-2.5">
@@ -151,6 +134,7 @@ export default function StocktakeDrawer({ rows, onClose }: Props) {
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Filter by cut, category, or supplier…"
               className={inputCls}
+              aria-label="Filter cuts"
             />
             <input
               type="text"
@@ -216,6 +200,8 @@ export default function StocktakeDrawer({ rows, onClose }: Props) {
                               )}
                             </div>
                           </div>
+                          {/* Named per cut: thirty identical number boxes with
+                              no label read as thirty anonymous spin buttons. */}
                           <input
                             type="number"
                             inputMode="numeric"
@@ -226,6 +212,7 @@ export default function StocktakeDrawer({ rows, onClose }: Props) {
                               setCounts((prev) => ({ ...prev, [r.id]: e.target.value }))
                             }
                             className="w-20 text-right bg-cream border border-line-soft rounded-lg px-3 py-1.5 text-[14px] focus:outline-none focus:border-ink transition-colors"
+                            aria-label={`Counted stock for ${r.name}`}
                           />
                         </div>
                       );
@@ -238,42 +225,42 @@ export default function StocktakeDrawer({ rows, onClose }: Props) {
 
           {/* Footer — changes count becomes a toggle that filters the list to
               only changed rows once the admin has edits. */}
-          <div className="px-6 py-4 border-t border-line-soft shrink-0 flex items-center justify-between gap-4 bg-cream-deep/30">
-            {changedEntries.length === 0 ? (
-              <div className="text-[12px] text-ink-soft">No changes yet</div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setShowOnlyChanged((prev) => !prev)}
-                aria-pressed={showOnlyChanged}
-                title={showOnlyChanged ? 'Showing only changed rows — tap to show all' : 'Tap to show only changed rows'}
-                className={`inline-flex items-center gap-1 text-[12px] px-3 py-1.5 rounded-full border transition-colors ${
-                  showOnlyChanged
-                    ? 'border-camel bg-camel/15 text-ink'
-                    : 'border-line-soft text-ink-soft hover:border-ink hover:bg-cream'
-                }`}
-              >
-                <span className="font-medium text-ink">{changedEntries.length}</span>
-                <span>{changedEntries.length === 1 ? 'change' : 'changes'}</span>
-                <span className="text-muted">·</span>
-                <span className={totalDelta >= 0 ? 'text-green' : 'text-oxblood'}>
-                  {totalDelta >= 0 ? `+${totalDelta}` : totalDelta}
-                </span>
-                <span>total</span>
-                {showOnlyChanged && (
-                  <span className="ml-1 text-[10px] uppercase tracking-widest text-camel-deep">· filtered</span>
-                )}
-              </button>
-            )}
+      <DrawerFooter
+        leading={
+          changedEntries.length === 0 ? (
+            <span className="text-[12px] text-muted">No changes yet</span>
+          ) : (
             <button
-              type="submit"
-              disabled={saving || changedEntries.length === 0}
-              className="bg-ink text-cream text-[13px] font-medium tracking-[0.04em] px-5 py-2.5 rounded-full hover:bg-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              type="button"
+              onClick={() => setShowOnlyChanged((prev) => !prev)}
+              aria-pressed={showOnlyChanged}
+              title={showOnlyChanged ? 'Showing only changed rows — tap to show all' : 'Tap to show only changed rows'}
+              className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-[12px] transition-colors ${
+                showOnlyChanged
+                  ? 'border-camel bg-camel/15 text-ink'
+                  : 'border-line-soft text-ink-soft hover:border-ink hover:bg-cream'
+              }`}
             >
-              {saving ? 'Committing…' : 'Commit stocktake'}
+              <span className="font-medium text-ink">{changedEntries.length}</span>
+              <span>{changedEntries.length === 1 ? 'change' : 'changes'}</span>
+              <span className="text-muted">·</span>
+              <span className={totalDelta >= 0 ? 'text-green' : 'text-oxblood'}>
+                {totalDelta >= 0 ? `+${totalDelta}` : totalDelta}
+              </span>
+              <span>total</span>
+              {showOnlyChanged && (
+                <span className="ml-1 text-[10px] uppercase tracking-widest text-camel-deep">· filtered</span>
+              )}
             </button>
-        </div>
-      </form>
-    </>
+          )
+        }
+        onCancel={onClose}
+        submitType="submit"
+        submitLabel="Commit stocktake"
+        busyLabel="Committing…"
+        busy={saving}
+        disabled={changedEntries.length === 0}
+      />
+    </form>
   );
 }

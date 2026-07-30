@@ -8,6 +8,7 @@ import AdminPagination from '@/components/admin/AdminPagination';
 import AdminStatStrip from '@/components/admin/AdminStatStrip';
 import SortPopover from '@/components/ui/SortPopover';
 import SlideDrawer from '@/components/admin/SlideDrawer';
+import { DRAWER_WIDTH } from '@/components/admin/DrawerChrome';
 import type { CustomerTableRow, CustomerCounts } from '@/types/admin';
 import CustomerDetailDrawer from './CustomerDetailDrawer';
 import CustomerTableRowComponent from './CustomerTableRow';
@@ -309,7 +310,7 @@ export default function CustomersClient({ customers, counts, total, newThisWeek 
         open={table.drawer.isOpen}
         onClose={table.drawer.close}
         ariaLabelledBy="customer-detail-title"
-        widthClass="max-w-145"
+        widthClass={DRAWER_WIDTH.default}
       >
         {table.drawer.item && (
           <CustomerDetailDrawer
@@ -328,7 +329,7 @@ export default function CustomersClient({ customers, counts, total, newThisWeek 
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         ariaLabelledBy="customer-create-title"
-        widthClass="max-w-145"
+        widthClass={DRAWER_WIDTH.default}
       >
         {createOpen && (
           <CustomerCreateDrawer
