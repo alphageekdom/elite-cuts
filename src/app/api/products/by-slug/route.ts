@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 import connectDB from '@/config/database';
 import Product from '@/models/Product';
+import { PUBLIC_PRODUCT_PROJECTION } from '@/lib/products/public-projection';
 import { convertToSerializableObject } from '@/lib/convertToObject';
 import { VISIBLE_PRODUCT_FILTER } from '@/lib/products/constants';
 import { RECENTLY_VIEWED_LIMIT } from '@/lib/products/recently-viewed';
@@ -31,10 +32,13 @@ export const GET = async (request: NextRequest) => {
     if (slugs.length === 0) return NextResponse.json({ items: [] });
 
     await connectDB();
-    const docs = await Product.find({
-      ...VISIBLE_PRODUCT_FILTER,
-      slug: { $in: slugs },
-    }).lean();
+    const docs = await Product.find(
+      {
+        ...VISIBLE_PRODUCT_FILTER,
+        slug: { $in: slugs },
+      },
+      PUBLIC_PRODUCT_PROJECTION,
+    ).lean();
 
     const bySlug = new Map(
       docs.map((doc) => {

@@ -26,6 +26,7 @@ const mocks = vi.hoisted(() => ({
   cartDeleteMany: vi.fn(),
   savedCardDeleteMany: vi.fn(),
   notificationDeleteMany: vi.fn(),
+  messageDeleteMany: vi.fn(),
   reviewUpdateMany: vi.fn(),
   reviewFind: vi.fn(),
   reviewDeleteMany: vi.fn(),
@@ -53,6 +54,10 @@ vi.mock('@/models/SavedCard', () => ({
 
 vi.mock('@/models/Notification', () => ({
   default: { deleteMany: mocks.notificationDeleteMany },
+}));
+
+vi.mock('@/models/Message', () => ({
+  default: { deleteMany: mocks.messageDeleteMany },
 }));
 
 vi.mock('@/models/Review', () => ({
@@ -131,6 +136,15 @@ const findOneChain = (result: unknown) => ({
   select: () => Promise.resolve(result),
 });
 
+// `resetDemoCustomerState` looks up the demo customer, then the demo admin
+// (whose notifications are cleared too — the new-order fanout reaches every
+// admin). Queue both lookups in call order.
+const mockCustomerThenAdmin = (customer: unknown, admin: unknown = null) => {
+  mocks.userFindOne
+    .mockReturnValueOnce(findOneChain(customer))
+    .mockReturnValueOnce(findOneChain(admin));
+};
+
 beforeEach(() => {
   Object.values(mocks).forEach((fn) => fn.mockReset());
 });
@@ -148,6 +162,7 @@ describe('resetDemoCustomerState — demo customer not found', () => {
       savedCardsDeleted: 0,
       notificationsDeleted: 0,
       reviewsDeleted: 0,
+      messagesDeleted: 0,
       userReset: false,
     });
 
@@ -158,6 +173,7 @@ describe('resetDemoCustomerState — demo customer not found', () => {
     expect(mocks.cartDeleteMany).not.toHaveBeenCalled();
     expect(mocks.savedCardDeleteMany).not.toHaveBeenCalled();
     expect(mocks.notificationDeleteMany).not.toHaveBeenCalled();
+    expect(mocks.messageDeleteMany).not.toHaveBeenCalled();
     expect(mocks.reviewUpdateMany).not.toHaveBeenCalled();
     expect(mocks.reviewDeleteMany).not.toHaveBeenCalled();
     expect(mocks.userUpdateOne).not.toHaveBeenCalled();
@@ -166,13 +182,15 @@ describe('resetDemoCustomerState — demo customer not found', () => {
 
 describe('resetDemoCustomerState — demo customer found', () => {
   const demoId = 'demo-customer-id';
+  const demoAdminId = 'demo-admin-id';
 
   beforeEach(() => {
-    mocks.userFindOne.mockReturnValue(findOneChain({ _id: demoId }));
+    mockCustomerThenAdmin({ _id: demoId }, { _id: demoAdminId });
     mocks.orderDeleteMany.mockResolvedValue({ deletedCount: 3 });
     mocks.cartDeleteMany.mockResolvedValue({ deletedCount: 1 });
     mocks.savedCardDeleteMany.mockResolvedValue({ deletedCount: 2 });
     mocks.notificationDeleteMany.mockResolvedValue({ deletedCount: 5 });
+    mocks.messageDeleteMany.mockResolvedValue({ deletedCount: 4 });
     mocks.reviewUpdateMany.mockResolvedValue({ modifiedCount: 0 });
     mocks.reviewFind.mockReturnValue({
       select: () => ({ lean: async () => [] }),
@@ -188,10 +206,28 @@ describe('resetDemoCustomerState — demo customer found', () => {
     expect(mocks.orderDeleteMany).toHaveBeenCalledWith({ user: demoId });
     expect(mocks.cartDeleteMany).toHaveBeenCalledWith({ user: demoId });
     expect(mocks.savedCardDeleteMany).toHaveBeenCalledWith({ user: demoId });
+    // Messages the demo customer sent the shop sit outside every other
+    // owner-scoped delete, and used to survive the reset entirely — visible
+    // to the next demo visitor and to every admin, permanently.
+    expect(mocks.messageDeleteMany).toHaveBeenCalledWith({ user: demoId });
     // Notification uses `userId`, not `user` — Phase B's exploration
-    // flagged the schema inconsistency.
+    // flagged the schema inconsistency. Both demo accounts are cleared: the
+    // new-order fanout notifies every admin, so the demo admin's bell would
+    // otherwise grow without bound and point at deleted orders.
     expect(mocks.notificationDeleteMany).toHaveBeenCalledWith({
-      userId: demoId,
+      userId: { $in: [demoId, demoAdminId] },
+    });
+  });
+
+  it('clears only the demo customer notifications when no demo admin exists', async () => {
+    mocks.userFindOne.mockReset();
+    mockCustomerThenAdmin({ _id: demoId }, null);
+
+    const { resetDemoCustomerState } = await import('./reset');
+    await resetDemoCustomerState();
+
+    expect(mocks.notificationDeleteMany).toHaveBeenCalledWith({
+      userId: { $in: [demoId] },
     });
   });
 
@@ -258,6 +294,7 @@ describe('resetDemoCustomerState — demo customer found', () => {
       savedCardsDeleted: 2,
       notificationsDeleted: 5,
       reviewsDeleted: 0,
+      messagesDeleted: 4,
       userReset: true,
     });
   });
@@ -281,11 +318,12 @@ describe('resetDemoCustomerState — authored reviews', () => {
   const demoId = 'demo-customer-id';
 
   beforeEach(() => {
-    mocks.userFindOne.mockReturnValue(findOneChain({ _id: demoId }));
+    mockCustomerThenAdmin({ _id: demoId }, null);
     mocks.orderDeleteMany.mockResolvedValue({ deletedCount: 0 });
     mocks.cartDeleteMany.mockResolvedValue({ deletedCount: 0 });
     mocks.savedCardDeleteMany.mockResolvedValue({ deletedCount: 0 });
     mocks.notificationDeleteMany.mockResolvedValue({ deletedCount: 0 });
+    mocks.messageDeleteMany.mockResolvedValue({ deletedCount: 0 });
     mocks.reviewUpdateMany.mockResolvedValue({ modifiedCount: 0 });
     mocks.userUpdateOne.mockResolvedValue({ modifiedCount: 1 });
     mocks.reviewFind.mockReturnValue({
@@ -331,11 +369,15 @@ describe('resetDemoData', () => {
   const demoId = 'demo-customer-id';
 
   beforeEach(() => {
+    // `mockReturnValue` (not `...Once`) because the orchestrator looks up the
+    // demo customer again after the catalog restore, on top of the two
+    // lookups the customer wipe already does.
     mocks.userFindOne.mockReturnValue(findOneChain({ _id: demoId }));
     mocks.orderDeleteMany.mockResolvedValue({ deletedCount: 3 });
     mocks.cartDeleteMany.mockResolvedValue({ deletedCount: 1 });
     mocks.savedCardDeleteMany.mockResolvedValue({ deletedCount: 2 });
     mocks.notificationDeleteMany.mockResolvedValue({ deletedCount: 5 });
+    mocks.messageDeleteMany.mockResolvedValue({ deletedCount: 4 });
     mocks.reviewUpdateMany.mockResolvedValue({ modifiedCount: 0 });
     mocks.reviewFind.mockReturnValue({
       select: () => ({ lean: async () => [] }),
@@ -356,6 +398,7 @@ describe('resetDemoData', () => {
       savedCardsDeleted: 2,
       notificationsDeleted: 5,
       reviewsDeleted: 0,
+      messagesDeleted: 4,
       userReset: true,
       productsRestored: 39,
       productsDeleted: 0,

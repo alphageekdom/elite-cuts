@@ -4,6 +4,7 @@ import { cache } from 'react';
 
 import connectDB from '@/config/database';
 import ProductModel from '@/models/Product';
+import { PUBLIC_PRODUCT_PROJECTION } from '@/lib/products/public-projection';
 
 // Legacy product URLs were keyed by ObjectId; the nightly demo reset rotates
 // those ids, so slug is the canonical key now. A 24-hex param that still
@@ -23,7 +24,10 @@ export const resolveProductByParam = cache(
   async (param: string): Promise<ResolvedProduct> => {
     await connectDB();
 
-    const doc = await ProductModel.findOne({ slug: param }).lean();
+    const doc = await ProductModel.findOne(
+      { slug: param },
+      PUBLIC_PRODUCT_PROJECTION,
+    ).lean();
     if (doc) return { kind: 'found', doc: doc as Record<string, unknown> };
 
     if (OBJECT_ID_RE.test(param)) {

@@ -21,7 +21,6 @@ import type { ShopSettings } from '@/models/ShopSettings';
 // a cheap belt-and-suspenders guard.
 export const DEFAULT_SHOP_SETTINGS: ShopSettings = Object.freeze({
   shopName: 'EliteCuts',
-  tagline: 'Hand-cut meats, butchered fresh',
   description:
     'Hand-cut meats, butchered fresh in San Diego. Order online for same-day pickup.',
   phone: '(619) 555-0142',
@@ -33,7 +32,6 @@ export const DEFAULT_SHOP_SETTINGS: ShopSettings = Object.freeze({
   state: 'CA',
   zip: '92104',
   timezone: 'America/Los_Angeles (PT)',
-  opensAt: '9:00 AM',
   slotsPerHour: 10,
   leadTime: '30 min',
   maxBookingWindow: 'Same day',

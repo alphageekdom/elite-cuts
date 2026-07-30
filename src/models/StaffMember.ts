@@ -7,15 +7,6 @@ import {
   type StaffStatus,
 } from '@/lib/staff/display';
 
-// Re-export so existing server-side imports (`from '@/models/StaffMember'`)
-// keep working; the canonical home for the enums is the client-safe lib file.
-export {
-  STAFF_ROLE_KEYS,
-  STAFF_STATUSES,
-  type StaffRoleKey,
-  type StaffStatus,
-};
-
 export type StaffMember = {
   name: string;
   role: string;

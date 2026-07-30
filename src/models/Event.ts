@@ -28,7 +28,12 @@ export type EventDocument = HydratedDocument<Event>;
 const EventSchema = new Schema<Event>(
   {
     kind: { type: String, enum: [...EVENT_KIND], default: 'grill', required: true },
-    date: { type: Date, required: true, index: true },
+    // No field-level index — it was a strict prefix of the (date, status)
+    // compound below, which serves a date-only predicate just as well.
+    // `status` keeps its own index, left as it was: the event queries all
+    // filter on status, and which index the planner actually picks for
+    // `{status: $in, date: $gte}` hasn't been measured here.
+    date: { type: Date, required: true },
     startHour: { type: Number, required: true, min: EVENT_MIN_START_HOUR, max: EVENT_MAX_END_HOUR },
     endHour:   { type: Number, required: true, min: EVENT_MIN_START_HOUR, max: EVENT_MAX_END_HOUR },
     message:   { type: String, default: DEFAULT_EVENT_MESSAGE, trim: true, maxlength: EVENT_MESSAGE_MAX },

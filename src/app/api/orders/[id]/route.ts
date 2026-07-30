@@ -11,6 +11,7 @@ import {
 } from '@/lib/api-handler';
 import { isIn } from '@/lib/validation';
 import { awardOrderCompletion } from '@/lib/orders/completion';
+import { redactOrderForCustomer } from '@/lib/orders/redact';
 import { runOrderSettlement } from '@/lib/payments/orderSettlement';
 import { notifyAdminsOfSettlementFailure } from '@/lib/orders/notifications';
 import {
@@ -57,20 +58,11 @@ export const GET = async (_request: NextRequest, { params }: Ctx) => {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
 
-    // Strip Stripe-side identifiers from the customer-self branch. They're
-    // not rendered by the customer-facing receipt or profile pages and a
-    // raw checkoutSessionId / paymentIntentId is enough to make abuse easier
-    // (support-channel impersonation, brute-force probing). Admins still
-    // see the full payment envelope for refund triage.
+    // Strip the Stripe-side identifiers from the customer-self branch; admins
+    // still see the full payment envelope for refund triage. See
+    // `redactOrderForCustomer` for which fields and why.
     if (!sessionUser.user?.isAdmin) {
-      const serialized = order.toObject();
-      if (serialized.paymentResult) {
-        delete serialized.paymentResult.checkoutSessionId;
-        delete serialized.paymentResult.paymentIntentId;
-        delete serialized.paymentResult.settlementPaymentIntents;
-        delete serialized.paymentResult.settlementError;
-      }
-      return NextResponse.json(serialized);
+      return NextResponse.json(redactOrderForCustomer(order.toObject()));
     }
 
     return NextResponse.json(order);

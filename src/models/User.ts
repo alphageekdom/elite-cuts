@@ -9,10 +9,6 @@ import {
 
 import type { Address } from '@/types/address';
 
-// Re-exported for legacy callers that import `Address` from this module.
-// New code should import from `@/types/address` directly.
-export type { Address };
-
 export const POINTS_HISTORY_REASONS = [
   'order_fulfilled',
   'redemption',
@@ -41,7 +37,11 @@ export type DemoType = (typeof DEMO_TYPES)[number];
 export type User = {
   name: string;
   email: string;
-  password: string;
+  // `select: false` in the schema — absent from every read that doesn't opt in
+  // with `.select('+password')`, so the type has to allow that. Typing it as a
+  // present `string` meant a plain `findById` result compiled straight into
+  // `bcrypt.compare(input, user.password)` and blew up at runtime.
+  password?: string;
   phone?: string;
   savedCuts: Types.ObjectId[];
   addresses: Types.DocumentArray<Address>;
@@ -55,7 +55,9 @@ export type User = {
   tierAnniversaryAt?: Date;
   currentTier?: TierValue;
   adminNote?: string;
-  failedLoginAttempts: number;
+  // Also `select: false` — same reason as `password` above. `lockoutUntil`,
+  // the third select-false field, was already typed honestly.
+  failedLoginAttempts?: number;
   lockoutUntil?: Date | null;
   deletedAt?: Date | null;
   deletionScheduledFor?: Date | null;

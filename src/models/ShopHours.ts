@@ -10,6 +10,8 @@ export type ShopHoursDay = {
 // Singleton: one document holds all 7 days
 export type ShopHours = {
   days: ShopHoursDay[];
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 const ShopHoursDaySchema = new Schema<ShopHoursDay>(

@@ -75,6 +75,14 @@ ReviewSchema.index(
   },
 );
 
+// Every product page lists its reviews, and every review create / edit / delete
+// re-runs the rating aggregate — both filter on `product` alone, which the
+// user-leading unique index above cannot serve. This has to be declared here
+// rather than added by hand in Atlas: `syncIndexes()` below drops anything not
+// in the schema, so an out-of-band index would be reverted on the next cold
+// start.
+ReviewSchema.index({ product: 1, createdAt: -1 });
+
 if (process.env.NODE_ENV !== 'production' && models.Review) {
   delete (models as Record<string, unknown>).Review;
 }

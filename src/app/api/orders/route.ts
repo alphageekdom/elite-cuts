@@ -18,9 +18,12 @@ import { isIn } from '@/lib/validation';
 import { awardOrderCompletion } from '@/lib/orders/completion';
 import { recordCustomerActivity } from '@/lib/auth/account-deletion';
 import { notifyAdminsOfNewOrder } from '@/lib/orders/notifications';
+import { redactOrdersForCustomer } from '@/lib/orders/redact';
 import {
+  buildLine,
   computeSubtotal,
   computeOrderTotals,
+  ORDER_PRODUCT_PROJECTION,
   type OrderProductLean,
 } from '@/lib/orders/builder';
 import {
@@ -88,16 +91,23 @@ export const GET = async (request: NextRequest) => {
       ? {}
       : { user: sessionUser.userId };
 
+    const isAdmin = Boolean(sessionUser.user?.isAdmin);
     const [total, items] = await Promise.all([
       Order.countDocuments(filter),
       Order.find(filter)
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(pageSize)
-        .populate('user', 'name email'),
+        .populate('user', 'name email')
+        .lean(),
     ]);
 
-    return NextResponse.json({ items, total });
+    // Same strip the single-order GET applies to a customer reading their own
+    // order — without it the list was a way around it.
+    return NextResponse.json({
+      items: isAdmin ? items : redactOrdersForCustomer(items),
+      total,
+    });
   } catch (error) {
     console.error('[orders GET]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
@@ -123,7 +133,7 @@ export const POST = withAdminNonDemo(async (request: NextRequest, _ctx, adminUse
       } | null>(),
       Product.find(
         { _id: { $in: body.items.map((it) => it.productId) } },
-        'name price images category stockCount',
+        ORDER_PRODUCT_PROJECTION,
       ).lean<OrderProductLean[]>(),
     ]);
 
@@ -143,17 +153,19 @@ export const POST = withAdminNonDemo(async (request: NextRequest, _ctx, adminUse
 
     const productMap = new Map(products.map((p) => [p._id.toString(), p]));
 
+    // Same `buildLine` the customer and guest paths use. Hand-rolling the line
+    // here used to snapshot the raw `product.price`, which for a weighed cut is
+    // the per-pound *rate*, not the per-unit estimate the Order schema's
+    // `price` field is contractually defined as — so a walk-in order for a
+    // half-pound filet recorded the full per-pound rate and inflated the total,
+    // the tax and the points awarded. This is the same bug Phase 3 fixed on the
+    // customer path; the admin path never got it. `buildLine` also carries the
+    // pricing snapshot fields, so an admin-recorded order reads on the receipt
+    // exactly like a customer-placed one.
     const orderItems = body.items.map((it) => {
       const product = productMap.get(it.productId);
       if (!product) throw new Error('PRODUCT_MISSING');
-      return {
-        product: product._id,
-        name: product.name,
-        qty: it.qty,
-        image: product.images?.[0] ?? '',
-        price: product.price,
-        productType: product.category ?? '',
-      };
+      return buildLine(product, it.qty);
     });
 
     // Stock check up front for a clean 409 before we touch anything.

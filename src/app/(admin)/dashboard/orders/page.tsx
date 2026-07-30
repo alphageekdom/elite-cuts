@@ -17,6 +17,8 @@ import OrdersClient, {
   type AdminOrderProduct,
 } from '@/components/admin/orders/OrdersClient';
 import { excludeDemoOrders } from '@/lib/demo/exclude';
+import { ORDER_PRODUCT_PROJECTION } from '@/lib/orders/builder';
+import { unitPrice } from '@/lib/products/pricing';
 import { DAY_MS, RANGE_DAYS, parseRange } from '@/lib/admin/range-buckets';
 
 type PopulatedUser = {
@@ -80,7 +82,10 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
       .exec(),
     ProductModel.find(
       { isActive: { $ne: false }, stockCount: { $gt: 0 } },
-      'name price stockCount images category',
+      // The order-line projection plus `isEstimatedPrice`, which the drawer
+      // needs to label a weighed cut but `buildLine` doesn't snapshot — so it
+      // stays out of the shared constant.
+      `${ORDER_PRODUCT_PROJECTION} isEstimatedPrice`,
     )
       .sort({ category: 1, name: 1 })
       .limit(500)
@@ -95,10 +100,17 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
     email: u.email,
   }));
 
+  // `price` is the per-unit *estimate*, the same number `buildLine` snapshots
+  // onto the order — for a weighed cut that's `pricePerLb × estimatedWeightLb`,
+  // not the per-pound rate. The drawer's running subtotal has to agree with
+  // what the server will save. `priceLabel` carries the customer-facing
+  // "$24.99/lb" so the row still shows the rate the estimate came from.
   const products: AdminOrderProduct[] = rawProducts.map((p) => ({
     id: p._id.toString(),
     name: p.name,
-    price: p.price,
+    price: unitPrice(p, p.price),
+    priceLabel: p.displayPriceLabel ?? '',
+    isEstimatedPrice: p.isEstimatedPrice ?? false,
     stockCount: p.stockCount,
     image: p.images?.[0] ?? '',
     category: p.category,

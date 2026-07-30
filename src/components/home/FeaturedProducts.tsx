@@ -5,6 +5,7 @@ import { CTA_ARROW } from '@/lib/styles';
 import connectDB from '@/config/database';
 import Reveal from '@/components/ui/Reveal';
 import Product, { type SerializedProduct } from '@/models/Product';
+import { PUBLIC_PRODUCT_PROJECTION } from '@/lib/products/public-projection';
 import { convertToSerializableObject } from '@/lib/convertToObject';
 import { PRODUCT_CATEGORIES } from '@/lib/admin/constants';
 
@@ -24,10 +25,13 @@ const FeaturedProducts = async () => {
   // .lean() returns plain objects for serialization across the
   // server/client boundary. Filter out featured products without an
   // image so the card never resolves to /images/products/undefined.
-  const products = await Product.find({
-    isFeatured: true,
-    'images.0': { $exists: true },
-  })
+  const products = await Product.find(
+    {
+      isFeatured: true,
+      'images.0': { $exists: true },
+    },
+    PUBLIC_PRODUCT_PROJECTION,
+  )
     .limit(4)
     .lean();
   const serialized = products.map(

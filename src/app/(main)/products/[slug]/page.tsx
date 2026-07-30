@@ -4,10 +4,8 @@ import type { Metadata } from 'next';
 import type { Types } from 'mongoose';
 
 import connectDB from '@/config/database';
-import ProductModel, {
-  type SerializedProduct,
-  type ProductCategory,
-} from '@/models/Product';
+import ProductModel, { type SerializedProduct } from '@/models/Product';
+import type { ProductCategory } from '@/lib/admin/constants';
 import ReviewModel from '@/models/Review';
 import OrderModel from '@/models/Order';
 import { resolveProductByParam } from '@/lib/products/resolve';

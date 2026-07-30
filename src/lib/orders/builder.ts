@@ -37,6 +37,15 @@ export type OrderProductLean = {
   includedItems?: string[];
 };
 
+// Projection covering every field `buildLine` reads. Shared so the guest path
+// and the admin walk-in path can't drift on which pricing fields they fetch —
+// a projection missing `pricingType` silently sends `unitPrice` down its
+// legacy-fallback branch and snapshots the per-pound rate as the unit price.
+export const ORDER_PRODUCT_PROJECTION =
+  'name price images category stockCount pricingType packagePrice pricePerLb ' +
+  'estimatedWeightLb averageWeightLb minWeightLb maxWeightLb unitPrice bundlePrice ' +
+  'displayPriceLabel displayWeightLabel includedItems';
+
 // Per-line shape persisted on Order.orderItems. Kept here so the route and
 // any future caller (cron-promo, admin re-create) share one source of truth.
 //
@@ -170,9 +179,7 @@ export async function buildOrderItemsFromGuestItems(
 ): Promise<BuildOrderItemsResult> {
   const products = await Product.find(
     { _id: { $in: items.map((it) => it.productId) } },
-    'name price images category stockCount pricingType packagePrice pricePerLb ' +
-      'estimatedWeightLb averageWeightLb minWeightLb maxWeightLb unitPrice bundlePrice ' +
-      'displayPriceLabel displayWeightLabel includedItems',
+    ORDER_PRODUCT_PROJECTION,
   ).lean<OrderProductLean[]>();
 
   const productMap = new Map(products.map((p) => [p._id.toString(), p]));

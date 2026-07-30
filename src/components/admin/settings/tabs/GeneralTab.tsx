@@ -37,15 +37,9 @@ export default function GeneralTab({ values, onChange, onSave, onDiscard, saving
       <section>
         <h2 className={sectionTitleCls}>Shop <em className="italic text-oxblood font-normal">profile</em></h2>
         <p className={sectionSubCls}>Appears on your storefront, receipts, and customer emails.</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
-          <div>
-            <label htmlFor="settings-shop-name" className={labelCls}>Shop name</label>
-            <input id="settings-shop-name" type="text" value={values.shopName} onChange={(e) => onChange({ shopName: e.target.value })} className={inputCls} />
-          </div>
-          <div>
-            <label htmlFor="settings-tagline" className={labelCls}>Tagline</label>
-            <input id="settings-tagline" type="text" value={values.tagline} onChange={(e) => onChange({ tagline: e.target.value })} className={inputCls} />
-          </div>
+        <div className="mb-5">
+          <label htmlFor="settings-shop-name" className={labelCls}>Shop name</label>
+          <input id="settings-shop-name" type="text" value={values.shopName} onChange={(e) => onChange({ shopName: e.target.value })} className={inputCls} />
         </div>
         <div className="mb-5">
           <label htmlFor="settings-description" className={labelCls}>Description</label>
@@ -101,17 +95,18 @@ export default function GeneralTab({ values, onChange, onSave, onDiscard, saving
       <section>
         <h2 className={sectionTitleCls}>Business <em className="italic text-oxblood font-normal">hours</em></h2>
         <p className={sectionSubCls}>Controls the time slots available on checkout and what the shop hours card displays on the schedule page.</p>
+        {/*
+          One child in a two-column grid, matching the Customer privacy section
+          below: a solo select keeps half width on sm+ and goes full width on
+          mobile. Unwrapping it would stretch a control whose longest option is
+          about 210px across the full 625px column — every other select on the
+          page sits at a third or a half.
+        */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-3">
           <div>
             <label htmlFor="settings-timezone" className={labelCls}>Timezone</label>
             <SelectField id="settings-timezone" value={values.timezone} onChange={(e) => onChange({ timezone: e.target.value })}>
               {TIMEZONES.map((tz) => <option key={tz}>{tz}</option>)}
-            </SelectField>
-          </div>
-          <div>
-            <label htmlFor="settings-opens-at" className={labelCls}>Opens at</label>
-            <SelectField id="settings-opens-at" value={values.opensAt} onChange={(e) => onChange({ opensAt: e.target.value })}>
-              <option>8:00 AM</option><option>9:00 AM</option><option>10:00 AM</option>
             </SelectField>
           </div>
         </div>

@@ -7,11 +7,16 @@ import {
   type Types,
 } from 'mongoose';
 
-// Stub-mode-only mirror of Stripe's saved-card list. In real Stripe mode the
-// hosted Checkout page is the source of truth and we read cards directly from
-// `stripe.customers.listPaymentMethods` — this collection is never written and
-// queries skip it. It exists so the local demo (no Stripe key) can still show
-// a populated Payment methods tab after a mock checkout.
+// Local mirror of a customer's saved cards, written by the stub checkout the
+// portfolio demo runs without Stripe credentials.
+//
+// Read in BOTH modes, not just stub mode: `lib/payments/savedCards.ts` merges
+// these rows with the payment methods Stripe reports, so a card saved through
+// the demo path stays visible on the Payment methods tab once a real Stripe key
+// is configured, and the per-card get/delete helpers route `card_`-prefixed ids
+// here regardless of mode. (This header used to claim the collection was never
+// read outside stub mode, which stopped being true when the merge shipped —
+// acting on it would have meant dropping a collection the live read path needs.)
 export type SavedCard = {
   user: Types.ObjectId;
   stubCardId: string;
@@ -28,11 +33,12 @@ export type SavedCardDocument = HydratedDocument<SavedCard>;
 
 const SavedCardSchema = new Schema<SavedCard>(
   {
+    // No field-level index — the unique compound below is user-leading and
+    // serves the by-owner lookup too.
     user: {
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
-      index: true,
     },
     stubCardId: {
       type: String,

@@ -1,4 +1,4 @@
-import type { OrderStatus, PaymentMethod } from '@/models/Order';
+import type { OrderStatus, PaymentMethod, SettlementStatus } from '@/models/Order';
 import type { PricingType } from '@/lib/products/constants';
 
 // The customer-facing order shape the account dashboard renders.
@@ -37,7 +37,7 @@ export type ProfileOrder = {
   // Phase 4 — auto-settle status surfaced on the profile order card so
   // the customer can tell at a glance whether the settlement charge has
   // been applied to their card.
-  settlementStatus?: 'pending' | 'settled' | 'failed';
+  settlementStatus?: SettlementStatus;
   createdAt: string;
   updatedAt: string;
 };

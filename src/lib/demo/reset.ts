@@ -7,6 +7,7 @@ import Cart from '@/models/Cart';
 import SavedCard from '@/models/SavedCard';
 import Notification from '@/models/Notification';
 import Review from '@/models/Review';
+import Message from '@/models/Message';
 import { recomputeProductRating } from '@/lib/reviews/recompute';
 import {
   restoreDemoCatalog,
@@ -46,6 +47,7 @@ export type ResetCounts = {
   savedCardsDeleted: number;
   notificationsDeleted: number;
   reviewsDeleted: number;
+  messagesDeleted: number;
   // The User document itself stays — only its derived state is reset. `true`
   // when the demo customer's saved cuts / addresses / rewards / dormancy
   // fields were reset to the zero state on this run.
@@ -86,11 +88,21 @@ export async function resetDemoCustomerState(): Promise<ResetCounts> {
       savedCardsDeleted: 0,
       notificationsDeleted: 0,
       reviewsDeleted: 0,
+      messagesDeleted: 0,
       userReset: false,
     };
   }
 
   const demoId = demo._id;
+
+  // The demo admin owns notifications too — see the fanout note below. Absent
+  // on an install seeded before the admin demo account existed, so the list is
+  // built defensively rather than assuming both accounts are present.
+  const demoAdmin = await User.findOne({
+    isDemo: true,
+    demoType: 'admin',
+  }).select('_id');
+  const notificationOwnerIds = [demoId, ...(demoAdmin ? [demoAdmin._id] : [])];
 
   // Reviews the demo customer *authored*. These are public — they render on
   // the product page for every later visitor — and nothing else in the reset
@@ -105,17 +117,29 @@ export async function resetDemoCustomerState(): Promise<ResetCounts> {
   ];
   const reviewsRes = await Review.deleteMany({ user: demoId });
 
-  // Owned collections — straight deleteMany by owner field. Helpful votes are
-  // the exception: they don't belong to the demo customer, they live on shared
+  // Owned collections — straight deleteMany by owner field. Two exceptions:
+  //
+  // Helpful votes don't belong to the demo customer, they live on shared
   // Review docs (which survive the reset), so a demo session's votes would
   // otherwise permanently reshuffle the "Most helpful" badge for every later
   // visitor. Pull the demo id out of every review's voter list.
-  const [ordersRes, cartRes, savedCardsRes, notificationsRes] =
+  //
+  // Messages the demo customer sent the shop are visible to the next demo
+  // visitor on the profile page and to every admin in the messages tab, and
+  // nothing else in the reset removed them — a single session used to leave a
+  // permanent conversation behind, which is also what the privacy page's
+  // "visible to the next visitor until the nightly reset clears it" promises
+  // against. Notifications are cleared for the demo admin too: every order the
+  // demo customer places fans out an alert to all admins, so the demo admin's
+  // bell would otherwise accumulate forever, pointing at orders this same
+  // reset just deleted.
+  const [ordersRes, cartRes, savedCardsRes, notificationsRes, messagesRes] =
     await Promise.all([
       Order.deleteMany({ user: demoId }),
       Cart.deleteMany({ user: demoId }),
       SavedCard.deleteMany({ user: demoId }),
-      Notification.deleteMany({ userId: demoId }),
+      Notification.deleteMany({ userId: { $in: notificationOwnerIds } }),
+      Message.deleteMany({ user: demoId }),
       Review.updateMany(
         { helpfulVoters: demoId },
         { $pull: { helpfulVoters: demoId } },
@@ -183,6 +207,7 @@ export async function resetDemoCustomerState(): Promise<ResetCounts> {
     savedCardsDeleted: savedCardsRes.deletedCount ?? 0,
     notificationsDeleted: notificationsRes.deletedCount ?? 0,
     reviewsDeleted: reviewsRes.deletedCount ?? 0,
+    messagesDeleted: messagesRes.deletedCount ?? 0,
     userReset: true,
   };
 }

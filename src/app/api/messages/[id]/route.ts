@@ -35,8 +35,10 @@ export const PATCH = async (request: NextRequest, ctx: Ctx) => {
     const invalid = parseObjectId(id);
     if (invalid) return invalid;
 
-    // The Message collection isn't in the nightly demo-reset scope, so any
-    // mutation by a demo actor would persist into the next visitor's view.
+    // The nightly reset clears messages the demo *customer* authored, but
+    // these verbs reach any message — a demo admin closing or deleting a real
+    // customer's conversation would outlive the visit with nothing to restore
+    // it, so demo actors stay blocked here.
     const actorBlocked = refuseDemoActor(sessionUser.user);
     if (actorBlocked) return actorBlocked;
 

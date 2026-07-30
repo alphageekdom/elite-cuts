@@ -1,3 +1,4 @@
+import type { SettlementKind, SettlementStatus } from '@/models/Order';
 import type { ProductCategory } from '@/lib/admin/constants';
 import type { MeatQualityTier, PricingType } from '@/lib/products/constants';
 
@@ -146,12 +147,12 @@ export type OrderTableRow = {
   // the order didn't opt in (most orders); 'pending' while waiting for
   // realized weights + completion; 'settled' / 'failed' afterward.
   autoSettleAtPickup?: boolean;
-  settlementStatus?: 'pending' | 'settled' | 'failed';
+  settlementStatus?: SettlementStatus;
   settlementError?: string;
   settlementPaymentIntents?: Array<{
     id: string;
     amount: number;
-    kind: 'capture' | 'auto_refund';
+    kind: SettlementKind;
     createdAt: string;
   }>;
 };

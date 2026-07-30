@@ -16,10 +16,6 @@ import {
 import * as pricing from '@/lib/products/pricing';
 import { slugify } from '@/lib/slugify';
 
-export { PRODUCT_CATEGORIES, type ProductCategory };
-export { PRICING_TYPES, MEAT_QUALITY_TIERS };
-export type { PricingType, MeatQualityTier };
-
 export const PRODUCT_UNITS = ['lb', 'kg', 'each'] as const;
 export type ProductUnit = (typeof PRODUCT_UNITS)[number];
 
@@ -33,12 +29,15 @@ export type Product = {
   slug: string;
   category: ProductCategory;
   description: string;
-  // Backcompat: stamped by the pre-validate hook from the canonical
-  // per-pricingType fields. Phase 2 drops this once the customer UI reads
-  // displayPriceLabel directly.
+  // Stamped by the pre-validate hook from the canonical per-pricingType
+  // fields. Originally scoped as a Phase-2 temporary; it stayed, and is now
+  // load-bearing — the catalog price sort, the CSV export and the pre-Phase-1
+  // fallback in `unitPrice` all read it. Anything that writes a product has to
+  // go through the hook (or stamp by hand, as the CSV importer does) or this
+  // silently keeps the old value.
   price: number;
-  // Backcompat: stamped from pricingType (lb for weighed cuts, each for
-  // each / bundle). Phase 2 drops it.
+  // Stamped from pricingType (lb for weighed cuts, each for each / bundle).
+  // Same story as `price` — still read, notably by the product card.
   unit: ProductUnit;
   rating: number;
   images: string[];
@@ -274,8 +273,15 @@ ProductSchema.pre('validate', function () {
   }
 });
 
-// Reuse the cached model in dev — Next.js hot-reload re-evaluates this file
-// on every change, and `model()` throws if the same name registers twice.
+// See the matching note in models/Order.ts — Next.js dev hot-reload keeps the
+// registered model cached on the Mongoose singleton, so a schema addition is
+// invisible at runtime (and silently dropped on write) until the dev server is
+// fully restarted. Product is the schema that changes most often, which makes
+// it the one that most needs the guard. Production keeps the cache.
+if (process.env.NODE_ENV !== 'production' && models.Product) {
+  delete (models as Record<string, unknown>).Product;
+}
+
 const ProductModel =
   (models.Product as Model<Product> | undefined) ??
   model<Product>('Product', ProductSchema);

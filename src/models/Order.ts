@@ -10,8 +10,6 @@ import {
 import { ORDER_STATUSES, CANCELLATION_REASONS } from '@/lib/orders/constants';
 import { PRICING_TYPES, type PricingType } from '@/lib/products/constants';
 export { ORDER_STATUSES, CANCELLATION_REASONS };
-export { PRICING_TYPES };
-export type { PricingType };
 
 // The shop's two payment surfaces — `'Credit Card'` for the demo card-form
 // path and admin walk-out orders, `'Stripe'` for everything that flowed
@@ -151,7 +149,11 @@ export type GuestContact = {
 };
 
 export type Order = {
-  user?: Types.ObjectId;
+  // `null` — not just absent — on an order whose customer was hard-deleted:
+  // the anonymization step sets `user: null` and keeps the row as a "Former
+  // customer" order. Guest orders omit the field entirely. Review and Message
+  // model the same state the same way.
+  user?: Types.ObjectId | null;
   guestContact?: GuestContact;
   orderItems: OrderItem[];
   subtotal: number;

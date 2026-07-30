@@ -17,7 +17,17 @@ export type AdminOrderCustomer = {
 export type AdminOrderProduct = {
   id: string;
   name: string;
+  // Per-unit estimate, matching what the order will snapshot — for a weighed
+  // cut that's the typical-weight estimate, not the per-pound rate.
   price: number;
+  // Customer-facing price label ("$24.99/lb") when the cut has one, so a
+  // weighed line shows the rate its estimate was derived from.
+  priceLabel?: string;
+  // True only for cuts priced by weight, where `price` is a best guess rather
+  // than the amount charged. Gates the "est. … ea" suffix — on a fixed-price
+  // cut the label and the estimate are the same number, and printing both
+  // reads as "$8.99 · est. $8.99 ea".
+  isEstimatedPrice?: boolean;
   stockCount: number;
   image: string;
   category?: string;
@@ -262,7 +272,10 @@ export default function OrderCreateDrawer({
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-[14px] truncate">{product.name}</div>
                       <div className="text-[12px] text-muted">
-                        ${fmtPrice(product.price)} · {product.stockCount} in stock
+                        {product.priceLabel && product.isEstimatedPrice
+                          ? `${product.priceLabel} · est. $${fmtPrice(product.price)} ea`
+                          : product.priceLabel || `$${fmtPrice(product.price)}`}{' '}
+                        · {product.stockCount} in stock
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
@@ -338,7 +351,9 @@ export default function OrderCreateDrawer({
                       <div className="text-[11px] text-muted">{p.category ?? ''} · {p.stockCount} in stock</div>
                     </div>
                     <div className="flex items-center gap-3 shrink-0 ml-3">
-                      <span className="text-ink-soft">${fmtPrice(p.price)}</span>
+                      <span className="text-ink-soft">
+                        {p.priceLabel || `$${fmtPrice(p.price)}`}
+                      </span>
                       <span
                         aria-hidden="true"
                         className="w-6 h-6 rounded-full border border-line text-muted grid place-items-center group-hover:border-oxblood group-hover:text-oxblood transition-colors"
