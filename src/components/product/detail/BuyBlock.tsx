@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 
-import useHandleAddToCart from '@/hooks/useHandleAddToCart';
-import useHandleBookmark from '@/hooks/useHandleBookmark';
+import { useHandleAddToCart } from '@/hooks/useHandleAddToCart';
+import { useHandleBookmark } from '@/hooks/useHandleBookmark';
 import { formatMoney } from '@/lib/format';
 import { unitPrice } from '@/lib/products/pricing';
 import { MAX_PER_LINE } from '@/lib/shop-settings/config';

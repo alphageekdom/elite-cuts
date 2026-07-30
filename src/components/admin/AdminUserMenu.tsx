@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 
 import { computeFloatingMenuPos, type FloatingMenuPos } from '@/lib/floatingMenu';
 import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
-import { useAdminSignOut } from '@/hooks/useAdminSignOut';
+import { useAdminSignOut } from '@/hooks/admin/useAdminSignOut';
 import SignOutIcon from '@/components/ui/icons/SignOutIcon';
 
 type Props = {

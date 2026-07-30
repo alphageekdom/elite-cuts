@@ -9,7 +9,7 @@ import StaffTable from './StaffTable';
 import StaffMobileCards from './StaffMobileCards';
 import StaffProfileDrawer from './StaffProfileDrawer';
 import StaffFormDrawer from './StaffFormDrawer';
-import { useStaffTable } from '@/hooks/useStaffTable';
+import { useStaffTable } from '@/hooks/admin/useStaffTable';
 
 type Props = {
   rows: StaffRow[];

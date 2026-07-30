@@ -11,7 +11,7 @@ import {
   readRecentlyViewed,
 } from '@/lib/products/recently-viewed';
 import type { SerializedProduct } from '@/models/Product';
-import useHandleAddToCart from '@/hooks/useHandleAddToCart';
+import { useHandleAddToCart } from '@/hooks/useHandleAddToCart';
 import { useIsMounted } from '@/hooks/useIsMounted';
 
 // How many of the remembered cuts to show. The store keeps more so that a

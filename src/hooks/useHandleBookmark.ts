@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 type BookmarkResponse = { message: string; isBookmarked: boolean };
 type BookmarkCheckResponse = { isBookmarked: boolean };
 
-const useHandleBookmark = (
+export const useHandleBookmark = (
   userId: string | undefined,
   productId: string
 ) => {
@@ -17,7 +17,7 @@ const useHandleBookmark = (
     e.preventDefault();
     e.stopPropagation();
     if (!userId) {
-      toast.error('You Need To Sign In To Bookmark A Product');
+      toast.error('Sign in to save cuts');
       return;
     }
     if (inflightRef.current) return;
@@ -35,10 +35,10 @@ const useHandleBookmark = (
         toast.success(data.message);
         setIsBookmarked(data.isBookmarked);
       } else {
-        toast.error('Failed to update bookmark');
+        toast.error('Could not update your saved cuts');
       }
     } catch {
-      toast.error('Something Went Wrong');
+      toast.error('Something went wrong');
     } finally {
       inflightRef.current = false;
     }
@@ -61,6 +61,11 @@ const useHandleBookmark = (
         const data = (await res.json()) as BookmarkCheckResponse;
         setIsBookmarked(data.isBookmarked);
       }
+    } catch (err) {
+      // try/finally without this catch turned an offline status check into an
+      // unhandled promise rejection. Failing silent is right — the heart just
+      // stays unfilled and the click path reports its own errors.
+      console.error('[useHandleBookmark] status check failed', err);
     } finally {
       setLoading(false);
     }
@@ -73,5 +78,3 @@ const useHandleBookmark = (
     checkBookmarkStatus,
   };
 };
-
-export default useHandleBookmark;

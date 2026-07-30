@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 
-import useHandleAddToCart from '@/hooks/useHandleAddToCart';
+import { useHandleAddToCart } from '@/hooks/useHandleAddToCart';
 import { useCartContext } from '@/context/CartContext';
 import { productImageSrc } from '@/lib/format';
 import { productPath } from '@/lib/products/paths';

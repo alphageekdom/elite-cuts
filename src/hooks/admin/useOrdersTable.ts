@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 
 import type { OrderTableRow } from '@/types/admin';
 import { refundSummary } from '@/lib/orders/refunds';
+import { runBulk, partialFailureMessage } from '@/lib/admin/bulk';
 import { useAdminDrawer } from './useAdminDrawer';
 
 // Owns the order list state, the detail drawer + its status-update mirror,
@@ -328,22 +329,29 @@ export function useOrdersTable(initialOrders: OrderTableRow[]) {
     const ids = [...selectedIds];
     setBulkLoading(newStatus);
     try {
-      await Promise.all(
-        ids.map((id) =>
-          fetch(`/api/orders/${id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderStatus: newStatus }),
-          }),
-        ),
+      // Per-response `ok` via runBulk — a 403/400 resolves fetch normally, so
+      // reading only the promise used to mark every row updated and toast
+      // success over refusals (the demo admin saw exactly that).
+      const { okIds, failCount, firstErrorMessage } = await runBulk(ids, (id) =>
+        fetch(`/api/orders/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderStatus: newStatus }),
+        }),
       );
+      const okSet = new Set(okIds);
       setOrders((prev) =>
-        prev.map((o) => (selectedIds.has(o.id) ? { ...o, status: newStatus } : o)),
+        prev.map((o) => (okSet.has(o.id) ? { ...o, status: newStatus } : o)),
       );
       clearSelection();
-      toast.success(`${ids.length} order${ids.length !== 1 ? 's' : ''} updated to ${newStatus}`);
-    } catch {
-      toast.error('Failed to update some orders');
+      if (okIds.length > 0) router.refresh();
+      if (failCount === 0) {
+        toast.success(`${ids.length} order${ids.length !== 1 ? 's' : ''} updated to ${newStatus}`);
+      } else if (okIds.length === 0) {
+        toast.error(firstErrorMessage ?? 'Failed to update orders');
+      } else {
+        toast.error(partialFailureMessage('Updated', okIds.length, ids.length));
+      }
     } finally {
       setBulkLoading('');
     }

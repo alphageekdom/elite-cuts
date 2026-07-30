@@ -11,7 +11,7 @@ import SlideDrawer from '@/components/admin/SlideDrawer';
 import { DRAWER_WIDTH } from '@/components/admin/DrawerChrome';
 import PromoFormDrawer, { type PromoFormRow } from '@/components/admin/promos/PromoFormDrawer';
 import PromosPageHeader from '@/components/admin/promos/PromosPageHeader';
-import { useStatFilter } from '@/hooks/useStatFilter';
+import { useStatFilter } from '@/hooks/admin/useStatFilter';
 import { formatMoney } from '@/lib/format';
 import { formatPromoLabel } from '@/lib/promos/format';
 

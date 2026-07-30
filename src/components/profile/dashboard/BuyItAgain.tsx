@@ -7,7 +7,7 @@ import { formatMoney, productImageSrc } from '@/lib/format';
 import { productPath } from '@/lib/products/paths';
 import { FOCUS_RING } from '@/lib/styles';
 import type { SerializedProduct } from '@/models/Product';
-import useHandleAddToCart from '@/hooks/useHandleAddToCart';
+import { useHandleAddToCart } from '@/hooks/useHandleAddToCart';
 
 export type RepeatCut = {
   product: SerializedProduct;
