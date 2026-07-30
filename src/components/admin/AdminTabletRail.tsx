@@ -3,14 +3,16 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { GiMeatCleaver } from 'react-icons/gi';
 import { NAV_WORKSPACE, NAV_OPERATIONS } from './navItems';
+import AdminUserMenu from './AdminUserMenu';
 
 type Props = {
+  name: string;
   initial: string;
   criticalInventoryCount: number;
   openMessageCount?: number;
 };
 
-export default function AdminTabletRail({ initial, criticalInventoryCount, openMessageCount = 0 }: Props) {
+export default function AdminTabletRail({ name, initial, criticalInventoryCount, openMessageCount = 0 }: Props) {
   const pathname = usePathname();
 
   const isActive = (href: string) =>
@@ -100,12 +102,15 @@ export default function AdminTabletRail({ initial, criticalInventoryCount, openM
         />
       </div>
 
-      {/* User avatar */}
+      {/* User avatar — the same menu the desktop sidebar uses, in its
+          avatar-only mode, which is already this rail's shape.
+          Without it this 768–1023px band had no sign-out at all: it is the one
+          surface with neither a "more" sheet nor a sidebar user card, so an
+          iPad in portrait or any phone held sideways could not end its session
+          without leaving the admin shell. The avatar here was a plain div. */}
       <div className="h-px bg-cream/15 mx-3 shrink-0" />
-      <div className="py-3 flex justify-center shrink-0">
-        <div className="w-9 h-9 rounded-full bg-camel text-ink grid place-items-center font-display font-semibold text-sm shrink-0">
-          {initial}
-        </div>
+      <div className="py-3 px-2 shrink-0">
+        <AdminUserMenu name={name} initial={initial} collapsed />
       </div>
     </aside>
   );
