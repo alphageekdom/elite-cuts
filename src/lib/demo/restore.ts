@@ -171,11 +171,15 @@ export async function restoreDemoCatalog(): Promise<CatalogCounts> {
   await StaffMember.deleteMany({});
   const staff = await StaffMember.insertMany(DEMO_STAFF);
 
-  // Shifts are scoped to the current week so a restore always lands on the
-  // week the demo visitor is actually looking at, and historical weeks are
-  // left alone.
+  // The seeded week is replaced wholesale so a restore always lands on the
+  // week the demo visitor is actually looking at. Every other week is cleared
+  // rather than left alone: the schedule lets an admin navigate to any week and
+  // book there, so a shift planted outside the current week used to survive
+  // every future restore — permanently, for a past week the seed never revisits.
+  // Shifts carry no inbound references, and the seed only ever describes the
+  // current week, so "no shifts outside this week" is the correct rest state.
   const weekStart = currentWeekStartUtc();
-  await Shift.deleteMany({ weekStart });
+  await Shift.deleteMany({});
   const shifts = await Shift.insertMany(
     DEMO_SHIFTS.map((shift) => ({ ...shift, weekStart })),
   );

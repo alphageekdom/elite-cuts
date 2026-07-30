@@ -10,6 +10,7 @@ import {
   productRecordFromFormData,
 } from '@/lib/products/parse-form-input';
 import { productInputSchema } from '@/lib/products/schema';
+import { PUBLIC_PRODUCT_PROJECTION } from '@/lib/products/public-projection';
 import { withAdmin, parsePagination } from '@/lib/api-handler';
 
 const ALLOWED_PRODUCT_SORT_FIELDS = new Set(['_id', 'name', 'price', 'createdAt', 'stockCount']);
@@ -31,7 +32,10 @@ export const GET = async (request: NextRequest) => {
     const activeFilter = { isActive: { $ne: false } };
     const [total, items] = await Promise.all([
       Product.countDocuments(activeFilter),
-      Product.find(activeFilter).sort(sort).skip(skip).limit(pageSize),
+      Product.find(activeFilter, PUBLIC_PRODUCT_PROJECTION)
+        .sort(sort)
+        .skip(skip)
+        .limit(pageSize),
     ]);
 
     return NextResponse.json({ items, total });

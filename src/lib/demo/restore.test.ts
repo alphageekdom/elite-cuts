@@ -296,14 +296,19 @@ describe('restoreDemoCatalog — promos, staff, shifts, settings', () => {
     expect(options.upsert).toBe(true);
   });
 
-  it('scopes the shift replace to the current week', async () => {
+  it('clears every week, not just the current one, before reseeding', async () => {
     const { restoreDemoCatalog } = await import('./restore');
     await restoreDemoCatalog();
 
+    // Unscoped delete on purpose. The schedule lets an admin navigate to any
+    // week and book there, so a week-scoped delete left a demo-planted shift
+    // in a past week alive through every future restore — permanently, since
+    // the seed only ever revisits the current week.
+    expect(mocks.shiftDeleteMany).toHaveBeenCalledWith({});
+
+    // The seed carries no weekStart of its own, so the reseeded week is
+    // always the one the visitor is looking at.
     const weekStart = currentWeekStartUtc();
-    expect(mocks.shiftDeleteMany).toHaveBeenCalledWith({ weekStart });
-    // Historical weeks are left alone; the seed carries no weekStart of its
-    // own so the restored week is always the one being looked at.
     const inserted = mocks.shiftInsertMany.mock.calls[0][0];
     expect(inserted).toHaveLength(DEMO_SHIFTS.length);
     expect(inserted[0].weekStart).toEqual(weekStart);

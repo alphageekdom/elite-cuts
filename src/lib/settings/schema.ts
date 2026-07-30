@@ -12,7 +12,6 @@ import { DORMANCY_THRESHOLD_VALUES } from '@/lib/shop-settings/constants';
 // defence-in-depth, not the only validator.
 
 const SHOP_NAME_MAX = 80;
-const TAGLINE_MAX = 120;
 const DESCRIPTION_MAX = 400;
 const PHONE_MAX = 30;
 const EMAIL_MAX = 120;
@@ -46,7 +45,6 @@ export const shopSettingsInputSchema = z
   .object({
     // General
     shopName: trimmedRequired('Shop name', SHOP_NAME_MAX),
-    tagline: trimmedOptional('Tagline', TAGLINE_MAX),
     description: trimmedOptional('Description', DESCRIPTION_MAX),
     phone: trimmedOptional('Phone', PHONE_MAX),
     email: trimmedOptional('Email', EMAIL_MAX)
@@ -58,7 +56,6 @@ export const shopSettingsInputSchema = z
     state: trimmedOptional('State', 4),
     zip: trimmedOptional('ZIP', ZIP_MAX),
     timezone: trimmedOptional('Timezone', TIMEZONE_MAX),
-    opensAt: trimmedOptional('Opens at', TIME_LABEL_MAX),
     // Pickup
     slotsPerHour: z.number().int('Slots per hour must be a whole number').min(1, 'Slots per hour must be at least 1').max(60, 'Slots per hour must be 60 or fewer'),
     leadTime: trimmedOptional('Lead time', TIME_LABEL_MAX),

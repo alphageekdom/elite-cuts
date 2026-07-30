@@ -7,6 +7,8 @@ export type AgingCut = {
   weightLb: number;
   startedAt: Date;
   isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 const AgingCutSchema = new Schema<AgingCut>(

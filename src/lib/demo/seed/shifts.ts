@@ -3,7 +3,7 @@ import type { Shift } from '@/models/Shift';
 // Seed shape: shifts without `weekStart` (that's runtime-computed at
 // restore time so the demo always shows the *current* week, never a
 // stale one from when the seed module was written).
-export type DemoShiftSeed = Omit<Shift, 'weekStart'>;
+export type DemoShiftSeed = Omit<Shift, 'weekStart' | 'createdAt' | 'updatedAt'>;
 
 // A realistic week of shifts — Tue–Sun, with Mon closed per the default
 // shop hours. Pulled verbatim from scripts/seed.mjs. dayOfWeek 1=Tue …

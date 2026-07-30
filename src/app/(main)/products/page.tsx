@@ -4,6 +4,7 @@ import Link from 'next/link';
 
 import connectDB from '@/config/database';
 import Product, { type SerializedProduct } from '@/models/Product';
+import { PUBLIC_PRODUCT_PROJECTION } from '@/lib/products/public-projection';
 import { convertToSerializableObject } from '@/lib/convertToObject';
 import { paginateCatalog } from '@/lib/products/pagination';
 import { VISIBLE_PRODUCT_FILTER } from '@/lib/products/constants';
@@ -112,7 +113,7 @@ const ProductsPage = async ({
     categoryGroups,
     activeEvent,
   ] = await Promise.all([
-    Product.find(query)
+    Product.find(query, PUBLIC_PRODUCT_PROJECTION)
       .sort(SORT_TO_MONGO[sort])
       .skip(skip)
       .limit(PAGE_SIZE)

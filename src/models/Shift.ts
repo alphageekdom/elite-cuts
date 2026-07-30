@@ -1,9 +1,6 @@
 import { Schema, model, models, type Model } from 'mongoose';
 import { SHIFT_COLORS, type ShiftColor } from '@/lib/shifts/constants';
 
-// Re-export so existing server-side imports (`from '@/models/Shift'`) keep working.
-export { SHIFT_COLORS, type ShiftColor };
-
 export type Shift = {
   weekStart: Date;   // Monday 00:00 UTC of the displayed week
   dayOfWeek: number; // 0 = Mon … 6 = Sun
@@ -11,11 +8,15 @@ export type Shift = {
   staffName: string;
   role: string;
   color: ShiftColor;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 const ShiftSchema = new Schema<Shift>(
   {
-    weekStart:  { type: Date, required: true, index: true },
+    // No field-level index — the unique compound below is weekStart-leading
+    // and serves the per-week fetch too.
+    weekStart:  { type: Date, required: true },
     dayOfWeek:  { type: Number, required: true, min: 0, max: 6 },
     hourIndex:  { type: Number, required: true, min: 0, max: 8 },
     staffName:  { type: String, required: true, trim: true },

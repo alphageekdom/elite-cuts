@@ -13,7 +13,9 @@ export type Notification = {
   title: string;
   body: string;
   userId: Types.ObjectId;
-  readAt?: Date;
+  // Defaults to `null`, not undefined — the unread queries filter on
+  // `readAt: null`, so an `=== undefined` check would miss every row.
+  readAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -29,7 +31,9 @@ const NotificationSchema = new Schema<Notification>(
     },
     title: { type: String, required: true, trim: true },
     body:  { type: String, required: true, trim: true },
-    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    // No field-level index — both compounds below are userId-leading and
+    // serve a userId-only predicate as well.
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     readAt: { type: Date, default: null },
   },
   { timestamps: true },

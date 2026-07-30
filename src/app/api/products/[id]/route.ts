@@ -148,7 +148,9 @@ export const PUT = withAdmin<{ id: string }>(async (request, ctx) => {
     if (invalid) return invalid;
     const formData = await request.formData();
 
-    const existingProduct = await Product.findById(id).lean();
+    // Hydrated, not `.lean()` — the update below goes through `.save()` so the
+    // model's pre-validate hook re-stamps the derived pricing fields.
+    const existingProduct = await Product.findById(id);
     if (!existingProduct) {
       return NextResponse.json({ message: 'Product not found' }, { status: 404 });
     }
@@ -183,13 +185,30 @@ export const PUT = withAdmin<{ id: string }>(async (request, ctx) => {
     if (!formData.has('isFeatured')) update.isFeatured = existingProduct.isFeatured;
     if (!formData.has('isActive'))   update.isActive   = existingProduct.isActive;
 
-    const updatedProduct = await Product.findByIdAndUpdate(
-      id,
-      update,
-      { returnDocument: 'after', runValidators: true },
-    );
-    return NextResponse.json({ data: updatedProduct });
+    // Assign-then-save rather than `findByIdAndUpdate`, so the model's
+    // pre-validate hook re-stamps `price`, `unit` and the display labels from
+    // the canonical per-pricingType fields this update carries. A query update
+    // skips document middleware entirely, which left a repriced cut showing
+    // its old "$24.99/lb" label on the catalog and product page while
+    // add-to-cart charged off the new rate. The demo restore already chose
+    // assign-then-save for this reason; the CSV importer stamps by hand
+    // because bulkWrite has the same limitation.
+    existingProduct.set(update);
+    await existingProduct.save();
+    return NextResponse.json({ data: existingProduct });
   } catch (error) {
+    // `.save()` validates the whole document, not just the submitted paths the
+    // previous query update checked — so a stored value that no longer passes
+    // the schema (a retired enum member, say) now surfaces here on an edit that
+    // never touched it. That's the client's problem to see, not a blank 500:
+    // report the offending field the way the settings route already does.
+    if (error instanceof mongoose.Error.ValidationError) {
+      const first = Object.values(error.errors)[0];
+      return NextResponse.json(
+        { message: first?.message ?? 'Invalid product payload' },
+        { status: 400 },
+      );
+    }
     console.error('[products/:id PUT]', error);
     return NextResponse.json({ message: 'Failed to update product' }, { status: 500 });
   }

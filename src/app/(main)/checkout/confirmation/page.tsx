@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import connectDB from '@/config/database';
 import OrderModel from '@/models/Order';
 import Product, { type SerializedProduct } from '@/models/Product';
+import { PUBLIC_PRODUCT_PROJECTION } from '@/lib/products/public-projection';
 import { convertToSerializableObject } from '@/lib/convertToObject';
 import { getSessionUser } from '@/lib/auth/session';
 import { DELIVERY_FEE } from '@/lib/pricing';
@@ -81,12 +82,15 @@ export default async function ConfirmationPage({ searchParams }: Props) {
   const [shopSettings, hoursDays, featuredDocs] = await Promise.all([
     getShopSettings(),
     getShopHours(),
-    Product.find({
-      ...VISIBLE_PRODUCT_FILTER,
-      isFeatured: true,
-      stockCount: { $gt: 0 },
-      _id: { $nin: orderedIds },
-    })
+    Product.find(
+      {
+        ...VISIBLE_PRODUCT_FILTER,
+        isFeatured: true,
+        stockCount: { $gt: 0 },
+        _id: { $nin: orderedIds },
+      },
+      PUBLIC_PRODUCT_PROJECTION,
+    )
       .limit(3)
       .lean(),
   ]);

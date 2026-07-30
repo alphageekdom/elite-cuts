@@ -2,19 +2,12 @@ import { Schema, model, models, type Model } from 'mongoose';
 import { DEFAULT_SHOP_SETTINGS } from '@/lib/shop-settings/defaults';
 import {
   DORMANCY_THRESHOLD_VALUES,
-  DORMANCY_OPTIONS,
   type DormancyThreshold,
 } from '@/lib/shop-settings/constants';
-
-// Re-export so existing server-side imports (`from '@/models/ShopSettings'`)
-// keep working without each consumer chasing the constants file.
-export { DORMANCY_THRESHOLD_VALUES, DORMANCY_OPTIONS };
-export type { DormancyThreshold };
 
 export type ShopSettings = {
   // General
   shopName: string;
-  tagline: string;
   description: string;
   phone: string;
   email: string;
@@ -25,7 +18,6 @@ export type ShopSettings = {
   state: string;
   zip: string;
   timezone: string;
-  opensAt: string;
   // Pickup
   slotsPerHour: number;
   leadTime: string;
@@ -58,7 +50,6 @@ const D = DEFAULT_SHOP_SETTINGS;
 const ShopSettingsSchema = new Schema<ShopSettings>(
   {
     shopName:             { type: String, default: D.shopName },
-    tagline:              { type: String, default: D.tagline },
     description:          { type: String, default: D.description },
     phone:                { type: String, default: D.phone },
     email:                { type: String, default: D.email },
@@ -69,7 +60,6 @@ const ShopSettingsSchema = new Schema<ShopSettings>(
     state:                { type: String, default: D.state },
     zip:                  { type: String, default: D.zip },
     timezone:             { type: String, default: D.timezone },
-    opensAt:              { type: String, default: D.opensAt },
     slotsPerHour:         { type: Number, default: D.slotsPerHour, min: 1, max: 60 },
     leadTime:             { type: String, default: D.leadTime },
     maxBookingWindow:     { type: String, default: D.maxBookingWindow },

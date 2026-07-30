@@ -93,7 +93,12 @@ const makePendingOrderDoc = () => ({
   isPaid: false,
   paidAt: null,
   paymentResult: { status: 'Pending', amountPaid: 0 } as Record<string, unknown>,
-  orderStatus: 'Pending',
+  // 'Order Placed', not 'Pending' — the latter is a PAYMENT status and has
+  // never been a member of ORDER_STATUSES, so the fixture described a shape
+  // production can't hold. Harmless here (the code under test only writes this
+  // field) but it's the same untyped-fixture blind spot that once hid a
+  // misspelled points reason code.
+  orderStatus: 'Order Placed',
   cancellationReason: null,
   cancelledAt: null,
   save: vi.fn(async function (this: { paymentResult: { status: string } }) {

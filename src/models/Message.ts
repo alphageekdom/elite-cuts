@@ -1,10 +1,9 @@
 import { Schema, model, models, type HydratedDocument, type Model, type Types } from 'mongoose';
 import { MESSAGE_STATUSES, type MessageStatus } from '@/lib/messages/constants';
 
-// Re-export so existing consumers (MessagesClient, the [id] route, etc.)
-// keep their import paths working. New code should pull from
-// `@/lib/messages/constants` directly when only the enum/type is needed.
-export { MESSAGE_STATUSES };
+// The type is re-exported for the one consumer that still reaches for it here;
+// everything else imports from `@/lib/messages/constants`, which is where new
+// code should go when it only needs the enum or the type.
 export type { MessageStatus };
 
 export type Message = {
@@ -23,7 +22,9 @@ export type MessageDocument = HydratedDocument<Message>;
 
 const MessageSchema = new Schema<Message>(
   {
-    user:               { type: Schema.Types.ObjectId, ref: 'User', default: null, index: true },
+    // No field-level index — the (user, createdAt) compound below is
+    // user-leading and serves every user-only predicate too.
+    user:               { type: Schema.Types.ObjectId, ref: 'User', default: null },
     authorNameSnapshot: { type: String, trim: true, default: '' },
     subject:            { type: String, required: true, trim: true, maxlength: 120 },
     body:               { type: String, required: true, trim: true, maxlength: 2000 },

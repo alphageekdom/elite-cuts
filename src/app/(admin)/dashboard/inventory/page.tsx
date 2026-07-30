@@ -142,7 +142,7 @@ export default async function AdminInventoryPage() {
 
   const receivedDeliveries: ReceivedDeliveryRow[] = rawReceivedDeliveries.map((d) => ({
     _id: d._id.toString(),
-    receivedAt: ((d as unknown as { updatedAt: Date }).updatedAt ?? d.deliveryDate).toISOString(),
+    receivedAt: (d.updatedAt ?? d.deliveryDate).toISOString(),
     supplier: d.supplier,
     productName: d.productId ? (productNameMap.get(d.productId.toString()) ?? null) : null,
     receivedQty: d.receivedQty ?? null,
