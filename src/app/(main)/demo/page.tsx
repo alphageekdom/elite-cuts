@@ -11,7 +11,7 @@ import DemoGroundRules from '@/components/demo/DemoGroundRules';
 import DemoTour from '@/components/demo/DemoTour';
 import DemoFaq from '@/components/demo/DemoFaq';
 import DemoCtaBand from '@/components/demo/DemoCtaBand';
-import Reveal from '@/components/uielements/Reveal';
+import Reveal from '@/components/ui/Reveal';
 
 export const metadata: Metadata = {
   title: 'Demo',

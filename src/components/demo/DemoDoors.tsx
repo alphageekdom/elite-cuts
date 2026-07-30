@@ -4,8 +4,8 @@ import Image from 'next/image';
 
 import { FOCUS_RING, FOCUS_RING_DARK, CTA_ARROW } from '@/lib/styles';
 import { useDemoStart } from '@/hooks/useDemoStart';
-import ArrowIcon from '@/components/uielements/ArrowIcon';
-import CheckIcon from '@/components/uielements/CheckIcon';
+import ArrowIcon from '@/components/ui/icons/ArrowIcon';
+import CheckIcon from '@/components/ui/icons/CheckIcon';
 
 type Feature = { text: string; tag: string };
 

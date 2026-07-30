@@ -26,10 +26,10 @@ import { EMAIL_RE } from '@/lib/validation';
 
 import { FieldValidationIcon as FieldIcon } from '@/components/auth/FieldValidationIcon';
 import EditorialEyebrow from '@/components/ui/EditorialEyebrow';
-import ArrowIcon from '@/components/uielements/ArrowIcon';
-import ChevronIcon from '@/components/uielements/ChevronIcon';
-import DashboardIcon from '@/components/uielements/DashboardIcon';
-import UserIcon from '@/components/uielements/UserIcon';
+import ArrowIcon from '@/components/ui/icons/ArrowIcon';
+import ChevronIcon from '@/components/ui/icons/ChevronIcon';
+import DashboardIcon from '@/components/ui/icons/DashboardIcon';
+import UserIcon from '@/components/ui/icons/UserIcon';
 import {
   useSignInLockout,
   formatLockoutCountdown,

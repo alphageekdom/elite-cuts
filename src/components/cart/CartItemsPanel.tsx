@@ -9,8 +9,8 @@ import { countCartCuts, countCartItems } from '@/lib/cart/counts';
 import { FOCUS_RING } from '@/lib/styles';
 import CartItemRow from './CartItemRow';
 
-import CheckIcon from '@/components/uielements/CheckIcon';
-import XIcon from '@/components/uielements/XIcon';
+import CheckIcon from '@/components/ui/icons/CheckIcon';
+import XIcon from '@/components/ui/icons/XIcon';
 
 const EmptyState = () => (
   <div className='flex flex-col items-center justify-center px-8 py-16 text-center'>

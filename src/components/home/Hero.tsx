@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 
-import ArrowIcon from '@/components/uielements/ArrowIcon';
+import ArrowIcon from '@/components/ui/icons/ArrowIcon';
 import { CTA_ARROW } from '@/lib/styles';
 import HeroBg from '@/assets/images/hero-butcher.jpg';
 

@@ -2,7 +2,7 @@ import {
   formatRedemptionRate,
   type RewardsPublicSettings,
 } from '@/lib/rewards/calculator';
-import Accordion, { type AccordionItem } from '@/components/uielements/Accordion';
+import Accordion, { type AccordionItem } from '@/components/ui/Accordion';
 
 type Props = { settings: RewardsPublicSettings };
 

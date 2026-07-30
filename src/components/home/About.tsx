@@ -1,7 +1,7 @@
 import Image from 'next/image';
 
 import ShopImage from '@/assets/images/butcher-shop.jpg';
-import Reveal from '@/components/uielements/Reveal';
+import Reveal from '@/components/ui/Reveal';
 
 import SectionEyebrow from './SectionEyebrow';
 import { FOUNDED_YEAR } from '@/lib/shop-settings/founding';

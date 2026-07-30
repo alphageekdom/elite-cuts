@@ -1,4 +1,4 @@
-import Reveal from '@/components/uielements/Reveal';
+import Reveal from '@/components/ui/Reveal';
 import SectionHead from '@/components/ui/SectionHead';
 import type { ShopSettings } from '@/models/ShopSettings';
 import { formatRedemptionRate } from '@/lib/rewards/calculator';

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import Reveal from '@/components/uielements/Reveal';
+import Reveal from '@/components/ui/Reveal';
 import SectionHead from '@/components/ui/SectionHead';
 import RewardsFaq from './RewardsFaq';
 import type { RewardsPublicSettings } from '@/lib/rewards/calculator';

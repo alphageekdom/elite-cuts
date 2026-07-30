@@ -1,5 +1,5 @@
 import StoreInfoModal from '@/components/ui/StoreInfoModal';
-import Reveal from '@/components/uielements/Reveal';
+import Reveal from '@/components/ui/Reveal';
 import { formatDaysUntil, getActiveHoliday } from '@/lib/announcements/holidays';
 
 const titleCaseCut = (slug: string) =>

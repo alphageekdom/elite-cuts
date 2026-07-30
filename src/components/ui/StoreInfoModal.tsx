@@ -14,7 +14,7 @@ import {
   formatShopCityStateZip,
 } from '@/lib/shop-settings/format';
 import SectionLabel from '@/components/ui/SectionLabel';
-import CheckIcon from '@/components/uielements/CheckIcon';
+import CheckIcon from '@/components/ui/icons/CheckIcon';
 import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 

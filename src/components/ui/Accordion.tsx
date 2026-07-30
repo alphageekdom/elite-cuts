@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 import { FOCUS_RING } from '@/lib/styles';
-import PlusIcon from '@/components/uielements/PlusIcon';
+import PlusIcon from '@/components/ui/icons/PlusIcon';
 
 export type AccordionItem = {
   q: string;

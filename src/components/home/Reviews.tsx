@@ -1,4 +1,4 @@
-import Reveal from '@/components/uielements/Reveal';
+import Reveal from '@/components/ui/Reveal';
 
 import ReviewCard, { type ReviewCardProps } from './ReviewCard';
 import SectionEyebrow from './SectionEyebrow';

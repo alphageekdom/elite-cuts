@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 import { FOCUS_RING_DARK, CTA_ARROW } from '@/lib/styles';
 import { useDemoStart } from '@/hooks/useDemoStart';
-import ArrowIcon from '@/components/uielements/ArrowIcon';
+import ArrowIcon from '@/components/ui/icons/ArrowIcon';
 
 // Closing repeat of the two doors, for anyone who read the whole page rather
 // than picking at the top. Shares `useDemoStart` with DemoDoors so a click here

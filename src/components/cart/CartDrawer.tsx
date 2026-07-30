@@ -29,12 +29,12 @@ import { formatCartCount } from '@/lib/cart/counts';
 import { computeAward } from '@/lib/rewards/calculator';
 import { FOCUS_RING } from '@/lib/styles';
 import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
-import ArrowIcon from '@/components/uielements/ArrowIcon';
-import CartIcon from '@/components/uielements/CartIcon';
-import CheckIcon from '@/components/uielements/CheckIcon';
-import MinusIcon from '@/components/uielements/MinusIcon';
-import PlusIcon from '@/components/uielements/PlusIcon';
-import XIcon from '@/components/uielements/XIcon';
+import ArrowIcon from '@/components/ui/icons/ArrowIcon';
+import CartIcon from '@/components/ui/icons/CartIcon';
+import CheckIcon from '@/components/ui/icons/CheckIcon';
+import MinusIcon from '@/components/ui/icons/MinusIcon';
+import PlusIcon from '@/components/ui/icons/PlusIcon';
+import XIcon from '@/components/ui/icons/XIcon';
 
 type Props = {
   isOpen: boolean;

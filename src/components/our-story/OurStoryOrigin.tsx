@@ -1,5 +1,5 @@
 import SectionHead from '@/components/ui/SectionHead';
-import Reveal from '@/components/uielements/Reveal';
+import Reveal from '@/components/ui/Reveal';
 import { FOUNDED_YEAR } from '@/lib/shop-settings/founding';
 
 type Props = {

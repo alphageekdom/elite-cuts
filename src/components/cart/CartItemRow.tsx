@@ -13,10 +13,10 @@ import { fmtPrice } from '@/lib/pricing';
 import { LOW_STOCK_THRESHOLD, MAX_PER_LINE } from '@/lib/shop-settings/config';
 import { FOCUS_RING } from '@/lib/styles';
 
-import CheckIcon from '@/components/uielements/CheckIcon';
-import MinusIcon from '@/components/uielements/MinusIcon';
-import PlusIcon from '@/components/uielements/PlusIcon';
-import XIcon from '@/components/uielements/XIcon';
+import CheckIcon from '@/components/ui/icons/CheckIcon';
+import MinusIcon from '@/components/ui/icons/MinusIcon';
+import PlusIcon from '@/components/ui/icons/PlusIcon';
+import XIcon from '@/components/ui/icons/XIcon';
 
 type Props = {
   line: CartLine;

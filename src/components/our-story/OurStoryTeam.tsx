@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import SectionHead from '@/components/ui/SectionHead';
-import Reveal from '@/components/uielements/Reveal';
+import Reveal from '@/components/ui/Reveal';
 
 const TEAM = [
   {

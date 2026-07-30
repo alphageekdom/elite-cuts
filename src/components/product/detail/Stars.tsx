@@ -1,7 +1,7 @@
 // Shared star row for the product detail page. Server-safe (no hooks) so both
 // the server page shell and the client review list render the same glyph.
 
-import StarIcon from '@/components/uielements/StarIcon';
+import StarIcon from '@/components/ui/icons/StarIcon';
 
 const SIZES = { sm: 'h-3.5 w-3.5', md: 'h-4 w-4', lg: 'h-5 w-5' } as const;
 

@@ -11,7 +11,7 @@ import { countCartCuts } from '@/lib/cart/counts';
 import { formatReadyIn } from '@/lib/shop-settings/pickup-format';
 import { formatDaysUntil } from '@/lib/announcements/holidays';
 import StoreInfoModal from '@/components/ui/StoreInfoModal';
-import ArrowIcon from '@/components/uielements/ArrowIcon';
+import ArrowIcon from '@/components/ui/icons/ArrowIcon';
 import { CTA_ARROW, FOCUS_RING } from '@/lib/styles';
 
 type Props = {

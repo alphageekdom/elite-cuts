@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { CUTLIST_ORDER_STATUS_PILL } from '@/lib/orders/status';
 import type { CutListRow, CutListSummary } from '@/lib/admin/cut-list';
-import ArrowIcon from '@/components/uielements/ArrowIcon';
+import ArrowIcon from '@/components/ui/icons/ArrowIcon';
 
 type Props = {
   rows: CutListRow[];

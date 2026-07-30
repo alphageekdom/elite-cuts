@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import Reveal from '@/components/uielements/Reveal';
+import Reveal from '@/components/ui/Reveal';
 import {
   formatPhoneHref,
   formatShopCityStateZip,

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 import LinkPendingDot from '@/components/product/LinkPendingDot';
-import ChevronIcon from '@/components/uielements/ChevronIcon';
+import ChevronIcon from '@/components/ui/icons/ChevronIcon';
 
 type CatalogPaginationProps = {
   page: number;

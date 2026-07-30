@@ -13,11 +13,11 @@ import {
   isEmailValid,
   isNameValid,
   isPhoneValid,
-} from '@/lib/checkoutValidation';
+} from '@/lib/checkout/validation';
 import { formatShopAddress } from '@/lib/shop-settings/format';
 import { PICKUP_LOCATION_SEPARATOR } from '@/lib/shop-settings/pickup-slots';
-import ArrowIcon from '@/components/uielements/ArrowIcon';
-import SpinnerIcon from '@/components/uielements/SpinnerIcon';
+import ArrowIcon from '@/components/ui/icons/ArrowIcon';
+import SpinnerIcon from '@/components/ui/icons/SpinnerIcon';
 
 const PlaceOrderButton = () => {
   const { cartItems } = useCartContext();

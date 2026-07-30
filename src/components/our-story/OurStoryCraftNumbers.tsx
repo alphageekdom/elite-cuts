@@ -1,4 +1,4 @@
-import Reveal from '@/components/uielements/Reveal';
+import Reveal from '@/components/ui/Reveal';
 import { PARTNER_COUNT } from '@/lib/our-story/partners';
 import { CASE_HOURS_MAX } from '@/lib/our-story/standards';
 

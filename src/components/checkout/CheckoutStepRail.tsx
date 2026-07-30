@@ -1,6 +1,6 @@
 import { Fragment } from 'react';
 
-import CheckIcon from '@/components/uielements/CheckIcon';
+import CheckIcon from '@/components/ui/icons/CheckIcon';
 
 type Props = { currentStep: 2 | 3 };
 

@@ -1,5 +1,5 @@
-import CheckIcon from '@/components/uielements/CheckIcon';
-import XIcon from '@/components/uielements/XIcon';
+import CheckIcon from '@/components/ui/icons/CheckIcon';
+import XIcon from '@/components/ui/icons/XIcon';
 
 // The three structured blocks the Privacy page uses inside `LegalDocument`
 // section bodies. They live here rather than in the page file so the page
