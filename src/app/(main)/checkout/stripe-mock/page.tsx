@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import mongoose from 'mongoose';
@@ -7,6 +8,12 @@ import Order from '@/models/Order';
 import { getSessionUser } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
+
+// The only page in the tree without a title until now — the tab read the
+// site-wide default, which looked broken next to the checkout it came from.
+export const metadata: Metadata = {
+  title: 'Complete your payment',
+};
 
 type Props = {
   searchParams: Promise<{

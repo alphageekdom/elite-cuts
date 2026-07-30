@@ -6,6 +6,7 @@ import { Fraunces, Instrument_Sans, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 
 import AuthProvider from '@/components/AuthProvider';
+import InitialFragmentScroll from '@/components/InitialFragmentScroll';
 import { CartProvider } from '@/context/CartContext';
 import { ShopSettingsProvider } from '@/context/ShopSettingsContext';
 import { getShopSettings } from '@/lib/shop-settings/queries';
@@ -71,6 +72,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             </ShopSettingsProvider>
           </CartProvider>
         </AuthProvider>
+        <InitialFragmentScroll />
         <Toaster richColors position='bottom-right' />
       </body>
     </html>
