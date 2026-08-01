@@ -371,10 +371,19 @@ export async function seedDemoCustomerData(
   savedCuts: Types.ObjectId[];
   addresses: DemoAddressSpec[];
 }> {
-  const orders = await seedDemoOrders(demoCustomerId, now);
+  // Cards before orders, deliberately. The caller's ledger write only runs
+  // after this whole function returns, and an account holding seeded orders
+  // with the fallback single-row ledger contradicts itself on the rewards
+  // tab. Ordering the fallible writes so the orders insert is the LAST one
+  // shrinks that incoherent window to exactly one statement: a throw at the
+  // cards leaves an empty-but-coherent account, a throw at the orders leaves
+  // cards-but-no-orders (also coherent), and only a failure of the caller's
+  // own final write can now produce the contradiction. `seedDemoCards` takes
+  // the customer id alone — nothing about it depends on the orders existing.
+  const savedCardsSeeded = await seedDemoCards(demoCustomerId, now);
   const savedCuts = await resolveDemoSavedCuts();
   const addresses = buildDemoAddresses();
-  const savedCardsSeeded = await seedDemoCards(demoCustomerId, now);
+  const orders = await seedDemoOrders(demoCustomerId, now);
 
   return {
     counts: {

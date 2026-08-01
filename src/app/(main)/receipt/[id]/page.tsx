@@ -187,12 +187,27 @@ export default async function ReceiptPage({ params }: Props) {
               <div className="font-display text-[18px] font-medium tracking-tight mb-1">
                 {order.fulfillmentType === 'delivery' ? 'Delivery' : 'Pickup at shop'}
               </div>
-              {order.fulfillmentType === 'delivery' && order.deliveryAddress ? (
-                <div className="text-[13px] text-ink-soft leading-relaxed">
-                  {order.deliveryAddress.address1}
-                  {order.deliveryAddress.address2 && <>, {order.deliveryAddress.address2}</>}
-                  <br />{order.deliveryAddress.city}, {order.deliveryAddress.state} {order.deliveryAddress.zip}
-                </div>
+              {order.fulfillmentType === 'delivery' ? (
+                order.deliveryAddress ? (
+                  <div className="text-[13px] text-ink-soft leading-relaxed">
+                    {order.deliveryAddress.address1}
+                    {order.deliveryAddress.address2 && <>, {order.deliveryAddress.address2}</>}
+                    <br />{order.deliveryAddress.city}, {order.deliveryAddress.state} {order.deliveryAddress.zip}
+                  </div>
+                ) : (
+                  // Almost always a customer who deleted their account — the
+                  // deletion cascade removes the address. Deliberately NOT
+                  // stated as such: the checkout route stores whatever it is
+                  // given and doesn't require an address for delivery, so a
+                  // malformed order can reach this branch too, and naming a
+                  // cause the data can't guarantee is how a page ends up
+                  // lying. Falling through to the shop's own street (the old
+                  // behaviour) printed the counter's address under a
+                  // "Delivery" heading, which was worse.
+                  <div className="text-[13px] text-muted leading-relaxed">
+                    No delivery address on file
+                  </div>
+                )
               ) : (
                 <div className="text-[13px] text-ink-soft leading-relaxed">
                   {settings.street}<br />{shopCityStateZip}

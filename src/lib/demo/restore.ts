@@ -89,9 +89,15 @@ async function restoreProducts(
 
   let deleted = 0;
   if (demoCreated.length > 0) {
-    await deleteCloudinaryImages(demoCreated.flatMap((p) => p.images ?? []));
+    // Database first, assets second. Destroying the images before the rows
+    // that reference them means a failure in between leaves live products
+    // pointing at assets that no longer exist. Reversed, the same failure
+    // leaks an orphaned asset instead — the cheaper of the two, and one the
+    // next successful run doesn't need to know about.
+    const orphaned = demoCreated.flatMap((p) => p.images ?? []);
     const res = await Product.deleteMany({ createdBy: demoAdminId });
     deleted = res.deletedCount ?? 0;
+    await deleteCloudinaryImages(orphaned);
   }
 
   let restored = 0;
@@ -110,7 +116,11 @@ async function restoreProducts(
     // Any Cloudinary image the demo admin uploaded onto a seeded product is
     // about to be replaced by the seed's local filename — purge it so the
     // asset doesn't leak. `deleteCloudinaryImages` skips local filenames.
-    await deleteCloudinaryImages(existing.images ?? []);
+    //
+    // Captured now, destroyed after the save, for the same reason as the
+    // delete branch above: destroying first leaves a live catalog product
+    // pointing at a dead image whenever the save fails.
+    const staleImages = [...(existing.images ?? [])];
 
     // Assign-then-save rather than `updateOne`, so the pre-validate hook
     // re-stamps `price`, `unit` and the display labels from the canonical
@@ -124,6 +134,7 @@ async function restoreProducts(
     const { rating: _seedRating, ...restorable } = seed;
     existing.set({ ...seedProductDefaults(), ...restorable });
     await existing.save();
+    await deleteCloudinaryImages(staleImages);
     restored += 1;
   }
 
@@ -190,10 +201,18 @@ export async function restoreDemoCatalog(): Promise<CatalogCounts> {
   const products = await restoreProducts(demoAdminId);
   const promos = await restorePromos(demoAdminId);
 
-  // Staff has no inbound references, so a clean replace is safe and keeps the
-  // roster exactly as seeded.
-  await StaffMember.deleteMany({});
+  // Staff has no inbound references, so a clean replace keeps the roster
+  // exactly as seeded — but insert BEFORE delete, not after. Nothing in this
+  // orchestrator is wrapped in a transaction and Vercel does not retry a
+  // failed cron, so `deleteMany` followed by a throwing `insertMany` left the
+  // roster empty for a full day: the staff tab, the "On today" card and the
+  // shift drawer's picker all read this collection. Reversed, the same failure
+  // leaves the old roster sitting alongside the new one, which the next line
+  // (and the next night's run) prunes back. `StaffMember` carries no unique
+  // index of any kind, so nothing at the database layer would have caught the
+  // duplication either.
   const staff = await StaffMember.insertMany(DEMO_STAFF);
+  await StaffMember.deleteMany({ _id: { $nin: staff.map((s) => s._id) } });
 
   // The seeded week is replaced wholesale so a restore always lands on the
   // week the demo visitor is actually looking at. Every other week is cleared
@@ -211,19 +230,65 @@ export async function restoreDemoCatalog(): Promise<CatalogCounts> {
   // the cron fire planted the whole week under a key the schedule never
   // queries, leaving the grid, the "On today" card and the staff column empty
   // until the following night.
+  //
+  // Upsert-then-prune rather than delete-then-insert, for the same reason as
+  // the roster above — a wholesale delete followed by a throwing insert blanks
+  // the entire week's calendar until the next night. Insert-first isn't
+  // available here: {weekStart, dayOfWeek, hourIndex} is unique and the
+  // previous run installed this same week, so the new rows would collide with
+  // the old. Upserting on that natural key is the pattern the product and
+  // promo paths already use, and two overlapping runs converge on it instead
+  // of one of them dying on a duplicate key.
   const weekStart = currentWeekStartUtc(DEMO_SHOP_SETTINGS.timezone);
-  await Shift.deleteMany({});
-  const shifts = await Shift.insertMany(
-    DEMO_SHIFTS.map((shift) => ({ ...shift, weekStart })),
+  const seededShifts = DEMO_SHIFTS.map((shift) => ({ ...shift, weekStart }));
+
+  await Shift.bulkWrite(
+    seededShifts.map((shift) => ({
+      updateOne: {
+        filter: { weekStart, dayOfWeek: shift.dayOfWeek, hourIndex: shift.hourIndex },
+        update: { $set: shift },
+        upsert: true,
+      },
+    })),
   );
+
+  const shifts = await Shift.find({
+    weekStart,
+    $or: seededShifts.map(({ dayOfWeek, hourIndex }) => ({ dayOfWeek, hourIndex })),
+  })
+    .select('_id')
+    .lean<{ _id: Types.ObjectId }[]>();
+  await Shift.deleteMany({ _id: { $nin: shifts.map((s) => s._id) } });
 
   // No grill events ship in the seed — an admin can schedule one during a
   // session and the next restore clears it.
+  //
+  // The delete is UNSCOPED, and unlike products and promos that is accepted
+  // rather than an oversight: Event carries no `createdBy` to scope by, and on
+  // this deploy the demo admin is the only author events realistically have.
+  // The accepted collateral is that a real admin's scheduled grill event also
+  // dies at the nightly reset. If this app ever runs with a real authoring
+  // admin alongside the demo, Event needs the `createdBy` treatment products
+  // got — don't discover that here the hard way.
   const eventsRes = await Event.deleteMany({});
 
-  await ShopSettings.findOneAndUpdate({}, DEMO_SHOP_SETTINGS, {
+  // `dormancyWarningMonths` is held back from the restore. Every other setting
+  // reverting nightly is the point of the demo; this one decides whether the
+  // shop auto-deletes inactive customer accounts, and `0` is the documented
+  // way to switch that off. Restoring it put the shop back to 18 months every
+  // night, so an operator who deliberately disabled the sweep had it silently
+  // re-armed and real accounts warned the following morning — the only
+  // restored value that destroys data rather than just resetting a demo.
+  // On a first-ever insert the schema default still applies via
+  // `setDefaultsOnInsert`, so a fresh shop is unaffected.
+  const { dormancyWarningMonths: _operatorControlled, ...restorableSettings } =
+    DEMO_SHOP_SETTINGS;
+
+  // No `returnDocument` option: the result is discarded, so asking for the
+  // after-image (the old `new: true` here, which Mongoose now deprecates)
+  // bought nothing.
+  await ShopSettings.findOneAndUpdate({}, restorableSettings, {
     upsert: true,
-    new: true,
     setDefaultsOnInsert: true,
   });
 

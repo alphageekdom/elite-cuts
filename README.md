@@ -140,7 +140,7 @@ src/
 ├── hooks/                  # useHandleAddToCart, useCartExpiry, useReveal, …
 ├── context/                # CartContext, CheckoutContext, ShopSettingsContext
 ├── actions/                # Server Actions (addresses, promos)
-├── jobs/                   # Cron job bodies (dormancy scan, purge deleted)
+├── jobs/                   # The dormancy scan (other cron bodies live in lib/)
 ├── types/                  # Shared types + next-auth module augmentation
 └── assets/images/          # Imported (non-public) images
 ```
@@ -233,7 +233,9 @@ they cover as `*.test.ts` rather than in a separate tree.
 The core domains are below. The full surface is larger (53 handlers) — checkout
 and Stripe webhooks, orders, promos, reviews, messages, staff, shifts, events,
 inventory/deliveries/stocktakes, notifications, settings, CSV import/export and
-the cron jobs all have their own routes under `src/app/api/`.
+the cron jobs all have their own routes under `src/app/api/`. `vercel.json` is
+the authoritative list of what runs on a schedule and when — three jobs, all
+behind the same bearer gate.
 
 ### Auth
 | Method | Route | Description |
@@ -333,7 +335,7 @@ CLOUDINARY_API_SECRET=
 STRIPE_SECRET_KEY=                  # test-mode only (sk_test_...); unset = local stub
 STRIPE_WEBHOOK_SECRET=
 
-CRON_SECRET=                        # shared bearer for dormancy + purge cron endpoints
+CRON_SECRET=                        # shared bearer for all three cron endpoints (dormancy, purge, demo reset)
 
 NEXT_PUBLIC_API_URL=
 NEXT_PUBLIC_SITE_URL=

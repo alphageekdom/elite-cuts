@@ -8,6 +8,10 @@ import SavedCard from '@/models/SavedCard';
 import Notification from '@/models/Notification';
 import Review from '@/models/Review';
 import Message from '@/models/Message';
+import DemoResetLock, {
+  DEMO_RESET_LOCK_ID,
+  DEMO_RESET_LOCK_STALE_AFTER_MS,
+} from '@/models/DemoResetLock';
 import { recomputeProductRating } from '@/lib/reviews/recompute';
 import {
   restoreDemoCatalog,
@@ -127,6 +131,22 @@ export async function resetDemoCustomerState(): Promise<ResetCounts> {
   ];
   const reviewsRes = await Review.deleteMany({ user: { $in: ownerIds } });
 
+  // Recompute IMMEDIATELY after the delete, not at the end of the wipe. The
+  // worklist above derives from rows the delete just destroyed, so it cannot
+  // be rebuilt: a throw anywhere between the delete and a deferred recompute
+  // used to strand the wrong ratings permanently — the next night's run finds
+  // no authored reviews and recomputes nothing, and the catalog restore
+  // deliberately never writes `rating`. Per-product catch so one transient
+  // failure stales one rating (visibly, in the log) instead of aborting the
+  // ~100 restore round-trips behind it.
+  await Promise.all(
+    reviewedProductIds.map((id) =>
+      recomputeProductRating(id).catch((error) => {
+        console.error('[demo reset] rating recompute failed', id, error);
+      }),
+    ),
+  );
+
   // Owned collections — straight deleteMany by owner field. Two exceptions:
   //
   // Helpful votes don't belong to the demo customer, they live on shared
@@ -218,10 +238,6 @@ export async function resetDemoCustomerState(): Promise<ResetCounts> {
     },
   );
 
-  // Ratings are an average over surviving reviews, so every product the demo
-  // customer reviewed needs one recompute now that those rows are gone.
-  await Promise.all(reviewedProductIds.map((id) => recomputeProductRating(id)));
-
   return {
     ordersDeleted: ordersRes.deletedCount ?? 0,
     cartDeleted: cartRes.deletedCount ?? 0,
@@ -246,7 +262,82 @@ export async function resetDemoCustomerState(): Promise<ResetCounts> {
 //
 // Order matters: the customer wipe recomputes ratings for products it removed
 // reviews from, and the restore must not run before those reviews are gone.
+//
+// Serialised by an advisory lock. The cron and the admin button are
+// independent triggers, Vercel documents occasional duplicate cron
+// invocations, and nothing in the ~110 sequential writes below tolerates an
+// interleaved twin: both runs wipe orders at the start and seed them at the
+// end, so any overlap doubles the order history against a single ledger, and
+// the staff insert-then-prune pair can mutually delete each other's inserts
+// down to an empty roster. The loser of the claim throws rather than
+// pretending to have reset anything — its caller answers 500, which is true:
+// that invocation did no work.
 export async function resetDemoData(): Promise<DemoResetCounts> {
+  await connectDB();
+
+  const now = new Date();
+  try {
+    // Claims a free lock, or steals one whose holder started longer ago than
+    // any live run can still be working (see the model for the arithmetic).
+    // A fresh held lock matches neither branch, so the upsert collides with
+    // the existing `_id` — that duplicate-key throw is the "already running"
+    // signal, not an error in the usual sense.
+    await DemoResetLock.findOneAndUpdate(
+      {
+        _id: DEMO_RESET_LOCK_ID,
+        $or: [
+          { heldSince: null },
+          { heldSince: { $lt: new Date(now.getTime() - DEMO_RESET_LOCK_STALE_AFTER_MS) } },
+        ],
+      },
+      { $set: { heldSince: now } },
+      { upsert: true },
+    );
+  } catch (error) {
+    if (isDuplicateKeyError(error)) {
+      throw new DemoResetInProgressError();
+    }
+    throw error;
+  }
+
+  try {
+    return await runDemoReset();
+  } finally {
+    // Release even when the reset throws — the stale-takeover threshold is
+    // the backstop for a crashed process, not the routine path. A failed
+    // release is swallowed on purpose: surfacing it would mask the reset's
+    // own error, and the stale threshold makes the lock self-healing.
+    await DemoResetLock.updateOne(
+      { _id: DEMO_RESET_LOCK_ID },
+      { $set: { heldSince: null } },
+    ).catch((releaseError) => {
+      console.error('[demo reset] lock release failed', releaseError);
+    });
+  }
+}
+
+// Thrown when another reset holds the advisory lock. A distinct type rather
+// than a plain Error because callers have to tell it apart from a genuine
+// failure — the admin route answers 409 for it and 500 for everything else,
+// and matching on the message text meant a reworded string silently turned
+// the 409 back into a 500 with nobody the wiser.
+export class DemoResetInProgressError extends Error {
+  constructor() {
+    super('A demo reset is already running');
+    this.name = 'DemoResetInProgressError';
+  }
+}
+
+function isDuplicateKeyError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code?: unknown }).code === 11000
+  );
+}
+
+async function runDemoReset(): Promise<DemoResetCounts> {
   const customer = await resetDemoCustomerState();
 
   // No demo customer means the demo seed has never run here, and the catalog

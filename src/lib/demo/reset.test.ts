@@ -31,6 +31,8 @@ const mocks = vi.hoisted(() => ({
   reviewFind: vi.fn(),
   reviewDeleteMany: vi.fn(),
   recomputeProductRating: vi.fn(),
+  lockFindOneAndUpdate: vi.fn(),
+  lockUpdateOne: vi.fn(),
 }));
 
 vi.mock('@/models/User', () => ({
@@ -70,6 +72,15 @@ vi.mock('@/models/Review', () => ({
 
 vi.mock('@/lib/reviews/recompute', () => ({
   recomputeProductRating: mocks.recomputeProductRating,
+}));
+
+vi.mock('@/models/DemoResetLock', () => ({
+  default: {
+    findOneAndUpdate: mocks.lockFindOneAndUpdate,
+    updateOne: mocks.lockUpdateOne,
+  },
+  DEMO_RESET_LOCK_ID: 'demo-reset',
+  DEMO_RESET_LOCK_STALE_AFTER_MS: 10 * 60 * 1000,
 }));
 
 // The catalog half is exercised in ./restore.test.ts; here it only needs to
@@ -147,6 +158,10 @@ const mockCustomerThenAdmin = (customer: unknown, admin: unknown = null) => {
 
 beforeEach(() => {
   Object.values(mocks).forEach((fn) => fn.mockReset());
+  // The real helper returns a Promise and the reset attaches a per-item
+  // `.catch` to it; a bare `vi.fn()` resolving `undefined` would diverge from
+  // that contract and blow up on the attach.
+  mocks.recomputeProductRating.mockResolvedValue(undefined);
 });
 
 describe('resetDemoCustomerState — demo customer not found', () => {
@@ -386,6 +401,39 @@ describe('resetDemoCustomerState — authored reviews', () => {
     const recomputed = mocks.recomputeProductRating.mock.calls.map((c) => c[0]);
     expect(recomputed.sort()).toEqual(['brisket-id', 'ribeye-id']);
   });
+
+  // The worklist is derived from rows the delete destroys, so it cannot be
+  // rebuilt on a later run: a throw between the delete and a deferred
+  // recompute stranded the wrong ratings PERMANENTLY (the next run finds no
+  // authored reviews, and the catalog restore deliberately never writes
+  // `rating`). Recomputing immediately shrinks that window to nothing.
+  it('recomputes immediately after the delete, not at the end of the wipe', async () => {
+    const { resetDemoCustomerState } = await import('./reset');
+    await resetDemoCustomerState();
+
+    expect(mocks.recomputeProductRating.mock.invocationCallOrder[0]).toBeGreaterThan(
+      mocks.reviewDeleteMany.mock.invocationCallOrder[0],
+    );
+    // Before the owned-collection wipe — anything after it is a chance to
+    // throw in between.
+    expect(mocks.recomputeProductRating.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.orderDeleteMany.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('lets one failed recompute stale a single rating instead of aborting the reset', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    mocks.recomputeProductRating
+      .mockRejectedValueOnce(new Error('transient'))
+      .mockResolvedValue(undefined);
+
+    const { resetDemoCustomerState } = await import('./reset');
+    await expect(resetDemoCustomerState()).resolves.toMatchObject({ userReset: true });
+
+    // The ~100 round-trips of catalog restore behind this must not be gated
+    // on a two-round-trip cleanup step.
+    expect(mocks.orderDeleteMany).toHaveBeenCalled();
+  });
 });
 
 // ── Top-level orchestrator ─────────────────────────────────────────────
@@ -428,6 +476,64 @@ describe('resetDemoData', () => {
     });
     mocks.reviewDeleteMany.mockResolvedValue({ deletedCount: 0 });
     mocks.userUpdateOne.mockResolvedValue({ modifiedCount: 1 });
+    mocks.lockFindOneAndUpdate.mockResolvedValue({ _id: 'demo-reset' });
+    mocks.lockUpdateOne.mockResolvedValue({ modifiedCount: 1 });
+  });
+
+  it('claims the advisory lock before touching anything, and releases it after', async () => {
+    const { resetDemoData } = await import('./reset');
+    await resetDemoData();
+
+    // Claim strictly precedes the first destructive call — the lock exists
+    // because two overlapping runs interleave the wipe/seed pairs into
+    // doubled orders or an empty roster.
+    expect(mocks.lockFindOneAndUpdate.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.orderDeleteMany.mock.invocationCallOrder[0],
+    );
+    expect(mocks.lockUpdateOne).toHaveBeenCalledWith(
+      { _id: 'demo-reset' },
+      { $set: { heldSince: null } },
+    );
+  });
+
+  it('refuses to run when another reset holds the lock', async () => {
+    // The claim's upsert colliding with the held lock's _id IS the signal.
+    mocks.lockFindOneAndUpdate.mockRejectedValue(
+      Object.assign(new Error('E11000 duplicate key'), { code: 11000 }),
+    );
+
+    const { resetDemoData, DemoResetInProgressError } = await import('./reset');
+    // A distinct type, not a message: the admin route answers 409 for this
+    // and 500 for everything else, and it used to tell them apart with a
+    // regex over the message text.
+    await expect(resetDemoData()).rejects.toBeInstanceOf(DemoResetInProgressError);
+
+    // The loser must do NO work — a half-run is the exact corruption the
+    // lock exists to prevent.
+    expect(mocks.orderDeleteMany).not.toHaveBeenCalled();
+    expect(mocks.userUpdateOne).not.toHaveBeenCalled();
+  });
+
+  it('releases the lock even when the reset itself throws', async () => {
+    mocks.orderDeleteMany.mockRejectedValue(new Error('mongo hiccup'));
+
+    const { resetDemoData } = await import('./reset');
+    await expect(resetDemoData()).rejects.toThrow('mongo hiccup');
+
+    expect(mocks.lockUpdateOne).toHaveBeenCalledWith(
+      { _id: 'demo-reset' },
+      { $set: { heldSince: null } },
+    );
+  });
+
+  it('does not mistake an ordinary claim failure for a held lock', async () => {
+    // Only a duplicate-key collision means "already running". Anything else
+    // (connection refused, timeout) must surface as itself, not as the
+    // misleading "already running" message.
+    mocks.lockFindOneAndUpdate.mockRejectedValue(new Error('connection refused'));
+
+    const { resetDemoData } = await import('./reset');
+    await expect(resetDemoData()).rejects.toThrow('connection refused');
   });
 
   it('merges the customer wipe and the catalog restore into one envelope', async () => {
