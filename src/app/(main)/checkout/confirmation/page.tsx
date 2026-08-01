@@ -303,28 +303,40 @@ export default async function ConfirmationPage({ searchParams }: Props) {
                   </>
                 ) : (
                   <>
-                    <p className='mt-3 text-[16px] leading-snug text-ink'>
-                      {order.deliveryAddress?.address1}
-                      {order.deliveryAddress?.address2
-                        ? `, ${order.deliveryAddress.address2}`
-                        : ''}
-                    </p>
-                    <p className='mt-1 text-[14px] leading-relaxed text-ink-soft'>
-                      {/* "San Diego, CA 92102" — the zip follows the state on a
-                          space, not another comma, which is what the previous
-                          blanket join produced. */}
-                      {[
-                        order.deliveryAddress?.city,
-                        [
-                          order.deliveryAddress?.state,
-                          order.deliveryAddress?.zip,
-                        ]
-                          .filter(Boolean)
-                          .join(' '),
-                      ]
-                        .filter(Boolean)
-                        .join(', ')}
-                    </p>
+                    {/* Almost always a customer who deleted their account —
+                        the deletion cascade removes the address, and it is
+                        reachable here because anonymising sets `user` to null
+                        and a user-less order is readable by anyone holding its
+                        id. The copy stays neutral because the checkout route
+                        doesn't require an address for delivery, so a malformed
+                        order lands here too. */}
+                    {order.deliveryAddress ? (
+                      <>
+                        <p className='mt-3 text-[16px] leading-snug text-ink'>
+                          {order.deliveryAddress.address1}
+                          {order.deliveryAddress.address2
+                            ? `, ${order.deliveryAddress.address2}`
+                            : ''}
+                        </p>
+                        <p className='mt-1 text-[14px] leading-relaxed text-ink-soft'>
+                          {/* "San Diego, CA 92102" — the zip follows the state on a
+                              space, not another comma, which is what the previous
+                              blanket join produced. */}
+                          {[
+                            order.deliveryAddress.city,
+                            [order.deliveryAddress.state, order.deliveryAddress.zip]
+                              .filter(Boolean)
+                              .join(' '),
+                          ]
+                            .filter(Boolean)
+                            .join(', ')}
+                        </p>
+                      </>
+                    ) : (
+                      <p className='mt-3 text-[14px] leading-relaxed text-muted'>
+                        No delivery address on file
+                      </p>
+                    )}
                     <p className='mt-3 font-mono text-[11.5px] tracking-[0.06em] text-muted'>
                       ${DELIVERY_FEE} · SAME DAY
                     </p>

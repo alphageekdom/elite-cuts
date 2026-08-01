@@ -3,8 +3,16 @@ import { withCronSecret } from '@/lib/api-handler';
 
 export const dynamic = 'force-dynamic';
 
+// The heaviest of the three crons by a wide margin — roughly 110 sequential
+// round-trips, most of them a per-product find-and-save loop. Declared rather
+// than inherited so the ceiling survives a change to the project default.
+// 300s is the default on every plan and the ceiling on Hobby; Pro and
+// Enterprise can go higher, so this is a safe value everywhere rather than a
+// platform maximum.
+export const maxDuration = 300;
+
 // Nightly demo reset (Phase C). Clears the demo customer's owned state
-// (orders, cart, saved cards, notifications, reviews), restores the shared
+// (orders, cart, saved cards, messages, notifications, reviews), restores the shared
 // catalog and shop config from the seed snapshot, then re-seeds the account:
 // order history, saved cuts, saved cards, addresses and the points ledger.
 //

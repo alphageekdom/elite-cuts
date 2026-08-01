@@ -168,9 +168,11 @@ export default async function TermsPage() {
         // has just seen an order processed by any commerce reading of the
         // word. What never happens is the physical half.
         body: `${shopName} is a portfolio project, not a storefront. No order is ever filled, no money changes hands, and no meat is ever cut. The terms below are a plain-language placeholder so this link goes somewhere honest — they are not a real legal agreement.`,
-        // No clock time here. The reset cron runs at 08:00 UTC, which is 3am
-        // in winter and 4am in summer, so naming a local hour is wrong for
-        // most of the year. "Nightly" is true year-round.
+        // No clock time here. The reset cron runs at 08:00 UTC, which for a
+        // shop configured America/Los_Angeles is midnight PST in winter and
+        // 1am PDT in summer — so naming a local hour is wrong for half the
+        // year. "Nightly" is true year-round. (The 3am/4am figure this comment
+        // used to give is Eastern, which is not where the shop is.)
         pills: [
           'No card is ever charged',
           'No order reaches a real counter',

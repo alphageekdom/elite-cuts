@@ -111,7 +111,15 @@ export function useCustomersTable(initialCustomers: CustomerTableRow[]) {
         toast.error(message ?? 'Failed to cancel deletion');
         return;
       }
-      patchRow(id, { deletedAt: undefined, deletionScheduledFor: undefined });
+      // `restoreUser` clears the dormancy warning and stamps activity as well
+      // as lifting the deletion — patch all four or the row flips straight
+      // from "Deletion scheduled" to the Dormant badge.
+      patchRow(id, {
+        deletedAt: undefined,
+        deletionScheduledFor: undefined,
+        dormancyWarnedAt: undefined,
+        lastActiveAt: new Date().toISOString(),
+      });
       toast.success('Deletion cancelled');
     } catch {
       toast.error('Failed to cancel deletion');
@@ -130,7 +138,16 @@ export function useCustomersTable(initialCustomers: CustomerTableRow[]) {
         toast.error(message ?? 'Failed to cancel dormancy cleanup');
         return;
       }
-      patchRow(id, { dormancyWarnedAt: undefined });
+      // Only patch what the server actually wrote. `clearDormancyWarning` is
+      // a no-op on an account carrying no warning, so an unconditional patch
+      // would stamp an activity date that exists nowhere but this table.
+      const { data } = await res.json().catch(() => ({ data: { wasWarned: true } }));
+      if (data?.wasWarned) {
+        patchRow(id, {
+          dormancyWarnedAt: undefined,
+          lastActiveAt: new Date().toISOString(),
+        });
+      }
       toast.success('Dormancy cleanup cancelled');
     } catch {
       toast.error('Failed to cancel dormancy cleanup');

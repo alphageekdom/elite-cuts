@@ -255,21 +255,29 @@ export default async function PrivacyPage() {
             ]}
           />
           {/* The section this page most needed and did not have. "Erased
-              permanently" was the old wording, and it was not true. */}
+              permanently" was the old wording, and it was not true.
+              Two later corrections, both from the scheduled-jobs audit: this
+              said "one line" when the audit trail is several entries kept
+              indefinitely, and it said "everything else goes" while the
+              delivery address and any order note stayed on past orders. The
+              address is now actually removed, so the claim is true and the
+              list names it. */}
           <LegalParagraph>
             Deleting an account isn&apos;t a clean wipe, and it&apos;s worth
             being straight about why. Past orders stay on the shop&apos;s books
             with the name, email and phone that were on them, because a sales
             record belongs to the shop as much as to you. Reviews and messages
             you wrote stay published under your name, detached from any account.
-            And one line recording that the deletion happened — with your email
-            on it — is kept so the action can be audited afterwards.
+            And a short audit record of the deletion is kept indefinitely so the
+            action can be accounted for afterwards — each entry carries your
+            email, and where an admin deleted the account rather than you, the
+            reason they typed is kept on it too.
           </LegalParagraph>
           <LegalParagraph>
             Everything else goes: the account itself, your cart, your saved
             cards, your saved cuts, your rewards balance and points history,
-            your notifications, and the record of which reviews you marked
-            helpful.
+            your notifications, the record of which reviews you marked helpful,
+            and the delivery address and any note you left on an order.
           </LegalParagraph>
           {dormancyEnabled && (
             <LegalParagraph>

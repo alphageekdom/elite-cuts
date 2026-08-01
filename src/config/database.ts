@@ -38,7 +38,18 @@ const connectDB = async (): Promise<Mongoose> => {
       // Fail fast on queries when disconnected instead of buffering indefinitely.
       bufferCommands: false,
       serverSelectionTimeoutMS: 5000,
-      // Skip sync index builds at startup in production; rely on a deploy-time index step instead.
+      // Skip sync index builds at startup in production — they add latency to
+      // every cold start and can block behind a long build.
+      //
+      // The original comment here said to "rely on a deploy-time index step
+      // instead". No such step exists: there is no index script and no CI
+      // stage, and the only model that syncs its own indexes is Review, which
+      // does it at module load. So on a production cluster the declared
+      // indexes exist only if someone built them by hand. That matters beyond
+      // query speed — the Product slug and Shift compound indexes are unique,
+      // and the demo restore leans on them to make concurrent runs collide
+      // loudly rather than duplicate silently. Confirm they exist before
+      // treating this as covered.
       autoIndex: process.env.NODE_ENV !== 'production',
     });
   }

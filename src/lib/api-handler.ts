@@ -121,9 +121,19 @@ export function withAuth<TParams = Record<string, string>>(
  * under `{ message: successMessage, ...result }` on success.
  */
 type CronJob<TResult> = () => Promise<TResult>;
+/**
+ * Wraps a scheduled job behind the shared bearer gate.
+ *
+ * `opts.failureCount` is how a job that collects per-item failures and keeps
+ * going tells the wrapper the run was not clean. Jobs that either succeed or
+ * throw outright (the demo reset) omit it. Reading a conventional key off the
+ * result was the alternative and was rejected — the job knows what a failure
+ * means, the generic wrapper does not.
+ */
 export function withCronSecret<TResult extends Record<string, unknown>>(
   job: CronJob<TResult>,
   successMessage: string,
+  opts?: { failureCount?: (result: TResult) => number },
 ): RouteHandler {
   return async (request) => {
     const secret = process.env.CRON_SECRET;
@@ -147,11 +157,29 @@ export function withCronSecret<TResult extends Record<string, unknown>>(
     if (!ok) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
+    // Tagged with the route path so a log triage can tell the three schedules
+    // apart. The wrapper is shared, so a bare '[cron]' left a 500 unattributable
+    // without correlating timestamps against vercel.json.
+    const tag = `[cron ${request.nextUrl.pathname}]`;
     try {
       const result = await job();
+      const failed = opts?.failureCount?.(result) ?? 0;
+      if (failed > 0) {
+        // Deliberately a 500, not a 207. These jobs collect per-item failures
+        // and continue, so a run where every single user failed used to answer
+        // 200 with the counts buried in the body — indistinguishable, in the
+        // cron log and to any status-based monitor, from a clean run. 207 is
+        // still 2xx and would read as green in exactly the same way. The body
+        // keeps the counts so the detail is there once someone looks.
+        console.error(`${tag} completed with ${failed} failure(s)`);
+        return NextResponse.json(
+          { message: `${successMessage} — ${failed} failure(s)`, ...result },
+          { status: 500 },
+        );
+      }
       return NextResponse.json({ message: successMessage, ...result });
     } catch (error) {
-      console.error('[cron]', error);
+      console.error(tag, error);
       return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
     }
   };

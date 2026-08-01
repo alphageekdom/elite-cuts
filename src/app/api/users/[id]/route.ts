@@ -304,7 +304,12 @@ export const PATCH = withAdminNonDemo<{ id: string }>(async (request, ctx, perfo
 
     if (body?.action === 'cancel_dormancy') {
       const result = await clearDormancyWarning(id, { actor: 'admin', performedBy });
+      // `wasWarned` rides along structurally, not just in the prose: the
+      // helper is a no-op on an unwarned account, and the client's optimistic
+      // row patch has to know that or it stamps an activity date the server
+      // never wrote.
       return NextResponse.json({
+        data: { wasWarned: result.wasWarned },
         message: result.wasWarned
           ? 'Dormancy warning cleared'
           : 'No dormancy warning was set',

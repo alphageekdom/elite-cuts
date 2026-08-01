@@ -44,7 +44,8 @@ const mocks = vi.hoisted(() => ({
   staffDeleteMany: vi.fn(),
   staffInsertMany: vi.fn(),
   shiftDeleteMany: vi.fn(),
-  shiftInsertMany: vi.fn(),
+  shiftBulkWrite: vi.fn(),
+  shiftFind: vi.fn(),
   eventDeleteMany: vi.fn(),
   settingsFindOneAndUpdate: vi.fn(),
   settingsFindOne: vi.fn(),
@@ -80,7 +81,8 @@ vi.mock('@/models/StaffMember', () => ({
 vi.mock('@/models/Shift', () => ({
   default: {
     deleteMany: mocks.shiftDeleteMany,
-    insertMany: mocks.shiftInsertMany,
+    bulkWrite: mocks.shiftBulkWrite,
+    find: mocks.shiftFind,
   },
 }));
 
@@ -136,10 +138,13 @@ function stubHappyPath({ withDemoAdmin = true } = {}): void {
   mocks.promoDeleteMany.mockResolvedValue({ deletedCount: 0 });
   mocks.promoFindOneAndUpdate.mockResolvedValue({});
   mocks.staffDeleteMany.mockResolvedValue({ deletedCount: 6 });
-  mocks.staffInsertMany.mockResolvedValue(new Array(DEMO_STAFF.length).fill({}));
-  mocks.shiftDeleteMany.mockResolvedValue({ deletedCount: 49 });
-  mocks.shiftInsertMany.mockResolvedValue(
-    new Array(DEMO_SHIFTS.length).fill({}),
+  mocks.staffInsertMany.mockResolvedValue(
+    DEMO_STAFF.map((_, i) => ({ _id: `staff-${i}` })),
+  );
+  mocks.shiftDeleteMany.mockResolvedValue({ deletedCount: 3 });
+  mocks.shiftBulkWrite.mockResolvedValue({});
+  mocks.shiftFind.mockReturnValue(
+    selectLeanChain(DEMO_SHIFTS.map((_, i) => ({ _id: `shift-${i}` }))),
   );
   mocks.eventDeleteMany.mockResolvedValue({ deletedCount: 1 });
   mocks.settingsFindOneAndUpdate.mockResolvedValue({});
@@ -356,19 +361,39 @@ describe('restoreDemoCatalog — promos, staff, shifts, settings', () => {
     const { restoreDemoCatalog } = await import('./restore');
     await restoreDemoCatalog();
 
-    // Unscoped delete on purpose. The schedule lets an admin navigate to any
-    // week and book there, so a week-scoped delete left a demo-planted shift
-    // in a past week alive through every future restore — permanently, since
-    // the seed only ever revisits the current week.
-    expect(mocks.shiftDeleteMany).toHaveBeenCalledWith({});
+    // The prune is unscoped by week on purpose. The schedule lets an admin
+    // navigate to any week and book there, so a week-scoped delete left a
+    // demo-planted shift in a past week alive through every future restore —
+    // permanently, since the seed only ever revisits the current week.
+    // Everything outside the freshly-upserted set goes.
+    expect(mocks.shiftDeleteMany).toHaveBeenCalledWith({
+      _id: { $nin: DEMO_SHIFTS.map((_, i) => `shift-${i}`) },
+    });
 
     // The seed carries no weekStart of its own, so the reseeded week is
     // always the one the visitor is looking at.
-    const { DEMO_SHOP_SETTINGS } = await import("./seed/settings");
+    const { DEMO_SHOP_SETTINGS } = await import('./seed/settings');
     const weekStart = currentWeekStartUtc(DEMO_SHOP_SETTINGS.timezone);
-    const inserted = mocks.shiftInsertMany.mock.calls[0][0];
-    expect(inserted).toHaveLength(DEMO_SHIFTS.length);
-    expect(inserted[0].weekStart).toEqual(weekStart);
+    const ops = mocks.shiftBulkWrite.mock.calls[0][0];
+    expect(ops).toHaveLength(DEMO_SHIFTS.length);
+    expect(ops[0].updateOne.filter.weekStart).toEqual(weekStart);
+    expect(ops[0].updateOne.upsert).toBe(true);
+  });
+
+  // H4 regression. The pair used to be `deleteMany({})` then `insertMany` —
+  // nothing here is transactional and Vercel does not retry, so a throw
+  // between them blanked the whole week's calendar for a day. Upserting on
+  // the same unique key the collection already enforces means the schedule is
+  // never empty at any point, and two overlapping runs converge instead of
+  // one dying on a duplicate key.
+  it('never wholesale-deletes the schedule before writing the new one', async () => {
+    const { restoreDemoCatalog } = await import('./restore');
+    await restoreDemoCatalog();
+
+    expect(mocks.shiftDeleteMany).not.toHaveBeenCalledWith({});
+    expect(mocks.shiftBulkWrite.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.shiftDeleteMany.mock.invocationCallOrder[0],
+    );
   });
 
   it('keys the reseeded week off the zone it installs, not the one it replaces', async () => {
@@ -386,23 +411,46 @@ describe('restoreDemoCatalog — promos, staff, shifts, settings', () => {
     // The mocked live document reports Sydney — deliberately neither the
     // runtime zone nor the installed one — so this assertion fails if the
     // implementation reads it.
-    const inserted = mocks.shiftInsertMany.mock.calls[0][0];
-    expect(inserted[0].weekStart).toEqual(
+    const ops = mocks.shiftBulkWrite.mock.calls[0][0];
+    expect(ops[0].updateOne.update.$set.weekStart).toEqual(
       currentWeekStartUtc(DEMO_SHOP_SETTINGS.timezone),
     );
     expect(mocks.settingsFindOne).not.toHaveBeenCalled();
   });
 
-  it('replaces staff wholesale and upserts the settings singleton', async () => {
+  it('replaces staff by inserting before deleting, and upserts the settings singleton', async () => {
     const { restoreDemoCatalog } = await import('./restore');
     const counts = await restoreDemoCatalog();
 
     // Nothing references a StaffMember `_id` — Shift stores `staffName` as a
-    // plain string — so a clean replace is safe here.
-    expect(mocks.staffDeleteMany).toHaveBeenCalledWith({});
+    // plain string — so a clean replace is safe. The ORDER is not incidental:
+    // `StaffMember` carries no index at all, and delete-then-insert left the
+    // roster empty for a day whenever the insert threw. Reversed, the same
+    // failure leaves the old roster in place.
+    expect(mocks.staffDeleteMany).not.toHaveBeenCalledWith({});
+    expect(mocks.staffDeleteMany).toHaveBeenCalledWith({
+      _id: { $nin: DEMO_STAFF.map((_, i) => `staff-${i}`) },
+    });
+    expect(mocks.staffInsertMany.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.staffDeleteMany.mock.invocationCallOrder[0],
+    );
     expect(counts.staffRestored).toBe(DEMO_STAFF.length);
     expect(mocks.settingsFindOneAndUpdate).toHaveBeenCalledOnce();
     expect(counts.settingsRestored).toBe(true);
+  });
+
+  // M1 regression. The restore used to write the whole settings snapshot,
+  // which put `dormancyWarningMonths` back to 18 every night — silently
+  // re-arming the sweep for an operator who had deliberately set it to Off,
+  // and destroying real customer accounts under a setting they had disabled.
+  it('does not restore the dormancy threshold over an operator’s choice', async () => {
+    const { restoreDemoCatalog } = await import('./restore');
+    await restoreDemoCatalog();
+
+    const payload = mocks.settingsFindOneAndUpdate.mock.calls[0][1];
+    expect(payload).not.toHaveProperty('dormancyWarningMonths');
+    // The rest of the snapshot must still restore.
+    expect(payload.shopName).toBeDefined();
   });
 
   it('clears grill events', async () => {

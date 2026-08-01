@@ -75,10 +75,6 @@ export async function softDeleteUser(
     };
   }
 
-  user.deletedAt = now;
-  user.deletionScheduledFor = scheduledFor;
-  await user.save();
-
   const auditAction =
     opts.actor === 'cron'
       ? 'cron_soft_delete'
@@ -86,6 +82,13 @@ export async function softDeleteUser(
         ? 'admin_soft_delete'
         : 'self_soft_delete';
 
+  // Audit BEFORE the state write — same ordering as `hardDeleteUser` and the
+  // dormancy warn pass, for the same reason: the idempotent early-return
+  // above keys on `deletedAt`, so once the save has landed no retry can ever
+  // reach this audit again. Audit-then-save means a failed save leaves an
+  // orphan row and the retry writes a duplicate — both explicitly accepted —
+  // while save-then-audit meant a failed audit left an account entering
+  // deletion with no record of who sent it there.
   await writeAudit({
     userId: user._id,
     userEmailSnapshot: user.email,
@@ -93,6 +96,10 @@ export async function softDeleteUser(
     performedBy: opts.performedBy,
     reason: opts.reason,
   });
+
+  user.deletedAt = now;
+  user.deletionScheduledFor = scheduledFor;
+  await user.save();
 
   return { deletionScheduledFor: scheduledFor };
 }
@@ -104,7 +111,7 @@ export async function restoreUser(
   await connectDB();
 
   const user = await User.findById(userId).select(
-    'email deletedAt deletionScheduledFor dormancyWarnedAt',
+    'email deletedAt deletionScheduledFor dormancyWarnedAt lastActiveAt',
   );
   if (!user) throw new Error('User not found');
   if (!user.deletedAt) return; // already active — no-op
@@ -112,12 +119,24 @@ export async function restoreUser(
   user.deletedAt = null;
   user.deletionScheduledFor = null;
   // Dormancy and deletion are sibling lifecycle states — a restore implies
-  // the customer is back, so clear the dormancy warning too. Otherwise the
-  // next scan would immediately re-warn them based on the now-stale
-  // `lastActiveAt`.
+  // the customer is back, so clear the dormancy warning too.
+  //
+  // Stamping `lastActiveAt` is the load-bearing half, and clearing the
+  // warning without it is worse than useless: `lastActiveAt` is the only
+  // input to the scan's warn-pass filter, so a cleared warning over a stale
+  // timestamp is exactly the state that made the account eligible in the
+  // first place. The account gets re-warned the next night, soft-deleted 30
+  // days later and purged 30 after that — an admin rescuing an account would
+  // be buying 60 days rather than a reprieve, with nothing surfacing the
+  // loop. `recordCustomerActivity` below writes the same pair atomically for
+  // the customer-initiated case; this is the admin-initiated equivalent.
   user.dormancyWarnedAt = null;
-  await user.save();
+  user.lastActiveAt = new Date();
 
+  // Audit before the save — the no-op guard above keys on `deletedAt`, so a
+  // save that lands followed by an audit that fails could never be retried
+  // into a row. Orphan/duplicate rows on the failure path are the accepted
+  // cost, as everywhere else in this file.
   await writeAudit({
     userId: user._id,
     userEmailSnapshot: user.email,
@@ -125,31 +144,40 @@ export async function restoreUser(
     performedBy: opts.performedBy,
     reason: opts.reason,
   });
+
+  await user.save();
 }
 
 // Clears the dormancy warning on an active (non-soft-deleted) account from
 // the admin "Cancel dormancy cleanup" action. Idempotent — a no-op when the
-// warning isn't set. The next dormancy scan can re-warn the user if their
-// `lastActiveAt` is still older than the threshold.
+// warning isn't set.
 //
-// Customer-initiated clears (sign-in, order placement) bypass this helper
-// and write to the User document inline because those paths already touch
-// the document for other reasons (`authorize()` resets login attempts,
-// order routes stamp `lastActiveAt`) — folding a second roundtrip through
-// this helper would be wasteful.
+// Stamps `lastActiveAt` alongside the clear for the same reason `restoreUser`
+// does: the warn pass keys on `lastActiveAt` alone, so clearing the warning
+// over a stale timestamp buys one follow-up window and nothing more — the
+// next scan re-warns and the button's own label becomes a lie.
+//
+// Customer-initiated clears bypass this helper: sign-in writes inline in
+// `authorize()` (folded into the updateOne that also resets login attempts
+// and soft-delete state), and order placement goes through
+// `recordCustomerActivity` below. Neither route needs the second roundtrip
+// this helper's read-then-save costs.
 export async function clearDormancyWarning(
   userId: UserId,
   opts: ActorOptions & { actor: 'admin' },
 ): Promise<{ wasWarned: boolean }> {
   await connectDB();
 
-  const user = await User.findById(userId).select('email dormancyWarnedAt');
+  const user = await User.findById(userId).select('email dormancyWarnedAt lastActiveAt');
   if (!user) throw new Error('User not found');
   if (!user.dormancyWarnedAt) return { wasWarned: false };
 
   user.dormancyWarnedAt = null;
-  await user.save();
+  user.lastActiveAt = new Date();
 
+  // Audit before the save — the no-op guard above keys on `dormancyWarnedAt`,
+  // so save-then-audit made a failed audit row unrecoverable. Orphan rows on
+  // the failure path are the accepted cost, as everywhere else in this file.
   await writeAudit({
     userId: user._id,
     userEmailSnapshot: user.email,
@@ -157,6 +185,8 @@ export async function clearDormancyWarning(
     performedBy: opts.performedBy,
     reason: opts.reason,
   });
+
+  await user.save();
 
   return { wasWarned: true };
 }
@@ -224,7 +254,7 @@ export async function hardDeleteUser(
 ): Promise<void> {
   await connectDB();
 
-  const user = await User.findById(userId).select('name email phone isAdmin');
+  const user = await User.findById(userId).select('name email phone isAdmin deletedAt');
 
   if (user?.isAdmin) {
     throw new Error('Admin accounts cannot be deleted');
@@ -267,10 +297,44 @@ export async function hardDeleteUser(
         reason: opts.reason,
       });
     }
+
+    // The admin "delete immediately" path arrives here on a LIVE account —
+    // `deletedAt` still null. Stamp soft-delete state before the cascade so a
+    // partial failure self-heals: the purge cron's due-query requires
+    // `deletedAt != null`, so without this stamp a cascade that threw halfway
+    // left a live, sign-in-capable account with its order history already
+    // detached, an audit row claiming the deletion happened, and nothing that
+    // would ever retry. Stamped, the same failure degrades to a scheduled
+    // deletion the next 03:00 run finishes. The cron path always arrives
+    // already stamped, so this is a no-op there.
+    if (!user.deletedAt) {
+      const now = new Date();
+      await User.updateOne(
+        { _id: userId },
+        { $set: { deletedAt: now, deletionScheduledFor: now } },
+      );
+    }
   }
 
   // Anonymize orders: copy name/email/phone into guestContact and null out user.
   // Idempotent — already-anonymized rows have user: null and won't match.
+  //
+  // The order also carries `deliveryAddress` and `orderNotes`, stamped at
+  // checkout for every order, and neither was being touched. The privacy page
+  // says past orders keep "the name, email and phone that were on them" and
+  // that "everything else goes" — which was false for the two most sensitive
+  // fields the app stores, and the delivery address was disclosed nowhere at
+  // all. Both are removed here.
+  //
+  // Nulling `user` also turns these into guest orders, and the confirmation
+  // page treats the order id as the access token for user-less orders — so a
+  // retained address would additionally be readable by anyone holding the id.
+  //
+  // The order's own `contactName`/`contactEmail`/`contactPhone` are left
+  // alone on purpose. They hold the same disclosed triple `guestContact`
+  // does, so rewriting them buys no privacy and would edit a genuine sales
+  // record; the receipt reads them first and should keep showing what was
+  // actually on the order.
   await Order.updateMany(
     { user: userId },
     {
@@ -280,6 +344,7 @@ export async function hardDeleteUser(
         'guestContact.email': orderEmail,
         ...(phoneSnapshot ? { 'guestContact.phone': phoneSnapshot } : {}),
       },
+      $unset: { deliveryAddress: '', orderNotes: '' },
     },
   );
 
@@ -320,15 +385,33 @@ export async function hardDeleteUser(
 
   // Finally, delete the user document itself. The embedded savedCuts and
   // pointsHistory arrays go with it.
+  //
+  // Conditional on the account still being soft-deleted. Every caller
+  // guarantees `deletedAt` is set by this point (the purge re-checks before
+  // the cascade; the immediate path stamps it above), so the condition only
+  // fails when a restore landed MID-cascade — the sign-in path's
+  // `deletedAt != null` precondition makes that write legal right up until
+  // this line. When it happens, the customer wins: they keep their account
+  // (with this cascade's collateral — cart, cards, notifications gone and
+  // orders anonymised) rather than losing it entirely seconds after being
+  // told the deletion was cancelled.
   if (user) {
-    await User.deleteOne({ _id: userId });
+    await User.deleteOne({ _id: userId, deletedAt: { $ne: null } });
   }
 }
 
+// `failed` is a count, not the failing rows: this result is spread into the
+// cron route's response body, and Mongo error strings routinely embed the
+// document that failed — so returning `{ userId, error }` pairs handed a real
+// customer's id and email to anyone holding the cron secret. Ids and driver
+// text go to the server log instead.
 export async function purgeDueSoftDeletes(now: Date = new Date()): Promise<{
   attempted: number;
   succeeded: number;
-  failed: { userId: string; error: string }[];
+  failed: number;
+  // Users on the due list who were restored before their turn came — a
+  // success for the customer, not a failure of the run.
+  skipped: number;
 }> {
   await connectDB();
 
@@ -339,19 +422,37 @@ export async function purgeDueSoftDeletes(now: Date = new Date()): Promise<{
     .select('_id')
     .lean<{ _id: Types.ObjectId }[]>();
 
-  const failed: { userId: string; error: string }[] = [];
+  let failed = 0;
   let succeeded = 0;
+  let skipped = 0;
   for (const { _id } of due) {
     try {
+      // Re-check immediately before the cascade. The due list above is read
+      // once, so a customer who signs back in — or an admin who clicks
+      // "Cancel deletion" — while the loop is working would otherwise still
+      // be destroyed when their turn came. The privacy page promises "sign
+      // back in during those 30 days and the deletion is cancelled", and
+      // day-30 sign-ins are exactly the population racing this 03:00 cron.
+      // The residual window (restore landing mid-cascade) is closed by the
+      // conditional final delete inside `hardDeleteUser`.
+      const stillDue = await User.findOne({
+        _id,
+        deletedAt: { $ne: null },
+        deletionScheduledFor: { $lte: now },
+      })
+        .select('_id')
+        .lean();
+      if (!stillDue) {
+        skipped += 1;
+        continue;
+      }
       await hardDeleteUser(_id, { actor: 'cron' });
       succeeded += 1;
     } catch (error) {
-      failed.push({
-        userId: String(_id),
-        error: error instanceof Error ? error.message : String(error),
-      });
+      failed += 1;
+      console.error('[cron purge-deleted-accounts] hard delete failed', String(_id), error);
     }
   }
 
-  return { attempted: due.length, succeeded, failed };
+  return { attempted: due.length, succeeded, failed, skipped };
 }

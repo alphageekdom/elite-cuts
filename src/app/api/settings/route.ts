@@ -2,8 +2,10 @@ import { NextResponse, type NextRequest } from 'next/server';
 import mongoose from 'mongoose';
 
 import ShopSettings, { type ShopSettings as ShopSettingsType } from '@/models/ShopSettings';
+import User from '@/models/User';
 import { SHOP_SETTINGS_KEYS } from '@/lib/shop-settings/defaults';
 import { withAdmin, zodBadRequest } from '@/lib/api-handler';
+import { isDemoAdmin } from '@/lib/auth/demo-permissions';
 import { shopSettingsInputSchema } from '@/lib/shop-settings/schema';
 
 function pickSettings(doc: Record<string, unknown> | null): Partial<ShopSettingsType> {
@@ -34,16 +36,29 @@ export const GET = withAdmin(async () => {
 });
 
 // PUT /api/settings — replaces writable fields on the singleton doc.
-// Open to demo admins: the nightly restore rewrites the singleton from
-// `DEMO_SHOP_SETTINGS`, so whatever a demo session changes here is undone.
-export const PUT = withAdmin(async (request: NextRequest) => {
+//
+// Open to demo admins, with ONE field held back. The openness rests on the
+// nightly restore undoing whatever a demo session changes here — but
+// `dormancyWarningMonths` is deliberately excluded from that restore, because
+// it decides whether the shop auto-deletes inactive customer accounts and an
+// operator who switches it off must not have it silently re-armed each night.
+// Those two facts together would hand anyone holding the public demo-admin
+// credentials permanent control of a sweep that warns, soft-deletes and then
+// purges REAL registered accounts. Stripping the field from demo writes keeps
+// both properties: a real operator's choice survives the restore, and a demo
+// visitor cannot make a choice that needs surviving.
+export const PUT = withAdmin(async (request: NextRequest, _ctx, userId) => {
   try {
     const parsed = shopSettingsInputSchema.safeParse(await request.json().catch(() => ({})));
     if (!parsed.success) return zodBadRequest(parsed.error, 'Invalid settings payload');
 
+    const actor = await User.findById(userId).select('isDemo isAdmin').lean();
+    const { dormancyWarningMonths: _demoHeldBack, ...withoutDormancy } = parsed.data;
+    const update = isDemoAdmin(actor) ? withoutDormancy : parsed.data;
+
     const settings = await ShopSettings.findOneAndUpdate(
       {},
-      { $set: parsed.data },
+      { $set: update },
       { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true, runValidators: true },
     ).lean();
 
