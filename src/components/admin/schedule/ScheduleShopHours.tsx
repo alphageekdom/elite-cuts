@@ -1,12 +1,16 @@
 import type { ShopHoursDay } from '@/models/ShopHours';
 import { DAY_NAMES } from '@/lib/shop-settings/hours-format';
-import { toMondayIndex } from '@/lib/admin/schedule';
 import ScheduleCardHeader from './ScheduleCardHeader';
 
-type Props = { hours: ShopHoursDay[] };
+// `todayMondayIndex` is derived from the SHOP's calendar day upstream and
+// threaded in, rather than read here off `new Date()`. Reading the runtime
+// clock made this the one card on the page that could disagree with its three
+// siblings — on a UTC deploy serving a Pacific shop it highlighted tomorrow's
+// row from 5pm local, and then flipped back on hydration.
+type Props = { hours: ShopHoursDay[]; todayMondayIndex: number };
 
-export default function ScheduleShopHours({ hours }: Props) {
-  const todayDow = toMondayIndex(new Date().getDay());
+export default function ScheduleShopHours({ hours, todayMondayIndex }: Props) {
+  const todayDow = todayMondayIndex;
 
   const sorted = [...hours].sort((a, b) => a.dayOfWeek - b.dayOfWeek);
 

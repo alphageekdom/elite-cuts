@@ -1,6 +1,7 @@
 import type { Order } from '@/models/Order';
 import { reverseOrderAward, reverseOrderRedemption } from '@/lib/orders/completion';
 import { releasePromoSeat } from '@/lib/promos/apply';
+import { hasSettledPayment } from '@/lib/orders/payment-state';
 
 // Post-save cleanup for points + promo seats when an order leaves a paying
 // state via refund or cancellation.
@@ -8,13 +9,22 @@ import { releasePromoSeat } from '@/lib/promos/apply';
 // - `reverseOrderAward` fires only if the order was Completed (points had
 //   been awarded). Partial refunds that leave the order Completed don't
 //   trigger it.
-// - `reverseOrderRedemption` fires whenever the order had a redemption
-//   stamped at checkout, regardless of whether it ever reached Completed —
-//   the customer's points came out of their balance at checkout time, so
-//   they must come back when the order is cancelled.
+// - `reverseOrderRedemption` fires whenever a settled order had a redemption
+//   stamped on it. NOTE: the points do NOT come out at checkout — the
+//   checkout route validates the requested redemption against a read-only
+//   balance and stamps the intent, and `completeSessionForOrder` is what
+//   actually decrements `User.rewardPoints`. This comment used to say
+//   otherwise, which is how cancelling a never-paid order came to hand back
+//   points the customer had never spent.
 // - Promo seat returns to the pool only on full cancellation — partial
 //   refunds leave the seat consumed since the customer still benefited from
-//   the code on the surviving line items.
+//   the code on the surviving line items. The seat is reserved in
+//   `completeSessionForOrder` too, so an unpaid order holds no seat to
+//   release.
+//
+// Everything here is therefore gated on `hasSettledPayment`: an order whose
+// payment never landed has no awarded points, no spent points and no promo
+// seat, so there is nothing to reverse.
 export async function reverseRewards({
   orderId,
   existing,
@@ -31,11 +41,14 @@ export async function reverseRewards({
     | 'pointsAwarded'
     | 'pointsRedeemed'
     | 'promoId'
+    | 'paymentResult'
   >;
   finalStatus: string;
   indicesToRefund: Set<number>;
   transitioningToCancelled: boolean;
 }): Promise<void> {
+  if (!hasSettledPayment(existing)) return;
+
   const cancelledNow =
     finalStatus === 'Cancelled' && existing.orderStatus !== 'Cancelled';
 

@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import User from '@/models/User';
 import Product from '@/models/Product';
 import { withAuth } from '@/lib/api-handler';
+import { PUBLIC_PRODUCT_PROJECTION } from '@/lib/products/public-projection';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +16,9 @@ export const GET = withAuth(async (_req, _ctx, userId) => {
       return NextResponse.json({ message: 'User not found' }, { status: 404 });
     }
 
-    const items = await Product.find({ _id: { $in: user.savedCuts } });
+    const items = await Product.find({ _id: { $in: user.savedCuts } }).select(
+      PUBLIC_PRODUCT_PROJECTION,
+    );
 
     return NextResponse.json({ items });
   } catch (error) {

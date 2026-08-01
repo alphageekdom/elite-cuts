@@ -1,5 +1,6 @@
-import type { OrderStatus } from '@/models/Order';
+import type { OrderItem, OrderStatus } from '@/models/Order';
 import { shopYear } from '@/lib/shop-settings/pickup-format';
+import { refundSummary } from '@/lib/orders/refunds';
 
 // Pure derivations behind the account dashboard's Overview tab. Kept out of
 // the page so each one can be read (and tested) on its own, and so the server
@@ -109,7 +110,20 @@ export function tallyRepeatCuts(
 
 export type Habit = { label: string; value: string };
 
-type HabitOrderLike = OrderLike & { totalCost: number };
+// Wider than `OrderLike`: the spend figure nets off refunds, and
+// `refundSummary` needs each line's price plus the order's pre-tax split to
+// work out what actually went back.
+type HabitOrderLike = {
+  orderStatus: OrderStatus;
+  createdAt: string;
+  subtotal: number;
+  tax: number;
+  totalCost: number;
+  orderItems: readonly Pick<
+    OrderItem,
+    'name' | 'qty' | 'price' | 'refunded' | 'pricingType' | 'pricePerLb' | 'realizedWeightLb'
+  >[];
+};
 
 /**
  * The three habit stats that are honestly derivable from order history.
@@ -142,7 +156,21 @@ export function buildHabits(
     (o) => shopYear(timezone, new Date(o.createdAt)) === thisYear,
   ).length;
 
-  const spent = kept.reduce((sum, o) => sum + o.totalCost, 0);
+  // Net of refunds. `totalCost` is what the order was placed for and never
+  // moves when lines are refunded, so summing it alone counted money that
+  // went back to the customer. `refundedAmount` is derived rather than
+  // stored — the receipt page and the admin serializer both reach it through
+  // `refundSummary`, so this does too rather than inventing a third answer.
+  // The most-ordered tally below already skips refunded lines on exactly this
+  // reasoning; the headline figure now agrees with it.
+  const spent = kept.reduce((sum, o) => {
+    const refunded = refundSummary(o.orderItems, {
+      subtotal: o.subtotal,
+      tax: o.tax,
+      totalCost: o.totalCost,
+    }).refundedAmount;
+    return sum + Math.max(0, o.totalCost - refunded);
+  }, 0);
 
   // Most-ordered is by unit count, unlike the repeat tally above — here the
   // question is "what fills your basket", so six packs of mince in one order

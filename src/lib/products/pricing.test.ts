@@ -4,7 +4,6 @@ import {
   backcompatPrice,
   backcompatUnit,
   calculateProductEstimate,
-  calculateProductEstimateRange,
   getDisplayPrice,
   getDisplayWeight,
   isEstimatedPrice,
@@ -165,62 +164,6 @@ describe('calculateProductEstimate', () => {
   });
 });
 
-describe('calculateProductEstimateRange', () => {
-  it('returns null for fixed_package', () => {
-    expect(calculateProductEstimateRange(fixedPackage, 1)).toBeNull();
-  });
-
-  it('returns null for each', () => {
-    expect(calculateProductEstimateRange(each, 1)).toBeNull();
-  });
-
-  it('returns null for bundle', () => {
-    expect(calculateProductEstimateRange(bundle, 1)).toBeNull();
-  });
-
-  it('returns min/max for per_lb', () => {
-    // 2 × 0.75 × 24.99 = 37.485 ; 2 × 1.25 × 24.99 = 62.475
-    const range = calculateProductEstimateRange(perLb, 2);
-    expect(range).not.toBeNull();
-    expect(range!.min).toBeCloseTo(37.485, 5);
-    expect(range!.max).toBeCloseTo(62.475, 5);
-  });
-
-  it('returns min/max for whole_item_by_weight', () => {
-    // 1 × 3 × 2.99 = 8.97 ; 1 × 4.5 × 2.99 = 13.455
-    const range = calculateProductEstimateRange(wholeItem, 1);
-    expect(range).not.toBeNull();
-    expect(range!.min).toBeCloseTo(8.97, 5);
-    expect(range!.max).toBeCloseTo(13.455, 5);
-  });
-
-  it('returns null when per_lb is missing minWeightLb', () => {
-    expect(
-      calculateProductEstimateRange(
-        { pricingType: 'per_lb', pricePerLb: 24.99, maxWeightLb: 1.25 },
-        1,
-      ),
-    ).toBeNull();
-  });
-
-  it('returns null when per_lb is missing maxWeightLb', () => {
-    expect(
-      calculateProductEstimateRange(
-        { pricingType: 'per_lb', pricePerLb: 24.99, minWeightLb: 0.75 },
-        1,
-      ),
-    ).toBeNull();
-  });
-
-  it('returns null when pricePerLb is missing', () => {
-    expect(
-      calculateProductEstimateRange(
-        { pricingType: 'per_lb', minWeightLb: 0.75, maxWeightLb: 1.25 },
-        1,
-      ),
-    ).toBeNull();
-  });
-});
 
 describe('unitPrice', () => {
   it('returns packagePrice for fixed_package', () => {

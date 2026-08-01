@@ -18,6 +18,8 @@
 // around, so a production deploy with the env flag off would otherwise leave
 // the demo customer with nothing but Stripe's hosted page (which a portfolio
 // without sandbox credentials can't satisfy).
+import 'server-only';
+
 type FeatureContext = {
   isDemoUser?: boolean;
 };

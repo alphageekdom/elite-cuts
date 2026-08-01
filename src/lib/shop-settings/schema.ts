@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { DORMANCY_THRESHOLD_VALUES } from '@/lib/shop-settings/constants';
+import { DORMANCY_THRESHOLD_VALUES } from './constants';
 
 // Single source of truth for shop settings PUT input. Consumed by:
 //   - `src/app/api/settings/route.ts` (PUT) — admin save
@@ -98,13 +98,3 @@ export const shopSettingsInputSchema = z
 
 export type ShopSettingsInput = z.infer<typeof shopSettingsInputSchema>;
 
-export function flattenIssues(
-  issues: ReadonlyArray<{ path: ReadonlyArray<PropertyKey>; message: string }>,
-): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const issue of issues) {
-    const key = String(issue.path[0] ?? '_');
-    if (!(key in out)) out[key] = issue.message;
-  }
-  return out;
-}

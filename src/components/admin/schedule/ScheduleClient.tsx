@@ -10,7 +10,6 @@ import ScheduleCalendarGrid from './ScheduleCalendarGrid';
 import ShiftFormDrawer from './ShiftFormDrawer';
 import SlideDrawer from '@/components/admin/SlideDrawer';
 import { DRAWER_WIDTH } from '@/components/admin/DrawerChrome';
-import { MONTH_ABBR } from '@/lib/format';
 import type { ShopHoursDay } from '@/models/ShopHours';
 import {
   buildDayCells,
@@ -18,7 +17,7 @@ import {
   buildShiftGrid,
   buildTodayStaff,
   buildWeekRangeLabel,
-  toMondayIndex,
+  buildWeekStartParts,
   type ShiftRow,
   type StaffUserOption,
 } from '@/lib/admin/schedule';
@@ -32,21 +31,25 @@ type Props = {
   projectedRevenue: number;
   deliveryCount: number;
   staffUsers: StaffUserOption[];
+  /** Week + "today" are resolved against the SHOP's clock on the server. */
+  initialWeekStart: string;
+  todayMondayIndex: number;
+  nowMinutes: number;
+  todayLabel: { dayName: string; dateStr: string };
 };
 
 export default function ScheduleClient({
   initialShifts, shopHours, pickupSlots,
   slotsBooked, projectedRevenue, deliveryCount,
   staffUsers,
+  initialWeekStart, todayMondayIndex, nowMinutes, todayLabel,
 }: Props) {
   const {
     weekStart, shifts, loadingShifts, drawer,
     prevWeek, nextWeek, goToday,
     openCreate, openEdit, closeDrawer, refetch,
-  } = useScheduleWeek(initialShifts);
+  } = useScheduleWeek(initialShifts, initialWeekStart);
 
-  const now = new Date();
-  const todayMondayIndex = toMondayIndex(now.getDay());
 
   const grid = useMemo(() => buildShiftGrid(shifts), [shifts]);
   const todayStaff = useMemo(() => buildTodayStaff(shifts, todayMondayIndex), [shifts, todayMondayIndex]);
@@ -56,6 +59,7 @@ export default function ScheduleClient({
   );
   const openLabel = useMemo(() => buildOpenLabel(shopHours, todayMondayIndex), [shopHours, todayMondayIndex]);
   const weekRangeLabel = useMemo(() => buildWeekRangeLabel(weekStart), [weekStart]);
+  const weekStartParts = useMemo(() => buildWeekStartParts(weekStart), [weekStart]);
 
   return (
     <div className={loadingShifts ? 'opacity-70 pointer-events-none transition-opacity' : ''}>
@@ -99,7 +103,7 @@ export default function ScheduleClient({
           </div>
           <div>
             <span className="font-display text-2xl font-medium tracking-tight">
-              Week of {MONTH_ABBR[weekStart.getMonth()]} <em className="italic text-oxblood font-normal">{weekStart.getDate()}</em>
+              Week of {weekStartParts.month} <em className="italic text-oxblood font-normal">{weekStartParts.day}</em>
             </span>
             <span className="font-mono text-[11px] text-muted tracking-[0.04em] ml-2">{weekRangeLabel}</span>
           </div>
@@ -113,7 +117,7 @@ export default function ScheduleClient({
         <ScheduleCalendarGrid
           days={days}
           grid={grid}
-          now={now}
+          nowMinutes={nowMinutes}
           onShiftClick={openEdit}
           onEmptyCellClick={(dayIdx, hourIdx) => openCreate(dayIdx, hourIdx)}
         />
@@ -125,10 +129,11 @@ export default function ScheduleClient({
             projectedRevenue={projectedRevenue}
             deliveryCount={deliveryCount}
             openLabel={openLabel}
+            todayLabel={todayLabel}
           />
           <ScheduleOnTodayCard todayStaff={todayStaff} />
           <SchedulePickupSlots slots={pickupSlots} />
-          <ScheduleShopHours hours={shopHours} />
+          <ScheduleShopHours hours={shopHours} todayMondayIndex={todayMondayIndex} />
         </div>
       </div>
 

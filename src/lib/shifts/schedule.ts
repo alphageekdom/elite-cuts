@@ -30,11 +30,34 @@ export const DAY_NAMES_FULL_SUN_INDEXED = [
 // the slot rows without importing a client component.
 export const SLOT_LABELS = ['9–10A', '10–11A', '11A–12P', '12–1P', '1–2P', '2–3P', '3–4P', '4–5P'];
 
-export function getMondayOf(date: Date): Date {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + diff);
-  d.setHours(0, 0, 0, 0);
-  return d;
+// The week key for a calendar day, as UTC midnight of that week's Monday.
+//
+// A week is a calendar fact, not an instant, so this takes a plain
+// `YYYY-MM-DD` (from `shopDateKey`, or a client's own local date) and does all
+// its arithmetic in UTC. That is what makes it zone-proof: the same date
+// string yields the same key from any runtime.
+//
+// It replaces a `getDay()`-then-snap-to-UTC-date approach that only worked
+// west of UTC. Local-midnight Monday is the PREVIOUS Sunday in UTC terms for
+// any client east of it, so those shifts stored under a Sunday key: they
+// vanished from the server-rendered grid (which queries Monday-keyed weeks),
+// and the same visible cell split across two keys, defeating both the
+// collision check and the unique (weekStart, dayOfWeek, hourIndex) index that
+// exist to stop double-booking.
+export function mondayOfShopDay(dateKey: string): Date {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  const utc = new Date(Date.UTC(year, month - 1, day));
+  const weekday = utc.getUTCDay(); // 0 = Sunday
+  utc.setUTCDate(utc.getUTCDate() + (weekday === 0 ? -6 : 1 - weekday));
+  return utc;
 }
+
+// A `localDateKey(date)` helper used to sit here, formatting a Date in the
+// runtime's own zone for feeding into `mondayOfShopDay`. Every caller now
+// passes `shopDateKey(timezone, instant)` instead.
+//
+// It is gone rather than deprecated because it had no correct caller left and
+// two separate bugs came from reaching for it: the schedule's "Today" button
+// jumped a week for any admin browsing from east of the shop, and the nightly
+// demo restore planted its whole roster in the following week on a UTC deploy.
+// A week is the shop's calendar fact, never the reader's.

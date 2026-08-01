@@ -12,11 +12,26 @@ function parseOptionalNumber(raw: string | undefined): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
+// Shapes a spreadsheet legitimately writes for a count: a plain integer, one
+// grouped in threes, or a decimal — each optionally signed.
+//
+// The grouping is checked rather than stripped, because `1,5` is a European
+// decimal and `1,000` is a grouped thousand, and blind comma-removal turns the
+// first into 15. These feed `stock`, `parLevel` and `reorderPoint`, so a
+// silently wrong value mis-drives the storefront's out-of-stock state and the
+// low-stock badge. Anything Number() would coerce by its own rules but a
+// spreadsheet never emits — `0x10`, `1e3`, `Infinity` — is rejected too.
+const COUNT_INPUT = /^-?(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d+)?$|^-?\.\d+$/;
+
 function parseRequiredInt(raw: string | undefined): number | undefined {
   const trimmed = raw?.trim();
   if (trimmed === undefined || trimmed === '') return undefined;
-  const n = Number.parseInt(trimmed, 10);
-  return Number.isFinite(n) && String(n) === trimmed ? n : undefined;
+  if (!COUNT_INPUT.test(trimmed)) return undefined;
+  // Well-formed but not necessarily whole or positive: `10.5` and `-3` pass
+  // through so the schema's own `.int()` / `.nonnegative()` checks report the
+  // real problem, rather than a filled-in field coming back as "required".
+  const n = Number(trimmed.replace(/,/g, ''));
+  return Number.isFinite(n) ? n : undefined;
 }
 
 function parseBool(raw: string | undefined): boolean {
@@ -41,7 +56,14 @@ function parseStringList(raw: string | undefined): string[] | undefined {
 export function coerceProductInput(raw: Record<string, string | undefined>): unknown {
   // Slug is derived from name when blank — both the CSV import and the
   // admin form historically allowed an empty slug column.
-  const rawSlug = raw.slug?.trim() ?? '';
+  //
+  // Slugified BEFORE the fallback, not after: a cell of punctuation or
+  // non-Latin text is non-empty here but slugifies to nothing, so testing the
+  // raw string let `''` through to the schema. `bulkWrite` skips the model
+  // hook that would have healed it and the unique index is partial (it ignores
+  // empty strings), so the cut saved with no working URL and re-diffed as an
+  // update on every later import.
+  const rawSlug = slugify(raw.slug?.trim() ?? '');
   const name = raw.name?.trim() ?? '';
   const slug = rawSlug || (name ? slugify(name) : undefined);
 

@@ -9,7 +9,8 @@ import type { DayCell, ShiftRow } from '@/lib/admin/schedule';
 type Props = {
   days: DayCell[];
   grid: (ShiftRow | null)[][];
-  now: Date;
+  /** Minutes since midnight at the SHOP — positions the now-line. */
+  nowMinutes: number;
   onShiftClick: (shift: ShiftRow) => void;
   onEmptyCellClick: (dayIdx: number, hourIdx: number) => void;
 };
@@ -27,7 +28,7 @@ function shiftCardClass(color: ShiftColor): string {
 export default function ScheduleCalendarGrid({
   days,
   grid,
-  now,
+  nowMinutes,
   onShiftClick,
   onEmptyCellClick,
 }: Props) {
@@ -91,11 +92,19 @@ export default function ScheduleCalendarGrid({
               ))}
             </div>
 
-            {/* Now line — only on current week */}
+            {/* Now line — only on current week.
+                A snapshot taken at server render, not a ticking clock. It used
+                to be `new Date()` read in the client body, which re-evaluated
+                on unrelated renders (opening a drawer, changing week) and
+                differed between the server's HTML and the browser's first
+                paint. Neither form ever advanced on its own, so this trades an
+                arbitrary update for a consistent one; a genuinely live line
+                would need its own interval, which is more machinery than a
+                decorative position marker earns. */}
             {days.some((d) => d.isToday) && (
               <div
                 className="absolute left-14 right-0 h-0.5 bg-oxblood z-10 pointer-events-none"
-                style={{ top: `calc(72px * ${Math.max(0, now.getHours() - HOUR_BASE)} + ${now.getMinutes() * 72 / 60}px)` }}
+                style={{ top: `calc(72px * ${Math.max(0, Math.floor(nowMinutes / 60) - HOUR_BASE)} + ${(nowMinutes % 60) * 72 / 60}px)` }}
               >
                 <div className="absolute -left-1 -top-0.75 w-2 h-2 rounded-full bg-oxblood" />
               </div>

@@ -1,3 +1,6 @@
+import { mondayOfShopDay } from '@/lib/shifts/schedule';
+import { shopDateKey } from '@/lib/shop-settings/pickup-format';
+
 import type { Shift } from '@/models/Shift';
 
 // Seed shape: shifts without `weekStart` (that's runtime-computed at
@@ -69,20 +72,24 @@ export const DEMO_SHIFTS: DemoShiftSeed[] = [
   { dayOfWeek: 6, hourIndex: 7, staffName: 'Sam Okafor',    role: 'Counter',      color: 'sam' },
 ];
 
-// Returns the Monday-at-UTC-midnight for the week containing `now`. Matches
-// the `normalizeWeekStart` shape the shift API uses so the unique compound
-// index `(weekStart, dayOfWeek, hourIndex)` won't double-insert against
-// already-existing rows on a re-run.
-export function currentWeekStartUtc(now: Date = new Date()): Date {
-  const dow = now.getDay();
-  const offset = dow === 0 ? 6 : dow - 1;
-  const localMonday = new Date(now);
-  localMonday.setDate(now.getDate() - offset);
-  return new Date(
-    Date.UTC(
-      localMonday.getFullYear(),
-      localMonday.getMonth(),
-      localMonday.getDate(),
-    ),
-  );
+// Returns the Monday-at-UTC-midnight for the week the SHOP is currently in.
+// Matches the `normalizeWeekStart` shape the shift API uses so the unique
+// compound index `(weekStart, dayOfWeek, hourIndex)` won't double-insert
+// against already-existing rows on a re-run.
+//
+// Shares `mondayOfShopDay` with the API and the admin pages rather than
+// deriving a Monday a third way — the three used to be able to disagree, and
+// the local-then-snap-to-UTC shape this replaces produced a SUNDAY key on any
+// runtime east of UTC.
+//
+// Takes the shop's zone rather than reading the server's calendar date: the
+// pages that render this week all key off `shopDateKey`, so a restore that
+// keyed off the runtime instead planted the whole roster in the FOLLOWING week
+// whenever the two disagreed — between 5pm and midnight Pacific on a Sunday,
+// on a UTC deploy, which then rendered an empty schedule until shop-Monday.
+export function currentWeekStartUtc(
+  timezone: string,
+  now: Date = new Date(),
+): Date {
+  return mondayOfShopDay(shopDateKey(timezone, now));
 }

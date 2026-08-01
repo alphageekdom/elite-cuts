@@ -5,11 +5,16 @@ import type { Types } from 'mongoose';
 import connectDB from '@/config/database';
 import Order from '@/models/Order';
 import Product from '@/models/Product';
+import ShopHoursModel, {
+  DEFAULT_DAYS,
+  type ShopHoursDay,
+} from '@/models/ShopHours';
 import SavedCard from '@/models/SavedCard';
 import { TAX_RATE } from '@/lib/pricing';
 import { unitPrice } from '@/lib/products/pricing';
 import { computeAward } from '@/lib/rewards/calculator';
 import { DEMO_SHOP_SETTINGS } from './seed/settings';
+import { shopDateKey } from '@/lib/shop-settings/pickup-format';
 import { DEMO_ORDERS } from './seed/orders';
 import {
   DEMO_ADDRESSES,
@@ -60,10 +65,59 @@ export type SeededPointsEntry = {
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
-/** `2026-07-28T16:00` — shop-local wall time, no zone, matching the picker. */
+/**
+ * UTC midnight of the shop's calendar day containing `instant`.
+ *
+ * The two helpers below do calendar arithmetic, and a calendar day belongs to
+ * the shop, not the runtime. Encoding it as a UTC-midnight Date lets them use
+ * `getUTC*` throughout and come out the same on any deploy — the same shape
+ * `mondayOfShopDay` uses for week keys.
+ */
+function shopDayStart(timezone: string, instant: Date): Date {
+  const [year, month, day] = shopDateKey(timezone, instant).split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+/**
+ * `2026-07-28T16:00` — shop-local wall time, no zone, matching the picker.
+ *
+ * Reads `day` with UTC getters because it is a shop calendar day encoded as
+ * UTC midnight. Reading it locally stamped the runtime's date instead: on a UTC
+ * deploy a Saturday-evening seed produced a Sunday slot on an order every
+ * shop-clock surface dates to Saturday, so the cut-list board — which bounds
+ * the day through `slotRangeForDay` — never showed it.
+ */
 function pickupSlotId(day: Date, hour: number): string {
   const pad = (n: number) => String(n).padStart(2, '0');
-  return `${day.getFullYear()}-${pad(day.getMonth() + 1)}-${pad(day.getDate())}T${pad(hour)}:00`;
+  return `${day.getUTCFullYear()}-${pad(day.getUTCMonth() + 1)}-${pad(day.getUTCDate())}T${pad(hour)}:00`;
+}
+
+/**
+ * The first day from `from` on which the shop is actually open.
+ *
+ * The in-flight seeded order books a slot on the day it is placed, which is
+ * "today". Mondays are closed under the default hours, so every Monday the
+ * demo's active-order card advertised a pickup window on a day the shop is
+ * shut. Rolls forward at most a week, then gives up and returns the original
+ * day rather than looping — a shop closed all seven days has no honest answer
+ * and is not a state the seed should invent one for.
+ */
+function nextOpenDay(from: Date, days: ShopHoursDay[]): Date {
+  if (days.length === 0) return from;
+  for (let offset = 0; offset < 7; offset++) {
+    const candidate = new Date(from.getTime());
+    candidate.setUTCDate(candidate.getUTCDate() + offset);
+    // Shop hours index 0 = Monday; `getUTCDay()` indexes 0 = Sunday. UTC
+    // throughout because `from` is a shop calendar day encoded as UTC midnight
+    // — reading the weekday off the runtime instead picked tomorrow's row for
+    // every evening after shop-midnight elsewhere, so a Sunday seed could skip
+    // an open Sunday as though it were closed Monday.
+    const mondayIndex = (candidate.getUTCDay() + 6) % 7;
+    if (!days.find((d) => d.dayOfWeek === mondayIndex)?.isClosed) {
+      return candidate;
+    }
+  }
+  return from;
 }
 
 export async function seedDemoOrders(
@@ -84,6 +138,14 @@ export async function seedDemoOrders(
   ];
   const products = await Product.find({ slug: { $in: slugs } }).lean();
   const bySlug = new Map(products.map((p) => [p.slug, p]));
+
+  // Real trading days, so the in-flight order's pickup window can't land on a
+  // day the shop is shut. Falls back to the model defaults on a database with
+  // no hours document yet.
+  const hoursDoc = await ShopHoursModel.findOne().select('days').lean();
+  const shopHours: ShopHoursDay[] = hoursDoc?.days?.length
+    ? hoursDoc.days
+    : DEFAULT_DAYS;
 
   const docs: Record<string, unknown>[] = [];
   const awards: { index: number; delta: number; createdAt: Date }[] = [];
@@ -171,7 +233,15 @@ export async function seedDemoOrders(
       fulfillmentType: 'pickup',
       pickupLocation,
       ...(spec.pickupHour !== undefined
-        ? { pickupSlot: pickupSlotId(placedAt, spec.pickupHour) }
+        ? {
+            pickupSlot: pickupSlotId(
+              nextOpenDay(
+                shopDayStart(DEMO_SHOP_SETTINGS.timezone, placedAt),
+                shopHours,
+              ),
+              spec.pickupHour,
+            ),
+          }
         : {}),
       pickedUp: isCompleted,
       ...(isCompleted ? { readyAt: placedAt, pickedUpAt: placedAt } : {}),

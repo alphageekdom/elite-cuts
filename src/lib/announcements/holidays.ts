@@ -33,6 +33,28 @@ function startOfDay(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
+/**
+ * The "today" every window is measured from.
+ *
+ * Pass the SHOP's calendar date (`YYYY-MM-DD`, from `shopDateKey`). Everything
+ * in this module is calendar arithmetic in the runtime's own zone, which is
+ * self-consistent but anchored to the wrong day whenever the runtime isn't the
+ * shop's: on a UTC deploy serving a Pacific shop, from 5pm local onward the
+ * server has already rolled over, so the banner vanished while the counter was
+ * still trading on the holiday and "Today"/"Tomorrow" labels ran up to eight
+ * hours early.
+ *
+ * A Date is still accepted for callers with no settings to hand, and reads the
+ * runtime's own date — correct only when the runtime runs in the shop's zone.
+ */
+function resolveToday(input: Date | string): Date {
+  if (typeof input === 'string') {
+    const [year, month, day] = input.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+  return startOfDay(input);
+}
+
 function daysBetween(from: Date, to: Date): number {
   const ms = startOfDay(to).getTime() - startOfDay(from).getTime();
   return Math.round(ms / (1000 * 60 * 60 * 24));
@@ -130,15 +152,23 @@ export function formatDaysUntil(days: number): string {
 // Returns the nearest holiday whose pre-order window currently contains `now`.
 // "In window" = today is between (holiday - 21d) and (holiday day) inclusive.
 // Day-after-holiday returns null.
-export function getActiveHoliday(now: Date = new Date()): ActiveHoliday | null {
-  const year = now.getFullYear();
+export function getActiveHoliday(
+  today: Date | string = new Date(),
+): ActiveHoliday | null {
+  const from = resolveToday(today);
+  const year = from.getFullYear();
   let best: ActiveHoliday | null = null;
 
   for (const holiday of HOLIDAYS) {
-    // Try current year and next year so late-December lookups can find Easter the following spring.
+    // The `year + 1` probe is unreachable with the current catalog — the
+    // earliest holiday in it is Easter, never before ~22 March, which is more
+    // than 21 days past any December date. It stays as the guard it would need
+    // to be if a January or early-February holiday were ever added; the older
+    // comment here justified it with "late-December lookups find Easter the
+    // following spring", which the window has never been wide enough to do.
     for (const tryYear of [year, year + 1]) {
       const date = holiday.computeDate(tryYear);
-      const daysUntil = daysBetween(now, date);
+      const daysUntil = daysBetween(from, date);
       if (daysUntil >= 0 && daysUntil <= HOLIDAY_WINDOW_DAYS) {
         if (!best || daysUntil < best.daysUntil) {
           best = { holiday, date, daysUntil };
@@ -153,9 +183,9 @@ export function getActiveHoliday(now: Date = new Date()): ActiveHoliday | null {
 // Match is a case-insensitive substring check on the product name.
 export function getHolidayForCut(
   productName: string,
-  now: Date = new Date(),
+  today: Date | string = new Date(),
 ): ActiveHoliday | null {
-  const active = getActiveHoliday(now);
+  const active = getActiveHoliday(today);
   if (!active) return null;
   const name = productName.toLowerCase();
   const matches = active.holiday.cuts.some((cut) => name.includes(cut));

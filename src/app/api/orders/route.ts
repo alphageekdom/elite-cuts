@@ -16,6 +16,7 @@ import {
 } from '@/lib/api-handler';
 import { isIn } from '@/lib/validation';
 import { awardOrderCompletion } from '@/lib/orders/completion';
+import { walkInPaymentResult } from '@/lib/orders/walk-in';
 import { recordCustomerActivity } from '@/lib/auth/account-deletion';
 import { notifyAdminsOfNewOrder } from '@/lib/orders/notifications';
 import { redactOrdersForCustomer } from '@/lib/orders/redact';
@@ -227,12 +228,11 @@ export const POST = withAdminNonDemo(async (request: NextRequest, _ctx, adminUse
         paymentMethod: (body.paymentMethod && isIn(PAYMENT_METHODS, body.paymentMethod)
           ? body.paymentMethod
           : 'Credit Card') as PaymentMethod,
-        paymentResult: {
-          status: isCompletedNow ? 'Completed' : 'Pending',
-          amountPaid: isCompletedNow ? totalCost : 0,
-          currency: 'USD',
-          paymentDate: now,
-        },
+        // Built by a shared helper, not inline: this order decrements stock
+        // below regardless of payment state, and `hasSettledPayment` reads the
+        // envelope's `provider` to tell it apart from a checkout order sitting
+        // unpaid. Inline, that coupling was untestable.
+        paymentResult: walkInPaymentResult({ isCompletedNow, totalCost, now }),
         pickupLocation: body.pickupLocation,
         pickedUp: isCompletedNow,
         contactName: customer.name,

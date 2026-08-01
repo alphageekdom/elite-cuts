@@ -1,12 +1,15 @@
 import StoreInfoModal from '@/components/ui/StoreInfoModal';
 import Reveal from '@/components/ui/Reveal';
 import { formatDaysUntil, getActiveHoliday } from '@/lib/announcements/holidays';
+import { getShopSettings } from '@/lib/shop-settings/queries';
+import { shopDateKey } from '@/lib/shop-settings/pickup-format';
 
 const titleCaseCut = (slug: string) =>
   slug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join('-');
 
-export default function HolidaySection() {
-  const active = getActiveHoliday();
+export default async function HolidaySection() {
+  const { timezone } = await getShopSettings();
+  const active = getActiveHoliday(shopDateKey(timezone, new Date()));
   if (!active) return null;
 
   const { holiday, daysUntil } = active;

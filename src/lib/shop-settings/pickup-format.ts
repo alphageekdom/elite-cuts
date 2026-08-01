@@ -205,6 +205,86 @@ export function shopDateKey(timezone: string, instant: Date): string {
   return `${instant.getFullYear()}-${pad(instant.getMonth() + 1)}-${pad(instant.getDate())}`;
 }
 
+// "Wednesday, July 30, 2026" on the shop's clock — the long-form heading date.
+//
+// Same degradation contract as `shopDateKey`: an unrecognised zone falls back
+// to the runtime's reading rather than throwing, because a heading always needs
+// a date and the server's is the answer this had before the zone was consulted.
+const LONG_DATE_PARTS: Intl.DateTimeFormatOptions = {
+  weekday: 'long',
+  month: 'long',
+  day: 'numeric',
+  year: 'numeric',
+};
+
+export function shopLongDate(timezone: string, instant: Date): string {
+  try {
+    return new Intl.DateTimeFormat('en-US', {
+      ...LONG_DATE_PARTS,
+      timeZone: timezone.trim().split(' ')[0],
+    }).format(instant);
+  } catch {
+    // Invalid IANA zone — fall through to the server's local reading.
+    return new Intl.DateTimeFormat('en-US', LONG_DATE_PARTS).format(instant);
+  }
+}
+
+// The shop's wall clock expressed as a UTC-epoch value — the instant you
+// would get if the shop's local reading were interpreted as UTC.
+//
+// The companion to shopDateKey for anything that has to measure a DURATION
+// against a stored `pickupSlot`. Slots are zone-less shop wall time
+// (`2026-07-30T16:00`), so parsing one with `new Date()` reads it in the
+// SERVER's zone: on a UTC runtime serving a Pacific shop every slot resolves
+// seven or eight hours earlier than it really is, which read as most of the
+// cut-list board being overdue from mid-morning onward. Putting both sides on
+// this scale makes the subtraction a true wall-clock difference.
+//
+// Seconds are preserved so a countdown can round honestly rather than
+// snapping to whole minutes. Degrades to the runtime's own clock on an
+// unrecognised zone, matching shopDateKey and shopYear.
+export function shopWallClockMs(timezone: string, instant: Date): number {
+  const zone = timezone.trim().split(' ')[0];
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: zone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23',
+    }).formatToParts(instant);
+    const read = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+    const [year, month, day, hour, minute, second] = [
+      read('year'),
+      read('month'),
+      read('day'),
+      read('hour'),
+      read('minute'),
+      read('second'),
+    ];
+    if ([year, month, day, hour, minute, second].every(Number.isFinite)) {
+      return (
+        Date.UTC(year, month - 1, day, hour, minute, second) +
+        instant.getMilliseconds()
+      );
+    }
+  } catch {
+    // Invalid IANA zone — fall through to the server's own wall clock.
+  }
+  return Date.UTC(
+    instant.getFullYear(),
+    instant.getMonth(),
+    instant.getDate(),
+    instant.getHours(),
+    instant.getMinutes(),
+    instant.getSeconds(),
+    instant.getMilliseconds(),
+  );
+}
+
 export type PickupNote = {
   // "ready in about 30 min"
   readyIn: string;

@@ -337,31 +337,63 @@ describe('realizedOrderTotal', () => {
     // Subtotal 50, member 2.50, promo 5, points 100¢ ($1).
     // Realized matches estimate so subtotal stays 50.
     // After discounts: 50 - 2.5 - 5 - 1 = 41.5
-    // Tax ratio 10% → tax 4.15 → total 45.65
+    // `computeOrderTotals` taxes THAT: 41.5 × 10% = 4.15 → total 45.65.
     const total = realizedOrderTotal({
       lines: [{ qty: 2, price: 25 } as never],
       subtotal: 50,
-      tax: 5,
+      tax: 4.15,
       memberDiscount: 2.5,
       promoDiscount: 5,
       pointsRedemptionValueCents: 100,
     });
-    expect(total).toBeCloseTo(45.65, 1);
+    expect(total).toBeCloseTo(45.65, 2);
   });
 
-  it('adds the delivery fee outside the discount + tax stack', () => {
-    const withFee = realizedOrderTotal({
-      lines: [fixedPackageLine], // 17.98 estimate, no realized math
-      subtotal: 17.98,
-      tax: 1.5,
+  // The bug this pins: the effective tax rate used to be derived as
+  // `tax / subtotal`, but the stored tax is charged on the POST-discount
+  // subtotal. On every discounted order that understated the rate, so an
+  // order whose realized weights exactly matched its estimates still
+  // produced a nonzero delta — and auto-settlement moved real money for it.
+  it('returns the original total exactly when realized matches estimate on a discounted order', () => {
+    // What `computeOrderTotals` stores for a $100 member order:
+    // afterDiscounts 95 → tax 9.50 → totalCost 104.50.
+    const total = realizedOrderTotal({
+      lines: [{ qty: 4, price: 25 } as never],
+      subtotal: 100,
+      tax: 9.5,
+      memberDiscount: 5,
+    });
+    expect(total).toBe(104.5);
+  });
+
+  it('returns the original total exactly on a discounted delivery order', () => {
+    // afterDiscounts 95, fee 8 → tax (95+8) × 10% = 10.30 → total 113.30.
+    const total = realizedOrderTotal({
+      lines: [{ qty: 4, price: 25 } as never],
+      subtotal: 100,
+      tax: 10.3,
+      memberDiscount: 5,
       deliveryFee: 8,
     });
-    const withoutFee = realizedOrderTotal({
+    expect(total).toBe(113.3);
+  });
+
+  it('taxes the delivery fee along with the discounted subtotal', () => {
+    // Same cart, the two fulfilment types, each with the tax
+    // `computeOrderTotals` would actually store for it.
+    const pickup = realizedOrderTotal({
+      lines: [fixedPackageLine], // 17.98 estimate, no realized math
+      subtotal: 17.98,
+      tax: 1.8, // 17.98 × 10%
+    });
+    const delivery = realizedOrderTotal({
       lines: [fixedPackageLine],
       subtotal: 17.98,
-      tax: 1.5,
+      tax: 2.6, // (17.98 + 8) × 10%
+      deliveryFee: 8,
     });
-    expect(withFee - withoutFee).toBeCloseTo(8, 2);
+    // The fee itself plus the tax charged on it — not a bare +8.
+    expect(delivery - pickup).toBeCloseTo(8.8, 2);
   });
 
   it('floors at zero when discounts exceed the realized subtotal', () => {

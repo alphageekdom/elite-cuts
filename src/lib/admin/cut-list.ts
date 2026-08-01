@@ -98,17 +98,36 @@ export function formatSlotLabel(slot: string): string {
 const MINUTE_MS = 60_000;
 
 /**
+ * A zone-less `YYYY-MM-DDTHH:MM` slot as a UTC-epoch value.
+ *
+ * The counterpart to `shopWallClockMs`: both sides of a countdown are put on
+ * the same wall-clock scale so the subtraction means what it says. Parsing the
+ * slot with `new Date()` instead reads it in the SERVER's zone, and the two
+ * only agree while the server happens to run in the shop's own.
+ */
+export function slotWallClockMs(slot: string): number {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(slot);
+  if (!match) return NaN;
+  const [year, month, day, hour, minute] = match.slice(1).map(Number);
+  return Date.UTC(year, month - 1, day, hour, minute);
+}
+
+/**
  * Time until (or since) the slot, in the shop's own wall-clock terms.
  *
- * `pickupSlot` has no timezone by design — it is shop-local wall time — so it
- * is compared against the server's clock the same way `buildPickupDays` does.
+ * `nowWallMs` is the shop's current wall clock from `shopWallClockMs` — NOT a
+ * raw instant. `pickupSlot` has no timezone by design, so measuring against
+ * the server's clock made every slot read hours out on any deploy where the
+ * runtime zone isn't the shop's (UTC on Vercel, Pacific at the counter), and
+ * the board showed most of the day as overdue from mid-morning.
+ *
  * Inside five minutes either side it reads "now", because a countdown ticking
  * through zero on a server-rendered page would be stale the moment it printed.
  */
-export function formatCountdown(slot: string, now: Date): string {
-  const target = new Date(slot).getTime();
+export function formatCountdown(slot: string, nowWallMs: number): string {
+  const target = slotWallClockMs(slot);
   if (!Number.isFinite(target)) return '';
-  const delta = target - now.getTime();
+  const delta = target - nowWallMs;
   const abs = Math.abs(delta);
 
   if (abs < 5 * MINUTE_MS) return 'now';
@@ -161,7 +180,10 @@ export function summariseCuts(items: { name: string; qty: number }[]): string {
  * a work board. Completed ones stay — an order collected at 10am is part of
  * today's story and the card's "done" count reads from them.
  */
-export function buildCutListRows(orders: CutListOrder[], now: Date): CutListRow[] {
+export function buildCutListRows(
+  orders: CutListOrder[],
+  nowWallMs: number,
+): CutListRow[] {
   return orders
     .filter((o) => o.orderStatus !== 'Cancelled' && isDatedSlot(o.pickupSlot))
     .map((o) => {
@@ -169,8 +191,8 @@ export function buildCutListRows(orders: CutListOrder[], now: Date): CutListRow[
       return {
         ...o,
         slotLabel: formatSlotLabel(o.pickupSlot),
-        countdown: formatCountdown(o.pickupSlot, now),
-        overdue: stage !== 'done' && new Date(o.pickupSlot).getTime() < now.getTime(),
+        countdown: formatCountdown(o.pickupSlot, nowWallMs),
+        overdue: stage !== 'done' && slotWallClockMs(o.pickupSlot) < nowWallMs,
         cuts: summariseCuts(o.items),
         stage,
       };

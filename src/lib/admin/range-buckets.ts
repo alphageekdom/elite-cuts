@@ -69,9 +69,15 @@ export function buildRangeBuckets(
       label = WEEKDAY_ABBR[bStart.getDay()];
     } else if (cfg.unit === 'Week') {
       label = `WK ${cfg.count - i}`;
-    } else if (cfg.unit === 'Monthly') {
-      label = MONTH_ABBR[bStart.getMonth()];
     } else {
+      // Month + day for both Biweekly and Monthly. The Monthly branch used to
+      // print a bare month name, but its buckets are 30-day strides rather
+      // than calendar months, so the names duplicated and skipped: a year
+      // ending 30 July read "Aug Sep Oct Nov Dec Jan Jan Mar Apr May May Jun"
+      // — January and May twice, February missing entirely. Naming the
+      // bucket's start date is honest about what the point covers. Calendar
+      // months would need the previous-period window to shift by 12 calendar
+      // months too, and the page fetches it as a flat `2 × RANGE_DAYS` span.
       label = `${MONTH_ABBR[bStart.getMonth()]} ${bStart.getDate()}`;
     }
 

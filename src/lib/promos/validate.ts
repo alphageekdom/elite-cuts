@@ -3,6 +3,8 @@ import 'server-only';
 import { Types } from 'mongoose';
 
 import connectDB from '@/config/database';
+// The one rate — a local copy could drift from what checkout actually applies.
+import { MEMBER_DISCOUNT_RATE } from '@/lib/pricing';
 import Order from '@/models/Order';
 import Promo, {
   type PromoDocument,
@@ -22,8 +24,6 @@ export type ValidatePromoInput = {
 export type PromoValidationResult =
   | { valid: true; discountCents: number; promo: PromoDocument }
   | { valid: false; reason: PromoFailureReason };
-
-const MEMBER_DISCOUNT_RATE = 0.05;
 
 // Pure validator: reads the DB, never writes. Same function runs on the
 // apply endpoint (Phase 1B) and again at order placement (Phase 1C) so a
@@ -56,9 +56,14 @@ export async function validatePromo(
 
   if (input.userId) {
     if (promo.firstOrderOnly) {
+      // Cancelled orders don't count as a prior order, matching the
+      // per-customer branch below. A paid-then-cancelled first order used to
+      // block first-order codes permanently, even though its promo seat had
+      // already gone back to the pool.
       const paidCount = await Order.countDocuments({
         user: input.userId,
         isPaid: true,
+        orderStatus: { $ne: 'Cancelled' },
       });
       if (paidCount > 0) return { valid: false, reason: 'first_order_only' };
     }

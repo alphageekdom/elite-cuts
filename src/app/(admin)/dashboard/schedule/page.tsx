@@ -13,12 +13,16 @@ import ScheduleClient from '@/components/admin/schedule/ScheduleClient';
 import type { ShiftRow, StaffUserOption } from '@/lib/admin/schedule';
 import GrillEventSection from '@/components/grill-event/GrillEventSection';
 import type { PickupSlotRow } from '@/components/admin/schedule/SchedulePickupSlots';
-import { getMondayOf, SLOT_LABELS } from '@/lib/shifts/schedule';
+import { mondayOfShopDay, SLOT_LABELS } from '@/lib/shifts/schedule';
 import { normalizeWeekStart } from '@/lib/shifts/queries';
-import { bucketPickupSlotCounts } from '@/lib/admin/schedule';
+import { bucketPickupSlotCounts, buildTodayDateLabel } from '@/lib/admin/schedule';
 import { slotRangeForDay } from '@/lib/admin/cut-list';
 import { getShopSettings } from '@/lib/shop-settings/queries';
-import { shopDateKey } from '@/lib/shop-settings/pickup-format';
+import {
+  shopDateKey,
+  shopMinutesOfDay,
+  shopWeekdayIndex,
+} from '@/lib/shop-settings/pickup-format';
 import { getPastEvents, getUpcomingEvents } from '@/lib/events/queries';
 
 export const dynamic = 'force-dynamic';
@@ -35,7 +39,14 @@ export default async function AdminSchedulePage() {
 
   await connectDB();
 
-  const weekStart = normalizeWeekStart(getMondayOf(new Date()));
+  // Week start on the shop's clock, not the server's: from Sunday evening
+  // Pacific (already Monday UTC) this page used to jump a week ahead of the
+  // counter, showing an empty grid. `shopSettings` is resolved below, so the
+  // shop date is read there and the week derived from it.
+  const shopSettingsForWeek = await getShopSettings();
+  const weekStart = normalizeWeekStart(
+    mondayOfShopDay(shopDateKey(shopSettingsForWeek.timezone, new Date())),
+  );
   const weekEnd = new Date(weekStart.getTime() + 7 * 86400000);
 
   // Deliveries store real timestamps, so they are bounded by the server's own
@@ -105,6 +116,12 @@ export default async function AdminSchedulePage() {
         projectedRevenue={projectedRevenue}
         deliveryCount={deliveryCount}
         staffUsers={staffUsers}
+        initialWeekStart={weekStart.toISOString()}
+        todayMondayIndex={shopWeekdayIndex(shopSettingsForWeek.timezone, new Date())}
+        nowMinutes={shopMinutesOfDay(shopSettingsForWeek.timezone, new Date()) ?? 0}
+        todayLabel={buildTodayDateLabel(
+          shopDateKey(shopSettingsForWeek.timezone, new Date()),
+        )}
       />
       <GrillEventSection upcoming={upcomingEvents} past={pastEvents} />
     </>

@@ -9,6 +9,7 @@ import User from '@/models/User';
 import { getSessionUser } from '@/lib/auth/session';
 import { EMAIL_RE } from '@/lib/validation';
 import { validatePromo } from '@/lib/promos/validate';
+import { PROMO_FAILURE_MESSAGES } from '@/lib/promos/constants';
 import { MAX_PER_LINE } from '@/lib/shop-settings/config';
 import { getShopSettings } from '@/lib/shop-settings/queries';
 import { isPickupSlotId } from '@/lib/shop-settings/pickup-slots';
@@ -262,6 +263,17 @@ export const POST = async (request: NextRequest) => {
         promoDiscount = promoResult.discountCents / 100;
         promoExcludesMember = promoResult.promo.excludesMember;
         promoIdForOrder = promoResult.promo._id;
+      } else {
+        // Fail rather than quietly dropping it. A code can stop being valid
+        // between "Apply" and "Place order" — it expires, or its last seat
+        // goes — and swallowing that charged the customer the full
+        // undiscounted total at Stripe while the checkout summary in front of
+        // them still showed the discount. The points path below already
+        // hard-fails for exactly this reason.
+        return NextResponse.json(
+          { message: PROMO_FAILURE_MESSAGES[promoResult.reason] },
+          { status: 400 },
+        );
       }
     }
     const memberDiscount = promoExcludesMember

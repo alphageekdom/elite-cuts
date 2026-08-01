@@ -1,5 +1,6 @@
 import type { Types } from 'mongoose';
 import type { MessageStatus } from '@/lib/messages/constants';
+import { FORMER_CUSTOMER_NAME } from '@/lib/auth/account-deletion-constants';
 
 // Pure derivation the admin messages page uses to turn populated message
 // documents into client rows. Lifted out of the page so the page reads as
@@ -43,7 +44,7 @@ export function buildMessageRow(m: RawMessage): MessageRow {
   // missing (very old messages from before the field landed), fall back to a
   // generic "Former customer" label so the row still reads cleanly.
   const snapshot = (m.authorNameSnapshot ?? '').trim();
-  const fallbackName = snapshot || 'Former customer';
+  const fallbackName = snapshot || FORMER_CUSTOMER_NAME;
   return {
     id: String(m._id),
     customerName: user?.name ?? fallbackName,

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { CANCELLATION_REASONS, type Order } from '@/models/Order';
 import { isIn } from '@/lib/validation';
+import { hasSettledPayment } from '@/lib/orders/payment-state';
 import type { BranchResult } from './types';
 
 // Builds the orderStatus + cancellationReason + transition-timestamp slice of
@@ -20,10 +21,30 @@ export function applyStatusTransition({
 }: {
   orderStatus: string;
   cancellationReason?: string;
-  existing: Pick<Order, 'readyAt' | 'pickedUpAt' | 'cancelledAt'>;
+  existing: Pick<
+    Order,
+    'readyAt' | 'pickedUpAt' | 'cancelledAt' | 'paymentResult'
+  >;
   now: Date;
 }): BranchResult {
   const updateFields: Record<string, unknown> = { orderStatus };
+
+  // Completing a checkout order whose payment never landed would award points
+  // for money the shop never took, against stock it never decremented — the
+  // books end up wrong in both directions. Refuse rather than silently
+  // skipping the award, so the admin finds out why.
+  if (orderStatus === 'Completed' && !hasSettledPayment(existing)) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        {
+          message:
+            'This order has not been paid, so it cannot be completed. Cancel it instead, or wait for payment to clear.',
+        },
+        { status: 409 },
+      ),
+    };
+  }
 
   if (orderStatus === 'Cancelled') {
     if (cancellationReason && !isIn(CANCELLATION_REASONS, cancellationReason)) {

@@ -6,6 +6,12 @@ import { DEMO_STAFF } from './seed/staff';
 import { DEMO_SHIFTS, currentWeekStartUtc } from './seed/shifts';
 import { slugify } from '@/lib/slugify';
 
+// The zone the LIVE settings document reports — deliberately neither the
+// suite's pinned runtime zone nor the one the restore installs, so an
+// implementation that reads either the server clock or that document is
+// distinguishable from one that reads the snapshot it is about to write.
+const SHOP_TZ = 'Australia/Sydney';
+
 // `restore.ts` pulls in `server-only`, `connectDB` and eight Mongoose models,
 // none of which run outside Next's bundler / a live DB, so each is stubbed.
 //
@@ -41,6 +47,7 @@ const mocks = vi.hoisted(() => ({
   shiftInsertMany: vi.fn(),
   eventDeleteMany: vi.fn(),
   settingsFindOneAndUpdate: vi.fn(),
+  settingsFindOne: vi.fn(),
 }));
 
 vi.mock('@/models/User', () => ({
@@ -82,7 +89,10 @@ vi.mock('@/models/Event', () => ({
 }));
 
 vi.mock('@/models/ShopSettings', () => ({
-  default: { findOneAndUpdate: mocks.settingsFindOneAndUpdate },
+  default: {
+    findOneAndUpdate: mocks.settingsFindOneAndUpdate,
+    findOne: mocks.settingsFindOne,
+  },
 }));
 
 const DEMO_ADMIN_ID = 'demo-admin-id';
@@ -133,6 +143,9 @@ function stubHappyPath({ withDemoAdmin = true } = {}): void {
   );
   mocks.eventDeleteMany.mockResolvedValue({ deletedCount: 1 });
   mocks.settingsFindOneAndUpdate.mockResolvedValue({});
+  mocks.settingsFindOne.mockReturnValue({
+    select: () => ({ lean: async () => ({ timezone: SHOP_TZ }) }),
+  });
 }
 
 beforeEach(() => {
@@ -292,8 +305,51 @@ describe('restoreDemoCatalog — promos, staff, shifts, settings', () => {
     // Upsert by `code` for the same reason products upsert by slug: Order
     // carries a `promoId` reference.
     expect(filter).toEqual({ code: DEMO_PROMOS[0].code });
-    expect(update.usageCount).toBe(0);
+    expect(update.$set.usageCount).toBe(0);
     expect(options.upsert).toBe(true);
+  });
+
+  // The promo counterpart to `seedProductDefaults`. These five fields are
+  // optional with no schema default, and most seeds omit most of them — an
+  // update only writes the keys it is handed, so anything a demo admin typed
+  // into an omitted field used to survive every future restore. Setting
+  // `endsAt` to yesterday on WELCOME10 would have killed the public checkout
+  // chip permanently.
+  it('clears the optional fields each seed leaves out', async () => {
+    const { restoreDemoCatalog } = await import('./restore');
+    await restoreDemoCatalog();
+
+    for (const [index, seed] of DEMO_PROMOS.entries()) {
+      const [, update] = mocks.promoFindOneAndUpdate.mock.calls[index];
+      for (const field of [
+        'startsAt',
+        'endsAt',
+        'usageLimit',
+        'minSubtotal',
+        'maxDiscount',
+      ] as const) {
+        if (seed[field] === undefined) {
+          expect(update.$unset ?? {}).toHaveProperty(field);
+        } else {
+          // A field the seed DOES set must be written, never cleared.
+          expect(update.$set[field]).toBe(seed[field]);
+          expect(update.$unset ?? {}).not.toHaveProperty(field);
+        }
+      }
+    }
+  });
+
+  it('never both sets and unsets the same promo field', async () => {
+    // Mongo rejects an update that touches one path in two operators, so a
+    // future seed gaining a field must not be able to produce one.
+    const { restoreDemoCatalog } = await import('./restore');
+    await restoreDemoCatalog();
+
+    for (const [, update] of mocks.promoFindOneAndUpdate.mock.calls) {
+      const setKeys = Object.keys(update.$set ?? {});
+      const unsetKeys = Object.keys(update.$unset ?? {});
+      expect(setKeys.filter((k) => unsetKeys.includes(k))).toEqual([]);
+    }
   });
 
   it('clears every week, not just the current one, before reseeding', async () => {
@@ -308,10 +364,33 @@ describe('restoreDemoCatalog — promos, staff, shifts, settings', () => {
 
     // The seed carries no weekStart of its own, so the reseeded week is
     // always the one the visitor is looking at.
-    const weekStart = currentWeekStartUtc();
+    const { DEMO_SHOP_SETTINGS } = await import("./seed/settings");
+    const weekStart = currentWeekStartUtc(DEMO_SHOP_SETTINGS.timezone);
     const inserted = mocks.shiftInsertMany.mock.calls[0][0];
     expect(inserted).toHaveLength(DEMO_SHIFTS.length);
     expect(inserted[0].weekStart).toEqual(weekStart);
+  });
+
+  it('keys the reseeded week off the zone it installs, not the one it replaces', async () => {
+    const { restoreDemoCatalog } = await import('./restore');
+    const { DEMO_SHOP_SETTINGS } = await import('./seed/settings');
+    await restoreDemoCatalog();
+
+    // Two zone bugs meet here. Reading the RUNTIME's calendar date planted the
+    // roster a week ahead whenever server and shop disagreed. Reading the LIVE
+    // settings document fixed that but introduced a subtler one: the restore
+    // overwrites that same document moments later, so a demo admin who had set
+    // the shop to Honolulu keyed the week to a zone that stopped applying the
+    // instant the restore finished.
+    //
+    // The mocked live document reports Sydney — deliberately neither the
+    // runtime zone nor the installed one — so this assertion fails if the
+    // implementation reads it.
+    const inserted = mocks.shiftInsertMany.mock.calls[0][0];
+    expect(inserted[0].weekStart).toEqual(
+      currentWeekStartUtc(DEMO_SHOP_SETTINGS.timezone),
+    );
+    expect(mocks.settingsFindOne).not.toHaveBeenCalled();
   });
 
   it('replaces staff wholesale and upserts the settings singleton', async () => {

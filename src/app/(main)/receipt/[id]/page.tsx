@@ -9,6 +9,7 @@ import {
   orderHasRealizedDifference,
   realizedOrderTotal,
 } from '@/lib/orders/line';
+import { DELIVERY_FEE } from '@/lib/pricing';
 import {
   formatPhoneHref,
   formatShopCityStateZip,
@@ -96,6 +97,7 @@ export default async function ReceiptPage({ params }: Props) {
     memberDiscount: order.memberDiscount,
     promoDiscount: order.promoDiscount,
     pointsRedemptionValueCents: order.pointsRedemptionValueCents,
+    deliveryFee: order.fulfillmentType === 'delivery' ? DELIVERY_FEE : 0,
   });
 
   const displayName  = order.contactName  || user?.name  || 'Customer';

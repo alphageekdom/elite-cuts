@@ -78,10 +78,9 @@ export default async function AdminCustomersPage() {
   const now = Date.now();
   const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
   let newThisWeek = 0;
-  // Demo accounts are excluded here too so the header subtitle stays consistent
-  // with the stat-chip counts (which skip demo accounts via `countByStat`).
+  // Counts every row the table renders, demo included — same reason as
+  // `countByStat`: the subtitle sits directly above the list and describes it.
   for (const c of customers) {
-    if (c.isDemo) continue;
     if (now - new Date(c.createdAt).getTime() < ONE_WEEK_MS) newThisWeek++;
   }
 
@@ -89,7 +88,7 @@ export default async function AdminCustomersPage() {
     <CustomersClient
       customers={customers}
       counts={counts}
-      total={customers.filter((c) => !c.isDemo).length}
+      total={customers.length}
       newThisWeek={newThisWeek}
     />
   );

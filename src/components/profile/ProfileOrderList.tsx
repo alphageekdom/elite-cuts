@@ -4,7 +4,6 @@ import { formatMoney, productImageSrc } from '@/lib/format';
 import type { ProfileOrder } from '@/types/profile';
 import { orderRef } from '@/lib/orders/reference';
 import { PROFILE_ORDER_STATUS_STYLES } from '@/lib/orders/status';
-import { hasRealizedWeight, realizedLineTotal, estimatedLineTotal } from '@/lib/orders/line';
 import OrderHelpButton from './OrderHelpButton';
 
 type Props = {
@@ -58,19 +57,12 @@ export default function ProfileOrderList({ orders, showAll = false }: Props) {
         const isPartiallyRefunded = refundedCount > 0 && !isFullyRefunded;
         // Once cuts are weighed at pickup, surface a small "final at pickup"
         // delta under the order total so the customer knows the exact figure
-        // settled in-store. Stays hidden for unfulfilled orders.
-        const orderHasRealizedDifference = order.orderItems.some(
-          (item) =>
-            hasRealizedWeight(item) && realizedLineTotal(item) !== estimatedLineTotal(item),
-        );
-        const realizedTotalShift = orderHasRealizedDifference
-          ? Math.round(
-              order.orderItems.reduce(
-                (sum, item) => sum + (realizedLineTotal(item) - estimatedLineTotal(item)),
-                0,
-              ) * 100,
-            ) / 100
-          : 0;
+        // settled in-store. Absent when no line was weighed.
+        //
+        // Comes from the server rather than summing the line deltas here: that
+        // sum leaves out tax, so this card quoted a smaller shift than the
+        // receipt, confirmation and admin drawer did for the very same order.
+        const realizedTotalShift = order.realizedTotalShift;
 
         return (
           <div
@@ -129,7 +121,7 @@ export default function ProfileOrderList({ orders, showAll = false }: Props) {
               <p className="font-display font-medium text-[20px] tabular-nums">
                 {formatMoney(order.totalCost)}
               </p>
-              {orderHasRealizedDifference && (
+              {realizedTotalShift !== undefined && (
                 <p className="font-mono text-[10px] tracking-[0.04em] text-camel-deep italic">
                   {realizedTotalShift >= 0 ? '+' : '−'}
                   {formatMoney(Math.abs(realizedTotalShift))} at pickup

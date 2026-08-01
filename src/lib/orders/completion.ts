@@ -6,7 +6,7 @@ import Order from '@/models/Order';
 import Product from '@/models/Product';
 import Notification from '@/models/Notification';
 import { getShopSettings } from '@/lib/shop-settings/queries';
-import { computeAward, getQualifyingPoints, getTier, tierRank } from '@/lib/rewards/calculator';
+import { addMonths, computeAward, getQualifyingPoints, getTier, tierRank } from '@/lib/rewards/calculator';
 
 // Side-effects to run whenever an order first transitions into Completed:
 // award reward points to the customer, then fire low_stock alerts to admins
@@ -31,9 +31,13 @@ export async function awardOrderCompletion(opts: {
     // user doc is later mutated. Order is the historical record of truth.
     await Order.findByIdAndUpdate(opts.orderId, { $set: { pointsAwarded: pointsEarned } });
 
+    // Calendar months, matching the tier window. A flat 30 days per month
+    // made "points expire after 12 months" mean 360 days, so the customer-
+    // facing copy overstated the life of every award by several days and the
+    // one rewards system carried two different definitions of a month.
     const expiresAt =
       settings.pointsExpiryMonths > 0
-        ? new Date(awardedOn.getTime() + settings.pointsExpiryMonths * 30 * 24 * 60 * 60 * 1000)
+        ? addMonths(awardedOn, settings.pointsExpiryMonths)
         : null;
 
     await User.findByIdAndUpdate(opts.customerUserId, {
@@ -164,15 +168,51 @@ export async function reverseOrderRedemption(opts: {
     .lean();
   if (!order || !order.pointsRedeemed || order.pointsRedeemed <= 0) return;
 
-  const alreadyReturned = Math.max(0, order.pointsRedemptionReturned ?? 0);
-  const remainder = Math.max(0, order.pointsRedeemed - alreadyReturned);
-  if (remainder <= 0) return;
-
+  // Asking for the whole redemption and letting the database clamp is how the
+  // full-cancel case stays correct: the clamp below returns exactly what is
+  // still outstanding, whatever a concurrent call has already taken.
   const requested =
     typeof opts.pointsToReturn === 'number'
       ? Math.max(0, Math.floor(opts.pointsToReturn))
-      : remainder;
-  const points = Math.min(requested, remainder);
+      : order.pointsRedeemed;
+  if (requested <= 0) return;
+
+  // Claim the return on the ORDER first, atomically, and credit the customer
+  // only for what the claim actually took.
+  //
+  // This used to read the counter, compute a remainder, credit the user, then
+  // `$inc` the counter. Two concurrent reversals — a double-clicked refund, or
+  // a refund racing a cancel — both read the same counter, both saw the full
+  // remainder, and both credited it, handing back twice the points the
+  // customer ever spent. The pipeline update recomputes the ceiling
+  // server-side inside a single atomic operation, so the second call sees the
+  // first one's write and claims nothing.
+  const before = await Order.findOneAndUpdate(
+    { _id: opts.orderId },
+    [
+      {
+        $set: {
+          pointsRedemptionReturned: {
+            $min: [
+              '$pointsRedeemed',
+              {
+                $add: [{ $ifNull: ['$pointsRedemptionReturned', 0] }, requested],
+              },
+            ],
+          },
+        },
+      },
+    ],
+    { returnDocument: 'before' },
+  )
+    .select('pointsRedeemed pointsRedemptionReturned')
+    .lean();
+  if (!before) return;
+
+  const alreadyReturned = Math.max(0, before.pointsRedemptionReturned ?? 0);
+  const points =
+    Math.min(before.pointsRedeemed ?? 0, alreadyReturned + requested) -
+    alreadyReturned;
   if (points <= 0) return;
 
   await User.findByIdAndUpdate(order.user, {
@@ -186,9 +226,5 @@ export async function reverseOrderRedemption(opts: {
         createdAt: new Date(),
       },
     },
-  });
-
-  await Order.findByIdAndUpdate(opts.orderId, {
-    $inc: { pointsRedemptionReturned: points },
   });
 }

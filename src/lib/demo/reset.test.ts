@@ -199,27 +199,32 @@ describe('resetDemoCustomerState — demo customer found', () => {
     mocks.userUpdateOne.mockResolvedValue({ modifiedCount: 1 });
   });
 
-  it('scopes every delete by the demo customer id', async () => {
+  it('scopes every delete by BOTH demo account ids', async () => {
     const { resetDemoCustomerState } = await import('./reset');
     await resetDemoCustomerState();
 
-    expect(mocks.orderDeleteMany).toHaveBeenCalledWith({ user: demoId });
-    expect(mocks.cartDeleteMany).toHaveBeenCalledWith({ user: demoId });
-    expect(mocks.savedCardDeleteMany).toHaveBeenCalledWith({ user: demoId });
-    // Messages the demo customer sent the shop sit outside every other
-    // owner-scoped delete, and used to survive the reset entirely — visible
-    // to the next demo visitor and to every admin, permanently.
-    expect(mocks.messageDeleteMany).toHaveBeenCalledWith({ user: demoId });
+    // The storefront is open to any signed-in session and the no-charge
+    // checkout tile enables itself for any demo account, so a visitor
+    // exploring the ADMIN demo can shop too. Scoping these to the customer
+    // alone left those rows behind permanently.
+    const bothOwners = { user: { $in: [demoId, demoAdminId] } };
+    expect(mocks.orderDeleteMany).toHaveBeenCalledWith(bothOwners);
+    expect(mocks.cartDeleteMany).toHaveBeenCalledWith(bothOwners);
+    expect(mocks.savedCardDeleteMany).toHaveBeenCalledWith(bothOwners);
+    // Messages sent to the shop sit outside every other owner-scoped delete,
+    // and used to survive the reset entirely — visible to the next demo
+    // visitor and to every admin, permanently.
+    expect(mocks.messageDeleteMany).toHaveBeenCalledWith(bothOwners);
     // Notification uses `userId`, not `user` — Phase B's exploration
-    // flagged the schema inconsistency. Both demo accounts are cleared: the
-    // new-order fanout notifies every admin, so the demo admin's bell would
-    // otherwise grow without bound and point at deleted orders.
+    // flagged the schema inconsistency. The new-order fanout notifies every
+    // admin, so the demo admin's bell would otherwise grow without bound and
+    // point at deleted orders.
     expect(mocks.notificationDeleteMany).toHaveBeenCalledWith({
       userId: { $in: [demoId, demoAdminId] },
     });
   });
 
-  it('clears only the demo customer notifications when no demo admin exists', async () => {
+  it('scopes to the customer alone when no demo admin exists', async () => {
     mocks.userFindOne.mockReset();
     mockCustomerThenAdmin({ _id: demoId }, null);
 
@@ -229,18 +234,34 @@ describe('resetDemoCustomerState — demo customer found', () => {
     expect(mocks.notificationDeleteMany).toHaveBeenCalledWith({
       userId: { $in: [demoId] },
     });
+    expect(mocks.orderDeleteMany).toHaveBeenCalledWith({
+      user: { $in: [demoId] },
+    });
   });
 
-  it('pulls the demo id out of every review helpful-voter list', async () => {
+  it('clears the demo admin storefront leftovers without touching its rewards', async () => {
     const { resetDemoCustomerState } = await import('./reset');
     await resetDemoCustomerState();
 
-    // Helpful votes live on shared Review docs, not the demo customer's own
+    const adminCall = mocks.userUpdateOne.mock.calls.find(
+      ([filter]) => (filter as { _id: string })._id === demoAdminId,
+    );
+    expect(adminCall).toBeDefined();
+    // Shopping fields only — the admin account demonstrates the dashboard,
+    // not the loyalty programme, so it gets no points seed.
+    expect(adminCall![1].$set).toEqual({ savedCuts: [], addresses: [] });
+  });
+
+  it('pulls both demo ids out of every review helpful-voter list', async () => {
+    const { resetDemoCustomerState } = await import('./reset');
+    await resetDemoCustomerState();
+
+    // Helpful votes live on shared Review docs, not the demo accounts' own
     // collections, so they must be scrubbed separately or they'd persist
     // across the reset and reshuffle the "Most helpful" badge.
     expect(mocks.reviewUpdateMany).toHaveBeenCalledWith(
-      { helpfulVoters: demoId },
-      { $pull: { helpfulVoters: demoId } },
+      { helpfulVoters: { $in: [demoId, demoAdminId] } },
+      { $pull: { helpfulVoters: { $in: [demoId, demoAdminId] } } },
     );
   });
 
@@ -248,8 +269,11 @@ describe('resetDemoCustomerState — demo customer found', () => {
     const { resetDemoCustomerState } = await import('./reset');
     await resetDemoCustomerState();
 
-    expect(mocks.userUpdateOne).toHaveBeenCalledOnce();
-    const [filter, update] = mocks.userUpdateOne.mock.calls[0];
+    const customerCall = mocks.userUpdateOne.mock.calls.find(
+      ([f]) => (f as { _id: string })._id === demoId,
+    );
+    expect(customerCall).toBeDefined();
+    const [filter, update] = customerCall!;
     expect(filter).toEqual({ _id: demoId });
     expect(update.$set).toMatchObject({
       savedCuts: [],
@@ -266,7 +290,9 @@ describe('resetDemoCustomerState — demo customer found', () => {
     );
     await resetDemoCustomerState();
 
-    const [, update] = mocks.userUpdateOne.mock.calls[0];
+    const [, update] = mocks.userUpdateOne.mock.calls.find(
+      ([f]) => (f as { _id: string })._id === demoId,
+    )!;
     expect(update.$set.rewardPoints).toBe(DEMO_FALLBACK_POINTS);
     expect(update.$set.lifetimePoints).toBe(DEMO_FALLBACK_POINTS);
 
@@ -344,7 +370,9 @@ describe('resetDemoCustomerState — authored reviews', () => {
     const { resetDemoCustomerState } = await import('./reset');
     const counts = await resetDemoCustomerState();
 
-    expect(mocks.reviewDeleteMany).toHaveBeenCalledWith({ user: demoId });
+    expect(mocks.reviewDeleteMany).toHaveBeenCalledWith({
+      user: { $in: [demoId] },
+    });
     expect(counts.reviewsDeleted).toBe(3);
   });
 
@@ -368,11 +396,27 @@ describe('resetDemoCustomerState — authored reviews', () => {
 describe('resetDemoData', () => {
   const demoId = 'demo-customer-id';
 
+  const demoAdminId = 'demo-admin-id';
+
+  // The last write aimed at the demo CUSTOMER. Found by filter rather than by
+  // index because the wipe also writes the demo admin's storefront fields.
+  const lastCustomerWrite = () => {
+    const calls = mocks.userUpdateOne.mock.calls.filter(
+      ([f]) => (f as { _id: string })._id === demoId,
+    );
+    return calls[calls.length - 1][1];
+  };
+
   beforeEach(() => {
-    // `mockReturnValue` (not `...Once`) because the orchestrator looks up the
-    // demo customer again after the catalog restore, on top of the two
-    // lookups the customer wipe already does.
-    mocks.userFindOne.mockReturnValue(findOneChain({ _id: demoId }));
+    // Keyed off the filter rather than call order: the wipe looks up the
+    // customer AND the admin, and the orchestrator looks the customer up
+    // again after the catalog restore. Returning distinct docs keeps the two
+    // demo accounts distinguishable, which is what the wipe scopes by.
+    mocks.userFindOne.mockImplementation((filter?: { demoType?: string }) =>
+      findOneChain(
+        filter?.demoType === 'admin' ? { _id: demoAdminId } : { _id: demoId },
+      ),
+    );
     mocks.orderDeleteMany.mockResolvedValue({ deletedCount: 3 });
     mocks.cartDeleteMany.mockResolvedValue({ deletedCount: 1 });
     mocks.savedCardDeleteMany.mockResolvedValue({ deletedCount: 2 });
@@ -472,21 +516,20 @@ describe('resetDemoData', () => {
     const { resetDemoData } = await import('./reset');
     await resetDemoData();
 
-    // Two writes: the wipe's fallback entry, then the real history. The
-    // fallback exists so `resetDemoCustomerState` alone leaves a coherent
-    // account; the second write is what makes the rewards rows add up to the
-    // headline balance.
-    expect(mocks.userUpdateOne).toHaveBeenCalledTimes(2);
-    const [, secondWrite] = mocks.userUpdateOne.mock.calls;
-    expect(secondWrite[1].$set.pointsHistory).toHaveLength(2);
-    expect(secondWrite[1].$set.pointsHistory[0].orderId).toBe('order-1');
+    // The wipe writes a fallback entry, then the orchestrator overwrites it
+    // with the real history. The fallback exists so `resetDemoCustomerState`
+    // alone leaves a coherent account; this second write is what makes the
+    // rewards rows add up to the headline balance.
+    const ledgerWrite = lastCustomerWrite();
+    expect(ledgerWrite.$set.pointsHistory).toHaveLength(2);
+    expect(ledgerWrite.$set.pointsHistory[0].orderId).toBe('order-1');
   });
 
   it('banks the sum of the seeded awards, not the fallback constant', async () => {
     const { resetDemoData, DEMO_FALLBACK_POINTS } = await import('./reset');
     await resetDemoData();
 
-    const [, secondWrite] = mocks.userUpdateOne.mock.calls;
+    const secondWrite = [null, lastCustomerWrite()] as const;
     // 89 + 27 from the seed mock. The balance used to be a fixed number the
     // per-order awards were reverse-engineered to match, which put rows like
     // "+212" against a $159.99 order under a heading reading the shop's real
@@ -518,9 +561,9 @@ describe('resetDemoData', () => {
     // An empty catalog seeds no orders. Writing a zero balance over the
     // fallback would leave the rewards tab with nothing to demonstrate, so
     // the second write must not touch the points fields at all.
-    const [, secondWrite] = mocks.userUpdateOne.mock.calls;
-    expect(secondWrite[1].$set).not.toHaveProperty('rewardPoints');
-    expect(secondWrite[1].$set).not.toHaveProperty('lifetimePoints');
-    expect(secondWrite[1].$set).not.toHaveProperty('pointsHistory');
+    const finalWrite = lastCustomerWrite();
+    expect(finalWrite.$set).not.toHaveProperty('rewardPoints');
+    expect(finalWrite.$set).not.toHaveProperty('lifetimePoints');
+    expect(finalWrite.$set).not.toHaveProperty('pointsHistory');
   });
 });

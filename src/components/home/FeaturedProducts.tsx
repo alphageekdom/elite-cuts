@@ -8,6 +8,7 @@ import Product, { type SerializedProduct } from '@/models/Product';
 import { PUBLIC_PRODUCT_PROJECTION } from '@/lib/products/public-projection';
 import { convertToSerializableObject } from '@/lib/convertToObject';
 import { PRODUCT_CATEGORIES } from '@/lib/admin/constants';
+import { VISIBLE_PRODUCT_FILTER } from '@/lib/products/constants';
 
 import ProductCard from '@/components/product/ProductCard';
 
@@ -23,12 +24,14 @@ const FeaturedProducts = async () => {
   await connectDB();
 
   // .lean() returns plain objects for serialization across the
-  // server/client boundary. Filter out featured products without an
-  // image so the card never resolves to /images/products/undefined.
+  // server/client boundary. The shared visible filter covers the
+  // has-an-image rule (so the card never resolves to
+  // /images/products/undefined) and excludes soft-deleted cuts, which this
+  // strip used to recommend until an admin also cleared the featured flag.
   const products = await Product.find(
     {
+      ...VISIBLE_PRODUCT_FILTER,
       isFeatured: true,
-      'images.0': { $exists: true },
     },
     PUBLIC_PRODUCT_PROJECTION,
   )

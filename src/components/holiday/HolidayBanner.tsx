@@ -1,5 +1,7 @@
 import StoreInfoModal from '@/components/ui/StoreInfoModal';
 import { formatDaysUntil, getActiveHoliday } from '@/lib/announcements/holidays';
+import { getShopSettings } from '@/lib/shop-settings/queries';
+import { shopDateKey } from '@/lib/shop-settings/pickup-format';
 import type { SerializedEvent } from '@/lib/events/config';
 
 import HolidayDismissibleShell from './HolidayDismissibleShell';
@@ -8,11 +10,12 @@ type Props = {
   activeEvent?: SerializedEvent | null;
 };
 
-export default function HolidayBanner({ activeEvent }: Props) {
+export default async function HolidayBanner({ activeEvent }: Props) {
   // Yield to a live grill event — same visual treatment, more time-sensitive.
   if (activeEvent) return null;
 
-  const active = getActiveHoliday();
+  const { timezone } = await getShopSettings();
+  const active = getActiveHoliday(shopDateKey(timezone, new Date()));
   if (!active) return null;
 
   const { holiday, date, daysUntil } = active;

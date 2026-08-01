@@ -1,11 +1,11 @@
-import { buildTodayDateLabel } from '@/lib/admin/schedule';
-
 type Props = {
   staffCount: number;
   slotsBooked: number;
   projectedRevenue: number;
   deliveryCount: number;
   openLabel: string;
+  /** Shop-local day name + date, resolved on the server. */
+  todayLabel: { dayName: string; dateStr: string };
 };
 
 export default function ScheduleTodayCard({
@@ -14,9 +14,9 @@ export default function ScheduleTodayCard({
   projectedRevenue,
   deliveryCount,
   openLabel,
+  todayLabel,
 }: Props) {
-  const now = new Date();
-  const { dayName, dateStr } = buildTodayDateLabel(now);
+  const { dayName, dateStr } = todayLabel;
   const revLabel =
     projectedRevenue >= 1000
       ? `$${(projectedRevenue / 1000).toFixed(1)}K`

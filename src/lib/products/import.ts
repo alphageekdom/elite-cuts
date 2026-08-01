@@ -93,6 +93,32 @@ export type ProductDoc = {
   isEstimatedPrice: boolean;
 };
 
+// Every optional key on `ProductDoc` — the ones a CSV row can leave blank.
+//
+// `toProductDoc` sets these to `undefined` when the column is empty, and
+// Mongoose drops undefined keys from `$set`, so an update alone can never
+// clear one. The import route pairs each omitted field with an explicit
+// `$unset`. Kept beside `ProductDoc` because the two must stay in step: a new
+// optional field added there and missed here would silently become
+// un-clearable.
+export const CLEARABLE_PRODUCT_FIELDS = [
+  'packagePrice',
+  'packageWeightLb',
+  'pricePerLb',
+  'estimatedWeightLb',
+  'averageWeightLb',
+  'minWeightLb',
+  'maxWeightLb',
+  'unitPrice',
+  'bundlePrice',
+  'includedItems',
+  'sku',
+  'gradeBreed',
+  'supplier',
+  'parLevel',
+  'reorderPoint',
+] as const satisfies ReadonlyArray<keyof ProductDoc>;
+
 // Existing-doc projection used by the diff. The find query in the route
 // projects exactly these fields so the diff has everything it needs
 // without pulling images / rating / timestamps. `price` stays on this
