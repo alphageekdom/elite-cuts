@@ -22,9 +22,12 @@ export const useHandleAddToCart = (
 
     setIsAddingToCart(true);
     try {
+      // No catch: `addItemToCart` handles and toasts its own failures and
+      // always resolves. A catch here was unreachable, and would have
+      // double-toasted the moment it stopped being. `clearCart` is the
+      // deliberate exception in that API — it resolves a boolean because the
+      // expiry timer has to know whether the clear actually landed.
       await addItemToCart(product, opts);
-    } catch {
-      toast.error('Could not add to cart');
     } finally {
       setIsAddingToCart(false);
     }

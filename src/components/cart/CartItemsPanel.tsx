@@ -8,6 +8,7 @@ import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
 import { countCartCuts, countCartItems } from '@/lib/cart/counts';
 import { FOCUS_RING } from '@/lib/styles';
 import CartItemRow from './CartItemRow';
+import CartLoadError from './CartLoadError';
 
 import CheckIcon from '@/components/ui/icons/CheckIcon';
 import XIcon from '@/components/ui/icons/XIcon';
@@ -44,10 +45,35 @@ const EmptyState = () => (
   </div>
 );
 
+const LoadingRows = () => (
+  <div className='px-6 py-2 sm:px-8' aria-busy='true'>
+    <span className='sr-only'>Loading your cart</span>
+    {[0, 1, 2].map((row) => (
+      <div
+        key={row}
+        aria-hidden='true'
+        className='flex animate-pulse gap-5 border-b border-line-soft py-6 last:border-b-0'
+      >
+        <div className='h-28 w-24 shrink-0 rounded-sm bg-cream-deep' />
+        <div className='flex-1 space-y-3 pt-1'>
+          <div className='h-4 w-2/5 rounded-sm bg-cream-deep' />
+          <div className='h-3 w-1/4 rounded-sm bg-cream-deep' />
+          <div className='h-10 w-32 rounded-full bg-cream-deep' />
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
 const CartItemsPanel = () => {
-  const { cartItems, clearCart } = useCartContext();
+  const { cartItems, clearCart, loading, loadError } = useCartContext();
   const count = countCartItems(cartItems);
   const cuts = countCartCuts(cartItems);
+
+  // Until the cart has actually loaded there is no honest count to print, and
+  // "0 items" over a cart that turns out to hold six is the same lie the empty
+  // state used to tell.
+  const countKnown = count > 0 || (!loading && !loadError);
 
   const [confirmingClear, setConfirmingClear] = useState(false);
 
@@ -107,8 +133,8 @@ const CartItemsPanel = () => {
           tabIndex={-1}
           className={`font-display text-[20px] font-medium tracking-tight sm:text-[22px] ${FOCUS_RING}`}
         >
-          {count} {count === 1 ? 'item' : 'items'}{' '}
-          {cuts !== count && (
+          {countKnown ? `${count} ${count === 1 ? 'item' : 'items'}` : 'Your cart'}{' '}
+          {countKnown && cuts !== count && (
             // The separator is a real character rather than spacing: two
             // inline elements with only a margin between them have no
             // whitespace in the text, so this announced as
@@ -156,7 +182,14 @@ const CartItemsPanel = () => {
           ))}
       </header>
 
-      {count === 0 ? (
+      {count === 0 && loading ? (
+        <LoadingRows />
+      ) : count === 0 && loadError ? (
+        // Same treatment the drawer gives a failed load, from the same
+        // component — the two used to disagree, and this page was the one
+        // still telling customers their cart was empty when it wasn't.
+        <CartLoadError className='px-8 py-16' />
+      ) : count === 0 ? (
         <EmptyState />
       ) : (
         <div>

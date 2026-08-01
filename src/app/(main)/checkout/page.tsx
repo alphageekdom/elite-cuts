@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 import CheckoutCancelToast from '@/components/checkout/CheckoutCancelToast';
 import CheckoutContactCard from '@/components/checkout/CheckoutContactCard';
 import CheckoutGuard from '@/components/checkout/CheckoutGuard';
@@ -11,7 +10,6 @@ import FulfillmentToggle from '@/components/checkout/FulfillmentToggle';
 import PaymentMethodSelector from '@/components/checkout/PaymentMethodSelector';
 import PlaceOrderButton from '@/components/checkout/PlaceOrderButton';
 import connectDB from '@/config/database';
-import Cart from '@/models/Cart';
 import User from '@/models/User';
 import {
   CheckoutProvider,
@@ -76,20 +74,23 @@ export default async function CheckoutPage() {
           now,
         }).timing;
 
-  // Prefill + empty-cart guard only run for signed-in users. Guests have no
-  // server cart (theirs lives in localStorage) so the server can't make the
-  // empty-cart call from here — CheckoutGuard handles that client-side and
-  // bounces to /cart before paint.
+  // Prefill only. The empty-cart bounce is CheckoutGuard's job alone.
+  //
+  // This used to redirect to /cart when the signed-in account's server cart
+  // was empty, which is exactly the state a guest-first shopper is in the
+  // instant they sign in inline: `router.refresh()` fires as soon as the
+  // credentials land, and the guest cart hasn't been merged yet — the merge
+  // waits on the session flip and then POSTs one line at a time. The redirect
+  // won that race, the provider unmounted, and every typed field, the promo,
+  // the points and the pickup slot went with it. Reproduced 2026-07-31.
+  //
+  // The server cannot make this call correctly because it cannot see a guest
+  // cart in localStorage. CheckoutGuard can see both, so it owns the rule.
   let initialContact: CheckoutInitialContact | undefined;
   let savedAddresses: SavedAddress[] | undefined;
 
   if (sessionUser?.userId) {
     await connectDB();
-    const cart = await Cart.findOne({ user: sessionUser.userId })
-      .select('items')
-      .lean();
-    if (!cart || cart.items.length === 0) redirect('/cart');
-
     const userDoc = await User.findById(sessionUser.userId)
       .select('name email phone addresses')
       .lean();

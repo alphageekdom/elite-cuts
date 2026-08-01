@@ -73,6 +73,28 @@ export function isPickupSlotId(value: string): boolean {
   return !Number.isNaN(new Date(`${value}:00`).getTime());
 }
 
+// Whether a slot id is one the shop is actually offering right now.
+//
+// `isPickupSlotId` only answers "is this shaped like a slot and parseable",
+// which was the sole check the checkout route ran. That accepted any
+// well-formed datetime: a window that had already passed while the customer
+// filled the form, 3am, or a Monday the shop is closed. It also meant the
+// picker's rules — open days, the lead-time cutoff, the booking window — were
+// enforced nowhere but in the UI that drew the grid.
+//
+// Deliberately built from `buildPickupDays`, the same function the picker
+// renders from, so the two cannot drift into disagreeing about what is
+// bookable.
+export function isBookablePickupSlot(
+  slotId: string,
+  input: PickupDaysInput,
+): boolean {
+  if (!isPickupSlotId(slotId)) return false;
+  return buildPickupDays(input).some((day) =>
+    day.slots.some((slot) => slot.id === slotId),
+  );
+}
+
 // Renders a stored slot for the prose surfaces: the confirmation page, the
 // receipt and the admin order drawer. Anything that isn't a slot id comes
 // back untouched — legacy orders hold a bare label like "4-5p" and an admin

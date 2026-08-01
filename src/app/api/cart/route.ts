@@ -27,13 +27,45 @@ const CART_PRODUCT_POPULATE = {
   select: PUBLIC_PRODUCT_PROJECTION,
 } as const;
 
+const findCart = (userId: string) =>
+  Cart.findOne({ user: userId }).populate(CART_PRODUCT_POPULATE);
+
 // Loads the user's cart, populating each line's product so the client can
 // render names / images / prices without a follow-up call. Creates an empty
 // cart on first read so subsequent mutations have a doc to mutate.
 const loadCart = async (userId: string) => {
-  const cart =
-    (await Cart.findOne({ user: userId }).populate(CART_PRODUCT_POPULATE)) ??
-    (await Cart.create({ user: userId, items: [] }));
+  let cart = await findCart(userId);
+
+  if (!cart) {
+    // Check-then-insert against the unique `user` index: two requests that
+    // both find nothing both try to insert, and the loser used to surface as
+    // a 500 "Something went wrong" with the cart apparently unloadable. It
+    // needs no orchestration to hit — an open second tab at sign-in, or the
+    // hydrate GET racing a first add-to-cart, since the button is interactive
+    // before the fetch resolves. The demo customer meets it most mornings,
+    // because the nightly reset deletes their cart doc.
+    //
+    // An upsert would be the tidier shape but not here: `timestamps: true` on
+    // this schema means Mongoose stamps `updatedAt` on every findOneAndUpdate,
+    // and `updatedAt` is what anchors the 30-minute expiry timer — so every
+    // cart read would re-anchor it and the cart would never expire.
+    try {
+      cart = await Cart.create({ user: userId, items: [] });
+    } catch (error) {
+      if (
+        !error ||
+        typeof error !== 'object' ||
+        !('code' in error) ||
+        (error as { code: unknown }).code !== 11000
+      ) {
+        throw error;
+      }
+      // Lost the insert race. The winner's doc exists now, so read that
+      // rather than failing a request the customer can't retry into success.
+      cart = await findCart(userId);
+    }
+    if (!cart) throw new Error('Cart could not be created or read');
+  }
 
   // Self-heal: strip any items whose product was deleted from the DB, and
   // fold any duplicate product lines into one with summed quantities.

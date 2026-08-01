@@ -15,7 +15,13 @@ import { toast } from 'sonner';
 
 import type { SerializedProduct } from '@/models/Product';
 import { MAX_PER_LINE } from '@/lib/shop-settings/config';
-import { unitPrice } from '@/lib/products/pricing';
+import { countCartItems } from '@/lib/cart/counts';
+import {
+  applyAddToLines,
+  dedupeLines,
+  removeFromLines,
+  setQuantityOnLines,
+} from '@/lib/cart/lines';
 
 // Minimum product fields a cart line needs to render. `_id` keys the line,
 // name + images + category drive the card UI; the Phase 1 display labels
@@ -139,62 +145,6 @@ const clearGuestCart = (): void => {
   }
 };
 
-// Fold any duplicate product lines into one, summing their quantities.
-// Defends against legacy server-cart docs that pre-date the dedup-on-add
-// logic and any future ingress path that skips it — every cart consumer
-// (drawer, cart page, checkout) reads one line per product as a result,
-// and React's per-product key in those renders stays unique.
-const dedupeLines = (lines: CartLine[]): CartLine[] => {
-  const byProduct = new Map<string, CartLine>();
-  for (const line of lines) {
-    if (!line.product?._id) continue;
-    const id = String(line.product._id);
-    const existing = byProduct.get(id);
-    if (existing) {
-      byProduct.set(id, {
-        ...existing,
-        quantity: existing.quantity + line.quantity,
-      });
-    } else {
-      byProduct.set(id, line);
-    }
-  }
-  return [...byProduct.values()];
-};
-
-// Apply an incremental "add N of this product" to a guest cart array. New
-// line snapshots the product's per-unit estimated price so totals stay
-// stable even if the catalog price changes mid-session — and so per-lb
-// cuts compute the right line estimate (pricePerLb × estimatedWeightLb)
-// rather than the bare per-lb rate.
-const applyAddToLines = (
-  lines: CartLine[],
-  product: CartLineProduct,
-  addBy: number,
-): CartLine[] => {
-  const idx = lines.findIndex((l) => l.product._id === product._id);
-  if (idx === -1) {
-    return [...lines, { product, quantity: addBy, price: unitPrice(product, product.price) }];
-  }
-  const next = [...lines];
-  next[idx] = { ...next[idx], quantity: next[idx].quantity + addBy };
-  return next;
-};
-
-const setQuantityOnLines = (
-  lines: CartLine[],
-  productId: string,
-  quantity: number,
-): CartLine[] => {
-  if (quantity <= 0) return lines.filter((l) => l.product._id !== productId);
-  return lines.map((l) =>
-    l.product._id === productId ? { ...l, quantity } : l,
-  );
-};
-
-const removeFromLines = (lines: CartLine[], productId: string): CartLine[] =>
-  lines.filter((l) => l.product._id !== productId);
-
 // The API's envelope messages are already written for customers ("Only 6 in
 // stock") and pass straight through. The two that aren't: a 401, which arrives
 // as the bare word "Unauthorized", and a dropped connection, where fetch
@@ -243,6 +193,43 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // request.
   const hydratingRef = useRef(false);
 
+  // Cart mutations run one at a time.
+  //
+  // Every mutation sends an ABSOLUTE quantity and then overwrites state from
+  // the response echo. With two in flight — two fast stepper clicks — the
+  // older echo can land last: the quantity regresses to a value the customer
+  // already changed, or a line added second vanishes from the screen while it
+  // is still on the server. That last one reaches the charge, because checkout
+  // builds the order from the *server* cart while the summary renders this
+  // state, so the customer can pay for a line their summary never showed.
+  //
+  // Serialising rather than sequence-numbering the responses is deliberate. A
+  // latest-wins token guarantees the newest response wins, not that it is
+  // right: two requests can take different pooled connections and reach the
+  // server in the opposite order, so even the newest echo can describe a cart
+  // that never saw the other mutation. One request at a time removes the
+  // reordering instead of trying to detect it.
+  //
+  // Only the network phase queues. Optimistic updates still apply
+  // synchronously before the task is enqueued, so the UI stays immediate and
+  // the queue is invisible.
+  const mutationChainRef = useRef<Promise<unknown>>(Promise.resolve());
+  const mutationSeqRef = useRef(0);
+
+  const runCartMutation = useCallback(
+    <T,>(task: (isLatest: () => boolean) => Promise<T>): Promise<T> => {
+      const seq = (mutationSeqRef.current += 1);
+      const isLatest = () => seq === mutationSeqRef.current;
+      const next = mutationChainRef.current.then(() => task(isLatest));
+      // The chain must survive a rejecting task, or one failed mutation would
+      // wedge every later one. Callers still see their own rejection via
+      // `next`; this branch only keeps the queue moving.
+      mutationChainRef.current = next.catch(() => undefined);
+      return next;
+    },
+    [],
+  );
+
   // Server fetch for the logged-in cart. Replaces local state with the
   // canonical server view and clears any stale guest cart.
   const fetchServerCart = useCallback(async () => {
@@ -271,8 +258,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   // Merge any local guest cart into the server cart, then refetch the result.
   // Runs once when the user transitions from unauthenticated to authenticated.
-  // Each guest line is POSTed sequentially; a failure on one line surfaces as
-  // a toast but doesn't block the rest.
+  //
+  // Lines are POSTed sequentially, not in parallel: each one load-then-saves
+  // the same cart doc, so concurrent writes conflict.
+  //
+  // A refused line used to be console.error'd and then destroyed — the guest
+  // key was cleared unconditionally and the success toast fired even when
+  // every line had failed. A cut that sold out while the shopper was deciding
+  // vanished under "Your cart has been saved to your account". Refusals are
+  // now counted, the refused lines are kept, and the toast says what actually
+  // happened, in the same three-branch shape the admin bulk actions use.
   const mergeGuestCartIntoServer = useCallback(async () => {
     const guestLines = readGuestCart();
     if (guestLines.length === 0) {
@@ -281,6 +276,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
     setLoading(true);
     try {
+      const refused: CartLine[] = [];
+      let firstReason: string | null = null;
+
       for (const line of guestLines) {
         try {
           const res = await fetch('/api/cart', {
@@ -293,16 +291,37 @@ export function CartProvider({ children }: { children: ReactNode }) {
             }),
           });
           if (!res.ok) {
-            const body = await res.text().catch(() => '');
-            throw new Error(`status ${res.status}: ${body || res.statusText}`);
+            // The API's messages are already written for customers ("Only 6
+            // in stock"), so the first one becomes the toast's reason.
+            const body = (await res.json().catch(() => null)) as {
+              message?: string;
+            } | null;
+            firstReason ??= res.status === 401 ? SESSION_EXPIRED : body?.message ?? null;
+            refused.push(line);
+            console.error('[cart merge] line refused', line.product?._id, res.status);
           }
         } catch (err) {
-          console.error('Failed to merge line', line.product?._id, err);
+          firstReason ??= NETWORK_DOWN;
+          refused.push(line);
+          console.error('[cart merge] line failed', line.product?._id, err);
         }
       }
-      clearGuestCart();
+
+      // Order matters: a successful fetch clears the guest key, so the kept
+      // lines have to be written back after it rather than before.
       await fetchServerCart();
-      toast.success('Your cart has been saved to your account');
+      if (refused.length > 0) writeGuestCart(refused);
+
+      const saved = guestLines.length - refused.length;
+      if (refused.length === 0) {
+        toast.success('Your cart has been saved to your account');
+      } else if (saved === 0) {
+        toast.error(firstReason ?? "We couldn't save your cart to your account.");
+      } else {
+        toast.error(
+          `Saved ${saved} of ${guestLines.length} items — ${refused.length} couldn't be added.`,
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -364,6 +383,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
 
       if (!isLoggedIn) {
+        // Computed from the `cartItems` closure on purpose. The logged-in
+        // branch below reads `prev` inside a functional setter, and copying
+        // that here does not work: React runs updater functions during render,
+        // not at dispatch, so a value assigned inside one is still empty on the
+        // next line — `writeGuestCart` persisted `[]` and every guest add wiped
+        // the stored cart, visible only after a refresh. (The `snapshot`
+        // capture below is safe because it is read after an await.)
+        //
+        // The cost is that two guest mutations dispatched inside one render
+        // window lose the first; human-paced clicks re-render in between, so
+        // that stays parked rather than traded for losing the cart entirely.
         const next = applyAddToLines(cartItems, product, addBy);
         writeGuestCart(next);
         setCartItems(next);
@@ -380,37 +410,49 @@ export function CartProvider({ children }: { children: ReactNode }) {
         snapshot = prev;
         return applyAddToLines(prev, product, addBy);
       });
-      try {
-        const res = await fetch('/api/cart', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ productId: product._id, quantity: addBy }),
-        });
-        if (!res.ok) throw await cartRequestError(res, 'Failed to add item to cart');
-        const data = (await res.json()) as CartApiResponse;
-        setCartItems(data.items ?? []);
-        setCartUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : null);
-        // A successful round trip proves the server is reachable, so a stale
-        // load failure must not keep claiming the cart couldn't be loaded —
-        // otherwise emptying the cart after a recovered failure shows the
-        // error panel instead of the empty state.
-        setLoadError(false);
-        if (!silent) toast.success('Item added to cart');
-      } catch (error) {
-        setCartItems(snapshot);
-        console.error('Error adding item to cart:', error);
-        toast.error(cartToastMessage(error, 'Failed to add item to cart'));
-      }
+      await runCartMutation(async (isLatest) => {
+        try {
+          const res = await fetch('/api/cart', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ productId: product._id, quantity: addBy }),
+          });
+          if (!res.ok) throw await cartRequestError(res, 'Failed to add item to cart');
+          const data = (await res.json()) as CartApiResponse;
+          setCartItems(dedupeLines(data.items ?? []));
+          setCartUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : null);
+          // A successful round trip proves the server is reachable, so a stale
+          // load failure must not keep claiming the cart couldn't be loaded —
+          // otherwise emptying the cart after a recovered failure shows the
+          // error panel instead of the empty state.
+          setLoadError(false);
+          if (!silent) toast.success('Item added to cart');
+        } catch (error) {
+          // Only the newest mutation may revert. An older failure's snapshot
+          // predates a newer mutation's optimistic update, so restoring it
+          // would wipe a change the customer has already made and the newer
+          // request is about to confirm.
+          if (isLatest()) setCartItems(snapshot);
+          console.error('Error adding item to cart:', error);
+          toast.error(cartToastMessage(error, 'Failed to add item to cart'));
+        }
+      });
     },
-    [isLoggedIn, cartItems],
+    [isLoggedIn, cartItems, runCartMutation],
   );
 
   const setItemQuantity = useCallback(
     async (productId: string, quantity: number) => {
-      const next = Math.trunc(quantity);
+      // NaN fails every comparison, so an unguarded one slips past the `<= 0`
+      // removal check and `JSON.stringify` puts it on the wire as `null`.
+      // Reading it as 0 removes the line, which is what any caller asking for
+      // "no usable quantity" means. Unreachable from the bounded steppers that
+      // call this today.
+      const next = Number.isFinite(quantity) ? Math.trunc(quantity) : 0;
 
       if (!isLoggedIn) {
+        // Closure read, not a functional setter — see addItemToCart above.
         const updated = setQuantityOnLines(cartItems, productId, next);
         writeGuestCart(updated);
         setCartItems(updated);
@@ -423,35 +465,38 @@ export function CartProvider({ children }: { children: ReactNode }) {
         snapshot = prev;
         return setQuantityOnLines(prev, productId, next);
       });
-      try {
-        const res = await fetch('/api/cart', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ productId, quantity: next }),
-        });
-        if (!res.ok) throw await cartRequestError(res, 'Failed to update quantity');
-        const data = (await res.json()) as CartApiResponse;
-        setCartItems(data.items ?? []);
-        setCartUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : null);
-        // A successful round trip proves the server is reachable, so a stale
-        // load failure must not keep claiming the cart couldn't be loaded —
-        // otherwise emptying the cart after a recovered failure shows the
-        // error panel instead of the empty state.
-        setLoadError(false);
-      } catch (error) {
-        setCartItems(snapshot);
-        console.error('Error updating quantity:', error);
-        toast.error(cartToastMessage(error, 'Failed to update quantity'));
-      }
+      await runCartMutation(async (isLatest) => {
+        try {
+          const res = await fetch('/api/cart', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ productId, quantity: next }),
+          });
+          if (!res.ok) throw await cartRequestError(res, 'Failed to update quantity');
+          const data = (await res.json()) as CartApiResponse;
+          setCartItems(dedupeLines(data.items ?? []));
+          setCartUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : null);
+          // A successful round trip proves the server is reachable, so a stale
+          // load failure must not keep claiming the cart couldn't be loaded —
+          // otherwise emptying the cart after a recovered failure shows the
+          // error panel instead of the empty state.
+          setLoadError(false);
+        } catch (error) {
+          if (isLatest()) setCartItems(snapshot);
+          console.error('Error updating quantity:', error);
+          toast.error(cartToastMessage(error, 'Failed to update quantity'));
+        }
+      });
     },
-    [isLoggedIn, cartItems],
+    [isLoggedIn, cartItems, runCartMutation],
   );
 
   const removeItemFromCart = useCallback(
     async (productId: string, opts?: { silent?: boolean }) => {
       const silent = opts?.silent ?? false;
       if (!isLoggedIn) {
+        // Closure read, not a functional setter — see addItemToCart above.
         const updated = removeFromLines(cartItems, productId);
         writeGuestCart(updated);
         setCartItems(updated);
@@ -465,30 +510,32 @@ export function CartProvider({ children }: { children: ReactNode }) {
         snapshot = prev;
         return removeFromLines(prev, productId);
       });
-      try {
-        const res = await fetch('/api/cart', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ productId }),
-        });
-        if (!res.ok) throw await cartRequestError(res, 'Failed to remove item');
-        const data = (await res.json()) as CartApiResponse;
-        setCartItems(data.items ?? []);
-        setCartUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : null);
-        // A successful round trip proves the server is reachable, so a stale
-        // load failure must not keep claiming the cart couldn't be loaded —
-        // otherwise emptying the cart after a recovered failure shows the
-        // error panel instead of the empty state.
-        setLoadError(false);
-        if (!silent) toast.success('Item removed from cart');
-      } catch (error) {
-        setCartItems(snapshot);
-        console.error('Error removing item:', error);
-        toast.error(cartToastMessage(error, 'Failed to remove item from cart'));
-      }
+      await runCartMutation(async (isLatest) => {
+        try {
+          const res = await fetch('/api/cart', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ productId }),
+          });
+          if (!res.ok) throw await cartRequestError(res, 'Failed to remove item');
+          const data = (await res.json()) as CartApiResponse;
+          setCartItems(dedupeLines(data.items ?? []));
+          setCartUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : null);
+          // A successful round trip proves the server is reachable, so a stale
+          // load failure must not keep claiming the cart couldn't be loaded —
+          // otherwise emptying the cart after a recovered failure shows the
+          // error panel instead of the empty state.
+          setLoadError(false);
+          if (!silent) toast.success('Item removed from cart');
+        } catch (error) {
+          if (isLatest()) setCartItems(snapshot);
+          console.error('Error removing item:', error);
+          toast.error(cartToastMessage(error, 'Failed to remove item from cart'));
+        }
+      });
     },
-    [isLoggedIn, cartItems],
+    [isLoggedIn, cartItems, runCartMutation],
   );
 
   const resetCartLocal = useCallback(() => {
@@ -522,30 +569,35 @@ export function CartProvider({ children }: { children: ReactNode }) {
       updatedAtSnapshot = prev;
       return null;
     });
-    try {
-      const res = await fetch('/api/cart', {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-      if (!res.ok) throw await cartRequestError(res, 'Failed to clear cart');
-      if (!silent) toast.success('Cart cleared');
-      return true;
-    } catch (error) {
-      setCartItems(snapshot);
-      // Restore the original timestamp rather than stamping now: a fresh `new
-      // Date()` here re-anchored a full 30-minute reservation off the back of a
-      // failure, so an offline cart never actually expired — it just looped.
-      setCartUpdatedAt(updatedAtSnapshot);
-      console.error('Error clearing cart:', error);
-      toast.error(cartToastMessage(error, 'Failed to clear cart'));
-      return false;
-    }
-  }, [isLoggedIn]);
+    return runCartMutation(async (isLatest) => {
+      try {
+        const res = await fetch('/api/cart', {
+          method: 'DELETE',
+          credentials: 'include',
+        });
+        if (!res.ok) throw await cartRequestError(res, 'Failed to clear cart');
+        if (!silent) toast.success('Cart cleared');
+        return true;
+      } catch (error) {
+        if (isLatest()) {
+          setCartItems(snapshot);
+          // Restore the original timestamp rather than stamping now: a fresh
+          // `new Date()` here re-anchored a full 30-minute reservation off the
+          // back of a failure, so an offline cart never actually expired — it
+          // just looped.
+          setCartUpdatedAt(updatedAtSnapshot);
+        }
+        console.error('Error clearing cart:', error);
+        toast.error(cartToastMessage(error, 'Failed to clear cart'));
+        return false;
+      }
+    });
+  }, [isLoggedIn, runCartMutation]);
 
   const value = useMemo<CartContextValue>(
     () => ({
       cartItems,
-      cartCount: cartItems.length,
+      cartCount: countCartItems(cartItems),
       cartUpdatedAt,
       loading,
       loadError,
@@ -580,5 +632,3 @@ export function useCartContext(): CartContextValue {
   }
   return ctx;
 }
-
-export default CartContext;

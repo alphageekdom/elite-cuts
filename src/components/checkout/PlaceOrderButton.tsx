@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 
@@ -10,10 +10,13 @@ import { useShopSettings } from '@/context/ShopSettingsContext';
 import { computeTotals, fmtPrice, DELIVERY_FEE } from '@/lib/pricing';
 import {
   isContactComplete,
+  isDeliveryAddressComplete,
   isEmailValid,
+  isFulfillmentReady,
   isNameValid,
   isPhoneValid,
 } from '@/lib/checkout/validation';
+import { DELIVERY_RADIUS_MILES } from '@/lib/shop-settings/config';
 import { formatShopAddress } from '@/lib/shop-settings/format';
 import { PICKUP_LOCATION_SEPARATOR } from '@/lib/shop-settings/pickup-slots';
 import ArrowIcon from '@/components/ui/icons/ArrowIcon';
@@ -37,6 +40,7 @@ const PlaceOrderButton = () => {
     contactPhone,
     pickupSlot,
     deliveryAddress,
+    deliveryCheck,
     orderNotes,
     saveCard,
     cardDetails,
@@ -54,6 +58,23 @@ const PlaceOrderButton = () => {
     isSubmittingRef.current = false;
     setIsLoading(false);
   };
+
+  // The guard is deliberately held across the hand-off to Stripe (see the
+  // comment at `window.location.assign` below), so nothing released it when
+  // the browser restored this page from its back/forward cache: pressing Back
+  // from Stripe brought the checkout page back with the guard still set and
+  // the spinner still running, and only a manual reload recovered. Stripe's
+  // own cancel link is a fresh load and was never affected.
+  //
+  // `persisted` is true only for a bfcache restore, so a normal load — which
+  // already starts with the guard clear — doesn't touch it.
+  useEffect(() => {
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) releaseSubmitGuard();
+    };
+    window.addEventListener('pageshow', onPageShow);
+    return () => window.removeEventListener('pageshow', onPageShow);
+  }, []);
   const isLoggedIn = Boolean(session?.user);
   const shopSettings = useShopSettings();
   const shopAddress = formatShopAddress(shopSettings);
@@ -70,7 +91,8 @@ const PlaceOrderButton = () => {
     [cartItems, isLoggedIn, promoExcludesMember, promoDiscount, pointsDiscount, fulfillment],
   );
 
-  const canSubmit = isPaymentReady && isContactComplete(state) && !isLoading;
+  const canSubmit =
+    isPaymentReady && isContactComplete(state) && isFulfillmentReady(state) && !isLoading;
 
   // The button used to sit greyed out with nothing saying why. Cascades in the
   // same order `canSubmit` evaluates, so the hint always names the next thing
@@ -92,7 +114,19 @@ const PlaceOrderButton = () => {
           ? 'Add a phone number the shop can reach you on'
           : !isPaymentReady
             ? 'Add your payment details to continue'
-            : '';
+            : // Delivery-only, and last because the address sits below payment
+              // in the form. Each state gets its own line: a customer whose
+              // address is outside the radius needs to hear something
+              // different from one whose address is still being checked.
+              fulfillment === 'delivery' && !isDeliveryAddressComplete(deliveryAddress)
+              ? 'Add your full delivery address to continue'
+              : fulfillment === 'delivery' && deliveryCheck === 'checking'
+                ? 'Checking whether we deliver to that address…'
+                : fulfillment === 'delivery' && deliveryCheck === 'invalid'
+                  ? `That address is outside our ${DELIVERY_RADIUS_MILES}-mile delivery area — switch to pickup to continue`
+                  : fulfillment === 'delivery' && deliveryCheck === 'idle'
+                    ? 'Checking whether we deliver to that address…'
+                    : '';
 
   const handlePlaceOrder = async () => {
     if (!canSubmit || isSubmittingRef.current) return;
