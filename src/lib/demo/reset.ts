@@ -95,27 +95,37 @@ export async function resetDemoCustomerState(): Promise<ResetCounts> {
 
   const demoId = demo._id;
 
-  // The demo admin owns notifications too — see the fanout note below. Absent
-  // on an install seeded before the admin demo account existed, so the list is
-  // built defensively rather than assuming both accounts are present.
+  // BOTH demo accounts own storefront rows, not just the customer.
+  //
+  // Nothing stops a session signed in as the demo admin from shopping: the
+  // catalog, cart, checkout, reviews and messages are all open to any signed-in
+  // user, and the no-charge checkout tile enables itself for any `isDemo`
+  // account. Scoping this wipe to the customer alone left everything a visitor
+  // did while exploring the ADMIN demo behind permanently — orders that also
+  // counted in every revenue figure, reviews sitting on the public catalog, and
+  // a cart plus conversation the next visitor to that shared account inherited.
+  //
+  // Absent on an install seeded before the admin demo account existed, so the
+  // list is built defensively rather than assuming both are present.
   const demoAdmin = await User.findOne({
     isDemo: true,
     demoType: 'admin',
   }).select('_id');
-  const notificationOwnerIds = [demoId, ...(demoAdmin ? [demoAdmin._id] : [])];
+  const demoAdminId = demoAdmin?._id ?? null;
+  const ownerIds = [demoId, ...(demoAdminId ? [demoAdminId] : [])];
 
-  // Reviews the demo customer *authored*. These are public — they render on
+  // Reviews either demo account *authored*. These are public — they render on
   // the product page for every later visitor — and nothing else in the reset
   // removed them, so a single demo session used to leave a permanent mark on
   // the catalog. Collect the affected product ids before the delete so their
   // ratings can be recomputed from what survives.
-  const authoredReviews = await Review.find({ user: demoId })
+  const authoredReviews = await Review.find({ user: { $in: ownerIds } })
     .select('product')
     .lean<{ product: typeof demoId }[]>();
   const reviewedProductIds = [
     ...new Set(authoredReviews.map((r) => String(r.product))),
   ];
-  const reviewsRes = await Review.deleteMany({ user: demoId });
+  const reviewsRes = await Review.deleteMany({ user: { $in: ownerIds } });
 
   // Owned collections — straight deleteMany by owner field. Two exceptions:
   //
@@ -135,16 +145,27 @@ export async function resetDemoCustomerState(): Promise<ResetCounts> {
   // reset just deleted.
   const [ordersRes, cartRes, savedCardsRes, notificationsRes, messagesRes] =
     await Promise.all([
-      Order.deleteMany({ user: demoId }),
-      Cart.deleteMany({ user: demoId }),
-      SavedCard.deleteMany({ user: demoId }),
-      Notification.deleteMany({ userId: { $in: notificationOwnerIds } }),
-      Message.deleteMany({ user: demoId }),
+      Order.deleteMany({ user: { $in: ownerIds } }),
+      Cart.deleteMany({ user: { $in: ownerIds } }),
+      SavedCard.deleteMany({ user: { $in: ownerIds } }),
+      Notification.deleteMany({ userId: { $in: ownerIds } }),
+      Message.deleteMany({ user: { $in: ownerIds } }),
       Review.updateMany(
-        { helpfulVoters: demoId },
-        { $pull: { helpfulVoters: demoId } },
+        { helpfulVoters: { $in: ownerIds } },
+        { $pull: { helpfulVoters: { $in: ownerIds } } },
       ),
     ]);
+
+  // The demo admin's own storefront leftovers. Only the shopping fields are
+  // cleared — its admin identity and flags are untouched, and it gets no
+  // rewards seed because the account is there to demonstrate the dashboard,
+  // not the loyalty programme.
+  if (demoAdminId) {
+    await User.updateOne(
+      { _id: demoAdminId },
+      { $set: { savedCuts: [], addresses: [] } },
+    );
+  }
 
   // Embedded state on the User doc. Clearing here also resets the dormancy
   // bookkeeping so a long stretch with no demo activity doesn't trip

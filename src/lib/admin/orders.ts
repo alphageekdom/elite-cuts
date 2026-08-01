@@ -2,7 +2,10 @@
 // Sits in lib/ so a future export route, analytics widget, or test file can
 // reuse the same in-memory rules without depending on the components/ tree.
 
-import type { RangeKey } from '@/components/admin/analytics/RangeToggle';
+// Straight from lib — `RangeToggle` only re-exports this type from here, so
+// importing it through the component made lib depend on components for a
+// definition it already owns.
+import type { RangeKey } from '@/lib/admin/range-buckets';
 import type { OrderTableRow, StatusCounts } from '@/types/admin';
 
 export type OrderSortMode =

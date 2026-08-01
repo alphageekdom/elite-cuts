@@ -17,5 +17,16 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/*.test.ts'],
     globals: false,
+    // Pin a shop-zone default so a plain `vitest` run sits WEST of UTC. Date
+    // bugs in this codebase are zone-shaped — a UTC-midnight calendar value
+    // read with a local getter names the previous day west of UTC and the
+    // right one east of it, so a suite running under UTC (which is what CI
+    // runners default to) passes with the bug present. `npm run test:tz`
+    // sweeps both sides; this keeps a single run from being silently blind.
+    // Overridable, so that sweep can set its own zone.
+    // `||`, not `??`: an exported-but-empty `TZ=` is a string, so `??` passed
+    // it straight through and the runner resolved to UTC — silently losing the
+    // very coverage this line exists to guarantee.
+    env: { TZ: process.env.TZ || 'America/Los_Angeles' },
   },
 });

@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   productFind: vi.fn(),
   orderInsertMany: vi.fn(),
   cardInsertMany: vi.fn(),
+  shopHoursFindOne: vi.fn(),
 }));
 
 vi.mock('@/models/Product', () => ({
@@ -29,6 +30,23 @@ vi.mock('@/models/Order', () => ({
 
 vi.mock('@/models/SavedCard', () => ({
   default: { insertMany: mocks.cardInsertMany },
+}));
+
+// The seeder reads trading days so the in-flight order's pickup window can't
+// land on a closed day. Default hours have Monday closed.
+const DEFAULT_DAYS = [
+  { dayOfWeek: 0, opensAt: '', closesAt: '', isClosed: true },
+  ...Array.from({ length: 6 }, (_, i) => ({
+    dayOfWeek: i + 1,
+    opensAt: '9:00 AM',
+    closesAt: '7:00 PM',
+    isClosed: false,
+  })),
+];
+
+vi.mock('@/models/ShopHours', () => ({
+  default: { findOne: mocks.shopHoursFindOne },
+  DEFAULT_DAYS,
 }));
 
 // Two real cuts from the seed catalog, priced the two different ways the
@@ -113,6 +131,9 @@ beforeEach(() => {
   Object.values(mocks).forEach((fn) => fn.mockReset());
   mockCatalog(PRODUCTS);
   mockInsert();
+  mocks.shopHoursFindOne.mockReturnValue({
+    select: () => ({ lean: async () => ({ days: DEFAULT_DAYS }) }),
+  });
   mocks.cardInsertMany.mockImplementation(
     async (docs: Record<string, unknown>[]) => docs,
   );
@@ -185,6 +206,26 @@ describe('seedDemoOrders — documents', () => {
     expect(live).toHaveLength(1);
     // A live order needs a pickup window; the collected ones are historical.
     expect(live[0].pickupSlot).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
+  });
+
+  it('never books the live order onto a day the shop is closed', async () => {
+    // 2026-07-27 is a Monday, and Monday is closed under the default hours.
+    // The slot used to be stamped on the day the order was placed, so every
+    // Monday the demo's active-order card advertised a pickup window on a day
+    // the shop is shut.
+    const monday = new Date('2026-07-27T12:00:00.000Z');
+    const { seedDemoOrders } = await import('./seed-customer');
+    await seedDemoOrders(DEMO_ID, monday);
+
+    const [docs] = mocks.orderInsertMany.mock.calls[0];
+    const live = docs.filter(
+      (d: { orderStatus: string }) =>
+        d.orderStatus !== 'Completed' && d.orderStatus !== 'Cancelled',
+    );
+    const [datePart] = String(live[0].pickupSlot).split('T');
+    const [year, month, day] = datePart.split('-').map(Number);
+    const weekday = new Date(year, month - 1, day).getDay();
+    expect(weekday).not.toBe(1); // not a Monday
   });
 
   it('marks collected orders picked up and stamps their fulfilment times', async () => {

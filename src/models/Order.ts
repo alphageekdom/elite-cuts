@@ -26,7 +26,12 @@ export const PAYMENT_STATUSES = [
   'Refunded',
 ] as const;
 
-export const PAYMENT_PROVIDERS = ['stripe', 'demo'] as const;
+// `admin` is a counter sale recorded through the walk-in drawer: no processor
+// handled it, and — unlike the two checkout providers — its stock, points and
+// promo seat are applied at creation rather than deferred to payment. That
+// difference is what `hasSettledPayment` reads, so the walk-in route states
+// this value explicitly instead of leaning on the schema default.
+export const PAYMENT_PROVIDERS = ['stripe', 'demo', 'admin'] as const;
 
 // Phase 4 — settlement (auto-charge / auto-refund) lifecycle. `pending` is
 // the initial state on an opted-in order; the settlement helper flips it

@@ -16,9 +16,6 @@ export type CustomerStatusInput = {
   orderCount: number;
   dormancyWarnedAt?: string | Date | null;
   deletedAt?: string | Date | null;
-  // Phase B — `countByStat` skips demo accounts so they don't inflate the
-  // stat-chip counts; the row still renders in the table with a "Demo" pill.
-  isDemo?: boolean;
 };
 
 function toMs(value: string | Date | null | undefined): number | null {
@@ -54,19 +51,23 @@ export function countByStat<T extends CustomerStatusInput>(
   customers: readonly T[],
   now: number = Date.now(),
 ): CustomerCounts {
-  // Demo accounts are excluded from every count — they're visible in the
-  // table but shouldn't inflate the chips since they're seeded fixtures, not
-  // real customers. Phase D will broaden this same exclusion across other
-  // analytics surfaces; for now it only applies here.
-  const real = customers.filter((c) => !c.isDemo);
+  // 2026-07-31 — these counts now INCLUDE demo accounts, reversing the Phase B
+  // decision to strip them. The chips are filters over this table, and
+  // `matchesStatFilter` (which the table runs) never excluded demo rows, so a
+  // stripped count sat above a row it did not count: "All 5" over six rows.
+  // A filter's number has to equal the rows it yields.
+  //
+  // The reason demo accounts were stripped — keeping seeded fixtures out of
+  // real metrics — is still served, by the dashboard's own user aggregates,
+  // which filter `isDemo` at the query. Nothing here is a metric.
   const counts: CustomerCounts = {
-    all: real.length,
+    all: customers.length,
     new: 0,
     active: 0,
     connoisseurPlus: 0,
     dormant: 0,
   };
-  for (const c of real) {
+  for (const c of customers) {
     if (matchesStatFilter(c, 'new', now)) counts.new++;
     if (matchesStatFilter(c, 'active', now)) counts.active++;
     if (matchesStatFilter(c, 'connoisseurPlus', now)) counts.connoisseurPlus++;

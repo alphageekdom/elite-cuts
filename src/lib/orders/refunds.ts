@@ -1,6 +1,31 @@
-import type { OrderItem, PaymentStatus } from '@/models/Order';
+import type {
+  OrderItem,
+  PaymentStatus,
+  SettlementTransaction,
+} from '@/models/Order';
 import { realizedLineTotal } from '@/lib/orders/line';
 import { roundMoney as round2 } from '@/lib/money';
+
+// What the shop has actually collected for this order, net of settlement.
+//
+// The Stripe charge at checkout is `totalCost` — the estimate. Phase 4's
+// auto-settle then moves the realized-vs-estimate difference on a SEPARATE
+// PaymentIntent (`capture`) or as a partial refund against the original
+// (`auto_refund`). So on a settled order `totalCost` is no longer what the
+// customer paid, and using it as the refund ceiling goes wrong in both
+// directions: a captured order refunds short by the captured delta, and an
+// auto-refunded one asks Stripe for more than the intent has left, which
+// Stripe rejects and the admin sees as an unexplained failure.
+export function netCollected(
+  totalCost: number,
+  settlements: SettlementTransaction[] | undefined,
+): number {
+  const net = (settlements ?? []).reduce(
+    (sum, t) => sum + (t.kind === 'capture' ? t.amount : -t.amount),
+    totalCost,
+  );
+  return Math.max(0, round2(net));
+}
 
 export type RefundSummary = {
   /** Sum of refunded line totals (realized when weighed, else estimate). */
@@ -30,7 +55,9 @@ export type RefundContext = {
 };
 
 export function refundSummary(
-  items: Pick<
+  // Readonly — the helper only ever reads, and callers hold their lines as
+  // readonly arrays.
+  items: readonly Pick<
     OrderItem,
     'qty' | 'price' | 'refunded' | 'pricingType' | 'pricePerLb' | 'realizedWeightLb'
   >[],
@@ -74,4 +101,71 @@ export function paymentStatusFor(
   if (summary.refundedCount === 0) return currentStatus;
   if (summary.refundedCount >= summary.totalCount) return 'Refunded';
   return 'Partially Refunded';
+}
+
+// One Stripe refund to issue: which PaymentIntent, and for how much.
+export type RefundAllocation = { paymentIntentId: string; amount: number };
+
+// Spread an amount owed across the intents that actually hold the money.
+//
+// A settled order's funds can sit on more than one PaymentIntent: the
+// original checkout charge, plus one `capture` intent per settlement that
+// charged the customer more at pickup. Refunding only the original strands
+// the captured difference — Stripe cannot refund an intent for money it
+// never took.
+//
+// Sources are drawn down in order (original first, then captures oldest
+// first), with `alreadyRefunded` consumed off the front so a second partial
+// refund picks up where the first left off. That ordering is what makes the
+// allocation reproducible from stored state alone — the order tracks refunds
+// in aggregate, not per intent.
+export function allocateRefund({
+  paymentIntentId,
+  totalCost,
+  settlements,
+  alreadyRefunded,
+  amount,
+}: {
+  paymentIntentId: string;
+  totalCost: number;
+  settlements: SettlementTransaction[] | undefined;
+  alreadyRefunded: number;
+  amount: number;
+}): RefundAllocation[] {
+  const transactions = settlements ?? [];
+  const autoRefunded = transactions
+    .filter((t) => t.kind === 'auto_refund')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  // The original intent can only give back what it still holds after any
+  // auto-refund settlement already clawed some of it back.
+  const sources: RefundAllocation[] = [
+    {
+      paymentIntentId,
+      amount: Math.max(0, round2(totalCost - autoRefunded)),
+    },
+    ...transactions
+      .filter((t) => t.kind === 'capture')
+      .map((t) => ({ paymentIntentId: t.id, amount: round2(t.amount) })),
+  ];
+
+  let toSkip = Math.max(0, round2(alreadyRefunded));
+  let remaining = Math.max(0, round2(amount));
+  const allocations: RefundAllocation[] = [];
+
+  for (const source of sources) {
+    if (remaining <= 0) break;
+    let capacity = source.amount;
+    if (toSkip > 0) {
+      const consumed = Math.min(toSkip, capacity);
+      toSkip = round2(toSkip - consumed);
+      capacity = round2(capacity - consumed);
+    }
+    if (capacity <= 0) continue;
+    const take = round2(Math.min(capacity, remaining));
+    allocations.push({ paymentIntentId: source.paymentIntentId, amount: take });
+    remaining = round2(remaining - take);
+  }
+
+  return allocations;
 }

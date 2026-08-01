@@ -5,6 +5,7 @@ import Product from '@/models/Product';
 import { withAuth } from '@/lib/api-handler';
 import { MAX_PER_LINE } from '@/lib/shop-settings/config';
 import { unitPrice } from '@/lib/products/pricing';
+import { PUBLIC_PRODUCT_PROJECTION } from '@/lib/products/public-projection';
 
 // Lean line-item wire shape. CartItemSchema has `_id: false` so each line is
 // uniquely keyed by its product reference — that's the identifier callers use
@@ -18,12 +19,20 @@ type CartLineWire = {
 const badRequest = (message: string) =>
   NextResponse.json({ message }, { status: 400 });
 
+// Every cart response is read by the customer who owns it, so populated lines
+// carry the same strip the public catalog reads use. Declared once because all
+// four verbs populate and any one of them missing it reopens the leak.
+const CART_PRODUCT_POPULATE = {
+  path: 'items.product',
+  select: PUBLIC_PRODUCT_PROJECTION,
+} as const;
+
 // Loads the user's cart, populating each line's product so the client can
 // render names / images / prices without a follow-up call. Creates an empty
 // cart on first read so subsequent mutations have a doc to mutate.
 const loadCart = async (userId: string) => {
   const cart =
-    (await Cart.findOne({ user: userId }).populate('items.product')) ??
+    (await Cart.findOne({ user: userId }).populate(CART_PRODUCT_POPULATE)) ??
     (await Cart.create({ user: userId, items: [] }));
 
   // Self-heal: strip any items whose product was deleted from the DB, and
@@ -132,7 +141,7 @@ export const POST = withAuth(async (request: NextRequest, _ctx, userId) => {
     }
 
     await cart.save();
-    await cart.populate('items.product');
+    await cart.populate(CART_PRODUCT_POPULATE);
     const json = cart.toJSON() as { items: CartLineWire[]; updatedAt: Date };
     return respond(json.items, json.updatedAt);
   } catch (error) {
@@ -177,7 +186,7 @@ export const PATCH = withAuth(async (request: NextRequest, _ctx, userId) => {
     }
 
     await cart.save();
-    await cart.populate('items.product');
+    await cart.populate(CART_PRODUCT_POPULATE);
     const json = cart.toJSON() as { items: CartLineWire[]; updatedAt: Date };
     return respond(json.items, json.updatedAt);
   } catch (error) {
@@ -209,7 +218,7 @@ export const DELETE = withAuth(async (request: NextRequest, _ctx, userId) => {
       await cart.save();
     }
 
-    await cart.populate('items.product');
+    await cart.populate(CART_PRODUCT_POPULATE);
     const json = cart.toJSON() as { items: CartLineWire[]; updatedAt: Date };
     return respond(json.items, json.updatedAt);
   } catch (error) {

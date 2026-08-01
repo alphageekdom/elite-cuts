@@ -26,6 +26,15 @@ export type ProfileOrder = {
   subtotal: number;
   tax: number;
   totalCost: number;
+  /**
+   * Difference between what the cuts actually weighed at pickup and what was
+   * charged, or absent when no line was weighed. Computed server-side through
+   * `realizedOrderTotal` — the same tax-aware helper the receipt, confirmation
+   * and admin drawer use — because a bare sum of the line deltas omits tax and
+   * had this card quoting a different figure from the receipt for the same
+   * order.
+   */
+  realizedTotalShift?: number;
   isPaid: boolean;
   orderStatus: OrderStatus;
   paymentMethod: PaymentMethod;

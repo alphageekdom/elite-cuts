@@ -81,15 +81,3 @@ export const messageOwnerEditSchema = messageInputSchema.pick({
 
 export type MessageOwnerEdit = z.infer<typeof messageOwnerEditSchema>;
 
-// Flatten zod issues into a `{ field: firstMessage }` map for inline form
-// error display. Matches the convention used elsewhere (promos domain).
-export function flattenIssues(
-  issues: ReadonlyArray<{ path: ReadonlyArray<PropertyKey>; message: string }>,
-): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const issue of issues) {
-    const key = String(issue.path[0] ?? '_');
-    if (!(key in out)) out[key] = issue.message;
-  }
-  return out;
-}

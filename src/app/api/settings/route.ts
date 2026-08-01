@@ -4,7 +4,7 @@ import mongoose from 'mongoose';
 import ShopSettings, { type ShopSettings as ShopSettingsType } from '@/models/ShopSettings';
 import { SHOP_SETTINGS_KEYS } from '@/lib/shop-settings/defaults';
 import { withAdmin, zodBadRequest } from '@/lib/api-handler';
-import { shopSettingsInputSchema } from '@/lib/settings/schema';
+import { shopSettingsInputSchema } from '@/lib/shop-settings/schema';
 
 function pickSettings(doc: Record<string, unknown> | null): Partial<ShopSettingsType> {
   if (!doc) return {};

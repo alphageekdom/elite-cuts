@@ -2,7 +2,12 @@ import { NextResponse } from 'next/server';
 
 import type { OrderItem, Order } from '@/models/Order';
 import Product from '@/models/Product';
-import { refundSummary, paymentStatusFor } from '@/lib/orders/refunds';
+import {
+  allocateRefund,
+  netCollected,
+  paymentStatusFor,
+  refundSummary,
+} from '@/lib/orders/refunds';
 import { roundMoney } from '@/lib/money';
 import { dollarsToCents, getStripe, isStubMode } from '@/lib/payments/stripe';
 import type { BranchResult } from './types';
@@ -42,10 +47,16 @@ export async function applyRefund({
   const projectedItems: OrderItem[] = existing.orderItems.map((item, idx) =>
     indicesToRefund.has(idx) ? { ...item, refunded: true, refundedAt } : item,
   );
+  // Cap against what the shop actually collected, not the original estimate —
+  // auto-settlement may have captured more or refunded some of it back since.
+  const collected = netCollected(
+    existing.totalCost,
+    existing.paymentResult.settlementPaymentIntents,
+  );
   const refundContext = {
     subtotal: existing.subtotal,
     tax: existing.tax,
-    totalCost: existing.totalCost,
+    totalCost: collected,
   };
   const previousSummary = refundSummary(existing.orderItems, refundContext);
   const projectedSummary = refundSummary(projectedItems, refundContext);
@@ -65,15 +76,27 @@ export async function applyRefund({
   ) {
     try {
       const stripe = getStripe();
-      await stripe.refunds.create({
-        payment_intent: existing.paymentResult.paymentIntentId,
-        amount: dollarsToCents(refundDeltaDollars),
-        reason: 'requested_by_customer',
-        metadata: {
-          orderId,
-          refundedLineIndices: Array.from(indicesToRefund).join(','),
-        },
+      // Money for a settled order can sit across several intents (the
+      // original charge plus any at-pickup capture), so draw the amount owed
+      // from each in turn rather than assuming the original holds it all.
+      const allocations = allocateRefund({
+        paymentIntentId: existing.paymentResult.paymentIntentId,
+        totalCost: existing.totalCost,
+        settlements: existing.paymentResult.settlementPaymentIntents,
+        alreadyRefunded: previousSummary.refundedAmount,
+        amount: refundDeltaDollars,
       });
+      for (const allocation of allocations) {
+        await stripe.refunds.create({
+          payment_intent: allocation.paymentIntentId,
+          amount: dollarsToCents(allocation.amount),
+          reason: 'requested_by_customer',
+          metadata: {
+            orderId,
+            refundedLineIndices: Array.from(indicesToRefund).join(','),
+          },
+        });
+      }
     } catch (err) {
       // Don't echo Stripe's raw error message to the client — it can
       // reveal masked PAN tails, declined-reason hints, and account
@@ -124,7 +147,7 @@ export async function applyRefund({
   updateFields['paymentResult.amountPaid'] =
     nextPaymentStatus === 'Refunded'
       ? 0
-      : Math.max(0, roundMoney(existing.totalCost - projectedSummary.refundedAmount));
+      : Math.max(0, roundMoney(collected - projectedSummary.refundedAmount));
 
   // If individual refunds have drained the order to fully refunded and the
   // admin didn't explicitly pick an orderStatus this request, mirror what

@@ -5,6 +5,8 @@ import { cache } from 'react';
 import { getActiveEvent } from '@/lib/events/queries';
 import { getActiveHoliday, formatDaysUntil } from '@/lib/announcements/holidays';
 import { formatGrillHour } from '@/lib/events/config';
+import { getShopSettings } from '@/lib/shop-settings/queries';
+import { shopDateKey } from '@/lib/shop-settings/pickup-format';
 
 export type AnnouncementAccent = 'oxblood' | 'amber';
 
@@ -37,7 +39,11 @@ export const getActiveAnnouncements = cache(async (): Promise<Announcement[]> =>
     });
   }
 
-  const holiday = getActiveHoliday(now);
+  // Holiday windows are calendar-day facts, so they are measured against the
+  // SHOP's date — `getShopSettings` is request-cached and already primed by
+  // the root layout, so this costs no extra query.
+  const { timezone } = await getShopSettings();
+  const holiday = getActiveHoliday(shopDateKey(timezone, now));
   if (holiday) {
     const when = formatDaysUntil(holiday.daysUntil);
     out.push({

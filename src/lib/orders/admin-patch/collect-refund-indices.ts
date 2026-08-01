@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import type { Order } from '@/models/Order';
+import { hasSettledPayment } from '@/lib/orders/payment-state';
 
 // Validates the refundItemIndices / unrefundItemIndices arrays and folds
 // in the implicit "cancel auto-refunds every still-unrefunded line" rule.
@@ -23,11 +24,28 @@ export function collectRefundIndices({
   refundItemIndices?: number[];
   unrefundItemIndices?: number[];
   transitioningToCancelled: boolean;
-  existing: Pick<Order, 'orderItems'>;
+  existing: Pick<Order, 'orderItems' | 'paymentResult'>;
 }): RefundIndexResult {
   const indicesToRefund = new Set<number>();
   const indicesToUnrefund = new Set<number>();
   const itemCount = existing.orderItems.length;
+
+  // An explicit refund against an order that was never charged is a mistake
+  // worth naming rather than silently dropping — unlike the cancel path
+  // below, the admin asked for this one directly.
+  if (
+    Array.isArray(refundItemIndices) &&
+    refundItemIndices.length > 0 &&
+    !hasSettledPayment(existing)
+  ) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { message: 'This order has not been paid, so there is nothing to refund.' },
+        { status: 400 },
+      ),
+    };
+  }
 
   if (Array.isArray(refundItemIndices)) {
     for (const idx of refundItemIndices) {
@@ -69,8 +87,13 @@ export function collectRefundIndices({
     };
   }
 
-  // Cancellation transitions auto-refund every still-unrefunded item.
-  if (transitioningToCancelled) {
+  // Cancellation transitions auto-refund every still-unrefunded item — but
+  // only when there is something to refund. A checkout order that never got
+  // past Pending was never charged and never had its stock decremented, so
+  // "refunding" it would restock inventory that was never taken and stamp a
+  // refund that never happened. Cancelling it is a bare status flip, which is
+  // exactly what the webhook's own expiry path does.
+  if (transitioningToCancelled && hasSettledPayment(existing)) {
     existing.orderItems.forEach((item, idx) => {
       if (!item.refunded) indicesToRefund.add(idx);
     });

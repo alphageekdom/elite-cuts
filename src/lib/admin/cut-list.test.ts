@@ -8,10 +8,17 @@ import {
   summariseCuts,
   buildCutListRows,
   summariseCutList,
+  slotWallClockMs,
   type CutListOrder,
 } from './cut-list';
+import { shopWallClockMs } from '@/lib/shop-settings/pickup-format';
 
-const NOW = new Date('2026-07-28T14:14:00');
+// Countdowns compare two WALL clocks, never two instants — `pickupSlot` is
+// zone-less shop-local time, so measuring it against a real instant only
+// worked while the server ran in the shop's own zone. These fixtures are on
+// the wall scale for that reason; `Date.UTC` here is a scale, not a claim
+// about UTC.
+const NOW = Date.UTC(2026, 6, 28, 14, 14);
 
 function order(over: Partial<CutListOrder> = {}): CutListOrder {
   return {
@@ -84,7 +91,7 @@ describe('formatCountdown', () => {
   // remainder is 59.7 minutes.
   it('never prints 60 minutes', () => {
     expect(
-      formatCountdown('2026-07-28T05:15', new Date('2026-07-28T14:14:42')),
+      formatCountdown('2026-07-28T05:15', Date.UTC(2026, 6, 28, 14, 14, 42)),
     ).toBe('9h ago');
   });
 
@@ -273,5 +280,58 @@ describe('readyForPickup vs the ready stage', () => {
     ], NOW);
     expect(rows.map((r) => r.stage)).toEqual(['ready', 'ready']);
     expect(summariseCutList(rows).readyForPickup).toBe(1);
+  });
+});
+
+// The bug these pin: `formatCountdown` used to parse the zone-less slot with
+// `new Date()`, reading it in the SERVER's zone, and compare it against a real
+// instant. On a UTC runtime serving a Pacific shop that made every slot resolve
+// seven hours early, so from mid-morning the whole board read as overdue and
+// the "next window" line disappeared. The old tests could not catch it: both
+// sides were local-parsed, so they stayed self-consistent in any TZ.
+describe('countdowns are measured on the shop clock, not the server clock', () => {
+  const PT = 'America/Los_Angeles (PT)';
+  // 2026-07-28 19:00Z === 12:00 noon at a Pacific shop (PDT, UTC-7).
+  const instant = new Date('2026-07-28T19:00:00Z');
+
+  it('reads a 4pm slot as four hours out when it is noon at the shop', () => {
+    expect(formatCountdown('2026-07-28T16:00', shopWallClockMs(PT, instant))).toBe(
+      'in 4h',
+    );
+  });
+
+  it('does not call an afternoon slot overdue while the shop is still at noon', () => {
+    const [row] = buildCutListRows(
+      [order({ pickupSlot: '2026-07-28T16:00' })],
+      shopWallClockMs(PT, instant),
+    );
+    expect(row.overdue).toBe(false);
+  });
+
+  it('keeps the next-window label rather than dropping it', () => {
+    const rows = buildCutListRows(
+      [order({ pickupSlot: '2026-07-28T16:00' })],
+      shopWallClockMs(PT, instant),
+    );
+    expect(summariseCutList(rows).nextSlotLabel).toBe('4:00p');
+  });
+
+  it('still reads a morning slot as past', () => {
+    const [row] = buildCutListRows(
+      [order({ pickupSlot: '2026-07-28T09:00' })],
+      shopWallClockMs(PT, instant),
+    );
+    expect(row.overdue).toBe(true);
+    expect(row.countdown).toBe('3h ago');
+  });
+});
+
+describe('slotWallClockMs', () => {
+  it('reads a slot as wall time, independent of the runtime zone', () => {
+    expect(slotWallClockMs('2026-07-28T16:00')).toBe(Date.UTC(2026, 6, 28, 16, 0));
+  });
+
+  it('returns NaN for an undated slot so callers can fall back', () => {
+    expect(Number.isNaN(slotWallClockMs('Sat 10am–12pm'))).toBe(true);
   });
 });

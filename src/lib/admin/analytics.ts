@@ -46,12 +46,18 @@ export function computeCategoryBreakdown(
   colors: Record<string, string>,
 ): CategoryBreakdown[] {
   const catRevenue: Record<string, number> = {};
-  const catOrders: Record<string, number> = {};
-  for (const order of orders) {
+  // Distinct ORDERS per category, not line items. The card renders this as
+  // "N ORDERS", and counting per line meant one order carrying three beef
+  // cuts read as three orders against Beef.
+  const catOrderIds: Record<string, Set<unknown>> = {};
+  for (const [index, order] of orders.entries()) {
+    // Falls back to the array position when an order carries no id, so two
+    // distinct orders can never collapse into one bucket entry.
+    const orderKey = (order as { _id?: unknown })._id ?? `idx-${index}`;
     for (const item of order.orderItems) {
       const cat = item.productType in colors ? item.productType : 'Other';
       catRevenue[cat] = (catRevenue[cat] ?? 0) + item.price * item.qty;
-      catOrders[cat] = (catOrders[cat] ?? 0) + 1;
+      (catOrderIds[cat] ??= new Set()).add(String(orderKey));
     }
   }
   const totalCatRevenue = Object.values(catRevenue).reduce((s, v) => s + v, 0);
@@ -63,7 +69,7 @@ export function computeCategoryBreakdown(
       name,
       revenue: catRevenue[name] ?? 0,
       pct: totalCatRevenue > 0 ? Math.round(((catRevenue[name] ?? 0) / totalCatRevenue) * 100) : 0,
-      orders: catOrders[name] ?? 0,
+      orders: catOrderIds[name]?.size ?? 0,
       color: colors[name],
       barW: (catRevenue[name] ?? 0) / maxCatRevenue,
     }))

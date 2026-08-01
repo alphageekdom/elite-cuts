@@ -12,19 +12,9 @@ import CheckoutRewardsRedeem from '@/components/checkout/CheckoutRewardsRedeem';
 import CheckoutPublicPromos from '@/components/checkout/CheckoutPublicPromos';
 import { productImageSrc } from '@/lib/format';
 import type { PromoFailureReason } from '@/models/Promo';
+import { PROMO_FAILURE_MESSAGES } from '@/lib/promos/constants';
 
 type PromoStatus = 'idle' | 'valid' | 'invalid';
-
-const PROMO_FAILURE_MESSAGES: Record<PromoFailureReason, string> = {
-  not_found: "We don't recognize that code",
-  disabled: 'This code is no longer available',
-  not_started: 'This code is not active yet',
-  expired: 'This code has expired',
-  exhausted: 'This code has reached its usage limit',
-  customer_limit: "You've already used this code",
-  min_subtotal: "Your order doesn't meet the minimum for this code",
-  first_order_only: 'This code is for first orders only',
-};
 
 const CheckoutOrderSummary = () => {
   const { cartItems, setItemQuantity } = useCartContext();

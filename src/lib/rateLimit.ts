@@ -20,9 +20,14 @@
 //     redeploy, which for an admin-traffic shop happens more often than
 //     attacks, so we accept this.
 //   - Per-IP keying via `x-forwarded-for` / `x-real-ip`: behind a single
-//     well-behaved reverse proxy this is accurate. Direct callers (curl,
-//     dev mode) all bucket under `unknown`, which collapses the limit but
-//     is the right local-dev behavior.
+//     well-behaved reverse proxy that OVERWRITES those headers this is
+//     accurate. Where nothing normalises them the caller sets them, so a
+//     per-IP limit is bypassable by varying the header — each spoofed value
+//     is simply a fresh bucket. Vercel overwrites `x-forwarded-for`, so the
+//     deploy target this ships to is fine; a self-hosted proxy that appends
+//     rather than replaces is not. Direct callers with no proxy headers at
+//     all (curl, dev mode) bucket under `unknown`, which collapses the limit
+//     but is the right local-dev behavior.
 //
 // The state map lives on `globalThis` so Next's dev-mode HMR doesn't reset
 // every limiter on each save.
@@ -50,9 +55,30 @@ export type RateLimitResult = {
   retryAfterSec: number;
 };
 
+// How many calls between sweeps of expired buckets. Buckets were only ever
+// overwritten when the SAME key came back, so a stream of one-off keys — a
+// per-user throttle across many users, or a spoofed `x-forwarded-for` — grew
+// the map without bound for the life of the process. Sweeping on a counter
+// rather than a timer keeps the module free of intervals it would have to
+// clean up.
+const SWEEP_EVERY_CALLS = 500;
+let callsSinceSweep = 0;
+
+function sweepExpired(store: Map<string, Bucket>, now: number): void {
+  for (const [key, bucket] of store) {
+    if (bucket.resetAt <= now) store.delete(key);
+  }
+}
+
 export function rateLimit({ key, max, windowMs }: RateLimitOptions): RateLimitResult {
   const store = getStore();
   const now = Date.now();
+
+  if (++callsSinceSweep >= SWEEP_EVERY_CALLS) {
+    callsSinceSweep = 0;
+    sweepExpired(store, now);
+  }
+
   const existing = store.get(key);
 
   if (!existing || existing.resetAt <= now) {

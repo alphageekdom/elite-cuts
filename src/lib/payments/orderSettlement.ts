@@ -36,10 +36,11 @@ export type SettlementSkipReason =
   | 'already_settled'
   | 'demo_payment_method';
 
-// Caller-side check before we commit to running settlement. Same gates the
-// settlement helper applies internally — exposed so callers (the PATCH
-// handler) can short-circuit without burning a DB write on an obvious skip.
-export function shouldRunSettlement(order: Pick<
+// The gates settlement applies before doing any work. Not exported: the
+// docstring here used to say the PATCH handler calls this to short-circuit,
+// but that handler has always called `runOrderSettlement` directly, so the
+// export was an invitation to a second caller that never arrived.
+function shouldRunSettlement(order: Pick<
   Order,
   'autoSettleAtPickup' | 'user' | 'orderItems' | 'paymentResult' | 'paymentMethod'
 >): { ok: true } | { ok: false; reason: SettlementSkipReason } {
@@ -239,13 +240,3 @@ async function markSettlementFailed(
   await order.save();
 }
 
-// Initial state-flip when the order is placed. Setting the status to
-// `'pending'` distinguishes "opted in but not yet weighed" from "didn't
-// opt in" — the admin drawer reads that to decide whether to render the
-// settlement chip while the order is in flight.
-export function initialSettlementStatus(order: Pick<Order, 'autoSettleAtPickup' | 'user' | 'paymentMethod'>): 'pending' | undefined {
-  if (!order.autoSettleAtPickup) return undefined;
-  if (!order.user) return undefined;
-  if (order.paymentMethod !== 'Stripe') return undefined;
-  return 'pending';
-}

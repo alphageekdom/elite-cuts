@@ -9,6 +9,7 @@ import { escapeRegex } from '@/lib/regex-escape';
 import { productInputSchema, flattenProductIssues, type ProductInput } from '@/lib/products/schema';
 import { coerceProductInput } from '@/lib/products/parse-form-input';
 import {
+  CLEARABLE_PRODUCT_FIELDS,
   CSV_COLUMNS,
   EXISTING_PRODUCT_PROJECTION,
   classifyRow,
@@ -195,11 +196,33 @@ export const POST = withAdmin(async (req, _ctx, userId) => {
     // deleting it. Without the insert stamp, products imported by a demo
     // admin would read as seeded: never restored away, and never deletable
     // through the UI either, since the delete guard refuses seeded cuts.
-    const writes = bulkOps.map((op) =>
-      op.kind === 'update'
-        ? { updateOne: { filter: { _id: op.matchId }, update: { $set: op.doc } } }
-        : { insertOne: { document: { ...op.doc, createdBy: userId } } },
-    );
+    // A blanked CSV column has to be CLEARED, not skipped. Mongoose strips
+    // `undefined` keys out of `$set`, so an update built from the doc alone
+    // left the old value in place — the preview promised a change ("ABC" → —)
+    // that the commit never made, the row re-diffed as an update on every
+    // future import, and switching `pricingType` left the previous type's
+    // price and weight fields on the document forever, where the next export
+    // re-emitted them. Pair every omitted optional with an explicit `$unset`.
+    type ProductBulkWrite = Parameters<typeof ProductModel.bulkWrite>[0];
+    const writes: ProductBulkWrite = bulkOps.map((op) => {
+      if (op.kind === 'insert') {
+        return { insertOne: { document: { ...op.doc, createdBy: userId } } };
+      }
+      const toClear = CLEARABLE_PRODUCT_FIELDS.filter(
+        (field) => op.doc[field] === undefined,
+      );
+      return {
+        updateOne: {
+          filter: { _id: op.matchId },
+          update: {
+            $set: op.doc,
+            ...(toClear.length > 0 && {
+              $unset: Object.fromEntries(toClear.map((f) => [f, ''])),
+            }),
+          },
+        },
+      };
+    }) as ProductBulkWrite;
 
     // Try a real transaction first — production deployments on Atlas (or any
     // replica set) get true atomicity. Local single-node Mongo lacks

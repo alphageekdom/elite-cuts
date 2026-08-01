@@ -14,8 +14,7 @@ import AccountDeletionAudit, {
 
 // Lives in `account-deletion-constants.ts` — a leaf, so pages and client
 // components can read it without pulling this module's eight models in.
-import { ACCOUNT_DELETION_GRACE_DAYS } from './account-deletion-constants';
-export const FORMER_CUSTOMER_NAME = 'Former customer';
+import { FORMER_CUSTOMER_NAME, ACCOUNT_DELETION_GRACE_DAYS } from './account-deletion-constants';
 
 type UserId = Types.ObjectId | string;
 

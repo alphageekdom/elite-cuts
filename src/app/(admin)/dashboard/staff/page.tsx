@@ -4,8 +4,13 @@ import { getSessionUser } from '@/lib/auth/session';
 import connectDB from '@/config/database';
 import StaffMemberModel from '@/models/StaffMember';
 import ShiftModel from '@/models/Shift';
-import { getMondayOf } from '@/lib/shifts/schedule';
+import { mondayOfShopDay } from '@/lib/shifts/schedule';
 import { normalizeWeekStart } from '@/lib/shifts/queries';
+import { getShopSettings } from '@/lib/shop-settings/queries';
+import {
+  shopDateKey,
+  shopWeekdayIndex,
+} from '@/lib/shop-settings/pickup-format';
 import { buildStaffRows } from '@/lib/admin/staff';
 import StaffPageClient from '@/components/admin/staff/StaffPageClient';
 
@@ -23,8 +28,16 @@ export default async function AdminStaffPage() {
 
   await connectDB();
 
-  const weekStart = normalizeWeekStart(getMondayOf(new Date()));
-  const dayOfWeek = (new Date().getDay() + 6) % 7; // Mon=0 … Sun=6
+  // Both the week and "today" come off the shop's clock, not the server's:
+  // on a UTC runtime serving a Pacific shop, every evening after 5pm local
+  // this page read tomorrow's weekday — so the "working today" column showed
+  // the wrong roster — and on Sunday evenings it jumped a week ahead too.
+  const shopSettings = await getShopSettings();
+  const now = new Date();
+  const weekStart = normalizeWeekStart(
+    mondayOfShopDay(shopDateKey(shopSettings.timezone, now)),
+  );
+  const dayOfWeek = shopWeekdayIndex(shopSettings.timezone, now); // Mon=0 … Sun=6
 
   const [staff, todaysShifts] = await Promise.all([
     StaffMemberModel.find().sort({ name: 1 }).lean(),

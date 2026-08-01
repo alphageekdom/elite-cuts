@@ -51,9 +51,9 @@ export function buildDayCells(
 ): DayCell[] {
   return DAY_LABELS_SHORT.map((label, i) => {
     const d = new Date(weekStart);
-    d.setDate(weekStart.getDate() + i);
+    d.setUTCDate(weekStart.getUTCDate() + i);
     const closed = shopHours.find((h) => h.dayOfWeek === i)?.isClosed ?? false;
-    return { label, date: d.getDate(), closed, isToday: i === todayMondayIndex };
+    return { label, date: d.getUTCDate(), closed, isToday: i === todayMondayIndex };
   });
 }
 
@@ -126,16 +126,40 @@ export function buildOpenLabel(shopHours: ShopHoursDay[], todayMondayIndex: numb
 // week's date range. Year shows on the end date only.
 export function buildWeekRangeLabel(weekStart: Date): string {
   const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 6);
-  const startLabel = `${MONTH_ABBR[weekStart.getMonth()].toUpperCase()} ${weekStart.getDate()}`;
-  const endLabel = `${MONTH_ABBR[weekEnd.getMonth()].toUpperCase()} ${weekEnd.getDate()}, ${weekEnd.getFullYear()}`;
+  weekEnd.setUTCDate(weekStart.getUTCDate() + 6);
+  const startLabel = `${MONTH_ABBR[weekStart.getUTCMonth()].toUpperCase()} ${weekStart.getUTCDate()}`;
+  const endLabel = `${MONTH_ABBR[weekEnd.getUTCMonth()].toUpperCase()} ${weekEnd.getUTCDate()}, ${weekEnd.getUTCFullYear()}`;
   return `${startLabel} – ${endLabel}`;
 }
 
-export function buildTodayDateLabel(now: Date): { dayName: string; dateStr: string } {
+// Month + day for the "Week of Mar 4" heading. Exists so the client component
+// never reads calendar parts off `weekStart` itself: it is UTC midnight of the
+// week's Monday (see `mondayOfShopDay`), and a local `getDate()` on it names
+// the PREVIOUS day for any runtime west of UTC — which is every browser in the
+// shop's own zone. That is how the header came to read "Week of Aug 2" on a
+// Monday, and to disagree with its own server-rendered HTML.
+export function buildWeekStartParts(weekStart: Date): {
+  month: string;
+  day: number;
+} {
   return {
-    dayName: DAY_NAMES_FULL_SUN_INDEXED[now.getDay()],
-    dateStr: `${MONTH_ABBR[now.getMonth()]} ${now.getDate()}`,
+    month: MONTH_ABBR[weekStart.getUTCMonth()],
+    day: weekStart.getUTCDate(),
+  };
+}
+
+// Takes the shop's `YYYY-MM-DD` rather than a Date so the label can't be read
+// off a browser (or server) clock that isn't the shop's — this card used to
+// name the wrong day for the last hours of every evening on a UTC runtime.
+export function buildTodayDateLabel(dateKey: string): {
+  dayName: string;
+  dateStr: string;
+} {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  const utc = new Date(Date.UTC(year, month - 1, day));
+  return {
+    dayName: DAY_NAMES_FULL_SUN_INDEXED[utc.getUTCDay()],
+    dateStr: `${MONTH_ABBR[month - 1]} ${day}`,
   };
 }
 

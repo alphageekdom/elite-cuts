@@ -23,3 +23,14 @@ export const ACCOUNT_DELETION_GRACE_DAYS = 30;
  * it. Any sign-in or order placed in the meantime clears the warning.
  */
 export const DORMANCY_FOLLOWUP_DAYS = 30;
+
+/**
+ * Display name left on the orders, reviews and messages a hard-deleted
+ * customer leaves behind. Lives here rather than in `account-deletion.ts`
+ * for the same reason as the day counts above: the two surfaces that RENDER
+ * it (the product page's review list and the admin message mapper) would
+ * otherwise drag eight Mongoose models in for one string — which is why both
+ * hardcoded the literal instead, and could drift from what the cascade
+ * actually writes.
+ */
+export const FORMER_CUSTOMER_NAME = 'Former customer';

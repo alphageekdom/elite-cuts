@@ -100,7 +100,9 @@ export function orderHasRealizedDifference(lines: LineTotalInput[]): boolean {
 //
 // `subtotal` and `tax` are the *original* (estimated) values stored on
 // the order — used to derive the effective tax rate. Pass the same
-// numbers the order doc carries.
+// numbers the order doc carries, along with the same discounts and
+// delivery fee, or the derived rate won't match the one that produced
+// the stored tax.
 export type RealizedOrderTotalInput = {
   lines: LineTotalInput[];
   subtotal: number;
@@ -111,8 +113,16 @@ export type RealizedOrderTotalInput = {
   deliveryFee?: number;
 };
 
-export function realizedOrderTotal(input: RealizedOrderTotalInput): number {
-  const subtotal = realizedSubtotal(input.lines);
+// Discounts + delivery fee applied the way `computeOrderTotals` applies
+// them: discounts come off the subtotal, the fee goes on after, and the
+// sum is what tax is charged on.
+function taxableBase(
+  subtotal: number,
+  input: Pick<
+    RealizedOrderTotalInput,
+    'memberDiscount' | 'promoDiscount' | 'pointsRedemptionValueCents' | 'deliveryFee'
+  >,
+): { afterDiscounts: number; base: number } {
   const pointsDollars = (input.pointsRedemptionValueCents ?? 0) / 100;
   const afterDiscounts = Math.max(
     0,
@@ -121,8 +131,21 @@ export function realizedOrderTotal(input: RealizedOrderTotalInput): number {
       (input.promoDiscount ?? 0) -
       pointsDollars,
   );
-  const deliveryFee = input.deliveryFee ?? 0;
-  const taxRatio = input.subtotal > 0 ? input.tax / input.subtotal : 0;
-  const tax = Math.round(afterDiscounts * taxRatio * 100) / 100;
-  return Math.round((afterDiscounts + deliveryFee + tax) * 100) / 100;
+  return { afterDiscounts, base: afterDiscounts + (input.deliveryFee ?? 0) };
+}
+
+export function realizedOrderTotal(input: RealizedOrderTotalInput): number {
+  const realized = taxableBase(realizedSubtotal(input.lines), input);
+
+  // Derive the effective rate from the base the stored tax was actually
+  // charged on — `computeOrderTotals` taxes the POST-discount subtotal
+  // plus the delivery fee, not the raw subtotal. Dividing by the raw
+  // subtotal understated the rate on every discounted order, so a cut
+  // whose realized weight exactly matched its estimate still produced a
+  // nonzero delta and auto-settlement moved money over it.
+  const original = taxableBase(input.subtotal, input);
+  const taxRatio = original.base > 0 ? input.tax / original.base : 0;
+
+  const tax = Math.round(realized.base * taxRatio * 100) / 100;
+  return Math.round((realized.base + tax) * 100) / 100;
 }

@@ -25,7 +25,10 @@ import {
   tallyRepeatCuts,
 } from '@/lib/profile/dashboard';
 import { VISIBLE_PRODUCT_FILTER } from '@/lib/products/constants';
+import { PUBLIC_PRODUCT_PROJECTION } from '@/lib/products/public-projection';
 import type { ProfileOrder } from '@/types/profile';
+import { orderHasRealizedDifference, realizedOrderTotal } from '@/lib/orders/line';
+import { DELIVERY_FEE } from '@/lib/pricing';
 import type { SerializedAddress } from '@/types/address';
 import ProfileSidebar from '@/components/profile/dashboard/ProfileSidebar';
 import OverviewTab from '@/components/profile/dashboard/OverviewTab';
@@ -158,7 +161,9 @@ export default async function ProfilePage({ searchParams }: Props) {
 
   const [rawSavedCuts, rawOrders, rawMessages] = await Promise.all([
     savedCutIds.length > 0
-      ? Product.find({ _id: { $in: savedCutIds } }).lean()
+      ? Product.find({ _id: { $in: savedCutIds } })
+          .select(PUBLIC_PRODUCT_PROJECTION)
+          .lean()
       : [],
     // The full history, not a page of it: "Spent all time" and "Orders this
     // year" sum across every order, so a capped fetch would quietly understate
@@ -192,6 +197,22 @@ export default async function ProfilePage({ searchParams }: Props) {
     subtotal: o.subtotal,
     tax: o.tax,
     totalCost: o.totalCost,
+    ...(orderHasRealizedDifference(o.orderItems) && {
+      realizedTotalShift:
+        Math.round(
+          (realizedOrderTotal({
+            lines: o.orderItems,
+            subtotal: o.subtotal,
+            tax: o.tax,
+            memberDiscount: o.memberDiscount,
+            promoDiscount: o.promoDiscount,
+            pointsRedemptionValueCents: o.pointsRedemptionValueCents,
+            deliveryFee: o.fulfillmentType === 'delivery' ? DELIVERY_FEE : 0,
+          }) -
+            o.totalCost) *
+            100,
+        ) / 100,
+    }),
     isPaid: o.isPaid,
     orderStatus: o.orderStatus,
     paymentMethod: o.paymentMethod,
@@ -233,7 +254,9 @@ export default async function ProfilePage({ searchParams }: Props) {
     const liveDocs = await Product.find({
       ...VISIBLE_PRODUCT_FILTER,
       _id: { $in: tallies.map((t) => t.productId) },
-    }).lean();
+    })
+      .select(PUBLIC_PRODUCT_PROJECTION)
+      .lean();
     const byId = new Map(
       liveDocs.map((doc) => {
         const product = convertToSerializableObject(

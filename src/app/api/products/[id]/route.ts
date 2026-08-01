@@ -20,6 +20,7 @@ import {
   productRecordFromFormData,
 } from '@/lib/products/parse-form-input';
 import { productInputSchema } from '@/lib/products/schema';
+import { PUBLIC_PRODUCT_PROJECTION } from '@/lib/products/public-projection';
 import { recomputeProductRating } from '@/lib/reviews/recompute';
 import { clientIpFromHeaders, rateLimit } from '@/lib/rateLimit';
 
@@ -40,7 +41,10 @@ export const GET = async (_request: NextRequest, { params }: Ctx) => {
     const invalid = parseObjectId(id);
     if (invalid) return invalid;
 
-    const product = await Product.findById(id);
+    // Unauthenticated route — same projection the list GET and every other
+    // customer-facing read carries. Without it, asking for one product by id
+    // was a way around the strip the list applies.
+    const product = await Product.findById(id).select(PUBLIC_PRODUCT_PROJECTION);
     if (!product) {
       return NextResponse.json({ message: 'Product not found' }, { status: 404 });
     }
@@ -157,9 +161,10 @@ export const PUT = withAdmin<{ id: string }>(async (request, ctx) => {
 
     const record = productRecordFromFormData(formData);
     // Empty slug on an edit means "keep the existing slug", not "derive a
-    // new one from name". The coercer would otherwise re-derive on every
-    // rename and break external references.
-    if (!record.slug?.trim()) record.slug = existingProduct.slug;
+    // new one from name" — the drawer has no slug field, so this fires on
+    // EVERY edit and is what stops a rename re-deriving the URL.
+    const slugFromForm = record.slug?.trim();
+    if (!slugFromForm) record.slug = existingProduct.slug;
 
     // `slug` is the key the nightly restore matches a seeded cut on — see
     // `pinNaturalKeyForDemo` for what a rename would strand.
@@ -182,6 +187,20 @@ export const PUT = withAdmin<{ id: string }>(async (request, ctx) => {
       rating: existingProduct.rating,
       images: existingProduct.images,
     };
+
+    // Persist the STORED slug verbatim, not the copy that just came back
+    // through `slugify`. The two differ only for a legacy value that isn't
+    // slugify-stable — `ribeye steak`, written before that normalisation
+    // existed, since the model lower-cases but has no pattern validator — and
+    // for those, normalising here rewrote the URL during an edit that never
+    // touched it. `/products/<old-slug>` then 404s, and the only redirect that
+    // exists is id→slug, so every shared or indexed link died from a price
+    // change. That is the regression the durable-URL work exists to prevent.
+    //
+    // Guarded on `slugFromForm` rather than applied unconditionally so that a
+    // future drawer growing a real slug field still works; today it is always
+    // empty, which is precisely why an edit must never move the URL.
+    if (!slugFromForm) update.slug = existingProduct.slug;
     if (!formData.has('isFeatured')) update.isFeatured = existingProduct.isFeatured;
     if (!formData.has('isActive'))   update.isActive   = existingProduct.isActive;
 
@@ -273,8 +292,14 @@ export const POST = async (request: NextRequest, { params }: Ctx) => {
       return NextResponse.json({ message: 'Product not found' }, { status: 404 });
     }
 
+    // Whole stars only. `parseFloat` accepted 4.99, which the model's
+    // min/max never rejected and the star display has no way to render.
     const parsedRating = Number.parseFloat(String(rating));
-    if (Number.isNaN(parsedRating) || parsedRating < 1 || parsedRating > 5) {
+    if (
+      !Number.isInteger(parsedRating) ||
+      parsedRating < 1 ||
+      parsedRating > 5
+    ) {
       return NextResponse.json({ message: 'Invalid rating value' }, { status: 400 });
     }
 
@@ -291,8 +316,10 @@ export const POST = async (request: NextRequest, { params }: Ctx) => {
     // Recompute after the review is persisted so the aggregate sees it.
     await recomputeProductRating(product._id as mongoose.Types.ObjectId);
 
-    // Re-read the product so the response reflects the new rating.
-    const refreshed = await Product.findById(id);
+    // Re-read the product so the response reflects the new rating. Projected
+    // like the GET above — this response goes back to the customer who just
+    // submitted the review.
+    const refreshed = await Product.findById(id).select(PUBLIC_PRODUCT_PROJECTION);
     return NextResponse.json({ data: refreshed }, { status: 201 });
   } catch (error) {
     if (

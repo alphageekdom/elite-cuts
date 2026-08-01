@@ -5,6 +5,10 @@ import connectDB from '@/config/database';
 import Product, { type SerializedProduct } from '@/models/Product';
 import { convertToSerializableObject } from '@/lib/convertToObject';
 import { getActiveHoliday } from '@/lib/announcements/holidays';
+import { getShopSettings } from '@/lib/shop-settings/queries';
+import { shopDateKey } from '@/lib/shop-settings/pickup-format';
+import { VISIBLE_PRODUCT_FILTER } from '@/lib/products/constants';
+import { PUBLIC_PRODUCT_PROJECTION } from '@/lib/products/public-projection';
 
 import CartItemsPanel from '@/components/cart/CartItemsPanel';
 import CartSuggestions from '@/components/cart/CartSuggestions';
@@ -56,11 +60,14 @@ const CartPage = async () => {
   // Suggestions strip: server fetches up to 6 in-stock featured products so
   // the client can drop any already in the cart and still render 3.
   await connectDB();
-  const featuredDocs = await Product.find({
-    isFeatured: true,
-    stockCount: { $gt: 0 },
-    'images.0': { $exists: true },
-  })
+  const featuredDocs = await Product.find(
+    {
+      ...VISIBLE_PRODUCT_FILTER,
+      isFeatured: true,
+      stockCount: { $gt: 0 },
+    },
+    PUBLIC_PRODUCT_PROJECTION,
+  )
     .limit(6)
     .lean();
   const featured = featuredDocs.map(
@@ -70,7 +77,8 @@ const CartPage = async () => {
   // Holiday badge gets serialized to plain primitives so the CartSummary
   // client component can read it without crossing the function-prop boundary
   // (Holiday.computeDate is a function and can't be passed through).
-  const active = getActiveHoliday();
+  const shopSettings = await getShopSettings();
+  const active = getActiveHoliday(shopDateKey(shopSettings.timezone, new Date()));
   const activeHoliday = active
     ? { name: active.holiday.name, daysUntil: active.daysUntil }
     : null;

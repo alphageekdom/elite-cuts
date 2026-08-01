@@ -8,7 +8,7 @@ import NotificationsTab from './tabs/NotificationsTab';
 import RewardsTab from './tabs/RewardsTab';
 import type { ShopSettings } from '@/models/ShopSettings';
 import { DEFAULT_SHOP_SETTINGS } from '@/lib/shop-settings/defaults';
-import { shopSettingsInputSchema } from '@/lib/settings/schema';
+import { shopSettingsInputSchema } from '@/lib/shop-settings/schema';
 
 type Tab = 'general' | 'notifications' | 'rewards';
 

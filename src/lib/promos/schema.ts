@@ -118,17 +118,5 @@ export const promoInputSchema = z
 
 export type PromoInput = z.infer<typeof promoInputSchema>;
 
-// Flatten zod issues into a `{ field: firstMessage }` map for inline form
-// error display. Matches the convention used elsewhere (issues for a path
-// collapse to the first message — admins don't need multiple errors on the
-// same field at once).
-export function flattenPromoIssues(
-  issues: ReadonlyArray<{ path: ReadonlyArray<PropertyKey>; message: string }>,
-): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const issue of issues) {
-    const key = String(issue.path[0] ?? '_');
-    if (!(key in out)) out[key] = issue.message;
-  }
-  return out;
-}
+// Alias over the shared implementation — see `@/lib/schema-issues`.
+export { flattenIssues as flattenPromoIssues } from '@/lib/schema-issues';

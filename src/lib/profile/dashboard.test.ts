@@ -12,7 +12,8 @@ type TestItem = {
   product: string;
   name: string;
   qty: number;
-  refunded?: boolean;
+  refunded: boolean;
+  price: number;
 };
 
 const order = (
@@ -20,18 +21,28 @@ const order = (
     orderStatus?: OrderStatus;
     createdAt?: string;
     totalCost?: number;
+    subtotal?: number;
+    tax?: number;
     orderItems?: TestItem[];
   } = {},
-) => ({
-  orderStatus: overrides.orderStatus ?? ('Completed' as OrderStatus),
-  createdAt: overrides.createdAt ?? '2026-07-01T12:00:00.000Z',
-  totalCost: overrides.totalCost ?? 0,
-  orderItems: overrides.orderItems ?? [],
-});
+) => {
+  const totalCost = overrides.totalCost ?? 0;
+  return {
+    orderStatus: overrides.orderStatus ?? ('Completed' as OrderStatus),
+    createdAt: overrides.createdAt ?? '2026-07-01T12:00:00.000Z',
+    totalCost,
+    // Refund maths needs the pre-tax split. Defaulting subtotal to the total
+    // with no tax keeps every existing case's arithmetic unchanged.
+    subtotal: overrides.subtotal ?? totalCost,
+    tax: overrides.tax ?? 0,
+    orderItems: overrides.orderItems ?? [],
+  };
+};
 
 const item = (product: string, qty = 1, refunded = false): TestItem => ({
   product,
   name: product,
+  price: 0,
   qty,
   refunded,
 });
@@ -179,6 +190,47 @@ describe('buildHabits', () => {
     );
     expect(habits.find((h) => h.label === 'Spent all time')?.value).toBe(
       '$100.50',
+    );
+  });
+
+  it('nets refunds off the spend figure', () => {
+    // A £40 order with one of its two £20 lines refunded is £20 spent, not
+    // £40. `totalCost` never moves when a line goes back, so summing it alone
+    // counted money that had been returned — while "Most ordered" right
+    // beside it already skipped refunded lines.
+    const habits = buildHabits(
+      [
+        order({
+          totalCost: 40,
+          subtotal: 40,
+          orderItems: [
+            { ...item('ribeye', 1, true), price: 20 },
+            { ...item('brisket', 1, false), price: 20 },
+          ],
+        }),
+      ],
+      TZ,
+      now,
+    );
+    expect(habits.find((h) => h.label === 'Spent all time')?.value).toBe(
+      '$20.00',
+    );
+  });
+
+  it('never reports a negative spend when a whole order is refunded', () => {
+    const habits = buildHabits(
+      [
+        order({
+          totalCost: 30,
+          subtotal: 30,
+          orderItems: [{ ...item('ribeye', 1, true), price: 30 }],
+        }),
+      ],
+      TZ,
+      now,
+    );
+    expect(habits.find((h) => h.label === 'Spent all time')?.value).toBe(
+      '$0.00',
     );
   });
 

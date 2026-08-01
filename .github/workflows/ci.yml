@@ -66,9 +66,14 @@ jobs:
         run: npm run typecheck
 
       # Every database access in the suite is mocked; no services or env needed.
+      #
+      # Runs the suite once per timezone rather than once. Runners are UTC, and
+      # a calendar value read with the wrong getter agrees with the right one
+      # under UTC — so the single run this replaced was structurally unable to
+      # catch the zone bugs that have twice reached main.
       - name: Test
         if: ${{ !cancelled() }}
-        run: npm test
+        run: npm run test:tz
 
       # Deliberately absent:
       #   next build   — the sitemap route is statically prerendered and queries

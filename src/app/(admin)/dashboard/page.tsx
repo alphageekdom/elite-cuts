@@ -28,7 +28,7 @@ import DashboardWaitingOnYou, {
   type InboxRow,
 } from '@/components/admin/dashboard/DashboardWaitingOnYou';
 import RevenueCard from '@/components/admin/analytics/RevenueCard';
-import { excludeDemoOrders, getDemoCustomerId } from '@/lib/demo/exclude';
+import { excludeDemoOrders, getDemoOwnerIds } from '@/lib/demo/exclude';
 import { orderRef } from '@/lib/orders/reference';
 import {
   buildCutListRows,
@@ -37,10 +37,15 @@ import {
   type CutListOrder,
 } from '@/lib/admin/cut-list';
 import { getShopSettings } from '@/lib/shop-settings/queries';
-import { shopDateKey } from '@/lib/shop-settings/pickup-format';
-import { buildTodayStaff, toMondayIndex, type ShiftRow } from '@/lib/admin/schedule';
+import {
+  shopDateKey,
+  shopWallClockMs,
+  shopWeekdayIndex,
+  shopLongDate,
+} from '@/lib/shop-settings/pickup-format';
+import { buildTodayStaff, type ShiftRow } from '@/lib/admin/schedule';
 import { CATEGORY_PAR, DEFAULT_PAR, getStockState } from '@/lib/inventory';
-import { getMondayOf } from '@/lib/shifts/schedule';
+import { mondayOfShopDay } from '@/lib/shifts/schedule';
 import { normalizeWeekStart } from '@/lib/shifts/queries';
 import {
   DAY_MS,
@@ -107,11 +112,14 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
   const chartPrevWindowStart = new Date(now.getTime() - 2 * rangeDays * DAY_MS);
 
   // Phase D — exclude demo activity from every admin aggregate so it
-  // doesn't move the real metrics. `excludeDemo` filters out the demo
-  // customer's orders (the demo admin places none) and resolves to `{}`
-  // when no demo customer exists. The user filter is a flat
-  // `{ isDemo: { $ne: true } }` so both demo accounts drop out of user
-  // counts.
+  // doesn't move the real metrics. `excludeDemo` filters out orders belonging
+  // to EITHER demo account and resolves to `{}` when neither exists. The user
+  // filter is a flat `{ isDemo: { $ne: true } }` so both demo accounts drop
+  // out of user counts.
+  //
+  // It used to scope to the demo customer alone, on the belief that the demo
+  // admin places no orders. They can: the checkout path accepts any demo
+  // session, which is why the nightly wipe clears both accounts too.
   const excludeDemo = await excludeDemoOrders();
   const excludeDemoUser = { isDemo: { $ne: true } };
 
@@ -122,14 +130,26 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
   // today. Excluding it would leave the demo admin's landing page permanently
   // empty. Demo rows carry a Demo pill so nothing is disguised; every revenue
   // and trading number below keeps the exclusion untouched.
-  const demoCustomerId = await getDemoCustomerId();
+  //
+  // Resolves BOTH demo accounts, matching what `excludeDemoOrders` filters. A
+  // row flagged here links to the orders tab with `includeDemo=true`; flagging
+  // only the customer meant a demo-ADMIN order rendered on this board, linked
+  // without the flag, and landed on a page whose filter had just dropped it —
+  // a dead click.
+  const demoOwnerIds = new Set(
+    (await getDemoOwnerIds()).map((id) => id.toString()),
+  );
 
   // Today at the *shop*, not on the server. `getShopSettings` is request-cached
   // and the root layout has already primed it, so this costs no extra query.
   const shopSettings = await getShopSettings();
-  const todaySlots = slotRangeForDay(shopDateKey(shopSettings.timezone, now));
 
-  const weekStart = normalizeWeekStart(getMondayOf(now));
+  // Week start on the shop's clock too: `getMondayOf(now)` reads the server's
+  // weekday, so from Sunday evening Pacific (already Monday UTC) all three
+  // shift-reading pages jumped a week ahead of the counter.
+  const shopToday = shopDateKey(shopSettings.timezone, now);
+  const weekStart = normalizeWeekStart(mondayOfShopDay(shopToday));
+  const todaySlots = slotRangeForDay(shopToday);
   const weekEnd = new Date(weekStart.getTime() + 7 * DAY_MS);
 
   const [
@@ -267,14 +287,17 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
       orderRef: orderRef(idStr),
       customerName: orderCustomerName(o, user),
       isGuest: !user,
-      isDemo: !!user && !!demoCustomerId && user._id.toString() === demoCustomerId.toString(),
+      isDemo: !!user && demoOwnerIds.has(user._id.toString()),
       pickupSlot: o.pickupSlot ?? '',
       orderStatus: o.orderStatus,
       items: o.orderItems.map((i) => ({ name: i.name, qty: i.qty })),
       orderNotes: o.orderNotes,
     };
   });
-  const cutRows = buildCutListRows(cutListOrders, now);
+  const cutRows = buildCutListRows(
+    cutListOrders,
+    shopWallClockMs(shopSettings.timezone, now),
+  );
   const cutSummary = summariseCutList(cutRows);
 
   // — Below par
@@ -304,7 +327,10 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
     role: s.role,
     color: s.color,
   }));
-  const todayStaff = buildTodayStaff(shiftRows, toMondayIndex(now.getDay()));
+  const todayStaff = buildTodayStaff(
+    shiftRows,
+    shopWeekdayIndex(shopSettings.timezone, now),
+  );
 
   // — Waiting on you
   const inboxRows: InboxRow[] = openMessages.map((m) => {
@@ -375,12 +401,12 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
   ];
 
   const name = sessionUser.user.name ?? 'Admin';
-  const today = now.toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  // Named on the SHOP's clock, like the board it sits above. Reading the
+  // runtime's day meant a UTC deploy serving a Pacific shop printed tomorrow's
+  // date from 5pm local — directly over a cut list bounded by
+  // `slotRangeForDay(shopToday)` and an "On today" card built from the shop's
+  // weekday, both of which still said today.
+  const today = shopLongDate(shopSettings.timezone, now);
 
   // The subtitle only claims what the queries above actually counted.
   const headline = [

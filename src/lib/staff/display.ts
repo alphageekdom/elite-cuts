@@ -1,3 +1,4 @@
+import { HOUR_BASE } from '@/lib/shifts/schedule';
 import type { ShiftColor } from '@/lib/shifts/constants';
 
 // Shape used everywhere the staff dashboard renders rows. Lives in the
@@ -129,8 +130,8 @@ export const FORM_FIELD_CLS =
 
 // hourIndex 0 = 8 AM, … 8 = 4 PM. End uses +1 because the slot covers a full hour.
 export function formatShiftRange(startHourIndex: number, endHourIndex: number): string {
-  const startH = startHourIndex + 8;
-  const endH = endHourIndex + 9;
+  const startH = startHourIndex + HOUR_BASE;
+  const endH = endHourIndex + HOUR_BASE + 1;
   const fmt = (h: number) => (h < 12 ? `${h} AM` : h === 12 ? '12 PM' : `${h - 12} PM`);
   return `${fmt(startH)} – ${fmt(endH)}`;
 }

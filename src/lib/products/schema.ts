@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { PRODUCT_CATEGORIES } from '@/lib/admin/constants';
 import { MEAT_QUALITY_TIERS, PRICING_TYPES } from '@/lib/products/constants';
+import { slugify } from '@/lib/slugify';
 
 // Single source of truth for the admin product form + CSV import input
 // shape. Consumed by:
@@ -54,7 +55,16 @@ export const productInputSchema = z
   .object({
     // — Identity
     name: requiredText(200, 'Name'),
-    slug: optionalText(200, 'Slug'),
+    // Normalised through the same helper that derives a slug from a name, so
+    // a hand-typed CSV value can't diverge from what the model stores.
+    // `slug` carries `lowercase: true` in the schema, which Mongoose applies
+    // on insert AND on filter casting — so `Ribeye-Steak` used to find the
+    // right document in the DB but miss the in-memory map keyed on the stored
+    // lowercase value. The row then classified as a create, hit the unique
+    // index, and aborted the whole ordered bulkWrite with a bare 500.
+    // `slugify` is idempotent, so an already-clean slug passes through
+    // untouched.
+    slug: optionalText(200, 'Slug').transform((s) => (s ? slugify(s) : s)),
     description: requiredText(2000, 'Description'),
     category: z.enum(PRODUCT_CATEGORIES, { message: 'Category is required' }),
     cutType: requiredText(100, 'Cut type'),
@@ -148,16 +158,5 @@ export const productInputSchema = z
 
 export type ProductInput = z.infer<typeof productInputSchema>;
 
-// Flatten zod issues into a `{ field: firstMessage }` map for inline form
-// error display. Matches the promos convention — issues for a path collapse
-// to the first message.
-export function flattenProductIssues(
-  issues: ReadonlyArray<{ path: ReadonlyArray<PropertyKey>; message: string }>,
-): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const issue of issues) {
-    const key = String(issue.path[0] ?? '_');
-    if (!(key in out)) out[key] = issue.message;
-  }
-  return out;
-}
+// Alias over the shared implementation — see `@/lib/schema-issues`.
+export { flattenIssues as flattenProductIssues } from '@/lib/schema-issues';

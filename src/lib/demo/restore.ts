@@ -130,6 +130,17 @@ async function restoreProducts(
   return { restored, deleted };
 }
 
+// Optional promo fields carrying no schema default — the ones a seed can leave
+// out and an admin can fill in. Anything omitted by a given seed is cleared on
+// restore so the code goes back to exactly the campaign the snapshot describes.
+const OPTIONAL_PROMO_FIELDS = [
+  'startsAt',
+  'endsAt',
+  'usageLimit',
+  'minSubtotal',
+  'maxDiscount',
+] as const;
+
 async function restorePromos(
   demoAdminId: Types.ObjectId | null,
 ): Promise<{ restored: number; deleted: number }> {
@@ -141,10 +152,23 @@ async function restorePromos(
 
   // `usageCount: 0` on every restore so the admin dashboard's used-vs-limit
   // and savings-to-date columns read cleanly the next morning.
+  //
+  // The `$unset` is the promo equivalent of `seedProductDefaults`. These five
+  // fields are optional with no schema default, and most seeds omit most of
+  // them — an update only writes the keys it is handed, so anything a demo
+  // admin typed into an omitted field survived every future restore. Setting
+  // `endsAt` to yesterday on WELCOME10 would have killed the public checkout
+  // chip permanently.
   for (const seed of DEMO_PROMOS) {
+    const toClear = OPTIONAL_PROMO_FIELDS.filter((f) => seed[f] === undefined);
     await Promo.findOneAndUpdate(
       { code: seed.code },
-      { ...seed, usageCount: 0 },
+      {
+        $set: { ...seed, usageCount: 0 },
+        ...(toClear.length > 0 && {
+          $unset: Object.fromEntries(toClear.map((f) => [f, ''])),
+        }),
+      },
       { upsert: true, setDefaultsOnInsert: true },
     );
   }
@@ -178,7 +202,16 @@ export async function restoreDemoCatalog(): Promise<CatalogCounts> {
   // every future restore — permanently, for a past week the seed never revisits.
   // Shifts carry no inbound references, and the seed only ever describes the
   // current week, so "no shifts outside this week" is the correct rest state.
-  const weekStart = currentWeekStartUtc();
+  //
+  // The zone comes from the snapshot this restore INSTALLS, not from the
+  // settings document it overwrites a few lines below. A demo admin can change
+  // the shop's timezone — the settings PUT is deliberately open to them — so
+  // reading the live document keyed the roster to a zone that stopped applying
+  // the moment the restore finished. Setting the shop to Honolulu and letting
+  // the cron fire planted the whole week under a key the schedule never
+  // queries, leaving the grid, the "On today" card and the staff column empty
+  // until the following night.
+  const weekStart = currentWeekStartUtc(DEMO_SHOP_SETTINGS.timezone);
   await Shift.deleteMany({});
   const shifts = await Shift.insertMany(
     DEMO_SHIFTS.map((shift) => ({ ...shift, weekStart })),

@@ -84,7 +84,6 @@ export function isEstimatedPrice(p: PricingView): boolean {
 
 // Single-line best-guess total. For variable-weight cuts the returned
 // number is estimated/average weight × per-lb price × qty; the per-line
-// range comes from calculateProductEstimateRange.
 export function calculateProductEstimate(p: PricingView, quantity: number): number {
   switch (p.pricingType) {
     case 'fixed_package':
@@ -100,23 +99,6 @@ export function calculateProductEstimate(p: PricingView, quantity: number): numb
   }
 }
 
-// Min/max line total for variable-weight cuts. Returns null for fixed
-// pricing types — the caller knows the single value is exact.
-export function calculateProductEstimateRange(
-  p: PricingView,
-  quantity: number,
-): { min: number; max: number } | null {
-  if (p.pricingType !== 'per_lb' && p.pricingType !== 'whole_item_by_weight') {
-    return null;
-  }
-  if (typeof p.minWeightLb !== 'number' || typeof p.maxWeightLb !== 'number' || typeof p.pricePerLb !== 'number') {
-    return null;
-  }
-  return {
-    min: quantity * p.minWeightLb * p.pricePerLb,
-    max: quantity * p.maxWeightLb * p.pricePerLb,
-  };
-}
 
 // Per-unit price snapshot for cart lines and order line items. Returns the
 // expected cost of buying ONE of the product — for fixed_package / each /

@@ -9,6 +9,8 @@ import type { ProductCategory } from '@/lib/admin/constants';
 import ReviewModel from '@/models/Review';
 import OrderModel from '@/models/Order';
 import { resolveProductByParam } from '@/lib/products/resolve';
+import { VISIBLE_PRODUCT_FILTER } from '@/lib/products/constants';
+import { PUBLIC_PRODUCT_PROJECTION } from '@/lib/products/public-projection';
 import { convertToSerializableObject } from '@/lib/convertToObject';
 import { getSessionUser } from '@/lib/auth/session';
 import ProductGallery from '@/components/product/detail/ProductGallery';
@@ -26,9 +28,10 @@ import { getHolidayForCut } from '@/lib/announcements/holidays';
 import { getSpecCells } from '@/lib/products/spec';
 import { getShopSettings } from '@/lib/shop-settings/queries';
 import { getShopHours } from '@/lib/shop-settings/hours-queries';
-import { getPickupNote } from '@/lib/shop-settings/pickup-format';
+import { getPickupNote, shopDateKey } from '@/lib/shop-settings/pickup-format';
 import ReviewForm from './ReviewForm';
 import ReviewList, { type DetailReview, type UserTier } from './ReviewList';
+import { FORMER_CUSTOMER_NAME } from '@/lib/auth/account-deletion-constants';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -217,7 +220,7 @@ export default async function ProductPage({ params }: PageProps) {
 
   const reviews: DetailReview[] = rawReviews.map((r) => {
     const snapshot = (r.authorNameSnapshot ?? '').trim();
-    const fallbackName = snapshot || 'Former customer';
+    const fallbackName = snapshot || FORMER_CUSTOMER_NAME;
     const reviewerId = r.user?._id?.toString();
     const voters = r.helpfulVoters ?? [];
     return {
@@ -275,11 +278,15 @@ export default async function ProductPage({ params }: PageProps) {
   });
 
   // Related products (same category, exclude current, in stock, limit 4)
-  const relatedDocs = await ProductModel.find({
-    category: product.category,
-    _id: { $ne: productId },
-    stockCount: { $gt: 0 },
-  })
+  const relatedDocs = await ProductModel.find(
+    {
+      ...VISIBLE_PRODUCT_FILTER,
+      category: product.category,
+      _id: { $ne: productId },
+      stockCount: { $gt: 0 },
+    },
+    PUBLIC_PRODUCT_PROJECTION,
+  )
     .sort({ isFeatured: -1 })
     .limit(4)
     .lean();
@@ -313,7 +320,10 @@ export default async function ProductPage({ params }: PageProps) {
 
   // Holiday match for this cut, if a window is active. Computed once and
   // passed into HolidayInlineNote so the date math doesn't run twice.
-  const holidayMatch = getHolidayForCut(product.name);
+  const holidayMatch = getHolidayForCut(
+    product.name,
+    shopDateKey(shopSettings.timezone, new Date()),
+  );
 
   // Category-appropriate prep guidance, or null where no honest single note set
   // fits (see PREP_NOTES). Null hides the card and collapses the About grid.

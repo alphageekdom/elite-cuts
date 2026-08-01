@@ -88,10 +88,20 @@ export const authOptions: NextAuthOptions = {
         const isValid = await bcrypt.compare(credentials.password, user.password as string);
 
         if (!isValid) {
-          const attempts = (user.failedLoginAttempts ?? 0) + 1;
+          // An expired lockout starts the count over. The counter only reset
+          // on a SUCCESSFUL sign-in, so once someone had been locked out, a
+          // single wrong password an hour later took them from 3 straight back
+          // to 4 and re-locked for the full duration — a real-user trap rather
+          // than a defence, since an attacker gets the same three attempts per
+          // window either way.
+          const lockoutExpired =
+            Boolean(user.lockoutUntil) && user.lockoutUntil!.getTime() <= Date.now();
+          const attempts = (lockoutExpired ? 0 : (user.failedLoginAttempts ?? 0)) + 1;
           const update: Record<string, unknown> = { failedLoginAttempts: attempts };
           if (attempts >= MAX_FAILED_ATTEMPTS) {
             update.lockoutUntil = new Date(Date.now() + LOCKOUT_DURATION_MS);
+          } else if (lockoutExpired) {
+            update.lockoutUntil = null;
           }
           await User.updateOne({ _id: user._id }, { $set: update });
           throw new Error('Invalid credentials');
@@ -239,7 +249,9 @@ export const authOptions: NextAuthOptions = {
     error: '/error',
   },
   callbacks: {
-    async jwt({ token, user, trigger, session }) {
+    // `session` (the update payload) is deliberately not destructured — the
+    // update branch below re-reads the user instead of trusting it.
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.userId = user.id;
         token.isAdmin = Boolean(user.isAdmin);
@@ -265,9 +277,23 @@ export const authOptions: NextAuthOptions = {
       if (isSessionExpired(token.sessionExpiresAt, Date.now())) {
         return { invalidated: true };
       }
-      if (trigger === 'update' && session) {
-        if (session.name) token.name = session.name as string;
-        if (session.email) token.email = session.email as string;
+      // Re-read from the database rather than trusting the update payload.
+      // This used to copy `session.name` / `session.email` straight into the
+      // token, so any signed-in user could rewrite their own token identity
+      // from the console — unbounded strings into the session cookie, and a
+      // `customer_email` on their Stripe checkout that was never theirs. The
+      // client triggers this only after a profile save has already persisted,
+      // so the stored values are the ones to reflect, and the extra read is
+      // confined to that rare trigger.
+      if (trigger === 'update' && token.sub) {
+        await connectDB();
+        const fresh = await User.findById(token.sub)
+          .select('name email')
+          .lean<{ name?: string; email?: string } | null>();
+        if (fresh) {
+          if (fresh.name) token.name = fresh.name;
+          if (fresh.email) token.email = fresh.email;
+        }
       }
 
       // Periodically revalidate the user against soft-deletion state. An
