@@ -39,7 +39,14 @@ export default function CheckoutCardForm({ isLoggedIn, onValidityChange }: Props
     month.length === 2 && parseInt(month, 10) >= 1 && parseInt(month, 10) <= 12;
   const isYearValid =
     year.length === 2 && parseInt(year, 10) >= new Date().getFullYear() % 100;
-  const isExpiryValid = isMonthValid && isYearValid;
+  // Year alone let an already-expired month through inside the current year —
+  // "01/26" passed in July 2026. Only the current year needs the extra check;
+  // any later year is fine whatever the month.
+  const isExpiryValid =
+    isMonthValid &&
+    isYearValid &&
+    (parseInt(year, 10) > new Date().getFullYear() % 100 ||
+      parseInt(month, 10) >= new Date().getMonth() + 1);
   const isCvcValid = cvc.length === 3;
   const isFullyValid = isNameValid && isCardNumberValid && isExpiryValid && isCvcValid;
 

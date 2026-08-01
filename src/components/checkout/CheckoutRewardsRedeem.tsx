@@ -66,11 +66,23 @@ export default function CheckoutRewardsRedeem({ subtotal, maxDiscountable }: Pro
   // clear the persisted redemption in the effect and follow up with the local
   // draft clear via the adjust-during-render block below, which catches the
   // pointsDiscount → 0 transition without a setState-in-effect.
+  //
+  // The per-order cap has to be re-checked too, not just the discountable
+  // subtotal. The cap is a percentage of the subtotal, so editing the cart
+  // down shrinks it — a $20 redemption applied against a $100 order (20% cap)
+  // survived here at a $60 subtotal (cap $12), because $20 is still under the
+  // $60 discountable. The server then refused the order at place-time with a
+  // message quoting figures but no remedy.
+  const perOrderCapDollars = info
+    ? computeRedemptionCap(subtotal, info).capDollars
+    : Infinity;
+
   useEffect(() => {
-    if (state.pointsDiscount > maxDiscountable) {
+    if (state.pointsDiscount === 0) return;
+    if (state.pointsDiscount > maxDiscountable || state.pointsDiscount > perOrderCapDollars) {
       dispatch({ type: 'SET_REDEMPTION', payload: { points: 0, dollars: 0 } });
     }
-  }, [maxDiscountable, state.pointsDiscount, dispatch]);
+  }, [maxDiscountable, perOrderCapDollars, state.pointsDiscount, dispatch]);
 
   const [lastPointsDiscount, setLastPointsDiscount] = useState(state.pointsDiscount);
   if (lastPointsDiscount !== state.pointsDiscount) {

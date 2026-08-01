@@ -12,7 +12,13 @@ import { validatePromo } from '@/lib/promos/validate';
 import { PROMO_FAILURE_MESSAGES } from '@/lib/promos/constants';
 import { MAX_PER_LINE } from '@/lib/shop-settings/config';
 import { getShopSettings } from '@/lib/shop-settings/queries';
-import { isPickupSlotId } from '@/lib/shop-settings/pickup-slots';
+import { isBookablePickupSlot } from '@/lib/shop-settings/pickup-slots';
+import { getShopHours } from '@/lib/shop-settings/hours-queries';
+import { isDeliveryAddressComplete } from '@/lib/checkout/validation';
+
+// Stand-in for a missing delivery address so the completeness check has
+// something to fail against rather than needing its own null branch.
+const EMPTY_DELIVERY_ADDRESS = { address1: '', city: '', state: '', zip: '' };
 import { applyRedemption } from '@/lib/rewards/calculator';
 import {
   buildOrderItemsFromCart,
@@ -155,11 +161,31 @@ export const POST = async (request: NextRequest) => {
       );
     }
 
-    if (!body.pickupLocation?.trim()) {
-      return NextResponse.json({ message: 'Pickup location is required' }, { status: 400 });
-    }
     if (body.fulfillmentType && !['pickup', 'delivery'].includes(body.fulfillmentType)) {
       return NextResponse.json({ message: 'Invalid fulfillmentType' }, { status: 400 });
+    }
+    const isDelivery = body.fulfillmentType === 'delivery';
+    if (!body.pickupLocation?.trim()) {
+      // A delivery order sends the joined address fields in this slot, so
+      // "Pickup location is required" named the wrong thing entirely for the
+      // one case it fired on most: an empty delivery address.
+      return NextResponse.json(
+        {
+          message: isDelivery
+            ? 'A complete delivery address is required'
+            : 'Pickup location is required',
+        },
+        { status: 400 },
+      );
+    }
+    // ...and because that field is only the address fields joined with commas,
+    // a single filled input satisfied it. A paid order could land with "123"
+    // as its entire delivery address. Validate the address itself.
+    if (isDelivery && !isDeliveryAddressComplete(body.deliveryAddress ?? EMPTY_DELIVERY_ADDRESS)) {
+      return NextResponse.json(
+        { message: 'A complete delivery address is required' },
+        { status: 400 },
+      );
     }
     if (body.contactEmail && !EMAIL_RE.test(body.contactEmail)) {
       return NextResponse.json({ message: 'Invalid contactEmail format' }, { status: 400 });
@@ -180,8 +206,33 @@ export const POST = async (request: NextRequest) => {
     // buckets all parse this back into a Date. Anything else stored here
     // surfaces as "Invalid Date" or a NaN hour on those surfaces, so refuse
     // it at the door rather than making each reader defend itself.
-    if (body.pickupSlot && !isPickupSlotId(body.pickupSlot)) {
-      return NextResponse.json({ message: 'Invalid pickupSlot format' }, { status: 400 });
+    //
+    // Shape alone used to be the whole check, which accepted any parseable
+    // datetime: a window that had already passed while the customer filled the
+    // form — the picker is a one-shot server snapshot and never revalidates —
+    // or, from a tampered request, 3am on a Monday the shop is shut. Checked
+    // against the slots actually on offer now.
+    if (body.pickupSlot) {
+      const [slotSettings, slotHours] = await Promise.all([
+        getShopSettings(),
+        getShopHours(),
+      ]);
+      const bookable = isBookablePickupSlot(body.pickupSlot, {
+        days: slotHours,
+        leadTime: slotSettings.leadTime,
+        timezone: slotSettings.timezone,
+        maxBookingWindow: slotSettings.maxBookingWindow,
+        now: new Date(),
+      });
+      if (!bookable) {
+        return NextResponse.json(
+          {
+            message:
+              'That pickup time is no longer available — pick another window and try again.',
+          },
+          { status: 400 },
+        );
+      }
     }
 
     const userId = sessionUser?.userId;
@@ -251,6 +302,7 @@ export const POST = async (request: NextRequest) => {
     // hold a seat for the entire 24h Stripe expiry window.
     let promoDiscount = 0;
     let promoExcludesMember = false;
+    let promoExcludesPoints = false;
     let promoIdForOrder: Types.ObjectId | null = null;
     if (body.promoCode) {
       const promoResult = await validatePromo({
@@ -262,6 +314,7 @@ export const POST = async (request: NextRequest) => {
       if (promoResult.valid) {
         promoDiscount = promoResult.discountCents / 100;
         promoExcludesMember = promoResult.promo.excludesMember;
+        promoExcludesPoints = promoResult.promo.excludesPoints;
         promoIdForOrder = promoResult.promo._id;
       } else {
         // Fail rather than quietly dropping it. A code can stop being valid
@@ -290,6 +343,21 @@ export const POST = async (request: NextRequest) => {
       typeof body.pointsToRedeem === 'number' &&
       body.pointsToRedeem > 0
     ) {
+      // The two were validated entirely independently here, and
+      // `excludesPoints` was read nowhere on the server at all — the exclusion
+      // existed only as a disabled input in the summary, which a race between
+      // an in-flight promo apply and a synchronous points apply walks straight
+      // past. Refused rather than silently dropping the points, for the same
+      // reason the promo branch above hard-fails.
+      if (promoExcludesPoints) {
+        return NextResponse.json(
+          {
+            message:
+              'That promo code can’t be combined with reward points. Remove one and try again.',
+          },
+          { status: 400 },
+        );
+      }
       const [settings, userDoc] = await Promise.all([
         getShopSettings(),
         User.findById(userId).select('rewardPoints').lean(),

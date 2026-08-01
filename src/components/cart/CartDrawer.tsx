@@ -35,6 +35,7 @@ import CheckIcon from '@/components/ui/icons/CheckIcon';
 import MinusIcon from '@/components/ui/icons/MinusIcon';
 import PlusIcon from '@/components/ui/icons/PlusIcon';
 import XIcon from '@/components/ui/icons/XIcon';
+import CartLoadError from './CartLoadError';
 
 type Props = {
   isOpen: boolean;
@@ -329,7 +330,7 @@ const CartHoldNote = () => {
 };
 
 const CartDrawer = ({ isOpen, onClose }: Props) => {
-  const { cartItems, loading, loadError, retryLoadCart } = useCartContext();
+  const { cartItems, loading, loadError } = useCartContext();
   const { data: session } = useSession();
   const settings = useShopSettings();
   const isLoggedIn = Boolean(session?.user);
@@ -464,36 +465,7 @@ const CartDrawer = ({ isOpen, onClose }: Props) => {
         ) : count === 0 && loadError ? (
           // Never the empty state on a failed load — that told customers with
           // items waiting on the server that their cart was empty.
-          <div className='flex flex-1 flex-col items-center justify-center px-10 text-center'>
-            <div className='mb-5 grid h-14 w-14 place-items-center rounded-full bg-cream-deep text-oxblood'>
-              <svg
-                viewBox='0 0 24 24'
-                fill='none'
-                stroke='currentColor'
-                strokeWidth={1.6}
-                aria-hidden='true'
-                className='h-6 w-6'
-              >
-                <circle cx='12' cy='12' r='9' />
-                <path d='M12 8v5' />
-                <path d='M12 16h.01' />
-              </svg>
-            </div>
-            <h3 className='mb-1.5 font-display text-xl font-medium tracking-tight'>
-              We couldn&rsquo;t load your cart
-            </h3>
-            <p className='mb-5 max-w-[30ch] text-sm text-ink-soft'>
-              Your items are safe — this was a problem reaching the shop, not a
-              problem with your cart.
-            </p>
-            <button
-              type='button'
-              onClick={retryLoadCart}
-              className={`inline-flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-[13px] font-medium tracking-[0.04em] text-cream transition-colors duration-300 hover:bg-oxblood motion-reduce:transition-none ${FOCUS_RING}`}
-            >
-              Try again
-            </button>
-          </div>
+          <CartLoadError className='flex-1 px-10' />
         ) : count === 0 ? (
           <div className='flex flex-1 flex-col items-center justify-center px-10 text-center'>
             <div className='mb-5 grid h-14 w-14 place-items-center rounded-full bg-cream-deep text-ink-soft'>

@@ -6,16 +6,20 @@ import { useRouter } from 'next/navigation';
 import { useCartContext } from '@/context/CartContext';
 
 const CheckoutGuard = ({ children }: { children: React.ReactNode }) => {
-  const { cartItems, loading } = useCartContext();
+  const { cartItems, loading, loadError } = useCartContext();
   const router = useRouter();
 
-  useEffect(() => {
-    if (!loading && cartItems.length === 0) {
-      router.replace('/cart');
-    }
-  }, [cartItems.length, loading, router]);
+  // A cart we failed to fetch is not an empty cart. Bouncing on `loadError`
+  // threw a customer who was part-way through checkout onto the cart page for
+  // one transient 500 — and the cart page then told them the cart was empty.
+  // Staying put lets the retry recover them where they were.
+  const isEmpty = !loading && !loadError && cartItems.length === 0;
 
-  if (!loading && cartItems.length === 0) return null;
+  useEffect(() => {
+    if (isEmpty) router.replace('/cart');
+  }, [isEmpty, router]);
+
+  if (isEmpty) return null;
 
   return <>{children}</>;
 };

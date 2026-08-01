@@ -151,6 +151,32 @@ export function useCartExpiry(): CartExpiryState {
   // session so subsequent changes are treated as real mutations (timer reset).
   const initializedRef = useRef(false);
 
+  // An expiry clear that fails must not be retried against the same cart.
+  //
+  // Clearing empties the cart optimistically, which resets `initializedRef`
+  // below. When the DELETE then fails — offline is the realistic case —
+  // CartContext restores the items *and their original timestamp*, so the
+  // anchor effect re-runs its first-init branch, finds no stored expiry and a
+  // derived expiry already in the past, and clears again. Measured before the
+  // fix: 28 attempts in 12 seconds, still climbing, one error toast each.
+  //
+  // (It only shows up when the failure is slow enough that the restore doesn't
+  // batch with the effects that follow it. An instantly-rejecting fetch
+  // terminates after two attempts, which is why this needs a real offline
+  // condition — or a delayed rejection — to reproduce.)
+  //
+  // Keyed by the anchor rather than a plain flag: a real mutation moves
+  // `cartUpdatedAt`, which should make the cart expirable again, and a fresh
+  // page load starts this ref empty so a cart left behind by a failed clear is
+  // still cleared once the connection is back.
+  const autoClearedAnchorRef = useRef<number | null>(null);
+  const claimAutoClear = useCallback((anchor: number | null): boolean => {
+    if (anchor === null) return true;
+    if (autoClearedAnchorRef.current === anchor) return false;
+    autoClearedAnchorRef.current = anchor;
+    return true;
+  }, []);
+
   // When the cart empties: clear stored expiry and let the next add re-init.
   useEffect(() => {
     if (hasItems) return;
@@ -173,14 +199,18 @@ export function useCartExpiry(): CartExpiryState {
         setStoredExpiry(derived);
       } else {
         setStoredExpiry(null);
-        void clearCart({ silent: true });
+        // Once per anchor — see `claimAutoClear`. Without it a failed clear
+        // restores this exact state and lands straight back here.
+        if (claimAutoClear(cartUpdatedAt.getTime())) {
+          void clearCart({ silent: true });
+        }
       }
       return;
     }
 
     // Subsequent change: a real mutation happened — reset timer from now.
     setStoredExpiry(Date.now() + CART_TTL_MS);
-  }, [cartUpdatedAt, hasItems, clearCart]);
+  }, [cartUpdatedAt, hasItems, clearCart, claimAutoClear]);
 
   // Cleanup when the timer crosses zero. secondsLeft floors at 0 and goes null
   // once the stored expiry is cleared, so this can't re-fire.
@@ -191,6 +221,9 @@ export function useCartExpiry(): CartExpiryState {
   useEffect(() => {
     if (secondsLeft !== 0) return;
     setStoredExpiry(null);
+    // Claimed here too, so a failure doesn't hand the anchor effect above a
+    // second free attempt against the same cart.
+    claimAutoClear(cartUpdatedAt?.getTime() ?? null);
     void clearCart({ silent: true }).then((cleared) => {
       toast.error(
         cleared
@@ -198,7 +231,7 @@ export function useCartExpiry(): CartExpiryState {
           : "Your cart timed out, but we couldn't clear it — check your connection.",
       );
     });
-  }, [secondsLeft, clearCart]);
+  }, [secondsLeft, clearCart, cartUpdatedAt, claimAutoClear]);
 
   const dismiss = useCallback(() => {
     setDismissedFor(expiresAt);

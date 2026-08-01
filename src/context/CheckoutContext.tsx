@@ -32,6 +32,10 @@ export type SavedAddress = DeliveryAddress & {
 
 const EMPTY_ADDRESS: DeliveryAddress = { address1: '', address2: '', city: '', state: '', zip: '' };
 
+// Lifecycle of the delivery-radius lookup. 'error' means the geocoder itself
+// couldn't be reached, which is deliberately not the same as 'invalid'.
+export type DeliveryCheck = 'idle' | 'checking' | 'valid' | 'invalid' | 'error';
+
 export type CheckoutState = {
   isPaymentReady: boolean;
   paymentMethod: PayMethod;
@@ -53,6 +57,13 @@ export type CheckoutState = {
   contactPhone: string;
   pickupSlot: string;
   deliveryAddress: DeliveryAddress;
+  // Result of the delivery-radius lookup for the address currently held in
+  // `deliveryAddress`. It used to live in DeliveryAddressForm's local state,
+  // where it rendered "we can't deliver to this address" and gated nothing —
+  // the customer could read that and pay anyway. Lifted here so the submit
+  // gate can read it, and reset to 'idle' whenever the address changes so a
+  // stale "valid" can't outlive the address it was computed for.
+  deliveryCheck: DeliveryCheck;
   savedAddresses: SavedAddress[];
   orderNotes: string;
   // Whether the customer ticked "Save this card" under the Stripe tile or the
@@ -101,6 +112,7 @@ export type CheckoutAction =
   | { type: 'SET_CONTACT'; payload: { name: string; email: string; phone: string } }
   | { type: 'SET_PICKUP_SLOT'; payload: string }
   | { type: 'SET_DELIVERY_ADDRESS'; payload: DeliveryAddress }
+  | { type: 'SET_DELIVERY_CHECK'; payload: DeliveryCheck }
   | { type: 'SET_ORDER_NOTES'; payload: string }
   | { type: 'SET_SAVE_CARD'; payload: boolean }
   | { type: 'SET_AUTO_SETTLE_AT_PICKUP'; payload: boolean }
@@ -132,6 +144,7 @@ const EMPTY_INITIAL_STATE: CheckoutState = {
   contactPhone: '',
   pickupSlot: '',
   deliveryAddress: EMPTY_ADDRESS,
+  deliveryCheck: 'idle',
   savedAddresses: [],
   orderNotes: '',
   saveCard: false,
@@ -154,7 +167,10 @@ const toDeliveryAddress = (sa: SavedAddress): DeliveryAddress => ({
   zip: sa.zip,
 });
 
-const buildInitialState = (
+// Exported for tests. The reducer carries a load-bearing invariant its
+// render-phase dispatch depends on (see PREFILL_FROM_PROPS), which prose alone
+// was holding up.
+export const buildInitialState = (
   initialContact?: CheckoutInitialContact,
   savedAddresses?: SavedAddress[],
   demoCardEnabled = false,
@@ -176,14 +192,16 @@ const buildInitialState = (
   };
 };
 
-function checkoutReducer(state: CheckoutState, action: CheckoutAction): CheckoutState {
+export function checkoutReducer(state: CheckoutState, action: CheckoutAction): CheckoutState {
   switch (action.type) {
     case 'SET_FULFILLMENT':
-      return {
-        ...state,
-        fulfillment: action.payload,
-        ...(action.payload === 'delivery' ? { pickupSlot: '' } : {}),
-      };
+      // The slot is deliberately kept when switching to delivery. Clearing it
+      // silently moved a real booking: pick Saturday 4–5p, glance at the
+      // delivery option, come back, and the auto-select in FulfillmentToggle
+      // put you on the day's *first* window instead, with nothing saying so.
+      // Nothing leaks either way — PlaceOrderButton only sends `pickupSlot`
+      // when the order is actually a pickup.
+      return { ...state, fulfillment: action.payload };
     case 'SET_PAYMENT_METHOD':
       return { ...state, paymentMethod: action.payload };
     case 'SET_PAYMENT_READY':
@@ -209,7 +227,13 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
     case 'SET_PICKUP_SLOT':
       return { ...state, pickupSlot: action.payload };
     case 'SET_DELIVERY_ADDRESS':
-      return { ...state, deliveryAddress: action.payload };
+      // Any edit invalidates the previous radius answer. Without this, editing
+      // a deliverable address into an undeliverable one leaves 'valid' on
+      // state until the debounce catches up — and the submit gate would let
+      // the order through in that window.
+      return { ...state, deliveryAddress: action.payload, deliveryCheck: 'idle' };
+    case 'SET_DELIVERY_CHECK':
+      return { ...state, deliveryCheck: action.payload };
     case 'SET_ORDER_NOTES':
       return { ...state, orderNotes: action.payload };
     case 'SET_SAVE_CARD':
@@ -292,12 +316,12 @@ type CheckoutProviderProps = {
   demoCardEnabled?: boolean;
 };
 
-export const CheckoutProvider = ({
+export function CheckoutProvider({
   children,
   initialContact,
   savedAddresses,
   demoCardEnabled = false,
-}: CheckoutProviderProps) => {
+}: CheckoutProviderProps) {
   const [state, dispatch] = useReducer(
     checkoutReducer,
     buildInitialState(initialContact, savedAddresses, demoCardEnabled),
@@ -347,8 +371,8 @@ export const CheckoutProvider = ({
   );
 };
 
-export const useCheckoutContext = (): CheckoutCtx => {
+export function useCheckoutContext(): CheckoutCtx {
   const ctx = useContext(CheckoutContext);
   if (!ctx) throw new Error('useCheckoutContext must be used within CheckoutProvider');
   return ctx;
-};
+}

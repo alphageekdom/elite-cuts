@@ -5,6 +5,7 @@ import { useEffect, useEffectEvent, useRef, useState, type ChangeEvent } from 'r
 import {
   useCheckoutContext,
   type DeliveryAddress,
+  type DeliveryCheck,
   type SavedAddress,
 } from '@/context/CheckoutContext';
 import CheckoutFieldCheck from '@/components/checkout/CheckoutFieldCheck';
@@ -21,7 +22,6 @@ import {
 } from '@/lib/checkout/geocoding';
 import { DELIVERY_RADIUS_MILES } from '@/lib/shop-settings/config';
 
-type DeliveryCheck = 'idle' | 'checking' | 'valid' | 'invalid' | 'error';
 
 // Address fields are the source of truth on context — every input reads from
 // `state.deliveryAddress` and writes via dispatch. This is what lets the
@@ -29,10 +29,14 @@ type DeliveryCheck = 'idle' | 'checking' | 'valid' | 'invalid' | 'error';
 // stomping it back to empties via a sync effect.
 const DeliveryAddressForm = () => {
   const { state, dispatch } = useCheckoutContext();
-  const { deliveryAddress, savedAddresses } = state;
+  const { deliveryAddress, savedAddresses, deliveryCheck } = state;
   const { address1, address2, city, state: addressState, zip } = deliveryAddress;
 
-  const [deliveryCheck, setDeliveryCheck] = useState<DeliveryCheck>('idle');
+  // On context rather than local state, so the submit gate can refuse an
+  // address this form has already told the customer we can't deliver to.
+  const setDeliveryCheck = (payload: DeliveryCheck) =>
+    dispatch({ type: 'SET_DELIVERY_CHECK', payload });
+
   const [suggestions, setSuggestions] = useState<PhotonFeature[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   // Tracks whether the address1 input currently has focus. Gates the
@@ -61,7 +65,6 @@ const DeliveryAddressForm = () => {
         zip: sa.zip,
       },
     });
-    setDeliveryCheck('idle');
     setShowSuggestions(false);
   };
 
@@ -145,7 +148,6 @@ const DeliveryAddressForm = () => {
     e.preventDefault();
     updateAddress({ address1: street, city: cityPart, state: statePart, zip: zipPart });
     setShowSuggestions(false);
-    setDeliveryCheck('idle');
   };
 
   const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
@@ -157,21 +159,18 @@ const DeliveryAddressForm = () => {
 
   const onChangeAddress1 = (e: ChangeEvent<HTMLInputElement>) => {
     updateAddress({ address1: e.target.value });
-    setDeliveryCheck('idle');
   };
   const onChangeAddress2 = (e: ChangeEvent<HTMLInputElement>) => {
     updateAddress({ address2: e.target.value });
   };
   const onChangeCity = (e: ChangeEvent<HTMLInputElement>) => {
     updateAddress({ city: e.target.value });
-    setDeliveryCheck('idle');
   };
   const onChangeState = (e: ChangeEvent<HTMLInputElement>) => {
     updateAddress({ state: e.target.value.toUpperCase() });
   };
   const onChangeZip = (e: ChangeEvent<HTMLInputElement>) => {
     updateAddress({ zip: e.target.value.replace(/\D/g, '').slice(0, 5) });
-    setDeliveryCheck('idle');
   };
 
   return (

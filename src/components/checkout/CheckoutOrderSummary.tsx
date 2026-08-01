@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { useSession } from 'next-auth/react';
 
@@ -27,6 +27,20 @@ const CheckoutOrderSummary = () => {
     promoExcludesMember,
     pointsDiscount,
   } = state;
+
+  // `applyCode` captures state when it is created, so by the time its request
+  // resolves the closure still says "no points applied" even if the customer
+  // applied some while it was in flight — which is the exact window the
+  // exclusion has to cover. This ref carries the live value into the callback.
+  const pointsDiscountRef = useRef(pointsDiscount);
+  useEffect(() => {
+    pointsDiscountRef.current = pointsDiscount;
+  }, [pointsDiscount]);
+
+  // The subtotal the applied promo was last validated against — see the
+  // revalidation effect below.
+  const promoSubtotalRef = useRef<number | null>(null);
+
   const isLoggedIn = Boolean(session?.user);
   const [promo, setPromo] = useState('');
   const [promoStatus, setPromoStatus] = useState<PromoStatus>(
@@ -50,6 +64,10 @@ const CheckoutOrderSummary = () => {
     [cartItems, isLoggedIn, promoExcludesMember, isDelivery, promoDiscount, pointsDiscount],
   );
 
+  // Pre-discount, so applying a promo can't feed back into the effect that
+  // watches this and re-trigger itself.
+  const subtotalCents = Math.round(totals.subtotal * 100);
+
   // Any variable-weight line (per_lb / whole_item_by_weight) flips the
   // total to "Estimated total" with the matching disclaimer below.
   const anyEstimated = cartItems.some((l) => l.product.isEstimatedPrice);
@@ -64,6 +82,9 @@ const CheckoutOrderSummary = () => {
     const subtotalCents = Math.round(
       cartItems.reduce((acc, l) => acc + l.price * l.quantity, 0) * 100,
     );
+    // Remember what this answer was computed against, so the effect below can
+    // tell "already correct for this cart" from "needs recomputing".
+    promoSubtotalRef.current = subtotalCents;
 
     try {
       const res = await fetch('/api/promos/apply', {
@@ -88,6 +109,21 @@ const CheckoutOrderSummary = () => {
         dispatch({ type: 'SET_PROMO', payload: { code: '', amount: 0 } });
         return;
       }
+      // The two exclusions are enforced by disabling each input while the
+      // other is applied, which is a render-time rule and so has a hole: the
+      // points apply is synchronous, so applying points while this request is
+      // still in flight lands both. Re-check against live state at the moment
+      // the answer arrives. Points win because applying them was the more
+      // recent deliberate action; the server refuses the pair either way.
+      if (data.excludesPoints && pointsDiscountRef.current > 0) {
+        setPromoStatus('invalid');
+        setPromoError(
+          "That code can't be combined with reward points — remove your points to use it",
+        );
+        dispatch({ type: 'SET_PROMO', payload: { code: '', amount: 0 } });
+        return;
+      }
+
       dispatch({
         type: 'SET_PROMO',
         payload: {
@@ -106,6 +142,25 @@ const CheckoutOrderSummary = () => {
       dispatch({ type: 'SET_PROMO', payload: { code: '', amount: 0 } });
     }
   };
+
+  // A promo's dollar value is computed against the subtotal at the moment it
+  // is applied — and the Edit control right above this summary can change that
+  // subtotal afterwards. Nothing re-ran the calculation, so a 10% code applied
+  // at $100 kept reading "−$10.00" after a $40 line came out, while the server
+  // recomputed −$6 at place-order: the customer was charged more than the
+  // button in front of them said.
+  //
+  // Re-validated rather than recomputed locally, because whether the code is
+  // still eligible at the new subtotal (minimum-spend rules) is the server's
+  // answer to give.
+  const revalidatePromo = useEffectEvent(() => void applyCode(promoCode));
+  useEffect(() => {
+    if (!promoCode || promoStatus !== 'valid') return;
+    if (promoSubtotalRef.current === subtotalCents) return;
+    // Debounced so a run of stepper clicks settles into one request.
+    const id = setTimeout(() => revalidatePromo(), 400);
+    return () => clearTimeout(id);
+  }, [subtotalCents, promoCode, promoStatus]);
 
   const onApplyPromo = (e: { preventDefault(): void }) => {
     e.preventDefault();

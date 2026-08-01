@@ -1,5 +1,20 @@
 import { EMAIL_RE } from '@/lib/validation';
-import type { CheckoutState } from '@/context/CheckoutContext';
+
+// Structural rather than importing `CheckoutState` from the context: lib
+// should not depend on a component-tree module, and these only ever needed a
+// few fields. `src/lib/cart/counts.ts` answers the same question the same way.
+type ContactFields = {
+  contactName: string;
+  contactEmail: string;
+  contactPhone: string;
+};
+
+type AddressFields = {
+  address1: string;
+  city: string;
+  state: string;
+  zip: string;
+};
 
 // Two characters, not five. The old floor blocked real short names — "A Li",
 // "Bo Ng" — from checking out entirely, which is a hard stop rather than a
@@ -9,7 +24,36 @@ export const isNameValid = (name: string): boolean => name.trim().length >= 2;
 export const isEmailValid = (email: string): boolean => EMAIL_RE.test(email.trim());
 export const isPhoneValid = (phone: string): boolean => phone.replace(/\D/g, '').length >= 10;
 
-export const isContactComplete = (state: Pick<CheckoutState, 'contactName' | 'contactEmail' | 'contactPhone'>): boolean =>
+export const isContactComplete = (state: ContactFields): boolean =>
   isNameValid(state.contactName) &&
   isEmailValid(state.contactEmail) &&
   isPhoneValid(state.contactPhone);
+
+// Every field a courier actually needs. `address2` is deliberately absent —
+// a unit number is optional, and requiring it would block houses.
+export const isDeliveryAddressComplete = (address: AddressFields): boolean =>
+  address.address1.trim().length >= 3 &&
+  address.city.trim().length >= 2 &&
+  address.state.trim().length === 2 &&
+  /^\d{5}(-\d{4})?$/.test(address.zip.trim());
+
+// Whether a delivery order may be submitted.
+//
+// 'error' passes on purpose: it means the geocoder couldn't be reached, not
+// that the address is undeliverable, and holding checkout hostage to a
+// third-party outage is worse than accepting an address the shop can refuse
+// by phone. 'idle' and 'checking' do NOT pass — an unanswered check is not a
+// pass, and both resolve on their own within a second.
+export const isDeliveryReady = (state: {
+  deliveryAddress: AddressFields;
+  deliveryCheck: string;
+}): boolean =>
+  isDeliveryAddressComplete(state.deliveryAddress) &&
+  (state.deliveryCheck === 'valid' || state.deliveryCheck === 'error');
+
+// The whole fulfillment-side gate, so the button and any future caller agree.
+export const isFulfillmentReady = (state: {
+  fulfillment: string;
+  deliveryAddress: AddressFields;
+  deliveryCheck: string;
+}): boolean => (state.fulfillment === 'delivery' ? isDeliveryReady(state) : true);
