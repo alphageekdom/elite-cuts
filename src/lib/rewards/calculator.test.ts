@@ -13,7 +13,9 @@ import {
   getTierView,
   projectRewards,
   redeemableValueDollars,
+  tierLabel,
   tierRank,
+  tierViewToInfo,
 } from './calculator';
 
 // Real ShopSettings has many more fields, but every rewards function takes
@@ -514,6 +516,110 @@ describe('getTierView (rolling window)', () => {
     expect(view.nextThreshold).toBe(5000);
     expect(view.pointsToNext).toBe(5000);
     expect(view.progress).toBe(0);
+  });
+});
+
+describe('tierLabel', () => {
+  it('names every tier', () => {
+    expect(tierLabel('regular')).toBe('Regular');
+    expect(tierLabel('connoisseur')).toBe('Connoisseur');
+    expect(tierLabel('masterCut')).toBe('Master Cut');
+  });
+});
+
+describe('tierViewToInfo', () => {
+  const config = settings({
+    tierWindowMonths: 12,
+    connoisseurThreshold: 1000,
+    masterCutThreshold: 5000,
+  });
+
+  it('fills in the current threshold and next tier a TierView omits', () => {
+    const view = getTierView(
+      {
+        createdAt: new Date('2026-01-01'),
+        tierAnniversaryAt: new Date('2026-01-01'),
+        currentTier: 'connoisseur',
+        pointsHistory: [
+          {
+            delta: 1200,
+            reason: 'order_fulfilled',
+            createdAt: new Date('2026-03-01'),
+          },
+        ],
+      },
+      config,
+      new Date('2026-06-01'),
+    );
+    const info = tierViewToInfo(view, config);
+
+    expect(info.tier).toBe('connoisseur');
+    expect(info.label).toBe('Connoisseur');
+    expect(info.threshold).toBe(1000);
+    expect(info.nextTier).toBe('masterCut');
+    // Passed straight through from the view rather than recomputed.
+    expect(info.nextThreshold).toBe(view.nextThreshold);
+    expect(info.pointsToNext).toBe(view.pointsToNext);
+    expect(info.progress).toBe(view.progress);
+  });
+
+  it('reports no next tier at the top', () => {
+    const view = getTierView(
+      { lifetimePoints: 9000, createdAt: new Date('2026-01-01') },
+      settings({
+        tierWindowMonths: 0,
+        connoisseurThreshold: 1000,
+        masterCutThreshold: 5000,
+      }),
+      new Date('2026-06-01'),
+    );
+    const info = tierViewToInfo(
+      view,
+      settings({ connoisseurThreshold: 1000, masterCutThreshold: 5000 }),
+    );
+
+    expect(info.tier).toBe('masterCut');
+    expect(info.nextTier).toBeNull();
+    expect(info.nextThreshold).toBeNull();
+    expect(info.threshold).toBe(5000);
+  });
+
+  it('reports the bottom tier as starting from zero', () => {
+    const view = getTierView(
+      { lifetimePoints: 0, createdAt: new Date('2026-01-01') },
+      settings({ tierWindowMonths: 0, connoisseurThreshold: 1000 }),
+      new Date('2026-06-01'),
+    );
+    const info = tierViewToInfo(view, config);
+
+    expect(info.tier).toBe('regular');
+    expect(info.threshold).toBe(0);
+    expect(info.nextTier).toBe('connoisseur');
+  });
+
+  // The navbar menu draws its bar from `qualifying` and its caption from
+  // `pointsToNext`. If those two ever stop agreeing against `nextThreshold`,
+  // the bar and the sentence under it contradict each other.
+  it('leaves qualifying + pointsToNext summing to the next threshold', () => {
+    const view = getTierView(
+      {
+        createdAt: new Date('2026-01-01'),
+        tierAnniversaryAt: new Date('2026-01-01'),
+        pointsHistory: [
+          {
+            delta: 326,
+            reason: 'order_fulfilled',
+            createdAt: new Date('2026-03-01'),
+          },
+        ],
+      },
+      config,
+      new Date('2026-06-01'),
+    );
+    const info = tierViewToInfo(view, config);
+
+    expect(view.qualifying).toBe(326);
+    expect(view.qualifying + info.pointsToNext).toBe(info.nextThreshold);
   });
 });
 

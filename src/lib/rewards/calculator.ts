@@ -83,6 +83,18 @@ const TIER_LABELS: Record<Tier, string> = {
   masterCut: 'Master Cut',
 };
 
+/**
+ * The display name for a tier.
+ *
+ * Exported so surfaces that name a tier they aren't currently *in* — "674 more
+ * unlocks Master Cut" — don't hand-write the literal. `getTier` and
+ * `getTierView` already carry the label for the current tier; this covers the
+ * next one.
+ */
+export function tierLabel(tier: Tier): string {
+  return TIER_LABELS[tier];
+}
+
 // Tier compute reads thresholds straight off settings so an admin's change
 // flows everywhere that surfaces a tier without code edits.
 export function getTier(
@@ -492,6 +504,44 @@ export function getEffectiveBalance(
     lifetimePoints: lifetime,
     expiredPoints: expired,
     recentHistory: recent,
+  };
+}
+
+/**
+ * Flattens a `TierView` into the `TierInfo` shape display code consumes.
+ *
+ * `getTierView` answers "where does this customer stand *this period*" and
+ * deliberately omits the two fields that are pure functions of the tier plus
+ * settings — the current tier's own threshold, and which tier comes next. Both
+ * consumers (the account dashboard and `/api/me/rewards`, which feeds the
+ * navbar account menu) need the full shape, and reconstructing it at each call
+ * site is how the two would drift on a threshold rename.
+ */
+export function tierViewToInfo(
+  view: TierView,
+  settings: Pick<ShopSettings, 'connoisseurThreshold' | 'masterCutThreshold'>,
+): TierInfo {
+  const threshold =
+    view.tier === 'masterCut'
+      ? settings.masterCutThreshold
+      : view.tier === 'connoisseur'
+        ? settings.connoisseurThreshold
+        : 0;
+  const nextTier: Tier | null =
+    view.tier === 'masterCut'
+      ? null
+      : view.tier === 'connoisseur'
+        ? 'masterCut'
+        : 'connoisseur';
+
+  return {
+    tier: view.tier,
+    label: view.label,
+    threshold,
+    nextTier,
+    nextThreshold: view.nextThreshold,
+    pointsToNext: view.pointsToNext,
+    progress: view.progress,
   };
 }
 

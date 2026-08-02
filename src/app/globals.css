@@ -13,6 +13,10 @@
   --color-paper: #fbf7f0;
   --color-oxblood: #9a3b32;
   --color-oxblood-deep: #6d2a28;
+  /* Lifted oxblood for destructive text on an ink surface, where `oxblood`
+     itself measures 2.1:1 and is unreadable. Passes 5.1:1 on ink. Same role
+     `green-bright` plays for the positive pips on dark cards. */
+  --color-oxblood-bright: #c4756c;
   --color-camel: #c99b62;
   --color-camel-soft: #e0a86b;
   --color-camel-deep: #8a6236;
