@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useScrollLock } from '@/hooks/useScrollLock';
 import { signOut, useSession } from 'next-auth/react';
 import { usePathname, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -17,17 +16,24 @@ import DemoModeChip from '../demo/DemoModeChip';
 import Logo from './Logo';
 import { getInitials } from '@/lib/format';
 import { FOCUS_RING } from '@/lib/styles';
+import { useIsMounted } from '@/hooks/useIsMounted';
 import type { Announcement } from '@/lib/announcements/data';
-import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
 
 const SCROLL_THRESHOLD = 60;
 const LG_BREAKPOINT_PX = 1024;
 
 type NavbarProps = {
   announcements?: Announcement[];
+  /**
+   * `getPickupNote().timing` from the layout — the sheet's footer line.
+   * Required so a new route-group layout can't quietly ship without it and
+   * drop the line; both existing layouts resolve it via `getPickupNoteNow`.
+   */
+  pickupTiming: string;
 };
 
-const Navbar = ({ announcements = [] }: NavbarProps) => {
+const Navbar = ({ announcements = [], pickupTiming }: NavbarProps) => {
+  const isMounted = useIsMounted();
   const { data: session, status } = useSession();
   const router = useRouter();
   const pathname = usePathname();
@@ -83,11 +89,6 @@ const Navbar = ({ announcements = [] }: NavbarProps) => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Only the mobile menu is claimed here — `ProfileMenu` claims its own and
-  // also returns focus to its trigger, which this blanket handler used to
-  // pre-empt.
-  useDismissOnEscape(isMobileMenuOpen, () => setIsMobileMenuOpen(false));
-
   // Close any open menu when the route changes (link clicks, back/forward, etc).
   // Adjust state while rendering so the close lands in the same render as the
   // pathname change rather than a cascading effect tick.
@@ -97,8 +98,6 @@ const Navbar = ({ announcements = [] }: NavbarProps) => {
     if (isMobileMenuOpen) setIsMobileMenuOpen(false);
     if (isProfileMenuOpen) setIsProfileMenuOpen(false);
   }
-
-  useScrollLock(isMobileMenuOpen);
 
   const handleSignOut = async () => {
     try {
@@ -166,11 +165,21 @@ const Navbar = ({ announcements = [] }: NavbarProps) => {
           <button
             type='button'
             className={`inline-flex items-center justify-center rounded-md p-2.5 transition-colors motion-reduce:transition-none lg:hidden ${FOCUS_RING} ${triggerToneClass}`}
-            aria-controls='mobile-menu'
+            // Only once the sheet is actually in the document. It is portalled
+            // and gated on both mount and the session resolving, so the id does
+            // not exist in the server HTML — and an `aria-controls` pointing at
+            // a missing id is a dangling reference. Same rule the cart drawer's
+            // own trigger follows.
+            aria-controls={
+              isMounted && !isSessionLoading ? 'mobile-menu' : undefined
+            }
             aria-expanded={isMobileMenuOpen}
             aria-label={isMobileMenuOpen ? 'Close main menu' : 'Open main menu'}
             onClick={() => setIsMobileMenuOpen((prev) => !prev)}
           >
+            {/* Always the bars, never an X: the open sheet's scrim covers the
+                header, so the "close" state was never actually on screen — and
+                the sheet carries its own close button. */}
             <svg
               className='h-6 w-6'
               xmlns='http://www.w3.org/2000/svg'
@@ -183,21 +192,29 @@ const Navbar = ({ announcements = [] }: NavbarProps) => {
                 strokeLinecap='round'
                 strokeLinejoin='round'
                 strokeWidth={2}
-                d={
-                  isMobileMenuOpen
-                    ? 'M6 18L18 6M6 6l12 12'
-                    : 'M4 6h16M4 12h16M4 18h16'
-                }
+                d='M4 9h16M4 15h16'
               />
             </svg>
           </button>
         </div>
       </div>
 
-      {isMobileMenuOpen && !isSessionLoading && (
+      {/* Always mounted (not gated on `isMobileMenuOpen`) so the sheet can slide
+          in and out rather than appearing and vanishing — the same reason
+          `CartDrawer` stays mounted. `inert` keeps it out of the tab order and
+          the a11y tree while closed. */}
+      {!isSessionLoading && (
         <MobileMenu
+          isOpen={isMobileMenuOpen}
           isAdmin={isAdmin}
           isLoggedIn={isLoggedIn}
+          name={userName}
+          email={userEmail}
+          initials={userInitials}
+          userId={userId}
+          rewardPoints={rewardPoints}
+          pathname={pathname}
+          pickupTiming={pickupTiming}
           closeMobileMenu={closeMobileMenu}
           onSignOut={handleSignOut}
         />

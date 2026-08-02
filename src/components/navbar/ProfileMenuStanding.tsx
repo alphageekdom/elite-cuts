@@ -1,47 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-
-import { tierLabel, type TierInfo } from '@/lib/rewards/calculator';
+import { tierLabel } from '@/lib/rewards/calculator';
+import { useRewardsStanding } from '@/hooks/useRewardsStanding';
 
 const fmt = (n: number) => n.toLocaleString('en-US');
-
-type Standing = { tier: TierInfo; qualifying: number };
-
-/**
- * Per-page-load cache, keyed by user.
- *
- * The panel unmounts when the menu closes, so without this every open would
- * re-request. Points only move when an order completes, which navigates and
- * therefore drops the cache — so a page-load bound is the right staleness.
- *
- * Keyed by `userId` rather than held as a bare value because signing out and
- * back in is client-side navigation with no reload: an unkeyed cache would show
- * the previous account's standing to the next one.
- */
-let cache: { userId: string; promise: Promise<Standing | null> } | null = null;
-
-function loadStanding(userId: string): Promise<Standing | null> {
-  if (cache?.userId === userId) return cache.promise;
-  const promise = fetch('/api/me/rewards')
-    .then((res) => (res.ok ? res.json() : Promise.reject(new Error('failed'))))
-    // Both fields required. Defaulting a missing `qualifying` to 0 would draw
-    // an empty bar beside a Connoisseur label — the two-numbers-disagreeing
-    // failure this block exists to avoid. A malformed payload collapses the
-    // block instead.
-    .then((data: Partial<Standing>) =>
-      data.tier && typeof data.qualifying === 'number'
-        ? { tier: data.tier, qualifying: data.qualifying }
-        : null,
-    )
-    .catch(() => {
-      // Don't cache a failure — the next open should get another try.
-      if (cache?.userId === userId) cache = null;
-      return null;
-    });
-  cache = { userId, promise };
-  return promise;
-}
 
 // Placeholder for one line of text. `inline-block` inside the real text span so
 // the line box comes from that span's own font-size — which is what keeps the
@@ -74,20 +36,7 @@ type Props = { userId: string };
  * landed — under a pointer already on its way to one of them.
  */
 export default function ProfileMenuStanding({ userId }: Props) {
-  const [standing, setStanding] = useState<Standing | null>(null);
-  const [settled, setSettled] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    loadStanding(userId).then((result) => {
-      if (cancelled) return;
-      setStanding(result);
-      setSettled(true);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [userId]);
+  const { standing, settled } = useRewardsStanding(userId);
 
   // A failed load collapses the block entirely. A navigation menu is the wrong
   // place to report a fetch error, and the Rewards row one section down already
