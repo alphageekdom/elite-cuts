@@ -46,12 +46,19 @@ export const POST = async (request: NextRequest) => {
   // guest orders rely on the orderId-as-token model and only the order's
   // pending status to gate replay.
   await connectDB();
-  const order = await Order.findById(orderId).select('user paymentResult.status saveCardIntent').lean();
+  const order = await Order.findById(orderId)
+    .select('user paymentResult.status saveCardIntent anonymisedAt')
+    .lean();
   if (!order) {
     return NextResponse.json({ message: 'Order not found' }, { status: 404 });
   }
   if (order.paymentResult?.status !== 'Pending') {
     return NextResponse.json({ message: 'Order is no longer pending' }, { status: 409 });
+  }
+  // Ownerless is not the same as unauthenticated-safe — a purged customer's
+  // order is `user: null` too, and the gate below would wave it through.
+  if (order.anonymisedAt) {
+    return NextResponse.json({ message: 'Order not found' }, { status: 404 });
   }
   if (order.user) {
     const sessionUser = await getSessionUser();

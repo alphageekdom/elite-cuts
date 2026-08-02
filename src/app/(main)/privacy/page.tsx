@@ -27,7 +27,10 @@ import { getShopSettings } from '@/lib/shop-settings/queries';
 // keep your name; an audit row keeps your email). The dormancy sweep, which
 // deletes accounts for inactivity, was disclosed nowhere. All of that is
 // corrected below.
-const LAST_UPDATED = '2026-07-25';
+// Moves whenever this page's substance changes. 2026-08-02: the deletion
+// section gained the "signing up again won't hand your old orders back" clause,
+// and "saved cards" became true of the Stripe copy as well as the local one.
+const LAST_UPDATED = '2026-08-02';
 
 export async function generateMetadata(): Promise<Metadata> {
   const { shopName } = await getShopSettings();
@@ -261,23 +264,50 @@ export default async function PrivacyPage() {
               indefinitely, and it said "everything else goes" while the
               delivery address and any order note stayed on past orders. The
               address is now actually removed, so the claim is true and the
-              list names it. */}
+              list names it.
+
+              A third correction (2026-08-02): "your saved cards" was true only
+              of the local mirror. The Stripe Customer and every PaymentMethod
+              on it survived the purge, because deletion dropped the row holding
+              the pointer without ever calling Stripe. The cascade now deletes
+              the Customer first, so the list below is finally true of both
+              copies rather than just the one this app can see.
+
+              The same date, caught by audit before it shipped: a first draft of
+              this section said past orders were "sealed to the shop's own
+              books". That was false in the most damaging available direction.
+              Detaching an order from its account is what makes it ownerless,
+              and the confirmation page treated the order id as a bearer token
+              for ownerless orders — so deletion WIDENED access to those orders
+              rather than narrowing it. The confirmation page now refuses
+              anonymised orders outright, which is what makes the sentence below
+              true. Do not restate it without that gate in place.
+
+              "Published" is likewise reserved for reviews, which really do
+              render on the public product page. Messages sit in the shop's
+              inbox behind an admin login; calling them published overstated it
+              on a page whose whole job is naming what survives. */}
           <LegalParagraph>
             Deleting an account isn&apos;t a clean wipe, and it&apos;s worth
             being straight about why. Past orders stay on the shop&apos;s books
             with the name, email and phone that were on them, because a sales
-            record belongs to the shop as much as to you. Reviews and messages
-            you wrote stay published under your name, detached from any account.
-            And a short audit record of the deletion is kept indefinitely so the
-            action can be accounted for afterwards — each entry carries your
-            email, and where an admin deleted the account rather than you, the
-            reason they typed is kept on it too.
+            record belongs to the shop as much as to you. They are detached from
+            any account and closed to the site: signing up again with the same
+            email address will not attach them to a new one, and the
+            confirmation links you were given at the time stop working. Reviews
+            you wrote stay published under your name, and messages you sent the
+            shop stay in the shop&apos;s inbox under your name — both detached
+            from any account. And a short audit record of the deletion is kept
+            indefinitely so the action can be accounted for afterwards — each
+            entry carries your email, and where an admin deleted the account
+            rather than you, the reason they typed is kept on it too.
           </LegalParagraph>
           <LegalParagraph>
             Everything else goes: the account itself, your cart, your saved
-            cards, your saved cuts, your rewards balance and points history,
-            your notifications, the record of which reviews you marked helpful,
-            and the delivery address and any note you left on an order.
+            cards — the copy here and the one held at Stripe — your saved cuts,
+            your rewards balance and points history, your notifications, the
+            record of which reviews you marked helpful, and the delivery address
+            and any note you left on an order.
           </LegalParagraph>
           {dormancyEnabled && (
             <LegalParagraph>

@@ -14,6 +14,8 @@ import AccountDeletionAudit, {
 
 // Lives in `account-deletion-constants.ts` — a leaf, so pages and client
 // components can read it without pulling this module's eight models in.
+import { guestOrderClaimFilter } from '@/lib/orders/guest-claim-filter';
+import { deleteStripeCustomer } from '@/lib/payments/savedCards';
 import { FORMER_CUSTOMER_NAME, ACCOUNT_DELETION_GRACE_DAYS } from './account-deletion-constants';
 
 type UserId = Types.ObjectId | string;
@@ -246,15 +248,23 @@ function fallbackAnonymizedEmail(userId: UserId): string {
   return `deleted-${String(userId)}@former.elitecuts.local`;
 }
 
-// Runs the full cascade. Idempotent — every step is a query against the
+// Runs the full cascade. Idempotent — every local step is a query against the
 // userId, so partial completions can be safely re-run by the cron.
+//
+// One exception, stated because it is not recoverable: the Stripe Customer
+// deletion depends on the `User` doc still existing to supply the id, and the
+// purge cron skips users whose doc is gone. A crash between `User.deleteOne`
+// and a successful Stripe call orphans that Customer for good. It runs before
+// `User.deleteOne` for exactly that reason, and logs the id when it fails.
 export async function hardDeleteUser(
   userId: UserId,
   opts: ActorOptions & { actor: 'admin' | 'cron' },
 ): Promise<void> {
   await connectDB();
 
-  const user = await User.findById(userId).select('name email phone isAdmin deletedAt');
+  const user = await User.findById(userId).select(
+    'name email phone isAdmin deletedAt stripeCustomerId',
+  );
 
   if (user?.isAdmin) {
     throw new Error('Admin accounts cannot be deleted');
@@ -335,15 +345,50 @@ export async function hardDeleteUser(
   // does, so rewriting them buys no privacy and would edit a genuine sales
   // record; the receipt reads them first and should keep showing what was
   // actually on the order.
+  // `anonymisedAt` is what stops the resulting rows being claimable. The shape
+  // produced here — `user: null` plus a real email in `guestContact.email` — is
+  // identical to a genuine guest checkout, and `claimGuestOrdersForUser` matched
+  // exactly that, so registering a purged customer's email inherited their whole
+  // order history. Stamped here, excluded there; see `guestOrderClaimFilter`.
   await Order.updateMany(
     { user: userId },
     {
       $set: {
         user: null,
+        anonymisedAt: new Date(),
         'guestContact.name': nameSnapshot,
         'guestContact.email': orderEmail,
         ...(phoneSnapshot ? { 'guestContact.phone': phoneSnapshot } : {}),
       },
+      $unset: { deliveryAddress: '', orderNotes: '' },
+    },
+  );
+
+  // Second pass, keyed on the email rather than the id. The pass above only
+  // reaches orders this account *owned*; an order the same person placed while
+  // signed out already has `user: null`, so it never matches `{ user: userId }`
+  // and would go unstamped.
+  //
+  // That is not hypothetical, and deletion is what arms it. While the account
+  // exists the email is taken, so nobody can register it and claim anything.
+  // Purging frees the email — and the natural way to end up here is the grace
+  // window itself, where signing in to check out would cancel the very deletion
+  // the customer asked for, so they check out as a guest instead.
+  //
+  // Deliberately does NOT rewrite the `guestContact` triple: those rows carry
+  // what the customer actually typed at checkout, and overwriting it with the
+  // account's name would edit a genuine sales record for no privacy gain. The
+  // address and note come off for the same reason they do above — the privacy
+  // page promises it.
+  //
+  // Shares `guestOrderClaimFilter` with the claim path on purpose: this pass
+  // must seal exactly what that path would otherwise hand out, and the
+  // `anonymisedAt: null` clause it carries also keeps this idempotent by
+  // skipping the rows the pass above just stamped.
+  await Order.updateMany(
+    guestOrderClaimFilter(orderEmail.toLowerCase().trim()),
+    {
+      $set: { anonymisedAt: new Date() },
       $unset: { deliveryAddress: '', orderNotes: '' },
     },
   );
@@ -377,6 +422,26 @@ export async function hardDeleteUser(
   // someone else and survives; only the departing user's entry comes out.
   await Cart.deleteMany({ user: userId });
   await Notification.deleteMany({ userId });
+
+  // Stripe's copy goes before the `User` row that carries the pointer to it.
+  // Not because the id would otherwise be unavailable — it is already in memory
+  // from the `findById` at the top of this function, so swapping these two lines
+  // would break nothing within a single run. The reason is the crash window: the
+  // purge cron skips users whose `User` doc is already gone, so a failure after
+  // `User.deleteOne` is never retried and the Customer is orphaned for good.
+  // Running first shrinks that window to nothing.
+  //
+  // Deleting the Customer takes its PaymentMethods with it, which is the point —
+  // but it is not purely upside. `runOrderSettlement` resolves `customer` and
+  // `payment_method` off the original PaymentIntent, so a pay-the-difference
+  // order completed AFTER an admin immediate-hard-delete can no longer capture
+  // off-session. It degrades correctly (settle-in-store plus an admin
+  // notification) rather than failing silently, and a purged customer's card
+  // arguably should not be chargeable — but the trade is real, not free.
+  //
+  // No-ops in stub mode and never throws (see `deleteStripeCustomer`), so a
+  // Stripe outage cannot strand a half-deleted account.
+  await deleteStripeCustomer(user?.stripeCustomerId);
   await SavedCard.deleteMany({ user: userId });
   await Review.updateMany(
     { helpfulVoters: userId },

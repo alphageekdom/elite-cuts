@@ -31,6 +31,7 @@ const mocks = vi.hoisted(() => ({
   cartDeleteMany: vi.fn(),
   notificationDeleteMany: vi.fn(),
   savedCardDeleteMany: vi.fn(),
+  deleteStripeCustomer: vi.fn(),
   auditCreate: vi.fn(),
   auditFindOne: vi.fn(),
 }));
@@ -69,6 +70,13 @@ vi.mock('@/models/SavedCard', () => ({
   default: { deleteMany: mocks.savedCardDeleteMany },
 }));
 
+// Pulls in the Stripe client and `connectDB`, both server-only. Mocked rather
+// than restructured: the cascade's contract is that it CALLS this, and the
+// never-throws guarantee belongs to the helper's own tests.
+vi.mock('@/lib/payments/savedCards', () => ({
+  deleteStripeCustomer: mocks.deleteStripeCustomer,
+}));
+
 vi.mock('@/models/AccountDeletionAudit', () => ({
   default: {
     create: mocks.auditCreate,
@@ -98,6 +106,7 @@ beforeEach(() => {
       email: 'dana@example.com',
       phone: '619-555-0142',
       isAdmin: false,
+      stripeCustomerId: 'cus_test_dana',
       // Already soft-deleted: the cron path's normal state. The
       // admin-immediate path (deletedAt null) is exercised separately.
       deletedAt: new Date('2026-07-01T00:00:00Z'),
@@ -121,6 +130,7 @@ beforeEach(() => {
   mocks.cartDeleteMany.mockResolvedValue({ deletedCount: 0 });
   mocks.notificationDeleteMany.mockResolvedValue({ deletedCount: 0 });
   mocks.savedCardDeleteMany.mockResolvedValue({ deletedCount: 0 });
+  mocks.deleteStripeCustomer.mockResolvedValue(false);
   mocks.userDeleteOne.mockResolvedValue({ deletedCount: 1 });
   mocks.auditCreate.mockResolvedValue({});
 });
@@ -167,6 +177,66 @@ describe('hardDeleteUser — personal-data cascade', () => {
     const cardOrder = mocks.savedCardDeleteMany.mock.invocationCallOrder[0];
     const userOrder = mocks.userDeleteOne.mock.invocationCallOrder[0];
     expect(cardOrder).toBeLessThan(userOrder);
+  });
+
+  it("deletes the customer's Stripe copy, not just the local mirror", async () => {
+    // Deletion dropped the `SavedCard` rows and the `User` doc carrying
+    // `stripeCustomerId`, but never called Stripe — so the Customer and every
+    // PaymentMethod attached to it outlived the account with no local pointer
+    // left to reach them, while the privacy page promised saved cards go.
+    await hardDeleteUser(USER_ID, { actor: 'admin' });
+
+    expect(mocks.deleteStripeCustomer).toHaveBeenCalledWith('cus_test_dana');
+  });
+
+  it('deletes the Stripe copy BEFORE the row holding its id', async () => {
+    // Ordering is load-bearing, but not for the reason an earlier version of
+    // this comment gave ("nothing left to look it up by"). Within a single run
+    // `stripeCustomerId` is already in memory from the `findById` at the top,
+    // so swapping the two lines would break nothing.
+    //
+    // The real reason is the crash window. `hardDeleteUser` is documented as
+    // safely re-runnable by the purge cron — but the cron skips users whose
+    // `User` doc is gone. Die after `User.deleteOne` and the retry's `findById`
+    // returns null, the Stripe call no-ops, and the Customer is orphaned
+    // permanently. Ordering shrinks that window to nothing.
+    await hardDeleteUser(USER_ID, { actor: 'admin' });
+
+    const stripeOrder = mocks.deleteStripeCustomer.mock.invocationCallOrder[0];
+    const userOrder = mocks.userDeleteOne.mock.invocationCallOrder[0];
+    expect(stripeOrder).toBeLessThan(userOrder);
+  });
+
+  it('stamps the orders it anonymises so they cannot be claimed back', async () => {
+    // Anonymisation leaves `user: null` plus a real email in `guestContact`,
+    // which is byte-identical to a genuine guest checkout. Without the stamp,
+    // registering the purged customer's email inherited their whole history.
+    await hardDeleteUser(USER_ID, { actor: 'admin' });
+
+    const [, update] = mocks.orderUpdateMany.mock.calls[0];
+    expect(update.$set.anonymisedAt).toBeInstanceOf(Date);
+    expect(update.$set.user).toBeNull();
+  });
+
+  it('also seals guest orders the customer placed while signed out', async () => {
+    // The pass above only reaches orders this account OWNED. An order placed
+    // signed out already has `user: null`, so it never matches `{user: userId}`
+    // — and purging frees the email, so registering it would claim that order.
+    // The grace window is the natural way in: signing in to check out would
+    // cancel the very deletion the customer asked for.
+    await hardDeleteUser(USER_ID, { actor: 'admin' });
+
+    const [filter, update] = mocks.orderUpdateMany.mock.calls[1];
+    expect(filter).toEqual({
+      user: null,
+      'guestContact.email': 'dana@example.com',
+      anonymisedAt: null,
+    });
+    expect(update.$set.anonymisedAt).toBeInstanceOf(Date);
+    // Deliberately does not rewrite guestContact — that is what the customer
+    // actually typed at checkout, and overwriting it edits a real sales record.
+    expect(update.$set).not.toHaveProperty('guestContact.name');
+    expect(update.$unset).toEqual({ deliveryAddress: '', orderNotes: '' });
   });
 
   // The admin "delete immediately" path arrives on a LIVE account. Without
