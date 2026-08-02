@@ -109,7 +109,7 @@ export default function AddressForm({ editing, onDone }: Props) {
       {/* Address line 2 */}
       <div>
         <label htmlFor="addr-line2" className={LABEL_CLASS}>
-          Apt / Suite <span className="normal-case tracking-normal opacity-60">(optional)</span>
+          Apt / Suite <span className="normal-case tracking-normal">(optional)</span>
         </label>
         <input
           id="addr-line2"

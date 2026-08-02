@@ -91,12 +91,21 @@ const QUICK_LINKS = [
   { label: 'Contact', href: '/contact' },
 ] as const;
 
-// The three column headings below are h3, not h4. As h4 they skipped a level
-// on most routes — the heading immediately above the footer is an h2 on
-// /rewards, /our-story, /contact, /login and the legal pages, though / and
-// /products do end on an h3, where h4 was legal. h3 is correct in both cases,
-// since no content heading anywhere on the site goes deeper than h3. The class
-// carries all the styling, so the level is free to be correct.
+// The three column headings below are h2.
+//
+// They were h3 on the reasoning that every route puts an h2 above the footer.
+// That held on desktop but not at every viewport: on /login and /register the
+// only h2 lives in the marketing aside, which is `hidden` below md, so those
+// two pages went h1 -> h3 on phones. A Lighthouse pass caught it as
+// `heading-order` on mobile only — the desktop runs of the same routes passed,
+// which is why the original reasoning looked sound.
+//
+// h2 is the level that cannot skip from anywhere: pages ending on an h1 gain a
+// valid step, and pages ending on an h2 or h3 only step back up, which is
+// allowed. The class carries all the styling, so the level is free to be
+// correct.
+//
+// 2026-08-01 — supersedes the h3 decision above.
 const COLUMN_HEADING =
   'mb-6 font-sans text-xs font-medium tracking-[0.16em] uppercase text-camel';
 const COLUMN_LINK =
@@ -132,7 +141,7 @@ const Footer = async () => {
             </div>
 
             <div>
-              <h3 className={COLUMN_HEADING}>Visit</h3>
+              <h2 className={COLUMN_HEADING}>Visit</h2>
               <p className='mb-4 text-sm leading-[1.7] opacity-85'>
                 {settings.street}
                 {settings.suite && (
@@ -156,7 +165,7 @@ const Footer = async () => {
             </div>
 
             <div>
-              <h3 className={COLUMN_HEADING}>Contact</h3>
+              <h2 className={COLUMN_HEADING}>Contact</h2>
               <ul className='flex flex-col gap-3'>
                 <li>
                   <a href={formatPhoneHref(settings.phone)} className={COLUMN_LINK}>
@@ -172,7 +181,7 @@ const Footer = async () => {
             </div>
 
             <div>
-              <h3 className={COLUMN_HEADING}>Quick Links</h3>
+              <h2 className={COLUMN_HEADING}>Quick Links</h2>
               <ul className='flex flex-col gap-3'>
                 {QUICK_LINKS.map(({ label, href }) => (
                   <li key={label}>

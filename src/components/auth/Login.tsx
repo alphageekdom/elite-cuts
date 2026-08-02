@@ -461,9 +461,13 @@ export default function Login() {
               The counter{' '}
               <em className="italic text-camel-soft">remembers</em> you.
             </h2>
-            <dl className="flex flex-col">
+            {/* ul, not dl: the numbered chip and the title/body column are
+                siblings, and a dl only permits dt/dd (optionally one div
+                wrapper holding just those). The old dl > div > div > dt
+                nesting was invalid on both counts. */}
+            <ul className="flex flex-col">
               {benefits.map((benefit) => (
-                <div
+                <li
                   key={benefit.num}
                   className="flex items-start gap-4 border-t border-cream/15 py-3.5"
                 >
@@ -474,16 +478,16 @@ export default function Login() {
                     {benefit.num}
                   </span>
                   <div>
-                    <dt className="text-[15px] font-semibold text-cream/95">
+                    <p className="text-[15px] font-semibold text-cream/95">
                       {benefit.title}
-                    </dt>
-                    <dd className="mt-1 text-[13.5px] leading-normal text-cream/70">
+                    </p>
+                    <p className="mt-1 text-[13.5px] leading-normal text-cream/70">
                       {benefit.body}
-                    </dd>
+                    </p>
                   </div>
-                </div>
+                </li>
               ))}
-            </dl>
+            </ul>
           </div>
 
           <div className="flex justify-between gap-4 border-t border-cream/15 pt-6 text-[11px] tracking-[0.18em] uppercase text-cream/60">

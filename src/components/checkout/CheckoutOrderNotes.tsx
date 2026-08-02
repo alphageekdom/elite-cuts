@@ -10,7 +10,7 @@ const CheckoutOrderNotes = () => {
     <div className='rounded-sm border border-line-soft bg-paper px-5 py-7 sm:px-8 sm:py-8'>
       <label htmlFor='notes' className={BLOCK_LABEL_CLASS}>
         Notes for the butcher{' '}
-        <span className='ml-2 text-[11px] font-normal normal-case tracking-normal opacity-70'>
+        <span className='ml-2 text-[11px] font-normal normal-case tracking-normal'>
           optional
         </span>
       </label>

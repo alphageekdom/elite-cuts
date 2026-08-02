@@ -24,9 +24,9 @@ function getAgingPhase(day: number, target: number): AgingPhase {
 }
 
 const AGING_PILL_STYLE: Record<AgingPhase, string> = {
-  early: 'bg-amber-soft text-amber',
-  mid: 'bg-camel/25 text-camel-deep',
-  ready: 'bg-green-soft text-green',
+  early: 'bg-amber-soft text-amber-deep',
+  mid: 'bg-camel/25 text-camel-deeper',
+  ready: 'bg-green-soft text-green-deep',
   past: 'bg-red-soft text-oxblood',
 };
 

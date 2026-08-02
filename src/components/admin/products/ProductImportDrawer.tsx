@@ -27,7 +27,7 @@ type Props = {
 
 const STATUS_CHIP: Record<RowResult['status'], { label: string; bg: string; text: string }> = {
   create: { label: 'CREATE', bg: 'bg-green-soft', text: 'text-green' },
-  update: { label: 'UPDATE', bg: 'bg-cream-deep', text: 'text-camel-deep' },
+  update: { label: 'UPDATE', bg: 'bg-cream-deep', text: 'text-camel-deeper' },
   skip:   { label: 'SKIP',   bg: 'bg-line-soft',  text: 'text-muted' },
   error:  { label: 'ERROR',  bg: 'bg-red-soft',   text: 'text-oxblood' },
 };

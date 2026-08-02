@@ -73,7 +73,11 @@ export default function ScheduleCalendarGrid({
                             className={`block w-full text-left rounded p-1.5 text-[11px] leading-tight cursor-pointer overflow-hidden transition-transform hover:scale-[1.02] hover:z-2 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-ink focus:ring-offset-1 focus:ring-offset-paper ${shiftCardClass(shift.color)}`}
                           >
                             <div className="font-medium mb-px">{shift.staffName}</div>
-                            <div className="opacity-75 text-[10px] tracking-[0.04em]">{shift.role}</div>
+                            {/* 90 is the floor, not a preference: at 75 this label
+                                failed contrast on three of the six role colors
+                                (oxblood 4.08, camel 4.43, green 3.75). 90 puts the
+                                worst case at 4.62. Do not soften it further. */}
+                            <div className="opacity-90 text-[10px] tracking-[0.04em]">{shift.role}</div>
                           </button>
                         ) : (
                           <button

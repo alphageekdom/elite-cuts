@@ -170,8 +170,8 @@ export default function StoreInfoModal({
                 <span
                   className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium tracking-[0.04em] ${
                     isOpen
-                      ? 'bg-green-soft text-green'
-                      : 'bg-ink/6 text-muted'
+                      ? 'bg-green-soft text-green-deep'
+                      : 'bg-ink/6 text-muted-deep'
                   }`}
                 >
                   <span className='h-1.5 w-1.5 rounded-full bg-current' />

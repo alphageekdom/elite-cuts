@@ -15,8 +15,6 @@ import { SITE_URL } from '@/lib/seo/site-url';
 
 import { Toaster } from 'sonner';
 
-import 'photoswipe/dist/photoswipe.css';
-
 const fraunces = Fraunces({
   subsets: ['latin'],
   variable: '--font-fraunces',

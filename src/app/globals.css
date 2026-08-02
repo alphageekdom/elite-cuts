@@ -29,10 +29,20 @@
   --color-line: rgba(28, 24, 20, 0.12);
   --color-line-soft: rgba(28, 24, 20, 0.08);
   --color-green: #4a6b3a;
+  /* Deeper green for green-family text on a green tint (e.g. bg-green-soft),
+     where `green` lands at 4.49:1 on cream — a hair under. Passes 5.7:1 there
+     and 6.1:1 on paper. Mirrors camel-deeper / muted-deep. */
+  --color-green-deep: #3f5a32;
   --color-green-soft: rgba(74, 107, 58, 0.12);
   --color-green-bright: #b8dba8;
   --color-red-soft: rgba(154, 59, 50, 0.1);
   --color-amber: #a87b2b;
+  /* `amber` is a fill/border colour, not a text colour: on its own tint it
+     measures 2.91:1 on cream and 2.67:1 on cream-deep — the worst contrast in
+     the app before this token existed. `amber-deep` clears every surface the
+     pills land on, worst case 4.76:1 on amber-soft over cream-deep. Same
+     relationship as green-deep / camel-deeper / muted-deep. */
+  --color-amber-deep: #755618;
   --color-amber-soft: rgba(168, 123, 43, 0.12);
 
   --font-display: var(--font-fraunces);

@@ -415,7 +415,7 @@ export default async function ReceiptPage({ params }: Props) {
               </div>
               <div className="font-display text-[20px] font-medium tracking-tight leading-none shrink-0 text-camel-soft">
                 +{pointsEarned.toLocaleString('en-US')}
-                <em className="italic font-sans text-[12px] font-normal ml-1 opacity-60">pts</em>
+                <em className="italic font-sans text-[12px] font-normal ml-1">pts</em>
               </div>
             </div>
           )}
@@ -433,7 +433,7 @@ export default async function ReceiptPage({ params }: Props) {
               {' · '}
               <a href={settings.website} className="hover:text-ink transition-colors">{formatWebsiteDisplay(settings.website)}</a>
             </div>
-            <div className="font-mono text-[10px] tracking-widest text-muted/60 uppercase">
+            <div className="font-mono text-[10px] tracking-widest text-muted uppercase">
               Portfolio project · Not a real shop · No orders are processed
             </div>
           </div>

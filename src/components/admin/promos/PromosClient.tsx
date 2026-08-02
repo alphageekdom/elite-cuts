@@ -20,10 +20,15 @@ type FilterKey = 'all' | PromoStatus;
 
 const STATUS_COPY: Record<PromoStatus, { label: string; tone: string; dotClass: string }> = {
   active:    { label: 'Active',    tone: 'bg-green/10 text-green border-green/30',          dotClass: 'bg-green' },
-  scheduled: { label: 'Scheduled', tone: 'bg-camel/10 text-camel-deep border-camel/30',          dotClass: 'bg-camel' },
-  expired:   { label: 'Expired',   tone: 'bg-muted/10 text-muted border-line',              dotClass: 'bg-muted' },
+  scheduled: { label: 'Scheduled', tone: 'bg-camel/10 text-camel-deeper border-camel/30',          dotClass: 'bg-camel' },
+  // `muted` text on a `muted` tint darkens its own background: at /10 it
+  // measured 4.13:1 once the row hovered to `bg-cream`. `muted-deep` alone
+  // only reaches 4.52, so the tint drops to /8 as well — 4.64 hovered,
+  // 4.99 at rest, and the fill still matches `dotClass` like every row here.
+  // All four figures measured off rendered pixels rather than hand-blended.
+  expired:   { label: 'Expired',   tone: 'bg-muted/8 text-muted-deep border-line',          dotClass: 'bg-muted' },
   exhausted: { label: 'Exhausted', tone: 'bg-oxblood/10 text-oxblood border-oxblood/30',    dotClass: 'bg-oxblood' },
-  disabled:  { label: 'Disabled',  tone: 'bg-muted/10 text-muted border-line',              dotClass: 'bg-muted' },
+  disabled:  { label: 'Disabled',  tone: 'bg-muted/8 text-muted-deep border-line',          dotClass: 'bg-muted' },
 };
 
 const STATUS_ORDER: PromoStatus[] = ['active', 'scheduled', 'expired', 'exhausted', 'disabled'];
@@ -230,22 +235,24 @@ export default function PromosClient({ promos, savingsByPromoId }: Props) {
             <table className="w-full border-collapse text-[14px]">
               <thead className="border-b border-line-soft bg-cream">
                 <tr>
-                  <th className="px-4 py-3.5 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-muted">
+                  <th scope="col" className="px-4 py-3.5 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-muted">
                     Code
                   </th>
-                  <th className="px-4 py-3.5 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-muted">
+                  <th scope="col" className="px-4 py-3.5 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-muted">
                     Type
                   </th>
-                  <th className="px-4 py-3.5 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-muted">
+                  <th scope="col" className="px-4 py-3.5 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-muted">
                     Status
                   </th>
-                  <th className="px-4 py-3.5 text-right text-[11px] font-medium uppercase tracking-[0.18em] text-muted">
+                  <th scope="col" className="px-4 py-3.5 text-right text-[11px] font-medium uppercase tracking-[0.18em] text-muted">
                     Used
                   </th>
-                  <th className="px-4 py-3.5 text-right text-[11px] font-medium uppercase tracking-[0.18em] text-muted">
+                  <th scope="col" className="px-4 py-3.5 text-right text-[11px] font-medium uppercase tracking-[0.18em] text-muted">
                     Savings to date
                   </th>
-                  <th className="px-4 py-3.5" aria-label="Actions" />
+                  <th scope="col" className="px-4 py-3.5">
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>

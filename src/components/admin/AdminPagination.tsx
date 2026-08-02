@@ -1,3 +1,5 @@
+import { useId } from 'react';
+
 type Props = {
   page: number;
   totalPages: number;
@@ -23,6 +25,7 @@ export default function AdminPagination({
 }: Props) {
   const from = filteredCount === 0 ? 0 : (page - 1) * perPage + 1;
   const to = Math.min(page * perPage, filteredCount);
+  const perPageId = useId();
 
   return (
     <div className="flex items-center justify-between px-6 py-4 bg-cream border-t border-line-soft flex-wrap gap-3">
@@ -36,9 +39,10 @@ export default function AdminPagination({
         <button
           disabled={page === 1}
           onClick={() => onPageChange(page - 1)}
+          aria-label="Previous page"
           className="w-8 h-8 rounded-full border border-line text-ink-soft grid place-items-center hover:border-ink hover:bg-paper hover:text-ink transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
         >
-          <svg className="w-2.75 h-2.75" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg aria-hidden="true" className="w-2.75 h-2.75" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="15 18 9 12 15 6" />
           </svg>
         </button>
@@ -80,9 +84,10 @@ export default function AdminPagination({
         <button
           disabled={page === totalPages}
           onClick={() => onPageChange(page + 1)}
+          aria-label="Next page"
           className="w-8 h-8 rounded-full border border-line text-ink-soft grid place-items-center hover:border-ink hover:bg-paper hover:text-ink transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
         >
-          <svg className="w-2.75 h-2.75" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg aria-hidden="true" className="w-2.75 h-2.75" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="9 18 15 12 9 6" />
           </svg>
         </button>
@@ -90,8 +95,9 @@ export default function AdminPagination({
 
       {showPerPage && onPerPageChange && (
         <div className="hidden sm:flex items-center gap-2 font-mono text-[12px] text-muted">
-          <span>Per page</span>
+          <label htmlFor={perPageId}>Per page</label>
           <select
+            id={perPageId}
             className="appearance-none bg-paper border border-line rounded-full pl-3 pr-6 py-1.5 text-[12px] text-ink font-mono cursor-pointer bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2210%22 height=%2210%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%238A7F73%22 stroke-width=%222%22><polyline points=%226 9 12 15 18 9%22/></svg>')] bg-no-repeat bg-position-[right_8px_center]"
             value={perPage}
             onChange={(e) => { onPerPageChange(Number(e.target.value)); onPageChange(1); }}

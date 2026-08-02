@@ -80,7 +80,10 @@ export default function AdminMobileBottomNav({ name, initial, criticalInventoryC
   // the tab up 1px so the new border overlaps the nav's parent border.
   const tabBase =
     'flex-1 flex flex-col items-center justify-center gap-1 py-2.5 min-h-14 border-t-2 -mt-px transition-colors';
-  const tabActive = 'border-oxblood text-oxblood';
+  // The oxblood top border carries the "you are here" signal on its own. The
+  // label itself stays cream because oxblood on the ink bar measures 2.56:1 —
+  // it made the selected tab the least legible thing in the bar.
+  const tabActive = 'border-oxblood text-cream';
   const tabInactive = 'border-transparent text-cream/70 hover:text-cream';
 
   return (

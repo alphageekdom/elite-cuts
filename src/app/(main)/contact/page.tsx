@@ -68,8 +68,7 @@ export default async function ContactPage() {
                   href={item.href}
                   target={external ? '_blank' : undefined}
                   rel={external ? 'noopener noreferrer' : undefined}
-                  aria-label={external ? `Open ${item.value} in Google Maps` : undefined}
-                  className='group flex w-full flex-col gap-2 rounded-lg border border-line-soft bg-paper p-6 transition-colors hover:border-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oxblood focus-visible:ring-offset-2 focus-visible:ring-offset-cream'
+                  className='group relative flex w-full flex-col gap-2 rounded-lg border border-line-soft bg-paper p-6 transition-colors hover:border-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oxblood focus-visible:ring-offset-2 focus-visible:ring-offset-cream'
                 >
                   <span className='text-[11px] font-medium uppercase tracking-[0.18em] text-muted'>
                     {item.label}
@@ -80,6 +79,15 @@ export default async function ContactPage() {
                   <span className='text-[13px] leading-snug text-ink-soft'>
                     {item.detail}
                   </span>
+                  {/* The card names itself from its own visible text, so voice
+                      control resolves what it reads. The aria-label that used to
+                      sit here replaced all three lines with one, which no
+                      readable label could contain verbatim. This span only
+                      appends the destination, and the `relative` above is what
+                      contains it — sr-only is absolutely positioned. */}
+                  {external && (
+                    <span className='sr-only'>(opens in Google Maps)</span>
+                  )}
                 </a>
               </li>
             );

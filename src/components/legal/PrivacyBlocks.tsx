@@ -36,7 +36,7 @@ function ListCard({ tone, label, items }: ListCardProps) {
         <span
           aria-hidden='true'
           className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
-            isKeep ? 'bg-green-soft text-green' : 'bg-red-soft text-oxblood'
+            isKeep ? 'bg-green-soft text-green-deep' : 'bg-red-soft text-oxblood'
           }`}
         >
           <Icon className='h-3 w-3' />

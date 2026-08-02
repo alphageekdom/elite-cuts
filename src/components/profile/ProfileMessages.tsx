@@ -38,8 +38,8 @@ type Props = {
 
 function statusPill(status: MessageStatus) {
   return status === 'open'
-    ? 'bg-camel/15 text-camel-deep'
-    : 'bg-cream-deep text-muted';
+    ? 'bg-camel/15 text-camel-deeper'
+    : 'bg-cream-deep text-muted-deep';
 }
 
 function formatDate(iso: string): string {

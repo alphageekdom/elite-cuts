@@ -168,7 +168,7 @@ const FulfillmentToggle = ({
                         onClick={() => setSelectedDayId(day.id)}
                         className={`inline-flex min-h-11 items-center rounded-full border px-3.5 text-[12px] transition-[background-color,border-color,color] duration-300 motion-reduce:transition-none ${
                           isActive
-                            ? 'border-camel-deep bg-camel/12 text-camel-deep'
+                            ? 'border-camel-deep bg-camel/12 text-camel-deeper'
                             : 'border-line text-ink-soft hover:border-ink hover:text-ink'
                         }`}
                       >

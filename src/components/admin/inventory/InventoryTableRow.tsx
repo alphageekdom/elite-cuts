@@ -71,7 +71,7 @@ export default function InventoryTableRowComponent({
 
       {/* Category */}
       <td className="px-4 py-3.5">
-        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-medium tracking-[0.12em] uppercase ${CATEGORY_COLORS[row.category] ?? 'bg-cream-deep text-muted'}`}>
+        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-medium tracking-[0.12em] uppercase ${CATEGORY_COLORS[row.category] ?? 'bg-cream-deep text-muted-deep'}`}>
           {row.category}
         </span>
       </td>
@@ -103,9 +103,9 @@ export default function InventoryTableRowComponent({
       <td className="px-4 py-3.5">
         {row.deliveryStatus ? (
           <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-[0.04em] whitespace-nowrap ${
-            row.deliveryStatus === 'confirmed' ? 'bg-green-soft text-green' :
-            row.deliveryStatus === 'pending'   ? 'bg-amber-soft text-amber' :
-            'bg-ink/6 text-muted'
+            row.deliveryStatus === 'confirmed' ? 'bg-green-soft text-green-deep' :
+            row.deliveryStatus === 'pending'   ? 'bg-amber-soft text-amber-deep' :
+            'bg-ink/6 text-muted-deep'
           }`}>
             <span className="w-1.5 h-1.5 rounded-full bg-current" />
             {row.deliveryStatus === 'received' ? 'Received' : row.deliveryStatus.charAt(0).toUpperCase() + row.deliveryStatus.slice(1)}
@@ -131,11 +131,11 @@ export default function InventoryTableRowComponent({
               autoFocus
               className="w-16 border border-ink rounded-lg px-2 py-1 text-[13px] text-ink bg-paper outline-none text-center"
             />
-            <button onClick={() => onStockSave(row.id)} disabled={stockSaving} className="w-7 h-7 rounded-full bg-ink text-cream grid place-items-center hover:bg-oxblood transition-colors disabled:opacity-50">
-              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
+            <button onClick={() => onStockSave(row.id)} disabled={stockSaving} aria-label={`Save stock count for ${row.name}`} className="w-7 h-7 rounded-full bg-ink text-cream grid place-items-center hover:bg-oxblood transition-colors disabled:opacity-50">
+              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>
             </button>
-            <button onClick={onStockCancel} className="w-7 h-7 rounded-full border border-line text-ink-soft grid place-items-center hover:border-ink transition-colors">
-              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+            <button onClick={onStockCancel} aria-label="Cancel stock edit" className="w-7 h-7 rounded-full border border-line text-ink-soft grid place-items-center hover:border-ink transition-colors">
+              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
             </button>
           </div>
         ) : (

@@ -18,31 +18,35 @@ export function getDashboardOrderStatusLabel(status: string): string {
 
 export const DASHBOARD_ORDER_STATUS_STYLES: Record<string, string> = {
   'Order Placed':     'bg-line-soft text-ink-soft',
-  'Preparing':        'bg-camel/15 text-camel-deep',
-  'Ready for Pickup': 'bg-camel/15 text-camel-deep',
-  'Out for Delivery': 'bg-camel/15 text-camel-deep',
-  'Completed':        'bg-green-soft text-green',
+  'Preparing':        'bg-camel/15 text-camel-deeper',
+  'Ready for Pickup': 'bg-camel/15 text-camel-deeper',
+  'Out for Delivery': 'bg-camel/15 text-camel-deeper',
+  'Completed':        'bg-green-soft text-green-deep',
   'Cancelled':        'bg-red-soft text-oxblood',
 };
 
+// Same -deeper reasoning as the profile and table palettes below: the receipt
+// card is `bg-paper`, where `camel-deep` on this tint measured 4.40:1 at 11px.
 export const RECEIPT_ORDER_STATUS_STYLES: Record<string, string> = {
-  'Order Placed':     'bg-camel/18 text-camel-deep',
-  'Preparing':        'bg-camel/18 text-camel-deep',
-  'Ready for Pickup': 'bg-camel/18 text-camel-deep',
+  'Order Placed':     'bg-camel/18 text-camel-deeper',
+  'Preparing':        'bg-camel/18 text-camel-deeper',
+  'Ready for Pickup': 'bg-camel/18 text-camel-deeper',
   'Out for Delivery': 'bg-ink/10 text-ink',
-  'Completed':        'bg-green-soft text-green',
+  'Completed':        'bg-green-soft text-green-deep',
   'Cancelled':        'bg-red-soft text-oxblood',
 };
 
 // The customer-facing profile palette. Was a fourth copy living as a private
 // `statusChip` switch inside ProfileOrderList — exactly the drift this module
 // exists to prevent — so it moves here with its existing colours intact.
+// Same -deep / -deeper reasoning as the table palette below: on bg-ink/10 the
+// plain `muted` measured 4.15:1 at the 11px these render at.
 export const PROFILE_ORDER_STATUS_STYLES: Record<string, string> = {
-  'Order Placed':     'bg-ink/10 text-muted',
-  'Preparing':        'bg-ink/10 text-muted',
-  'Ready for Pickup': 'bg-camel/15 text-camel-deep',
-  'Out for Delivery': 'bg-camel/15 text-camel-deep',
-  'Completed':        'bg-green/10 text-green',
+  'Order Placed':     'bg-ink/10 text-muted-deep',
+  'Preparing':        'bg-ink/10 text-muted-deep',
+  'Ready for Pickup': 'bg-camel/15 text-camel-deeper',
+  'Out for Delivery': 'bg-camel/15 text-camel-deeper',
+  'Completed':        'bg-green/10 text-green-deep',
   'Cancelled':        'bg-oxblood/10 text-oxblood',
 };
 
@@ -53,12 +57,15 @@ export type TableOrderStatusPill = {
 };
 
 export const TABLE_ORDER_STATUS_PILL: Record<string, TableOrderStatusPill> = {
-  'Order Placed':     { bg: 'bg-line-soft',  text: 'text-muted',    label: 'Order Placed' },
-  'Preparing':        { bg: 'bg-camel/18',   text: 'text-camel-deep',    label: 'Preparing' },
-  'Ready for Pickup': { bg: 'bg-camel/18',   text: 'text-camel-deep',    label: 'Ready' },
-  'Out for Delivery': { bg: 'bg-camel/18',   text: 'text-camel-deep',    label: 'Out for Delivery' },
-  'Completed':        { bg: 'bg-green-soft', text: 'text-green',    label: 'Completed' },
-  'Cancelled':        { bg: 'bg-red-soft',   text: 'text-oxblood',  label: 'Cancelled' },
+  // The -deep / -deeper text tokens exist because each pill's tint darkens the
+  // background under its own hue: `muted` on bg-line-soft measured 4.31:1 and
+  // `camel-deep` on bg-camel/18 measured 4.40:1, both under 4.5:1 at 11px.
+  'Order Placed':     { bg: 'bg-line-soft',  text: 'text-muted-deep',    label: 'Order Placed' },
+  'Preparing':        { bg: 'bg-camel/18',   text: 'text-camel-deeper',  label: 'Preparing' },
+  'Ready for Pickup': { bg: 'bg-camel/18',   text: 'text-camel-deeper',  label: 'Ready' },
+  'Out for Delivery': { bg: 'bg-camel/18',   text: 'text-camel-deeper',  label: 'Out for Delivery' },
+  'Completed':        { bg: 'bg-green-soft', text: 'text-green-deep',    label: 'Completed' },
+  'Cancelled':        { bg: 'bg-red-soft',   text: 'text-oxblood',       label: 'Cancelled' },
 };
 
 // Dark-surface variant, for the dashboard cut list sitting on `bg-ink`.

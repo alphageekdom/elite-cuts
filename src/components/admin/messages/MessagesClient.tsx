@@ -134,12 +134,14 @@ export default function MessagesClient({
               <table className="w-full text-sm min-w-150">
                 <thead>
                   <tr className="border-b border-line-soft">
-                    <th className="text-left px-5 py-3 text-[11px] tracking-widest uppercase text-muted font-medium">Customer</th>
-                    <th className="text-left px-4 py-3 text-[11px] tracking-widest uppercase text-muted font-medium">Subject</th>
-                    <th className="text-left px-4 py-3 text-[11px] tracking-widest uppercase text-muted font-medium hidden md:table-cell">Order</th>
-                    <th className="text-left px-4 py-3 text-[11px] tracking-widest uppercase text-muted font-medium hidden lg:table-cell">Date</th>
-                    <th className="text-left px-4 py-3 text-[11px] tracking-widest uppercase text-muted font-medium">Status</th>
-                    <th className="px-4 py-3" aria-label="Actions" />
+                    <th scope="col" className="text-left px-5 py-3 text-[11px] tracking-widest uppercase text-muted font-medium">Customer</th>
+                    <th scope="col" className="text-left px-4 py-3 text-[11px] tracking-widest uppercase text-muted font-medium">Subject</th>
+                    <th scope="col" className="text-left px-4 py-3 text-[11px] tracking-widest uppercase text-muted font-medium hidden md:table-cell">Order</th>
+                    <th scope="col" className="text-left px-4 py-3 text-[11px] tracking-widest uppercase text-muted font-medium hidden lg:table-cell">Date</th>
+                    <th scope="col" className="text-left px-4 py-3 text-[11px] tracking-widest uppercase text-muted font-medium">Status</th>
+                    <th scope="col" className="px-4 py-3">
+                    <span className="sr-only">Actions</span>
+                  </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line-soft">

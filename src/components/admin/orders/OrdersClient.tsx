@@ -266,22 +266,24 @@ export default function OrdersClient({ orders, counts, monthOrdersCount, range, 
             <table className="w-full border-collapse text-[14px] min-w-215">
               <thead className="bg-cream border-b border-line-soft">
                 <tr>
-                  <th className="w-9 pl-6 pr-0 py-3.5">
+                  <th scope="col" className="w-9 pl-6 pr-0 py-3.5">
                     <input
                       type="checkbox"
+                      aria-label="Select all orders on this page"
                       checked={allPageSelected}
                       onChange={(e) => toggleAll(e.target.checked)}
                       className="w-4 h-4 rounded-sm border border-line bg-cream cursor-pointer accent-oxblood"
                     />
+                    <span className="sr-only">Select</span>
                   </th>
-                  <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">Order</th>
-                  {visibleColumns.customer && <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Customer</th>}
-                  {visibleColumns.items && <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Items</th>}
-                  {visibleColumns.total && <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Total</th>}
-                  {visibleColumns.status && <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Status</th>}
-                  {visibleColumns.pickup && <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Pickup</th>}
-                  {visibleColumns.created && <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">Date ↓</th>}
-                  <th className="pr-6 py-3.5" />
+                  <th scope="col" className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">Order</th>
+                  {visibleColumns.customer && <th scope="col" className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Customer</th>}
+                  {visibleColumns.items && <th scope="col" className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Items</th>}
+                  {visibleColumns.total && <th scope="col" className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Total</th>}
+                  {visibleColumns.status && <th scope="col" className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Status</th>}
+                  {visibleColumns.pickup && <th scope="col" className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Pickup</th>}
+                  {visibleColumns.created && <th scope="col" className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">Date ↓</th>}
+                  <th scope="col" className="pr-6 py-3.5"><span className="sr-only">Actions</span></th>
                 </tr>
               </thead>
               <tbody>

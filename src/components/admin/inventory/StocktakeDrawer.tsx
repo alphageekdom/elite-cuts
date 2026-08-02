@@ -194,7 +194,7 @@ export default function StocktakeDrawer({ rows, onClose }: Props) {
                                 </>
                               )}
                               {isOutlier && (
-                                <span className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-soft text-amber text-[10px] font-medium tracking-[0.04em]">
+                                <span className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-soft text-amber-deep text-[10px] font-medium tracking-[0.04em]">
                                   Big change — confirm?
                                 </span>
                               )}

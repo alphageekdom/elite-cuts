@@ -127,13 +127,22 @@ export default function AdminUserMenu({ name, initial, collapsed }: Props) {
         type="button"
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label={`Account menu for ${name}`}
+        // Expanded, the button names itself from its own visible text, so voice
+        // control resolves what it reads and no aria-label can contradict it.
+        // Collapsed, only the avatar shows, so a label is the only name there is.
+        aria-label={collapsed ? `${name}, Admin, account menu` : undefined}
         onClick={() => setOpen((v) => !v)}
         className={`w-full flex items-center gap-2.5 p-2 rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-camel ${
           open ? 'bg-cream/10' : 'hover:bg-cream/8'
         } ${collapsed ? 'justify-center' : ''}`}
       >
-        <div className="w-9 h-9 rounded-full bg-camel text-ink grid place-items-center font-display font-semibold text-sm shrink-0">
+        {/* Decorative: the initial duplicates the name beside it, and as
+            visible text it also had to appear in the button's accessible
+            name for `label-content-name-mismatch` to pass. */}
+        <div
+          aria-hidden="true"
+          className="w-9 h-9 rounded-full bg-camel text-ink grid place-items-center font-display font-semibold text-sm shrink-0"
+        >
           {initial}
         </div>
         {!collapsed && (

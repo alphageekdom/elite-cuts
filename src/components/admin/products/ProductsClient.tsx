@@ -205,22 +205,24 @@ export default function ProductsClient({ products, counts, categoryCounts, heade
             <table className="w-full border-collapse text-[14px] min-w-250">
               <thead className="bg-cream border-b border-line-soft">
                 <tr>
-                  <th className="w-9 pl-6 pr-0 py-3.5">
+                  <th scope="col" className="w-9 pl-6 pr-0 py-3.5">
                     <input
                       type="checkbox"
+                      aria-label="Select all cuts on this page"
                       checked={allPageSelected}
                       onChange={(e) => toggleAll(e.target.checked)}
                       className="w-4 h-4 rounded-sm border border-line bg-cream cursor-pointer accent-oxblood"
                     />
+                    <span className="sr-only">Select</span>
                   </th>
-                  <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">
+                  <th scope="col" className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">
                     Cut ↓
                   </th>
-                  <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Category</th>
-                  <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Price</th>
-                  <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Stock</th>
-                  <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Tags</th>
-                  <th className="pr-6 py-3.5" />
+                  <th scope="col" className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Category</th>
+                  <th scope="col" className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Price</th>
+                  <th scope="col" className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Stock</th>
+                  <th scope="col" className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted">Tags</th>
+                  <th scope="col" className="pr-6 py-3.5"><span className="sr-only">Actions</span></th>
                 </tr>
               </thead>
               <tbody>

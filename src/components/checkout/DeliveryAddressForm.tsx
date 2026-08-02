@@ -225,7 +225,7 @@ const DeliveryAddressForm = () => {
       <div>
         <label htmlFor='address2' className={BLOCK_LABEL_CLASS}>
           Apt, suite, etc.{' '}
-          <span className='ml-2 text-[11px] font-normal normal-case tracking-normal opacity-70'>optional</span>
+          <span className='ml-2 text-[11px] font-normal normal-case tracking-normal'>optional</span>
         </label>
         <input
           id='address2'

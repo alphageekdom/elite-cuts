@@ -167,9 +167,12 @@ export default function DashboardCutList({ rows, summary, hasUnplaceableOrders }
                   href={`/dashboard/orders?openOrder=${row.id}${
                     row.isDemo ? '&includeDemo=true' : ''
                   }`}
-                  className={`block px-6 py-4 transition-colors hover:bg-cream/5 focus-visible:bg-cream/5 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-camel md:px-7.5 lg:grid lg:grid-cols-[92px_1fr_minmax(0,1.1fr)_176px] lg:items-center lg:gap-4 ${
-                    row.stage === 'done' ? 'opacity-60' : ''
-                  }`}
+                  // A finished row is marked by its "Collected" status pill,
+                  // not by dimming. The `opacity-60` that used to be here
+                  // compounded with children that already carry their own
+                  // alpha on `bg-ink` — cream/55 fell to 2.78:1 and the order
+                  // note to 2.51:1.
+                  className="block px-6 py-4 transition-colors hover:bg-cream/5 focus-visible:bg-cream/5 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-camel md:px-7.5 lg:grid lg:grid-cols-[92px_1fr_minmax(0,1.1fr)_176px] lg:items-center lg:gap-4"
                 >
                   {/* Below lg the four columns don't fit, so the row stacks:
                       slot + status on one line, then who it's for, then the

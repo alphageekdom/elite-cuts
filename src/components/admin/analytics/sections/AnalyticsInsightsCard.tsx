@@ -61,9 +61,11 @@ export default function AnalyticsInsightsCard({ data }: { data: AnalyticsData })
               <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
             </svg>
           </span>
-          <h3 className="font-display font-medium text-lg tracking-[-0.01em]">
+          {/* h2, not h3: this is the only section heading on the analytics
+              page, so it sits directly under the page header's h1. */}
+          <h2 className="font-display font-medium text-lg tracking-[-0.01em]">
             Worth <em className="italic text-oxblood">knowing</em>
-          </h3>
+          </h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 relative">
           {insights.map((ins, i) => (
@@ -71,7 +73,7 @@ export default function AnalyticsInsightsCard({ data }: { data: AnalyticsData })
               <span
                 className={`font-mono text-[9px] tracking-[0.18em] uppercase px-2 py-0.75 rounded-sm shrink-0 mt-px ${
                   ins.tag === 'up'
-                    ? 'bg-green-soft text-green'
+                    ? 'bg-green-soft text-green-deep'
                     : 'bg-red-soft text-oxblood'
                 }`}
               >

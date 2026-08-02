@@ -17,12 +17,13 @@ export default function ReceiptItemsTable({ orderItems }: Props) {
 
       {orderItems.map((item, i) => {
         const isRefunded = item.refunded;
+        // Same reasoning as the admin order drawer: the strikethrough and the
+        // Refunded pill carry this state. Dimming the whole row took the meta
+        // line to 2.37:1 and the pill to 2.58:1.
         return (
           <div
             key={i}
-            className={`grid grid-cols-[1fr_56px_88px] items-center py-5 border-b border-line-soft last:border-b-0 transition-opacity ${
-              isRefunded ? 'opacity-60' : ''
-            }`}
+            className="grid grid-cols-[1fr_56px_88px] items-center py-5 border-b border-line-soft last:border-b-0"
           >
             <div className="min-w-0 pr-4">
               <div className="flex items-center gap-2 mb-1 flex-wrap">
