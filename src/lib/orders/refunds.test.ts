@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { allocateRefund, netCollected, paymentStatusFor } from './refunds';
+import {
+  allocateRefund,
+  netCollected,
+  paymentStatusFor,
+  refundSummary,
+} from './refunds';
 import type { SettlementTransaction } from '@/models/Order';
 
 // Phase 4 auto-settlement moves the realized-vs-estimate difference AFTER
@@ -165,5 +170,41 @@ describe('paymentStatusFor', () => {
     expect(
       paymentStatusFor('Completed', { ...base, refundedCount: 3, totalCount: 3 }),
     ).toBe('Refunded');
+  });
+});
+
+describe('refundSummary — the receipt gate', () => {
+  // The link the unpaid-walk-in fix rests on, pinned because it spans two
+  // files and neither end states it.
+  //
+  // Cancelling a counter sale that was never paid for still needs the restock,
+  // so the cancel path still collects every line — but `applyRefund` returns no
+  // `orderItems`, leaving the lines UNMARKED. The receipt's refund block and
+  // the "Net paid" row both render behind `refundedAmount > 0`, so leaving the
+  // flags alone is the whole mechanism that keeps "Refunded (3 items) −$100.00"
+  // off a receipt for money the shop never charged.
+  const lines = [
+    { qty: 1, price: 28.99, refunded: false },
+    { qty: 2, price: 8.99, refunded: false },
+  ];
+  const context = { subtotal: 46.97, tax: 4.23, totalCost: 51.2 };
+
+  it('reports nothing refunded when no line is marked', () => {
+    const summary = refundSummary(lines, context);
+    expect(summary.refundedAmount).toBe(0);
+    expect(summary.refundedCount).toBe(0);
+    // Both receipt surfaces gate on this exact expression.
+    expect(summary.refundedAmount > 0).toBe(false);
+  });
+
+  it('reports a real amount as soon as one line is marked', () => {
+    // The counterpart: a genuinely paid order still shows its refund, so the
+    // test above is pinning the flags rather than a helper that always says 0.
+    const summary = refundSummary(
+      [{ ...lines[0], refunded: true }, lines[1]],
+      context,
+    );
+    expect(summary.refundedCount).toBe(1);
+    expect(summary.refundedAmount).toBeGreaterThan(0);
   });
 });

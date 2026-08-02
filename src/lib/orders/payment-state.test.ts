@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import OrderModel from '@/models/Order';
-import { hasSettledPayment } from './payment-state';
+import { hasCollectedPayment, hasSettledPayment } from './payment-state';
 import { walkInPaymentResult } from './walk-in';
 
 // The bug this guards: cancelling a checkout order that never got past
@@ -160,5 +160,59 @@ describe('hasSettledPayment', () => {
 
   it('does not throw on an order with no payment envelope', () => {
     expect(hasSettledPayment({ paymentResult: undefined } as never)).toBe(true);
+  });
+});
+
+describe('hasCollectedPayment', () => {
+  // The bug this exists for: a counter sale recorded as "Order Placed" is
+  // awaiting payment at the till, but `hasSettledPayment` answers `true` for
+  // every walk-in (stock WAS taken at creation). Both the refund guard and the
+  // refund money-stamp read that one answer, so cancelling a $100 unpaid
+  // walk-in flipped its payment to 'Refunded' and printed a refund block on the
+  // customer's receipt for money nobody ever charged.
+  it('treats an unpaid counter sale as uncollected, where hasSettledPayment does not', () => {
+    expect(hasCollectedPayment(walkIn(false))).toBe(false);
+    // The whole point: the two predicates disagree here, and only here.
+    expect(hasSettledPayment(walkIn(false))).toBe(true);
+  });
+
+  it('treats a collected counter sale as collected', () => {
+    expect(hasCollectedPayment(walkIn(true))).toBe(true);
+  });
+
+  it('treats a pre-marker unpaid walk-in as uncollected too', () => {
+    // `hasSettledPayment` routes these to `true` via the legacy-provider clause
+    // so their stock still restocks. Money is a separate question, and the
+    // answer is the same as for any other walk-in awaiting payment.
+    expect(hasCollectedPayment(legacyWalkIn('Pending'))).toBe(false);
+    expect(hasSettledPayment(legacyWalkIn('Pending'))).toBe(true);
+  });
+
+  it('agrees with hasSettledPayment on every checkout order', () => {
+    // Away from the counter sale the two are the same question, which is what
+    // makes `hasSettledPayment` expressible as "this, or it's a walk-in".
+    for (const status of [
+      'Pending',
+      'Failed',
+      'Authorized',
+      'Completed',
+      'Partially Refunded',
+      'Refunded',
+    ]) {
+      expect(hasCollectedPayment(checkout(status))).toBe(
+        hasSettledPayment(checkout(status)),
+      );
+    }
+  });
+
+  it('counts Authorized as collected', () => {
+    // The webhook only fires once Stripe has captured, so by the time the
+    // Pending → Authorized claim is won the money has moved. Refunding one is
+    // legitimate even though the completion sequence may not have finished.
+    expect(hasCollectedPayment(checkout('Authorized'))).toBe(true);
+  });
+
+  it('does not throw on an order with no payment envelope', () => {
+    expect(hasCollectedPayment({ paymentResult: undefined } as never)).toBe(true);
   });
 });

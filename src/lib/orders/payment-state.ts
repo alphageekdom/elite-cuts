@@ -34,14 +34,19 @@ import type { Order } from '@/models/Order';
 // unpaid checkout order — blocking completion outright and silently skipping
 // the restock on cancel for stock that HAD been decremented.
 //
-// `Authorized` deliberately counts as applied: the claim has been won and the
-// stock decrement runs immediately after, so a crash in that window leaves
-// stock already taken. Under-reversing there is the safer failure.
+// `Authorized` deliberately counts as applied. The claim has been won and the
+// stock decrement runs on the very next line, so the window in which stock is
+// NOT yet taken is sub-millisecond — but it is not empty, and the direction of
+// the error flips across it: crash after the decrement and cancelling correctly
+// restocks; crash before it and cancelling restocks inventory that was never
+// taken. The trade still favours treating it as applied (the late window is by
+// far the wider one), but an earlier version of this comment claimed stock was
+// "already taken" for the whole window, which is only true of the later half.
 //
-const UNAPPLIED_CHECKOUT_STATUSES: ReadonlySet<string> = new Set([
-  'Pending',
-  'Failed',
-]);
+// Statuses in which no money has moved. Named for what they mean rather than
+// for the checkout path, because `hasCollectedPayment` reads them for counter
+// sales too — a walk-in resting at `Pending` is awaiting payment at the till.
+const UNPAID_STATUSES: ReadonlySet<string> = new Set(['Pending', 'Failed']);
 
 export function hasSettledPayment(
   order: Pick<Order, 'paymentResult'>,
@@ -68,5 +73,35 @@ export function hasSettledPayment(
   // backfill can't ship here because `scripts/` is untracked.
   if (payment.provider === 'demo' && !payment.checkoutSessionId) return true;
 
-  return !UNAPPLIED_CHECKOUT_STATUSES.has(payment.status);
+  return !UNPAID_STATUSES.has(payment.status);
+}
+
+// Has the shop actually taken this customer's money?
+//
+// The sibling of `hasSettledPayment`, and the two differ by exactly the counter
+// sale: a walk-in decrements stock at creation but is paid at the till, so it
+// has value applied while nothing has been collected. Everywhere else the two
+// agree, which is why this reduces to the status check alone —
+// `hasSettledPayment` IS this plus "or it's a counter sale".
+//
+// Conflating them is what let a cancelled unpaid walk-in stamp
+// `paymentResult.status: 'Refunded'` and render a refund block on the
+// customer's receipt for money the shop never charged. The restock that same
+// cancellation performs is correct and reads `hasSettledPayment`; only the
+// money half reads this.
+//
+// Reads `status` rather than `amountPaid` because status is the discriminator
+// every other branch here uses, and the two cannot disagree: the walk-in
+// envelope derives `amountPaid` from the same flag that sets `status`, and both
+// completion paths write the full total alongside `'Completed'`.
+export function hasCollectedPayment(
+  order: Pick<Order, 'paymentResult'>,
+): boolean {
+  const payment = order.paymentResult;
+  // Matches `hasSettledPayment`'s defensive default: an order with no envelope
+  // at all predates the field, and refusing to refund it would be worse than
+  // allowing it.
+  if (!payment) return true;
+
+  return !UNPAID_STATUSES.has(payment.status);
 }

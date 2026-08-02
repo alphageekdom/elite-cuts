@@ -6,7 +6,14 @@ import Order from '@/models/Order';
 import Product from '@/models/Product';
 import Notification from '@/models/Notification';
 import { getShopSettings } from '@/lib/shop-settings/queries';
-import { addMonths, computeAward, getQualifyingPoints, getTier, tierRank } from '@/lib/rewards/calculator';
+import {
+  addMonths,
+  computeAward,
+  creditableReturn,
+  getQualifyingPoints,
+  getTier,
+  tierRank,
+} from '@/lib/rewards/calculator';
 
 // Side-effects to run whenever an order first transitions into Completed:
 // award reward points to the customer, then fire low_stock alerts to admins
@@ -150,23 +157,48 @@ export async function reverseOrderAward(opts: {
 // place.
 //
 // pointsToReturn:
-//   - omitted → returns the un-returned remainder (pointsRedeemed minus
-//     pointsRedemptionReturned). Used by the full-cancel path so the
-//     customer ends up whole regardless of any prior partial returns.
+//   - omitted → returns the un-returned remainder. Used by the full-cancel
+//     path so the customer ends up whole regardless of any prior partial
+//     returns.
 //   - provided → returns exactly that many, still capped at the remainder
-//     so multiple partial refunds can never return more than was redeemed.
+//     so multiple partial refunds can never return more than was taken.
+//
+// The remainder is measured against what was actually DEDUCTED — that is
+// `pointsRedeemed` minus `pointsRedemptionShortfall`, not `pointsRedeemed`
+// alone. The two diverge whenever the balance had moved between the quote at
+// checkout and the deduction at completion; see the clamp in
+// `completeSessionForOrder`.
 //
 // The order's pointsRedeemed snapshot stays put for historical accuracy;
-// pointsRedemptionReturned tracks how much of it has been returned so far.
+// pointsRedemptionReturned tracks how much has been returned so far.
 export async function reverseOrderRedemption(opts: {
   orderId: Types.ObjectId | string;
   reason: 'cancel_reverse' | 'refund_reverse';
   pointsToReturn?: number;
 }): Promise<void> {
   const order = await Order.findById(opts.orderId)
-    .select('user pointsRedeemed pointsRedemptionReturned')
+    .select('user pointsRedeemed pointsRedemptionReturned pointsRedemptionShortfall')
     .lean();
   if (!order || !order.pointsRedeemed || order.pointsRedeemed <= 0) return;
+
+  // What the customer was ACTUALLY charged in points, which is no longer the
+  // same as what the order says it redeemed.
+  //
+  // `completeSessionForOrder` clamps its deduction at the live balance, so an
+  // order quoted a 500-point discount against a balance a concurrent order had
+  // already drained takes 0 and records the 500 as a shortfall. Returning
+  // `pointsRedeemed` there would credit 500 points that were never taken —
+  // minting balance out of a cancellation, which is worse than the negative
+  // balance the clamp exists to prevent.
+  //
+  // Both callers derive their figure from `pointsRedeemed` (the full-cancel
+  // path defaults to it, the partial-refund path takes a proportion of it), so
+  // correcting it here fixes both at once rather than in each caller.
+  const actuallyDeducted = Math.max(
+    0,
+    order.pointsRedeemed - Math.max(0, order.pointsRedemptionShortfall ?? 0),
+  );
+  if (actuallyDeducted <= 0) return;
 
   // Asking for the whole redemption and letting the database clamp is how the
   // full-cancel case stays correct: the clamp below returns exactly what is
@@ -174,7 +206,7 @@ export async function reverseOrderRedemption(opts: {
   const requested =
     typeof opts.pointsToReturn === 'number'
       ? Math.max(0, Math.floor(opts.pointsToReturn))
-      : order.pointsRedeemed;
+      : actuallyDeducted;
   if (requested <= 0) return;
 
   // Claim the return on the ORDER first, atomically, and credit the customer
@@ -187,6 +219,23 @@ export async function reverseOrderRedemption(opts: {
   // customer ever spent. The pipeline update recomputes the ceiling
   // server-side inside a single atomic operation, so the second call sees the
   // first one's write and claims nothing.
+  //
+  // The ceiling is recomputed from the document's own fields rather than from
+  // the `actuallyDeducted` read above, so it stays a server-side clamp — the
+  // property the whole pipeline exists for. Substituting the JS value would
+  // reintroduce the read-then-write the comment above rejects.
+  const returnableCeiling = {
+    $max: [
+      0,
+      {
+        $subtract: [
+          { $ifNull: ['$pointsRedeemed', 0] },
+          { $ifNull: ['$pointsRedemptionShortfall', 0] },
+        ],
+      },
+    ],
+  };
+
   const before = await Order.findOneAndUpdate(
     { _id: opts.orderId },
     [
@@ -194,7 +243,7 @@ export async function reverseOrderRedemption(opts: {
         $set: {
           pointsRedemptionReturned: {
             $min: [
-              '$pointsRedeemed',
+              returnableCeiling,
               {
                 $add: [{ $ifNull: ['$pointsRedemptionReturned', 0] }, requested],
               },
@@ -205,14 +254,16 @@ export async function reverseOrderRedemption(opts: {
     ],
     { returnDocument: 'before' },
   )
-    .select('pointsRedeemed pointsRedemptionReturned')
+    .select('pointsRedeemed pointsRedemptionReturned pointsRedemptionShortfall')
     .lean();
   if (!before) return;
 
-  const alreadyReturned = Math.max(0, before.pointsRedemptionReturned ?? 0);
-  const points =
-    Math.min(before.pointsRedeemed ?? 0, alreadyReturned + requested) -
-    alreadyReturned;
+  const points = creditableReturn({
+    pointsRedeemed: before.pointsRedeemed ?? 0,
+    shortfall: before.pointsRedemptionShortfall ?? 0,
+    alreadyReturned: before.pointsRedemptionReturned ?? 0,
+    requested,
+  });
   if (points <= 0) return;
 
   await User.findByIdAndUpdate(order.user, {

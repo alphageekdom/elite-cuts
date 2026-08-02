@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 
 import type { Order } from '@/models/Order';
-import { hasSettledPayment } from '@/lib/orders/payment-state';
+import {
+  hasCollectedPayment,
+  hasSettledPayment,
+} from '@/lib/orders/payment-state';
 
 // Validates the refundItemIndices / unrefundItemIndices arrays and folds
 // in the implicit "cancel auto-refunds every still-unrefunded line" rule.
@@ -33,10 +36,16 @@ export function collectRefundIndices({
   // An explicit refund against an order that was never charged is a mistake
   // worth naming rather than silently dropping — unlike the cancel path
   // below, the admin asked for this one directly.
+  //
+  // Gates on `hasCollectedPayment`, NOT `hasSettledPayment`. The latter answers
+  // `true` for every counter sale, including one still awaiting payment at the
+  // till, so this guard read as satisfied for exactly the orders it exists to
+  // catch: refunding 1 of 3 lines on an unpaid walk-in sailed straight through
+  // and printed "1 of 3 items refunded — $33.00 back to you" on the receipt.
   if (
     Array.isArray(refundItemIndices) &&
     refundItemIndices.length > 0 &&
-    !hasSettledPayment(existing)
+    !hasCollectedPayment(existing)
   ) {
     return {
       ok: false,
@@ -93,6 +102,11 @@ export function collectRefundIndices({
   // "refunding" it would restock inventory that was never taken and stamp a
   // refund that never happened. Cancelling it is a bare status flip, which is
   // exactly what the webhook's own expiry path does.
+  //
+  // Deliberately still `hasSettledPayment`, unlike the guard above. This branch
+  // decides whether to RESTOCK, and a counter sale took its stock at creation
+  // whether or not it has been paid for — so an unpaid walk-in belongs here.
+  // `applyRefund` is what then declines to stamp money onto it.
   if (transitioningToCancelled && hasSettledPayment(existing)) {
     existing.orderItems.forEach((item, idx) => {
       if (!item.refunded) indicesToRefund.add(idx);
