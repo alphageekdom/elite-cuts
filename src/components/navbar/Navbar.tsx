@@ -15,6 +15,7 @@ import CartButton from '../cart/CartButton';
 import CartExpiryBanner from '../cart/CartExpiryBanner';
 import DemoModeChip from '../demo/DemoModeChip';
 import Logo from './Logo';
+import { getInitials } from '@/lib/format';
 import { FOCUS_RING } from '@/lib/styles';
 import type { Announcement } from '@/lib/announcements/data';
 import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
@@ -36,9 +37,13 @@ const Navbar = ({ announcements = [] }: NavbarProps) => {
   const isAdmin = Boolean(session?.user?.isAdmin);
   const profileImage = session?.user?.image ?? undefined;
   const userName = session?.user?.name ?? '';
+  const userEmail = session?.user?.email ?? '';
   const userId = session?.user?.userId ?? '';
+  // Only used to pick the avatar colour. The session's copy is stamped at
+  // sign-in and never refreshed, so it must not be displayed as a number —
+  // `ProfileMenuStanding` fetches live standing for that.
   const rewardPoints = session?.user?.rewardPoints ?? 0;
-  const userInitials = userName.split(' ').map((n) => n[0]).join('').slice(0, 2);
+  const userInitials = getInitials(userName);
 
   // Only the home route shows the navbar transparent over a hero;
   // every other route stays in the readable cream/ink state.
@@ -141,6 +146,8 @@ const Navbar = ({ announcements = [] }: NavbarProps) => {
               {isLoggedIn ? (
                 <ProfileMenu
                   profileImage={profileImage}
+                  name={userName}
+                  email={userEmail}
                   initials={userInitials}
                   userId={userId}
                   isAdmin={isAdmin}

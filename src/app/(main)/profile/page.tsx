@@ -16,6 +16,7 @@ import {
   getEffectiveBalance,
   getTierView,
   redeemableValueDollars,
+  tierViewToInfo,
   type TierInfo,
   type TierView,
 } from '@/lib/rewards/calculator';
@@ -117,25 +118,7 @@ export default async function ProfilePage({ searchParams }: Props) {
     });
   }
 
-  const tier: TierInfo = {
-    tier: tierView.tier,
-    label: tierView.label,
-    threshold:
-      tierView.tier === 'masterCut'
-        ? settings.masterCutThreshold
-        : tierView.tier === 'connoisseur'
-          ? settings.connoisseurThreshold
-          : 0,
-    nextTier:
-      tierView.tier === 'masterCut'
-        ? null
-        : tierView.tier === 'connoisseur'
-          ? 'masterCut'
-          : 'connoisseur',
-    nextThreshold: tierView.nextThreshold,
-    pointsToNext: tierView.pointsToNext,
-    progress: tierView.progress,
-  };
+  const tier: TierInfo = tierViewToInfo(tierView, settings);
 
   const serializedRecentHistory = effective.recentHistory.map((e) => ({
     delta: e.delta,
