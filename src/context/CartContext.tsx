@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import type { SerializedProduct } from '@/models/Product';
 import { MAX_PER_LINE } from '@/lib/shop-settings/config';
 import { countCartItems } from '@/lib/cart/counts';
+import { resolveCartHydration } from '@/lib/cart/hydration';
 import {
   applyAddToLines,
   dedupeLines,
@@ -172,6 +173,17 @@ const cartToastMessage = (error: unknown, fallback: string): string => {
 export function CartProvider({ children }: { children: ReactNode }) {
   const { data: session, status } = useSession();
   const isLoggedIn = Boolean(session?.user);
+  const userId = session?.user?.userId ?? '';
+
+  // Which account owns anything dispatched right now. Cart mutations capture it
+  // when they queue and re-check it before sending and before applying, so a
+  // request or a response belonging to a previous account cannot touch the
+  // current one's cart. Kept in a ref because the mutation tasks are async
+  // closures that would otherwise read a stale `userId` from their render.
+  const currentUserIdRef = useRef(userId);
+  useEffect(() => {
+    currentUserIdRef.current = userId;
+  }, [userId]);
 
   // SSR renders an empty cart so server / client first paint always match —
   // any localStorage hydration would mismatch HTML and trip a hydration error.
@@ -189,9 +201,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // intentionally falls through to fetchServerCart rather than the merge path
   // — there's no guest cart to merge in that case.
   const prevStatusRef = useRef<typeof status>(status);
-  // Guards parallel fetches when the auth status flips during an in-flight
-  // request.
-  const hydratingRef = useRef(false);
+  // Tracks which account the lines on screen belong to. Status alone can't see
+  // an account change — signing in as someone else without a reload leaves
+  // `status` on 'authenticated' throughout.
+  const prevUserIdRef = useRef<string>(session?.user?.userId ?? '');
+  // Orders concurrent hydration fetches so only the newest response applies.
+  // See `fetchServerCart`.
+  const hydrateSeqRef = useRef(0);
 
   // Cart mutations run one at a time.
   //
@@ -219,7 +235,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const runCartMutation = useCallback(
     <T,>(task: (isLatest: () => boolean) => Promise<T>): Promise<T> => {
       const seq = (mutationSeqRef.current += 1);
-      const isLatest = () => seq === mutationSeqRef.current;
+      const owner = currentUserIdRef.current;
+      // Recency AND identity. Recency alone is not enough across an account
+      // change: a hydration never advances `mutationSeqRef`, so a mutation
+      // dispatched by the previous account still counted as "latest" and could
+      // apply its echo — or revert to its pre-click snapshot — over the new
+      // account's cart, indefinitely. Reproduced both ways. The owner half also
+      // stops a task that is still queued from being sent at all once the
+      // session has moved on: `credentials: 'include'` would put it on the new
+      // account's cookie and write the previous account's product into their
+      // server cart, which checkout then charges from.
+      const isLatest = () =>
+        seq === mutationSeqRef.current && owner === currentUserIdRef.current;
       const next = mutationChainRef.current.then(() => task(isLatest));
       // The chain must survive a rejecting task, or one failed mutation would
       // wedge every later one. Callers still see their own rejection via
@@ -232,29 +259,76 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   // Server fetch for the logged-in cart. Replaces local state with the
   // canonical server view and clears any stale guest cart.
-  const fetchServerCart = useCallback(async () => {
-    if (hydratingRef.current) return;
-    hydratingRef.current = true;
-    setLoading(true);
-    try {
-      const res = await fetch('/api/cart', { credentials: 'include' });
-      if (!res.ok) throw new Error('Failed to load cart');
-      const data = (await res.json()) as CartApiResponse;
-      setCartItems(dedupeLines(data.items ?? []));
-      setCartUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : null);
-      setLoadError(false);
-      clearGuestCart();
-    } catch (error) {
-      // Surfaced so the drawer can say "we couldn't load your cart" instead of
-      // rendering the empty state, which told customers with items on the
-      // server that their cart was empty.
-      setLoadError(true);
-      console.error('Error loading cart:', error);
-    } finally {
-      hydratingRef.current = false;
-      setLoading(false);
-    }
-  }, []);
+  // `reset` drops the lines already on screen before the request goes out. Used
+  // when the account changed in place: an empty cart for a moment is wrong but
+  // harmless, whereas leaving the previous account's lines up is the bug this
+  // exists to prevent — and the catch below sets an error flag without touching
+  // `cartItems`, so a failed fetch would otherwise leave them there under an
+  // error banner.
+  //
+  // An options object rather than a positional boolean on purpose: this used to
+  // take `resetFirst`, and `retryLoadCart` hands the function to an `onClick`,
+  // so React passed the click event straight into it as a truthy "yes, reset".
+  // A SyntheticEvent has no `reset` key, so that class of mistake can no longer
+  // typecheck-clean its way into the destructive path.
+  const fetchServerCart = useCallback(
+    async (opts?: { reset?: boolean }) => {
+      // A sequence rather than a boolean in-flight guard. The old guard
+      // returned early while a fetch was running, so a fetch started for a
+      // *new* account was dropped and the previous account's response still
+      // won — the account-switch fix would have been defeated by its own guard.
+      //
+      // This reuses `runCartMutation`'s shape but NOT its reasoning: that one
+      // deliberately serialises and rejects latest-wins, because two absolute
+      // quantity *writes* can reach the server in either order, so the newest
+      // echo can still describe a wrong cart. Hydration is a *read* of whatever
+      // the server already holds, and the newest request necessarily carries
+      // the newest session cookie — so here the newest response is by
+      // construction the right account's.
+      const seq = (hydrateSeqRef.current += 1);
+      const isLatest = () => seq === hydrateSeqRef.current;
+
+      if (opts?.reset) {
+        setCartItems([]);
+        setCartUpdatedAt(null);
+        setLoadError(false);
+      }
+      // Must land in the same batch as the reset above: `CheckoutGuard` treats
+      // "not loading, no error, no lines" as an empty cart and redirects to
+      // /cart, so a cleared-but-idle render would bounce a shopper mid-switch.
+      setLoading(true);
+      try {
+        const res = await fetch('/api/cart', { credentials: 'include' });
+        if (!res.ok) throw new Error('Failed to load cart');
+        const data = (await res.json()) as CartApiResponse;
+        if (!isLatest()) return;
+        setCartItems(dedupeLines(data.items ?? []));
+        setCartUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : null);
+        setLoadError(false);
+        clearGuestCart();
+      } catch (error) {
+        // Surfaced so the drawer can say "we couldn't load your cart" instead
+        // of rendering the empty state, which told customers with items on the
+        // server that their cart was empty.
+        if (!isLatest()) return;
+        setLoadError(true);
+        console.error('Error loading cart:', error);
+      } finally {
+        if (isLatest()) setLoading(false);
+      }
+    },
+    [],
+  );
+
+  // Wrapped rather than handed out raw: the retry button wires this straight to
+  // an `onClick`, so React passes the click event as the first argument. The
+  // context type (`() => void`) cannot catch that — a function with an optional
+  // parameter is assignable to a zero-argument signature — so the options
+  // object above is the real guard and this keeps a React event out of a data
+  // function regardless.
+  const retryLoadCart = useCallback(() => {
+    void fetchServerCart();
+  }, [fetchServerCart]);
 
   // Merge any local guest cart into the server cart, then refetch the result.
   // Runs once when the user transitions from unauthenticated to authenticated.
@@ -338,29 +412,54 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // with no user, so any /api/cart fetch would 401 in a loop. Treat that
   // shape as the guest branch.
   const hasUser = Boolean(session?.user);
+  // `userId` (declared with the session above) is what keys this effect, not
+  // just whether a user exists. Signing in as someone else without a reload
+  // leaves both `status` and `hasUser` unchanged, so before this the effect
+  // never re-ran and the previous account's lines stayed on screen
+  // indefinitely. See `resolveCartHydration` for the branch choice and its
+  // tests.
   useEffect(() => {
-    if (status === 'loading') return;
+    const action = resolveCartHydration({
+      prevStatus: prevStatusRef.current,
+      status,
+      hasUser,
+      prevUserId: prevUserIdRef.current,
+      userId,
+    });
+    // Load-bearing ordering: the refs must NOT advance on a `wait`. A mid-flight
+    // `loading` tick would otherwise overwrite a recorded `unauthenticated`,
+    // and the run after it would resolve to `fetch` instead of `merge` — the
+    // guest cart would be silently dropped on sign-in rather than folded in.
+    if (action === 'wait') return;
 
-    const prev = prevStatusRef.current;
     prevStatusRef.current = status;
+    prevUserIdRef.current = userId;
 
-    if (status === 'authenticated' && hasUser) {
-      if (prev === 'unauthenticated') {
-        void mergeGuestCartIntoServer();
-      } else {
-        void fetchServerCart();
-      }
+    if (action === 'merge') {
+      void mergeGuestCartIntoServer();
+      return;
+    }
+    if (action === 'fetch' || action === 'switch') {
+      void fetchServerCart({ reset: action === 'switch' });
       return;
     }
     // Guest (or tombstoned session): sync from localStorage and clear the
     // loading flag. Defer to a task tick so the setState lands async
     // (rule-clean); the one-tick gap is invisible to users.
+    //
+    // Bumping the hydration sequence strands any fetch still in flight for the
+    // account that just went away. Without it, signing out mid-fetch let that
+    // response land afterwards and paint the departed account's cart for a
+    // signed-out visitor — and `clearGuestCart` inside it would wipe the
+    // visitor's own local cart on the way past. Same leak as the account
+    // switch, in the other direction: only the fetch branch had been closed.
+    hydrateSeqRef.current += 1;
     const id = setTimeout(() => {
       setCartItems(readGuestCart());
       setLoading(false);
     }, 0);
     return () => clearTimeout(id);
-  }, [status, hasUser, fetchServerCart, mergeGuestCartIntoServer]);
+  }, [status, hasUser, userId, fetchServerCart, mergeGuestCartIntoServer]);
 
   const addItemToCart = useCallback(
     async (item: AddItemArg, opts?: { silent?: boolean }) => {
@@ -411,6 +510,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         return applyAddToLines(prev, product, addBy);
       });
       await runCartMutation(async (isLatest) => {
+        // Refuse to send once the session has moved on: this request would go
+        // out on the new account's cookie and mutate their server cart.
+        if (!isLatest()) return;
         try {
           const res = await fetch('/api/cart', {
             method: 'POST',
@@ -466,6 +568,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         return setQuantityOnLines(prev, productId, next);
       });
       await runCartMutation(async (isLatest) => {
+        // Refuse to send once the session has moved on: this request would go
+        // out on the new account's cookie and mutate their server cart.
+        if (!isLatest()) return;
         try {
           const res = await fetch('/api/cart', {
             method: 'PATCH',
@@ -511,6 +616,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         return removeFromLines(prev, productId);
       });
       await runCartMutation(async (isLatest) => {
+        // Refuse to send once the session has moved on: this request would go
+        // out on the new account's cookie and mutate their server cart.
+        if (!isLatest()) return;
         try {
           const res = await fetch('/api/cart', {
             method: 'DELETE',
@@ -570,6 +678,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return null;
     });
     return runCartMutation(async (isLatest) => {
+      // Refuse to send once the session has moved on: this request would go
+      // out on the new account's cookie and mutate their server cart.
+      if (!isLatest()) return false;
       try {
         const res = await fetch('/api/cart', {
           method: 'DELETE',
@@ -601,7 +712,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       cartUpdatedAt,
       loading,
       loadError,
-      retryLoadCart: fetchServerCart,
+      retryLoadCart,
       addItemToCart,
       removeItemFromCart,
       setItemQuantity,
@@ -613,7 +724,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       cartUpdatedAt,
       loading,
       loadError,
-      fetchServerCart,
+      retryLoadCart,
       addItemToCart,
       removeItemFromCart,
       setItemQuantity,

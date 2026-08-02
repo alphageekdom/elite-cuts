@@ -24,9 +24,19 @@ export function formatSecondsClock(seconds: number): string {
   return `${minutes}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
-// expiresAt lives in localStorage so the cart timer survives page navigation and
-// stays consistent across tabs. A module-level subscription set notifies React
-// readers via useSyncExternalStore whenever the value changes.
+// expiresAt lives in localStorage so the cart timer survives page navigation.
+// A module-level subscription set notifies React readers via
+// useSyncExternalStore whenever *this tab* writes the value.
+//
+// There is deliberately no `storage` listener, so nothing pushes a change
+// between tabs: the set above is per-document. A tab already running the
+// one-second tick re-reads the key on each render and so converges within a
+// second — but the tick only runs while that tab has both a stored expiry and
+// items (see the interval below), so a tab with an empty cart never picks up
+// another tab's newly-anchored timer at all until something else re-renders it.
+// At expiry each ticking tab independently fires its own clear and its own
+// toast. All benign, because the clear is idempotent — but it is per-tab
+// behaviour, not a shared timer.
 const expiryListeners = new Set<() => void>();
 
 function subscribeExpiry(listener: () => void) {

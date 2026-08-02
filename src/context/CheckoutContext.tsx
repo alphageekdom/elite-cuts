@@ -124,7 +124,8 @@ export type CheckoutAction =
         initialContact?: CheckoutInitialContact;
         savedAddresses?: SavedAddress[];
       };
-    };
+    }
+  | { type: 'CLEAR_PREFILL' };
 
 const EMPTY_INITIAL_STATE: CheckoutState = {
   isPaymentReady: false,
@@ -158,6 +159,21 @@ export type CheckoutInitialContact = {
   email?: string;
   phone?: string;
 };
+
+// Collapses the prefill props into one stable scalar so the sync below reacts
+// to the identity's details actually changing, not to a parent re-render
+// handing back new object identities for the same data. Exported for tests
+// alongside the reducer, since `EMPTY_PREFILL_KEY` is what decides between
+// filling and clearing.
+export const buildPrefillKey = (
+  initialContact?: CheckoutInitialContact,
+  savedAddresses?: SavedAddress[],
+): string =>
+  `${initialContact?.name ?? ''}|${initialContact?.email ?? ''}|${initialContact?.phone ?? ''}` +
+  `::${(savedAddresses ?? []).map((a) => a.id).join(',')}`;
+
+/** The key produced by props carrying no contact details and no addresses. */
+export const EMPTY_PREFILL_KEY = buildPrefillKey();
 
 const toDeliveryAddress = (sa: SavedAddress): DeliveryAddress => ({
   address1: sa.address1,
@@ -294,6 +310,47 @@ export function checkoutReducer(state: CheckoutState, action: CheckoutAction): C
         savedAddresses: list,
       };
     }
+    case 'CLEAR_PREFILL': {
+      // The prefill props went empty, which means the identity that owned them
+      // is gone. `PREFILL_FROM_PROPS` is fill-only and its dispatch is guarded
+      // on there being something to fill, so without this the previous
+      // customer's name, email, phone, delivery address and saved-address list
+      // would all stay on state.
+      //
+      // This is a blunt clear, and that is a deliberate trade rather than an
+      // oversight. Only `savedAddresses` is unambiguously identity-owned; the
+      // contact fields and the delivery address may equally hold something the
+      // shopper typed themselves (`SET_CONTACT` / `SET_DELIVERY_ADDRESS`), and
+      // nothing records which. `PREFILL_FROM_PROPS` above can preserve typed
+      // input because it only ever *fills* — there is no equivalent trick for
+      // emptying. Given the choice between showing a departed customer's email
+      // to whoever is now at the keyboard and discarding some typing, this errs
+      // toward not leaking.
+      //
+      // The card fields go too, and they are the sharpest reason this case
+      // exists. `cardDetails` is not read back from a saved card — it is what
+      // the shopper typed into the card form — and `PlaceOrderButton` posts
+      // `{ saveCard, cardDetails }` when the save box is ticked, which writes a
+      // SavedCard row. Left in place, one person's cardholder name, brand and
+      // last four could be saved onto the next person's account.
+      // `selectedSavedCardId` points into the departed account's cards and can
+      // only mis-resolve. `autoSettleAtPickup` stays: it is a fulfilment
+      // preference about weighing, and with no card selected it charges nothing.
+      //
+      // Idempotent for the same reason `PREFILL_FROM_PROPS` is: the dispatch
+      // below happens during render and React may replay it.
+      return {
+        ...state,
+        contactName: '',
+        contactEmail: '',
+        contactPhone: '',
+        deliveryAddress: EMPTY_ADDRESS,
+        savedAddresses: [],
+        cardDetails: null,
+        saveCard: false,
+        selectedSavedCardId: null,
+      };
+    }
     default:
       return state;
   }
@@ -333,12 +390,7 @@ export function CheckoutProvider({
   // overwrites empty fields, so anything the shopper has already typed is
   // preserved across the transition.
   //
-  // The key collapses the prefill props into one stable scalar so this reacts
-  // to the user's identity actually changing, not to a parent re-render handing
-  // back new object identities for the same data.
-  const prefillKey =
-    `${initialContact?.name ?? ''}|${initialContact?.email ?? ''}|${initialContact?.phone ?? ''}` +
-    `::${(savedAddresses ?? []).map((a) => a.id).join(',')}`;
+  const prefillKey = buildPrefillKey(initialContact, savedAddresses);
 
   // Adjusting state during render (React's recommended pattern over a mirroring
   // useEffect) rather than an effect keyed on the scalar. Seeding the comparison
@@ -356,7 +408,21 @@ export function CheckoutProvider({
   const [syncedPrefillKey, setSyncedPrefillKey] = useState(prefillKey);
   if (prefillKey !== syncedPrefillKey) {
     setSyncedPrefillKey(prefillKey);
-    if (initialContact || (savedAddresses && savedAddresses.length > 0)) {
+    // Branch on the key, not on whether the prop objects exist. The two are
+    // different notions of "empty": the key is built from field *values*, while
+    // the props are an object the checkout page builds unconditionally for any
+    // signed-in visitor — so a presence check here would always take the fill
+    // branch, and a later tidy-up in that page ("don't build an empty object")
+    // would silently start clearing instead. Deriving both from the key means
+    // they cannot disagree.
+    if (prefillKey === EMPTY_PREFILL_KEY) {
+      // The props went from a signed-in customer's details to none, so drop
+      // what that identity left behind. Defensive: sign-out unmounts this
+      // page-scoped provider today, so the transition isn't currently
+      // reachable. It becomes a real leak the moment sign-out keeps the shopper
+      // on the page.
+      dispatch({ type: 'CLEAR_PREFILL' });
+    } else {
       dispatch({
         type: 'PREFILL_FROM_PROPS',
         payload: { initialContact, savedAddresses },

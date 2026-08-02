@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildInitialState,
+  buildPrefillKey,
   checkoutReducer,
+  EMPTY_PREFILL_KEY,
   type CheckoutState,
   type SavedAddress,
 } from './CheckoutContext';
@@ -220,5 +222,95 @@ describe('checkoutReducer — promo', () => {
     expect(removed.promoId).toBe('');
     expect(removed.promoExcludesPoints).toBe(false);
     expect(removed.promoExcludesMember).toBe(false);
+  });
+});
+
+describe('checkoutReducer — CLEAR_PREFILL', () => {
+  // The prefilled state a signed-in customer's checkout starts from.
+  const signedInState = (): CheckoutState =>
+    buildInitialState(contact, [home, work]);
+
+  // Same invariant PREFILL_FROM_PROPS carries, for the same reason: the sync in
+  // CheckoutContext dispatches during render, and React may replay it.
+  it('is idempotent: applying twice equals applying once', () => {
+    const once = checkoutReducer(signedInState(), { type: 'CLEAR_PREFILL' });
+    const twice = checkoutReducer(once, { type: 'CLEAR_PREFILL' });
+    expect(twice).toEqual(once);
+  });
+
+  it('leaves nothing of the previous identity behind', () => {
+    const next = checkoutReducer(signedInState(), { type: 'CLEAR_PREFILL' });
+    expect(next.contactName).toBe('');
+    expect(next.contactEmail).toBe('');
+    expect(next.contactPhone).toBe('');
+    expect(next.savedAddresses).toEqual([]);
+    expect(next.deliveryAddress).toEqual(buildInitialState().deliveryAddress);
+  });
+
+  it('drops the card the previous shopper typed, and the intent to save it', () => {
+    // `cardDetails` is typed into the card form, not read back from a saved
+    // card, and the place-order call persists it as a SavedCard when `saveCard`
+    // is set — so leaving either behind could save one person's card onto the
+    // next person's account.
+    const state: CheckoutState = {
+      ...signedInState(),
+      cardDetails: {
+        cardholderName: 'A Customer',
+        brand: 'visa',
+        last4: '4242',
+        expMonth: 12,
+        expYear: 2030,
+      },
+      saveCard: true,
+      selectedSavedCardId: 'card_prev_account',
+    };
+    const next = checkoutReducer(state, { type: 'CLEAR_PREFILL' });
+    expect(next.cardDetails).toBeNull();
+    expect(next.saveCard).toBe(false);
+    expect(next.selectedSavedCardId).toBeNull();
+  });
+
+  it('keeps the rest of the order intact', () => {
+    // Only identity-derived fields are cleared — a promo, redeemed points and
+    // the chosen fulfilment belong to the order in progress, not to whoever
+    // was signed in.
+    const state: CheckoutState = {
+      ...signedInState(),
+      promoCode: 'SUMMER',
+      promoDiscount: 500,
+      pointsToRedeem: 200,
+      fulfillment: 'delivery',
+      orderNotes: 'Ring the bell',
+    };
+    const next = checkoutReducer(state, { type: 'CLEAR_PREFILL' });
+    expect(next.promoCode).toBe('SUMMER');
+    expect(next.promoDiscount).toBe(500);
+    expect(next.pointsToRedeem).toBe(200);
+    expect(next.fulfillment).toBe('delivery');
+    expect(next.orderNotes).toBe('Ring the bell');
+  });
+});
+
+describe('buildPrefillKey', () => {
+  // The branch between filling and clearing is `prefillKey === EMPTY_PREFILL_KEY`.
+  // If these two ever disagree about what "empty" means, a signed-in shopper's
+  // typed details get wiped.
+  it('produces EMPTY_PREFILL_KEY for props carrying nothing', () => {
+    expect(buildPrefillKey()).toBe(EMPTY_PREFILL_KEY);
+    expect(buildPrefillKey(undefined, [])).toBe(EMPTY_PREFILL_KEY);
+    expect(buildPrefillKey({ name: '', email: '', phone: '' }, [])).toBe(
+      EMPTY_PREFILL_KEY,
+    );
+  });
+
+  it('differs as soon as any detail is present', () => {
+    expect(buildPrefillKey(contact)).not.toBe(EMPTY_PREFILL_KEY);
+    expect(buildPrefillKey(undefined, [home])).not.toBe(EMPTY_PREFILL_KEY);
+  });
+
+  it('is stable across new object identities for the same data', () => {
+    expect(buildPrefillKey({ ...contact }, [{ ...home }])).toBe(
+      buildPrefillKey(contact, [home]),
+    );
   });
 });
