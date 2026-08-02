@@ -78,6 +78,56 @@ export const getOrCreateStripeCustomer = async (
   return winner?.stripeCustomerId ?? null;
 };
 
+// Removes the Stripe Customer created above, for account deletion.
+//
+// Deleting the Customer takes its attached PaymentMethods with it, which is
+// what the profile's per-card "delete" does one at a time. Hard-delete used to
+// do neither: it dropped the local `SavedCard` mirror and the `User` row that
+// carries `stripeCustomerId`, leaving the Customer and every card on it alive
+// at Stripe with no local pointer left to find them — while the privacy page
+// promised saved cards go.
+//
+// **Never throws.** A customer who has asked to be deleted is entitled to be
+// deleted whether or not a third party answers; a network error here must not
+// strand a half-deleted account. The local cascade is the source of truth and
+// runs regardless — a Stripe object left behind is recoverable from their
+// dashboard, an aborted cascade is not.
+//
+// The cost of that choice: the caller destroys `stripeCustomerId` moments
+// later, and the purge cron skips users whose `User` doc is already gone, so a
+// failure here orphans the Customer permanently with no retry path. The log
+// below therefore carries the id itself — it is the only remaining way to find
+// the object, and a human with the Stripe dashboard can act on it.
+//
+// Returns nothing on purpose. An earlier version returned a boolean documented
+// as being "so the caller can log honestly", which no caller ever read; the
+// honest log belongs here, where the two failure modes (nothing to do vs.
+// Stripe refused) can actually be told apart.
+export const deleteStripeCustomer = async (
+  stripeCustomerId: string | null | undefined,
+): Promise<void> => {
+  // Two independent reasons there is nothing to do: stub deploys mint no
+  // Customers, and a user who never checked out has no id. Both must be checked
+  // before `getStripe()`, which throws at construction when no key is set.
+  if (isStubMode() || !stripeCustomerId) return;
+
+  try {
+    await getStripe().customers.del(stripeCustomerId);
+  } catch (err) {
+    // Already gone is success, not failure. Reachable on a cron retry: the
+    // cascade can die between a successful delete here and `User.deleteOne`,
+    // and the retry re-reads a `User` doc that still carries the id. Without
+    // this branch the log below would tell an operator to go and remove an
+    // object by hand that Stripe deleted on the first pass.
+    if ((err as { code?: string })?.code === 'resource_missing') return;
+
+    console.error(
+      `[savedCards] failed to delete Stripe Customer ${stripeCustomerId} during account deletion — the local cascade continued, so this object is now orphaned and must be removed from the Stripe dashboard by hand`,
+      err,
+    );
+  }
+};
+
 const mapLocalRow = (row: {
   stubCardId: string;
   cardholderName?: string;

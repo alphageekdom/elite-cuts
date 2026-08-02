@@ -36,9 +36,15 @@ export default async function StripeMockPage({ searchParams }: Props) {
   // tampered link show the customer a different total than what's stamped
   // on the order; reading `totalCost` from the DB keeps the two in sync.
   await connectDB();
-  const order = await Order.findById(orderId).select('user totalCost paymentResult.status saveCardIntent').lean();
+  const order = await Order.findById(orderId).select('user totalCost paymentResult.status saveCardIntent anonymisedAt').lean();
   if (!order) redirect('/checkout');
   if (order.paymentResult?.status !== 'Pending') redirect('/checkout');
+
+  // Ownerless is not the same as unauthenticated-safe. A purged customer's
+  // order is `user: null` too, so without this the gate below would let anyone
+  // holding the id complete it in stub mode — flipping stock, promo seats and
+  // points on a departed account. Same reasoning as the confirmation page.
+  if (order.anonymisedAt) redirect('/checkout');
 
   // Ownership gate — same shape as the mock-complete route. User orders
   // require a session match; guest orders rely on the orderId-as-token

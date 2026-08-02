@@ -2,6 +2,7 @@ import type { Types } from 'mongoose';
 
 import connectDB from '@/config/database';
 import Order from '@/models/Order';
+import { guestOrderClaimFilter } from './guest-claim-filter';
 
 // Attaches every prior guest order with a matching email to a freshly-created
 // user account. Run once, immediately after the User document is created.
@@ -42,10 +43,9 @@ export async function claimGuestOrdersForUser(
   // captured the input.
   const normalized = email.toLowerCase().trim();
 
-  const result = await Order.updateMany(
-    { user: null, 'guestContact.email': normalized },
-    { $set: { user: userId } },
-  );
+  const result = await Order.updateMany(guestOrderClaimFilter(normalized), {
+    $set: { user: userId },
+  });
 
   return {
     matchedCount: result.matchedCount,

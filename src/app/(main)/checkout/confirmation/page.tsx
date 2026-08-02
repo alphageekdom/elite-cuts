@@ -67,6 +67,19 @@ export default async function ConfirmationPage({ searchParams }: Props) {
   const order = await OrderModel.findById(orderId).lean();
 
   if (!order) redirect('/cart');
+
+  // An anonymised order has no legitimate anonymous reader. The id-as-token
+  // model is for a *fresh* guest checkout, where the only holder is the person
+  // who just placed it; a purged customer's order is ownerless for the opposite
+  // reason, and the token is a non-expiring bearer credential sitting in
+  // browser history, referrer headers and access logs.
+  //
+  // Without this, deletion WIDENED access: while the account existed the check
+  // below enforced ownership, and nulling `user` removed the only thing it had
+  // to check. The privacy page's claim that past orders are closed to the site
+  // after deletion is true because of this line.
+  if (order.anonymisedAt) redirect('/cart');
+
   if (order.user && order.user.toString() !== sessionUser?.userId) {
     redirect('/cart');
   }

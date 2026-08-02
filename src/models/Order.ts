@@ -160,6 +160,27 @@ export type Order = {
   // model the same state the same way.
   user?: Types.ObjectId | null;
   guestContact?: GuestContact;
+  /**
+   * When this order's `guestContact` was written by the hard-delete
+   * anonymisation rather than by a real guest checkout.
+   *
+   * The two produce an identical shape — `user: null` plus a real email in
+   * `guestContact.email` — and `claimGuestOrdersForUser` matches exactly that,
+   * so without a discriminator anyone registering a purged customer's email
+   * inherited their whole order history. This field is the discriminator.
+   *
+   * Deliberately absent (not `null`-defaulted) on every other order: the claim
+   * filter tests `anonymisedAt: null`, which in MongoDB matches BOTH null and
+   * missing, so real guest orders — including every row written before this
+   * field existed — keep claiming exactly as they did.
+   *
+   * Typed `?: Date` rather than `?: Date | null` to match its five siblings
+   * (`refundedAt`, `paidAt`, `readyAt`, `pickedUpAt`, `cancelledAt`) and to
+   * agree with the paragraph above — the database never stores null here. The
+   * `| null` is not needed for the filter either: Mongoose's query casting
+   * admits null against an optional path.
+   */
+  anonymisedAt?: Date;
   orderItems: OrderItem[];
   subtotal: number;
   tax: number;
@@ -371,6 +392,12 @@ const OrderSchema = new Schema<Order>(
         { _id: false },
       ),
     },
+    // No `default` on purpose — see the type declaration above. A default of
+    // `null` would be written onto every new guest order, which is harmless for
+    // the claim filter (`null` matches either way) but would make `$exists`
+    // useless as a future discriminator and reads as "considered and set to
+    // nothing" rather than "never anonymised".
+    anonymisedAt: { type: Date },
     orderItems: {
       type: [OrderItemSchema],
       required: true,
@@ -487,6 +514,19 @@ OrderSchema.pre('save', function () {
 // claim-on-signup queries `{ user: null, "guestContact.email": <newUserEmail> }`
 // to attach prior guest orders to a freshly registered account; without this
 // the claim step degrades to a collection scan as guest orders accumulate.
+//
+// That query gained a third clause (`anonymisedAt: null`) when anonymised
+// orders became unclaimable. Measured against the live database rather than
+// assumed: still an IXSCAN on `guestContact.email_1`, no COLLSCAN. Eligibility
+// survives because the query still carries `user: null` verbatim, so it remains
+// a subset of the partial filter; the new clause applies as a residual filter
+// after the scan.
+//
+// Do NOT move `anonymisedAt` into the partialFilterExpression. It would narrow
+// a general-purpose index to a single query for no measurable gain, and it
+// would not take effect anyway: `autoIndex` is off in production and this
+// project has no deploy-time index step, so changing the options on an existing
+// index silently never happens (or raises IndexOptionsConflict in dev).
 OrderSchema.index(
   { 'guestContact.email': 1 },
   { partialFilterExpression: { user: null } },
