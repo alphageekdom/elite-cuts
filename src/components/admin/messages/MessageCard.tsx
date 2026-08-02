@@ -14,6 +14,10 @@ type Props = {
 // Mobile-only card variant (below sm:). The desktop table overflows iPhone
 // widths so each row renders as a stacked card instead.
 export default function MessageCard({ msg, toggling, onOpen, onToggleStatus }: Props) {
+  // A closed message is marked by its status pill, not by dimming. The
+  // `opacity-60` that used to sit on this card compounded into every child:
+  // the email, the timestamp and the Close button itself all fell to 2.38:1,
+  // and `hover:opacity-100` meant only a mouse user could recover them.
   return (
     <div
       role="button"
@@ -25,9 +29,7 @@ export default function MessageCard({ msg, toggling, onOpen, onToggleStatus }: P
           onOpen(msg);
         }
       }}
-      className={`group flex w-full cursor-pointer flex-col gap-2 rounded-sm border border-line-soft bg-paper px-4 py-4 text-left transition-colors hover:border-line hover:bg-cream focus:outline-none focus-visible:border-ink ${
-        msg.status === 'closed' ? 'opacity-60 hover:opacity-100' : ''
-      }`}
+      className="group flex w-full cursor-pointer flex-col gap-2 rounded-sm border border-line-soft bg-paper px-4 py-4 text-left transition-colors hover:border-line hover:bg-cream focus:outline-none focus-visible:border-ink"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-1 items-center gap-3">
