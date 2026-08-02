@@ -42,6 +42,7 @@ export default function OrderTableRowComponent({
       <td className="pl-6 pr-0 py-4" onClick={(e) => e.stopPropagation()}>
         <input
           type="checkbox"
+          aria-label={`Select order ${order.orderRef}`}
           checked={isSelected}
           onChange={() => onToggleSelect(order.id)}
           className="w-4 h-4 rounded-sm border border-line bg-cream cursor-pointer accent-oxblood"

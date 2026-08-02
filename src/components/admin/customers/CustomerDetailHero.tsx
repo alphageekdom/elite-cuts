@@ -3,7 +3,7 @@ import { formatDate, formatMoney, getInitials } from '@/lib/format';
 import { getLifecycle } from '@/lib/admin/customer-tier';
 import AdminEyebrow from '@/components/admin/AdminEyebrow';
 import type { CustomerTableRow } from '@/types/admin';
-import { ACTIVITY_CONFIG, TIER_CONFIG, getActivity, getTier } from './customerUtils';
+import { ACTIVITY_CONFIG, TIER_CONFIG_DARK, getActivity, getTier } from './customerUtils';
 
 type Props = {
   customer: CustomerTableRow;
@@ -12,7 +12,7 @@ type Props = {
 
 export default function CustomerDetailHero({ customer, onClose }: Props) {
   const tier = getTier(customer.orderCount);
-  const tierCfg = TIER_CONFIG[tier];
+  const tierCfg = TIER_CONFIG_DARK[tier];
   const activity = getActivity(customer);
   const actCfg = ACTIVITY_CONFIG[activity];
   const initials = getInitials(customer.name);
@@ -55,9 +55,10 @@ export default function CustomerDetailHero({ customer, onClose }: Props) {
           </div>
           <button
             onClick={onClose}
+            aria-label="Close customer profile"
             className="w-9 h-9 rounded-full border border-cream/15 bg-cream/8 text-cream grid place-items-center hover:border-cream/30 transition-colors shrink-0"
           >
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>

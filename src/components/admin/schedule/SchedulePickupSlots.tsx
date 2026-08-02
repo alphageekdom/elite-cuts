@@ -17,7 +17,7 @@ const SLOT_FILL_STYLES: Record<SlotLoad, string> = {
 
 const SLOT_STATUS_STYLES: Record<SlotStatus, string> = {
   open: 'text-green',
-  busy: 'text-amber',
+  busy: 'text-amber-deep',
   full: 'text-oxblood',
 };
 

@@ -89,6 +89,7 @@ export default function ProductTableRowComponent({
       <td className="pl-6 pr-0 py-4" onClick={(e) => e.stopPropagation()}>
         <input
           type="checkbox"
+          aria-label={`Select ${product.name}`}
           checked={isSelected}
           onChange={() => onToggleSelect(product.id)}
           className="w-4 h-4 rounded-sm border border-line bg-cream cursor-pointer accent-oxblood"
@@ -178,7 +179,7 @@ export default function ProductTableRowComponent({
             <span className="inline-block px-1.5 py-0.5 rounded-full text-[10px] font-mono tracking-[0.06em] uppercase bg-red-soft text-oxblood">AGED</span>
           )}
           {product.isFeatured && (
-            <span className="inline-block px-1.5 py-0.5 rounded-full text-[10px] font-mono tracking-[0.06em] uppercase bg-camel/18 text-camel-deep">FEATURED</span>
+            <span className="inline-block px-1.5 py-0.5 rounded-full text-[10px] font-mono tracking-[0.06em] uppercase bg-camel/18 text-camel-deeper">FEATURED</span>
           )}
           {product.isNewArrival && (
             <span className="inline-block px-1.5 py-0.5 rounded-full text-[10px] font-mono tracking-[0.06em] uppercase bg-ink text-cream">NEW</span>

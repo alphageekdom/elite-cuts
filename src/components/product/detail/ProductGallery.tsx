@@ -4,6 +4,10 @@ import { useRef, useState } from 'react';
 import Image from 'next/image';
 import { toast } from 'sonner';
 
+// Colocated with its only consumer. In the root layout this render-blocked
+// every route in the app for a lightbox that exists on the product page alone.
+import 'photoswipe/dist/photoswipe.css';
+
 import { productImageSrc } from '@/lib/format';
 
 type Props = {
@@ -150,49 +154,61 @@ export default function ProductGallery({
 
   return (
     <div>
-      <button
-        type='button'
-        onClick={() => void openLightbox()}
-        aria-label={`Open full-screen viewer for ${name}`}
-        aria-busy={opening}
-        className={`group bg-cream-deep focus-visible:ring-ink focus-visible:ring-offset-cream relative block aspect-square w-full overflow-hidden rounded-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none md:aspect-4/5 ${
-          opening ? 'cursor-wait' : 'cursor-zoom-in'
-        }`}
-      >
+      {/* The tag chip is a sibling of the button, not a child, and this wrapper
+          is the positioning context that lets it still sit over the image.
+          Inside the button its text became part of what a sighted user reads as
+          the control's label, which the aria-label could never contain — every
+          Featured / New Arrival / Dry-Aged cut failed WCAG 2.5.3 that way.
+          `aria-hidden` does not fix it: the rule reads visually-visible text,
+          so the chip has to leave the button entirely. */}
+      <div className='relative'>
+        <button
+          type='button'
+          onClick={() => void openLightbox()}
+          aria-label={`Open full-screen viewer for ${name}`}
+          aria-busy={opening}
+          className={`group bg-cream-deep focus-visible:ring-ink focus-visible:ring-offset-cream relative block aspect-square w-full overflow-hidden rounded-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none md:aspect-4/5 ${
+            opening ? 'cursor-wait' : 'cursor-zoom-in'
+          }`}
+        >
+          <Image
+            src={activeSrc}
+            alt={name}
+            fill
+            sizes='(min-width: 1280px) 680px, (min-width: 768px) 55vw, 100vw'
+            className='object-cover'
+            preload
+          />
+
+          {/* Zoom affordance — signals the image opens full-screen. */}
+          <span className='bg-ink/70 text-cream absolute right-4 bottom-4 z-10 grid h-9 w-9 place-items-center rounded-full opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100'>
+            <svg
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth={2}
+              aria-hidden
+              className='h-4 w-4'
+            >
+              <circle cx='11' cy='11' r='7' />
+              <line x1='21' y1='21' x2='16.65' y2='16.65' />
+              <line x1='11' y1='8' x2='11' y2='14' />
+              <line x1='8' y1='11' x2='14' y2='11' />
+            </svg>
+          </span>
+        </button>
+
+        {/* `pointer-events-none` because the chip now overlays the button
+            rather than living inside it — without it, the chip would swallow
+            clicks meant for the zoom trigger. */}
         {tagLabel && (
           <span
-            className={`absolute top-4 left-4 z-10 rounded-full px-3 py-1.5 text-[10px] font-medium tracking-[0.18em] uppercase ${tagClass}`}
+            className={`pointer-events-none absolute top-4 left-4 z-10 rounded-full px-3 py-1.5 text-[10px] font-medium tracking-[0.18em] uppercase ${tagClass}`}
           >
             {tagLabel}
           </span>
         )}
-
-        <Image
-          src={activeSrc}
-          alt={name}
-          fill
-          sizes='(min-width: 1280px) 680px, (min-width: 768px) 55vw, 100vw'
-          className='object-cover'
-          preload
-        />
-
-        {/* Zoom affordance — signals the image opens full-screen. */}
-        <span className='bg-ink/70 text-cream absolute right-4 bottom-4 z-10 grid h-9 w-9 place-items-center rounded-full opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100'>
-          <svg
-            viewBox='0 0 24 24'
-            fill='none'
-            stroke='currentColor'
-            strokeWidth={2}
-            aria-hidden
-            className='h-4 w-4'
-          >
-            <circle cx='11' cy='11' r='7' />
-            <line x1='21' y1='21' x2='16.65' y2='16.65' />
-            <line x1='11' y1='8' x2='11' y2='14' />
-            <line x1='8' y1='11' x2='14' y2='11' />
-          </svg>
-        </span>
-      </button>
+      </div>
 
       {/* Thumbnail strip — renders only with more than one image, so the
           single-image cuts look exactly as they did before. Thumbs swap the

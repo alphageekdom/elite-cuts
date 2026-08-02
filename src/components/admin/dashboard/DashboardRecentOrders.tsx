@@ -63,14 +63,17 @@ export default function DashboardRecentOrders({ orders }: Props) {
           <table className="w-full border-collapse text-[14px]">
             <thead>
               <tr>
-                {['Order', 'Customer', 'Cut', 'Status', 'Total', ''].map((h) => (
+                {['Order', 'Customer', 'Cut', 'Status', 'Total', 'Actions'].map((h) => (
                   <th
                     key={h}
+                    scope="col"
                     className={`text-left py-3 px-2.5 text-[11px] font-medium tracking-[0.22em] uppercase text-muted border-b border-line ${
-                      h === 'Total' || h === '' ? 'text-right' : ''
+                      h === 'Total' || h === 'Actions' ? 'text-right' : ''
                     }`}
                   >
-                    {h}
+                    {/* The actions column is headed for assistive tech only —
+                        a visible label would crowd the row's icon buttons. */}
+                    {h === 'Actions' ? <span className="sr-only">{h}</span> : h}
                   </th>
                 ))}
               </tr>

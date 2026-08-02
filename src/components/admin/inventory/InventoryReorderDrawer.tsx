@@ -140,9 +140,9 @@ export default function InventoryReorderDrawer({ row, mode = 'reorder', rows = [
           <div className="mt-2 flex items-center gap-2">
             <span className="text-[11px] text-muted">Existing delivery:</span>
             <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
-              row.deliveryStatus === 'confirmed' ? 'bg-green-soft text-green' :
-              row.deliveryStatus === 'pending'   ? 'bg-amber-soft text-amber' :
-              'bg-ink/6 text-muted'
+              row.deliveryStatus === 'confirmed' ? 'bg-green-soft text-green-deep' :
+              row.deliveryStatus === 'pending'   ? 'bg-amber-soft text-amber-deep' :
+              'bg-ink/6 text-muted-deep'
             }`}>
               <span className="h-1.5 w-1.5 rounded-full bg-current" />
               {row.deliveryStatus.charAt(0).toUpperCase() + row.deliveryStatus.slice(1)}

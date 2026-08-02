@@ -41,7 +41,9 @@ export default function RewardsCtaStrip() {
               Browse the shop
             </Link>
           </div>
-          <p className='mt-6 text-xs tracking-[0.04em] opacity-60'>
+          {/* 85, matching the paragraph above: cream at 60% on oxblood measured
+              3.16 and 85 is the first step that clears 4.5 (4.78). */}
+          <p className='mt-6 text-xs tracking-[0.04em] opacity-85'>
             No credit card required · Free forever, no strings attached
           </p>
         </Reveal>

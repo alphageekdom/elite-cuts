@@ -8,10 +8,10 @@ import { deliveryPatchSchema } from '@/lib/deliveries/schema';
 import type { DeliveryRow } from './InventoryUpcomingDeliveries';
 
 const DELIVERY_PILL_STYLE: Record<DeliveryRow['status'], string> = {
-  confirmed: 'bg-green-soft text-green',
-  pending: 'bg-amber-soft text-amber',
-  scheduled: 'bg-ink/6 text-muted',
-  received: 'bg-ink/6 text-muted',
+  confirmed: 'bg-green-soft text-green-deep',
+  pending: 'bg-amber-soft text-amber-deep',
+  scheduled: 'bg-ink/6 text-muted-deep',
+  received: 'bg-ink/6 text-muted-deep',
 };
 
 const DELIVERY_PILL_LABEL: Record<DeliveryRow['status'], string> = {
@@ -22,11 +22,11 @@ const DELIVERY_PILL_LABEL: Record<DeliveryRow['status'], string> = {
 };
 
 const STOCK_CHIP: Record<StockState, { label: string; cls: string }> = {
-  out: { label: 'Out of stock', cls: 'bg-ink/6 text-muted' },
+  out: { label: 'Out of stock', cls: 'bg-ink/6 text-muted-deep' },
   critical: { label: 'Still critical', cls: 'bg-red-soft text-oxblood' },
-  low: { label: 'Low stock', cls: 'bg-amber-soft text-amber' },
-  healthy: { label: 'In stock ✓', cls: 'bg-green-soft text-green' },
-  over: { label: 'Overstocked', cls: 'bg-green-soft text-green' },
+  low: { label: 'Low stock', cls: 'bg-amber-soft text-amber-deep' },
+  healthy: { label: 'In stock ✓', cls: 'bg-green-soft text-green-deep' },
+  over: { label: 'Overstocked', cls: 'bg-green-soft text-green-deep' },
 };
 
 type Props = {

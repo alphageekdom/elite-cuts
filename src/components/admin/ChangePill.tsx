@@ -13,7 +13,7 @@ export default function ChangePill({
   return (
     <span
       className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full font-medium text-[11px] tracking-[0.02em] font-mono ${
-        isUp ? 'bg-green-soft text-green' : 'bg-red-soft text-oxblood'
+        isUp ? 'bg-green-soft text-green-deep' : 'bg-red-soft text-oxblood'
       }`}
     >
       {isUp ? (

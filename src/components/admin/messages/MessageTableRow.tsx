@@ -14,11 +14,24 @@ type Props = {
 // Desktop table row — sm+. Below sm the messages list switches to
 // MessageCard for an iPhone-readable stack.
 export default function MessageTableRow({ msg, toggling, onOpen, onToggleStatus }: Props) {
+  // The `bg-cream-deep/30` tint and the status pill both mark a closed row, so
+  // the `opacity-60` that used to ride alongside them was redundant as well as
+  // harmful: it compounded into every cell, taking the email, the timestamp
+  // and the Close button to 2.38:1, and `hover:opacity-100` handed them back
+  // only to a mouse user. Measured at 4.81:1 with the tint alone.
+  //
+  // This is the only admin table that tints a row by status — promos, staff
+  // and the mobile MessageCard all leave it to the pill — so it reads as drift
+  // and an audit has already been tempted to remove it once. Keep it: messages
+  // is the one table whose state axis is binary and is also the page's
+  // organising principle (the filter strip is All / Open / Closed), which is
+  // what makes a two-tone row worth scanning. Promos has five statuses and
+  // staff three; neither reduces that way.
   return (
     <tr
       className={`group cursor-pointer transition-colors ${
         msg.status === 'closed'
-          ? 'bg-cream-deep/30 opacity-60 hover:opacity-100 hover:bg-cream-deep/50'
+          ? 'bg-cream-deep/30 hover:bg-cream-deep/50'
           : 'hover:bg-cream-deep/40'
       }`}
       onClick={() => onOpen(msg)}

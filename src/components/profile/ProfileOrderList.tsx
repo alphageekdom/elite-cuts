@@ -101,7 +101,7 @@ export default function ProfileOrderList({ orders, showAll = false }: Props) {
                 {itemCount} item{itemCount !== 1 ? 's' : ''}{extra}
               </p>
               {order.isPaid && order.orderStatus !== 'Cancelled' && (
-                <p className="mt-1 text-[12px] text-muted/80">
+                <p className="mt-1 text-[12px] text-muted">
                   Paid with {order.paymentMethod}
                 </p>
               )}

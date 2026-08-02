@@ -438,7 +438,7 @@ export default function ProductFormDrawer({ product, onClose, onSave }: Props) {
           )}
 
           {priceBandWarning && (
-            <div className="flex items-start gap-2 rounded-md bg-camel/10 px-3 py-2 text-[12px] text-camel-deep">
+            <div className="flex items-start gap-2 rounded-md bg-camel/10 px-3 py-2 text-[12px] text-camel-deeper">
               <span aria-hidden className="mt-0.5">⚠</span>
               <span>{priceBandWarning}</span>
             </div>

@@ -252,22 +252,26 @@ export default function InventoryClient({
           <table className="w-full border-collapse text-sm min-w-225">
             <thead className="bg-cream border-b border-line-soft">
               <tr>
-                <th className="text-left pl-6 pr-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">
+                <th scope="col" className="text-left pl-6 pr-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">
                   Cut
                 </th>
-                <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">
+                <th scope="col" className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">
                   Category
                 </th>
-                <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">
+                <th scope="col" className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">
                   Stock
                 </th>
-                <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">
+                <th scope="col" className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">
                   Supplier
                 </th>
-                <th className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">
+                <th scope="col" className="text-left px-4 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-muted whitespace-nowrap">
                   Delivery
                 </th>
-                <th className="pr-6 pl-4 py-3.5" />
+                {/* Named, not empty: the row-action cells beneath are non-empty
+                    data cells, so an unlabelled header leaves them unassociated. */}
+                <th scope="col" className="pr-6 pl-4 py-3.5">
+                  <span className="sr-only">Actions</span>
+                </th>
               </tr>
             </thead>
             <tbody>

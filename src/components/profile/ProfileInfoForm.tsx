@@ -173,7 +173,7 @@ export default function ProfileInfoForm({ initialName, initialEmail, initialPhon
 
       <div>
         <label htmlFor="phone" className={LABEL}>
-          Phone number <span className="normal-case tracking-normal opacity-60">(optional)</span>
+          Phone number <span className="normal-case tracking-normal">(optional)</span>
         </label>
         <input
           type="tel"

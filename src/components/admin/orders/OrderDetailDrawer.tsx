@@ -188,9 +188,10 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
         </div>
         <button
           onClick={onClose}
+          aria-label="Close order detail"
           className="w-9 h-9 rounded-full bg-cream border border-line text-ink grid place-items-center hover:border-ink transition-colors shrink-0"
         >
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
             <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
@@ -314,12 +315,17 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
               const realized = hasRealizedWeight(item);
               const estimated = estimatedLineTotal(item);
               const effective = realizedLineTotal(item);
+              // A refunded line is marked by the strikethrough and the
+              // Refunded pill, not by dimming the row. The `opacity-60` that
+              // used to sit on this div multiplied into every child on the
+              // drawer's cream panel — the meta line fell to 2.30:1 and the
+              // pill to 2.61:1.
               return (
                 <div
                   key={i}
-                  className={`grid grid-cols-[1fr_auto] gap-3.5 items-start py-3 transition-opacity ${
+                  className={`grid grid-cols-[1fr_auto] gap-3.5 items-start py-3 ${
                     i < order.items.length - 1 ? 'border-b border-line-soft' : ''
-                  } ${i === 0 ? 'pt-0' : ''} ${isRefunded ? 'opacity-60' : ''}`}
+                  } ${i === 0 ? 'pt-0' : ''}`}
                 >
                   <div>
                     <div className="flex items-center gap-2 mb-1">
@@ -495,7 +501,7 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
                         ? 'bg-green/10 text-green'
                         : order.settlementStatus === 'failed'
                         ? 'bg-oxblood/10 text-oxblood'
-                        : 'bg-camel/15 text-camel-deep'
+                        : 'bg-camel/15 text-camel-deeper'
                     }`}
                   >
                     {order.settlementStatus}

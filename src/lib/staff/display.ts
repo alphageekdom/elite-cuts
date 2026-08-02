@@ -44,10 +44,10 @@ export const STATUS_LABEL: Record<StaffStatus, string> = {
 // Badge classes per status — color is reinforced by a tiny dot + label,
 // so the meaning isn't carried by color alone.
 export const STATUS_BADGE: Record<StaffStatus, string> = {
-  active: 'bg-green-soft text-green',
-  inactive: 'bg-ink/6 text-muted',
+  active: 'bg-green-soft text-green-deep',
+  inactive: 'bg-ink/6 text-muted-deep',
   seasonal: 'bg-cream-deep text-ink-soft',
-  'on-leave': 'bg-amber-soft text-amber',
+  'on-leave': 'bg-amber-soft text-amber-deep',
 };
 
 export const ROLE_LABEL: Record<StaffRoleKey, string> = {

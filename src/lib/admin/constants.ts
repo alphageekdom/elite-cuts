@@ -31,14 +31,17 @@ export const PRODUCT_CATEGORIES = [
 ] as const;
 export type ProductCategory = (typeof PRODUCT_CATEGORIES)[number];
 
+// Each pill tints its own background, so the text token has to be the deeper
+// variant of its hue to clear 4.5:1 at the 10px these render at. Charcuterie
+// measured 3.95:1 and Pork 4.28:1 with the plain tokens.
 export const CATEGORY_COLORS: Record<string, string> = {
   Beef: 'bg-red-soft text-oxblood',
-  Chicken: 'bg-green-soft text-green',
-  Pork: 'bg-[rgba(184,137,90,0.18)] text-camel-deep',
+  Chicken: 'bg-green-soft text-green-deep',
+  Pork: 'bg-[rgba(184,137,90,0.18)] text-camel-deeper',
   Lamb: 'bg-[rgba(28,24,20,0.08)] text-ink-soft',
-  Sausage: 'bg-[rgba(184,137,90,0.12)] text-camel-deep',
-  Prepared: 'bg-[rgba(28,24,20,0.06)] text-muted',
-  Bundles: 'bg-[rgba(74,107,58,0.12)] text-green',
-  Charcuterie: 'bg-[rgba(122,92,58,0.18)] text-camel-deep',
+  Sausage: 'bg-[rgba(184,137,90,0.12)] text-camel-deeper',
+  Prepared: 'bg-[rgba(28,24,20,0.06)] text-muted-deep',
+  Bundles: 'bg-[rgba(74,107,58,0.12)] text-green-deep',
+  Charcuterie: 'bg-[rgba(122,92,58,0.18)] text-camel-deeper',
   Other: 'bg-cream-deep text-ink-soft',
 };

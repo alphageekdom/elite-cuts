@@ -70,7 +70,10 @@ export default function GeneralTab({ values, onChange, onSave, onDiscard, saving
             <input id="settings-street" type="text" value={values.street} onChange={(e) => onChange({ street: e.target.value })} className={inputCls} />
           </div>
           <div>
-            <label htmlFor="settings-suite" className={labelCls}>Suite / unit <span className="normal-case tracking-normal text-[11px] text-muted font-normal opacity-70">optional</span></label>
+            {/* No opacity modifier on the hint: `text-muted` is already the
+                dimmest token that passes on paper (5.07). The 70 that used to
+                sit here dropped it to 2.82. */}
+            <label htmlFor="settings-suite" className={labelCls}>Suite / unit <span className="normal-case tracking-normal text-[11px] text-muted font-normal">optional</span></label>
             <input id="settings-suite" type="text" value={values.suite} onChange={(e) => onChange({ suite: e.target.value })} placeholder="—" className={inputCls} />
           </div>
         </div>

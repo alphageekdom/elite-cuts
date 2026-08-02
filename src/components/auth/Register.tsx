@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -68,17 +68,17 @@ const FIELD_ERROR: Record<keyof TouchedState, string> = {
   confirmPassword: 'Passwords do not match.',
 };
 
-export default function Register() {
+export default function Register({ emailParam = '' }: { emailParam?: string }) {
   const router = useRouter();
-  // Honor an `?email=` query param so the guest-receipt "Create an account"
-  // CTA can deep-link the shopper here with their guest email pre-filled —
-  // the claim-on-signup match then runs against the same address they used
-  // for the guest order. Reject anything that isn't a valid email so a
-  // garbage URL (e.g. /register?email=garbage) doesn't seed the form with
-  // garbage and trip the validity icon on first paint.
-  const searchParams = useSearchParams();
-  const rawEmail = (searchParams.get('email') ?? '').trim();
-  const initialEmail = EMAIL_RE.test(rawEmail) ? rawEmail : '';
+  // `emailParam` is the raw `?email=` value handed down by the server page, so
+  // the guest-receipt "Create an account" CTA can deep-link the shopper here
+  // with their guest email pre-filled — the claim-on-signup match then runs
+  // against the same address they used for the guest order. It stays separate
+  // from `initialEmail` because only the latter has been vetted: a garbage URL
+  // (e.g. /register?email=garbage) must not seed the form and trip the validity
+  // icon on first paint.
+  const trimmedEmailParam = emailParam.trim();
+  const initialEmail = EMAIL_RE.test(trimmedEmailParam) ? trimmedEmailParam : '';
   const [formData, setFormData] = useState<FormState>({
     name: '',
     email: initialEmail,
@@ -577,9 +577,13 @@ export default function Register() {
               The counter starts{' '}
               <em className="italic text-camel-soft">remembering.</em>
             </h2>
-            <dl className="flex flex-col">
+            {/* ul, not dl: the numbered chip and the title/body column are
+                siblings, and a dl only permits dt/dd (optionally one div
+                wrapper holding just those). The old dl > div > div > dt
+                nesting was invalid on both counts. */}
+            <ul className="flex flex-col">
               {benefits.map((benefit) => (
-                <div
+                <li
                   key={benefit.num}
                   className="flex items-start gap-4 border-t border-cream/15 py-3.5"
                 >
@@ -590,16 +594,16 @@ export default function Register() {
                     {benefit.num}
                   </span>
                   <div>
-                    <dt className="text-[15px] font-semibold text-cream/95">
+                    <p className="text-[15px] font-semibold text-cream/95">
                       {benefit.title}
-                    </dt>
-                    <dd className="mt-1 text-[13.5px] leading-normal text-cream/70">
+                    </p>
+                    <p className="mt-1 text-[13.5px] leading-normal text-cream/70">
                       {benefit.body}
-                    </dd>
+                    </p>
                   </div>
-                </div>
+                </li>
               ))}
-            </dl>
+            </ul>
           </div>
 
           <div className="flex justify-between gap-4 border-t border-cream/15 pt-6 text-[11px] tracking-[0.18em] uppercase text-cream/60">

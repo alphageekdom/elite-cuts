@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 const TIER_PILL: Record<'master' | 'connoisseur', string> = {
   master: 'bg-oxblood/10 text-oxblood',
-  connoisseur: 'bg-camel/15 text-camel-deep',
+  connoisseur: 'bg-camel/15 text-camel-deeper',
 };
 
 const TIER_LABEL: Record<'master' | 'connoisseur', string> = {

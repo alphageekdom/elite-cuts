@@ -89,9 +89,11 @@ export default function GrillEventSection({ upcoming, past }: Props) {
       <header className="flex items-start justify-between gap-4 px-6 py-5 border-b border-line-soft flex-wrap">
         <div>
           <div className="text-[11px] tracking-widest uppercase text-muted mb-1">Summer</div>
-          <h3 className="font-display text-[22px] font-normal tracking-tight">
+          {/* h2, not h3: this is the only heading under the schedule page's h1,
+              so h3 read as a skipped level. Sole consumer is that page. */}
+          <h2 className="font-display text-[22px] font-normal tracking-tight">
             Live <em className="italic text-oxblood">grill events</em>
-          </h3>
+          </h2>
           <p className="mt-1 text-[12px] text-muted max-w-prose">
             Parking-lot grill windows. June through September, 2–5 hour windows between 10 AM and 3 PM.
           </p>
@@ -166,7 +168,7 @@ export default function GrillEventSection({ upcoming, past }: Props) {
                   </div>
                   <p className="mt-1 text-[12px] text-muted truncate">{event.message}</p>
                   {event.cancellationReason && (
-                    <p className="mt-0.5 text-[11px] text-oxblood/80">Reason: {event.cancellationReason}</p>
+                    <p className="mt-0.5 text-[11px] text-oxblood">Reason: {event.cancellationReason}</p>
                   )}
                 </div>
 

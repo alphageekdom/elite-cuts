@@ -30,25 +30,26 @@ export default function ProfileNav({ activeTab, counts }: Props) {
           const isActive = activeTab === id;
           const count = counts[id];
           const noun = 'countNoun' in tab ? tab.countNoun : null;
-          // The badge is spoken through the link's own name rather than an
-          // sr-only span inside it. That span was `position: absolute` with
-          // every ancestor static up to the `relative` <nav>, so it resolved
-          // against the nav instead of the scrolling <ul> — escaping the
-          // scroll container and planting itself at the far end of the
-          // scrolled content, which dragged ~148px of horizontal scroll onto
-          // the whole page at phone widths, on every tab.
-          const spokenName =
-            count && noun
-              ? `${label}, ${count} ${count === 1 ? noun[0] : noun[1]}`
-              : undefined;
+          // The count is spoken by an sr-only span rather than an aria-label.
+          // An aria-label overrides the visible text entirely, and the visible
+          // run here is "Orders6" (label + badge, no separator), which no
+          // readable label can contain verbatim — voice control then cannot
+          // resolve what it sees.
+          //
+          // That span is `position: absolute`, and it previously escaped to the
+          // `relative` <nav> because every ancestor between was static, planting
+          // itself past the end of the scrolled content and dragging ~148px of
+          // horizontal scroll onto the page at phone widths. The `relative` on
+          // the <Link> below is what contains it — do not remove it.
+          const countLabel =
+            count && noun ? `${count} ${count === 1 ? noun[0] : noun[1]}` : null;
 
           return (
             <li key={id} className="shrink-0 lg:shrink">
               <Link
                 href={href}
                 aria-current={isActive ? 'page' : undefined}
-                aria-label={spokenName}
-                className={`flex min-h-11 items-center justify-between gap-2.5 rounded-sm px-3.5 py-2.5 text-[14.5px] whitespace-nowrap transition-colors ${FOCUS_RING} focus-visible:ring-offset-cream ${
+                className={`relative flex min-h-11 items-center justify-between gap-2.5 rounded-sm px-3.5 py-2.5 text-[14.5px] whitespace-nowrap transition-colors ${FOCUS_RING} focus-visible:ring-offset-cream ${
                   isActive
                     ? 'bg-cream-deep font-medium text-ink'
                     : 'text-ink-soft hover:bg-cream-deep/50 hover:text-ink'
@@ -67,6 +68,7 @@ export default function ProfileNav({ activeTab, counts }: Props) {
                     {count}
                   </span>
                 )}
+                {countLabel && <span className="sr-only">{countLabel}</span>}
               </Link>
             </li>
           );

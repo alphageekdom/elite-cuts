@@ -460,7 +460,7 @@ export default async function ProductPage({ params }: PageProps) {
                 <strong className='text-ink font-medium'>Free pickup</strong> at
                 our shop — ready in {pickup.readyIn}.
                 <br />
-                <span className='text-muted'>
+                <span className='text-muted-deep'>
                   {pickup.timing} · {shopSettings.city}, {shopSettings.state}
                 </span>
               </div>
