@@ -139,6 +139,7 @@ export type OrderTableRow = {
   pointsRedeemed: number;
   pointsRedemptionValueCents: number;
   pointsRedemptionReturned: number;
+  pointsRedemptionShortfall: number;
   memberDiscount: number;
   promoDiscount: number;
   promoCode?: string;

@@ -8,6 +8,7 @@ import Product from '@/models/Product';
 import User from '@/models/User';
 import Cart from '@/models/Cart';
 import { reservePromoSeat } from '@/lib/promos/apply';
+import { splitRedemptionAgainstBalance } from '@/lib/rewards/calculator';
 import { recordCustomerActivity } from '@/lib/auth/account-deletion';
 import { notifyAdminsOfNewOrder } from '@/lib/orders/notifications';
 import { dollarsToCents } from '@/lib/payments/stripe';
@@ -159,19 +160,83 @@ export const completeSessionForOrder = async (
   }
 
   // ── Points deduction ────────────────────────────────────────────────
+  //
+  // Deliberately a server-side clamp, not a plain `$inc`.
+  //
+  // Redemption is validated at session creation against a balance READ at that
+  // moment, and taken here — so a customer with 500 points who opens two
+  // checkouts each redeeming 500 passes validation twice. Both used to `$inc`
+  // by -500, leaving a stored balance of -500. The schema's `min: 0` cannot
+  // catch it: Mongoose update validators do not run for `$inc` at all.
+  //
+  // The pipeline recomputes the floor inside a single atomic operation, so the
+  // second webhook sees the first one's write and can only take what is left.
+  // Same shape, and the same reason, as the ceiling in `reverseOrderRedemption`
+  // — a read-then-write here would just move the race rather than close it.
+  //
+  // What this does NOT do is prevent the double-spend: the customer has already
+  // paid the discounted total by the time we get here, so the order must be
+  // honoured and the shop absorbs the difference. That is bounded — the
+  // per-order cap (`computeRedemptionCap`) limits any single redemption — and
+  // it is recorded on the order rather than swallowed.
+  //
+  // Claiming the points at session creation instead would prevent it outright,
+  // and was rejected on evidence: every checkout attempt creates a NEW pending
+  // order (the route neither reuses nor cancels a prior one), nothing sweeps
+  // abandoned pending orders, and the stub-mode cancel is a plain link that
+  // hits no endpoint. Points would be locked per abandoned attempt with no
+  // release — which is exactly why the deduction was moved here in the first
+  // place. Revisit if an abandoned-order sweep ever lands.
   if (order.user && order.pointsRedeemed > 0) {
-    await User.findByIdAndUpdate(order.user, {
-      $inc: { rewardPoints: -order.pointsRedeemed },
-      $push: {
-        pointsHistory: {
-          delta: -order.pointsRedeemed,
-          reason: 'redemption',
-          orderId: order._id,
-          expiresAt: null,
-          createdAt: new Date(),
+    const requested = order.pointsRedeemed;
+    const before = await User.findOneAndUpdate(
+      { _id: order.user },
+      [
+        {
+          $set: {
+            rewardPoints: {
+              $max: [0, { $subtract: [{ $ifNull: ['$rewardPoints', 0] }, requested] }],
+            },
+          },
         },
-      },
+      ],
+      { returnDocument: 'before' },
+    )
+      .select('rewardPoints')
+      .lean();
+
+    const { applied, shortfall } = splitRedemptionAgainstBalance({
+      requested,
+      available: before?.rewardPoints ?? 0,
     });
+
+    // Ledger records what was actually taken, never what was asked for — an
+    // entry for points that never left the balance would make the history
+    // disagree with the number beside it.
+    if (applied > 0) {
+      await User.findByIdAndUpdate(order.user, {
+        $push: {
+          pointsHistory: {
+            delta: -applied,
+            reason: 'redemption',
+            orderId: order._id,
+            expiresAt: null,
+            createdAt: new Date(),
+          },
+        },
+      });
+    }
+
+    if (shortfall > 0) {
+      order.pointsRedemptionShortfall = shortfall;
+      console.warn(
+        '[completeSession] order %s redeemed %d points against a balance of %d — shop absorbed %d',
+        String(order._id),
+        requested,
+        before?.rewardPoints ?? 0,
+        shortfall,
+      );
+    }
   }
 
   // ── Flip to paid ────────────────────────────────────────────────────

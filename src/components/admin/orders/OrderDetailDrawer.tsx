@@ -471,6 +471,14 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
                   {order.status === 'Cancelled' && (
                     <em className="not-italic ml-2 text-[10px] tracking-[0.06em] uppercase text-camel-deep">returned</em>
                   )}
+                  {/* Non-zero only when the balance had moved between the
+                      quote at checkout and the deduction at completion, so
+                      the shop honoured a discount it could not fully fund. */}
+                  {order.pointsRedemptionShortfall > 0 && (
+                    <em className="not-italic ml-2 text-[10px] tracking-[0.06em] uppercase text-oxblood">
+                      {order.pointsRedemptionShortfall.toLocaleString('en-US')} pts unfunded
+                    </em>
+                  )}
                 </span>
                 <span className={`font-mono text-[12px] ${order.status === 'Cancelled' ? 'line-through' : ''}`}>
                   −{formatMoney(order.pointsRedemptionValueCents / 100)}

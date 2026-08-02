@@ -9,6 +9,7 @@ import {
   refundSummary,
 } from '@/lib/orders/refunds';
 import { roundMoney } from '@/lib/money';
+import { hasCollectedPayment } from '@/lib/orders/payment-state';
 import { dollarsToCents, getStripe, isStubMode } from '@/lib/payments/stripe';
 import type { BranchResult } from './types';
 
@@ -66,10 +67,17 @@ export async function applyRefund({
   );
 
   const provider = existing.paymentResult.provider;
+  // An order the shop never charged. Today every such order is a counter sale
+  // (`provider: 'admin'`), so the Stripe gate below would skip it anyway — but
+  // relying on that means the safety lives in a coincidence of two unrelated
+  // fields. Stated outright so asking Stripe to refund a charge that was never
+  // made stays impossible if either field ever moves.
+  const collectedPayment = hasCollectedPayment(existing);
 
   // Hit Stripe first so a failed refund leaves the schema clean.
   if (
     refundDeltaDollars > 0 &&
+    collectedPayment &&
     provider === 'stripe' &&
     existing.paymentResult.paymentIntentId &&
     !isStubMode()
@@ -131,6 +139,26 @@ export async function applyRefund({
       stockResult.modifiedCount,
       indicesToRefund.size,
     );
+  }
+
+  // Nothing was ever collected — a counter sale cancelled before the customer
+  // paid at the till. The restock above is right (creation took the stock), but
+  // everything below this line is about money, and there is none to move:
+  // stamping it marked the lines refunded, flipped the payment to 'Refunded'
+  // and rendered "Refunded (3 items) −$100.00 / Net paid $0.00" on the
+  // customer's receipt for an order the shop never charged.
+  //
+  // Returning no `orderItems` leaves the lines unmarked, which is what keeps
+  // that block off the receipt — it renders on `refundedAmount > 0`, derived
+  // from the refunded flags. The order's own `Cancelled` status carries the
+  // real signal, and the payment is left at `Pending`: slightly odd on a
+  // cancelled order, but honest, and a new terminal status would ripple through
+  // the drawer, the receipt and the exports for signal already present.
+  //
+  // Only reachable via cancellation — `collectRefundIndices` refuses an
+  // explicit refund on an uncollected order before it ever gets here.
+  if (!collectedPayment) {
+    return { ok: true, updateFields: {} };
   }
 
   const updateFields: Record<string, unknown> = {

@@ -12,7 +12,9 @@ import {
   getTier,
   getTierView,
   projectRewards,
+  creditableReturn,
   redeemableValueDollars,
+  splitRedemptionAgainstBalance,
   tierLabel,
   tierRank,
   tierViewToInfo,
@@ -732,5 +734,139 @@ describe('projectRewards', () => {
     expect(none.monthlyPoints).toBe(0);
     expect(none.yearlyDollarsBack).toBe(0);
     expect(none.reach).toEqual({ kind: 'none' });
+  });
+});
+
+describe('splitRedemptionAgainstBalance', () => {
+  // The scenario this exists for: a customer with 500 points opens two
+  // checkouts, each redeeming 500. Validation runs at session creation against
+  // a balance read then, so both pass. The deduction runs later, per order.
+  it('lets the first webhook take the full redemption', () => {
+    expect(splitRedemptionAgainstBalance({ requested: 500, available: 500 })).toEqual({
+      applied: 500,
+      shortfall: 0,
+    });
+  });
+
+  it('lets the second webhook take nothing, and names the gap', () => {
+    // Previously both applied `$inc: -500` and the stored balance went to -500.
+    // Mongoose update validators never run for `$inc`, so the schema's `min: 0`
+    // could not catch it — which is why the clamp lives in the query.
+    expect(splitRedemptionAgainstBalance({ requested: 500, available: 0 })).toEqual({
+      applied: 0,
+      shortfall: 500,
+    });
+  });
+
+  it('takes what is left on a partial overlap', () => {
+    // The realistic middle case: some other activity moved the balance between
+    // the quote and the deduction.
+    expect(splitRedemptionAgainstBalance({ requested: 500, available: 120 })).toEqual({
+      applied: 120,
+      shortfall: 380,
+    });
+  });
+
+  it('never reports a negative shortfall when the balance grew', () => {
+    // A `Math.min` written the wrong way round returns -300 here, which reads
+    // as "nothing absorbed" at every call site that checks `> 0`.
+    expect(splitRedemptionAgainstBalance({ requested: 200, available: 500 })).toEqual({
+      applied: 200,
+      shortfall: 0,
+    });
+  });
+
+  it('floors a legacy negative balance rather than inverting the split', () => {
+    // Balances written before the clamp can be negative. Without the floor,
+    // `Math.min(200, -500)` applies -500 — crediting the customer on a
+    // deduction path.
+    expect(splitRedemptionAgainstBalance({ requested: 200, available: -500 })).toEqual({
+      applied: 0,
+      shortfall: 200,
+    });
+  });
+
+  it('is a no-op for an order that redeemed nothing', () => {
+    expect(splitRedemptionAgainstBalance({ requested: 0, available: 500 })).toEqual({
+      applied: 0,
+      shortfall: 0,
+    });
+  });
+
+  it('never applies a fractional point', () => {
+    expect(splitRedemptionAgainstBalance({ requested: 10.9, available: 5.9 })).toEqual({
+      applied: 5,
+      shortfall: 5,
+    });
+  });
+});
+
+describe('creditableReturn', () => {
+  // The defect this exists for, introduced by the deduction clamp and caught in
+  // review: `pointsRedeemed` is what the customer was QUOTED. Once the
+  // deduction started clamping at the live balance it stopped being what they
+  // were CHARGED, and the reversal paths still read the quoted figure.
+  it('returns nothing for a redemption the shop could not fund at all', () => {
+    // Order quoted 500 against a balance a concurrent order had drained, so 0
+    // was taken. Returning 500 here credits points that never left the balance
+    // — minting it out of a cancellation.
+    expect(
+      creditableReturn({ pointsRedeemed: 500, shortfall: 500, requested: 500 }),
+    ).toBe(0);
+  });
+
+  it('returns only the part that was actually taken', () => {
+    expect(
+      creditableReturn({ pointsRedeemed: 500, shortfall: 380, requested: 500 }),
+    ).toBe(120);
+  });
+
+  it('returns the whole redemption when nothing was short', () => {
+    expect(creditableReturn({ pointsRedeemed: 500, requested: 500 })).toBe(500);
+  });
+
+  it('caps a partial refund at what is left to give back', () => {
+    // Proportional refunds ask for a share of `pointsRedeemed`, which can
+    // exceed the remainder once a shortfall is in play.
+    expect(
+      creditableReturn({
+        pointsRedeemed: 500,
+        shortfall: 380,
+        alreadyReturned: 100,
+        requested: 250,
+      }),
+    ).toBe(20);
+  });
+
+  it('gives nothing back once the full amount has been returned', () => {
+    // A refund racing a cancel: the second call must claim nothing.
+    expect(
+      creditableReturn({
+        pointsRedeemed: 500,
+        alreadyReturned: 500,
+        requested: 500,
+      }),
+    ).toBe(0);
+  });
+
+  it('never goes negative when more has been returned than was taken', () => {
+    // Defensive: legacy rows written before the shortfall field existed could
+    // carry a `pointsRedemptionReturned` above the new ceiling.
+    expect(
+      creditableReturn({
+        pointsRedeemed: 500,
+        shortfall: 400,
+        alreadyReturned: 500,
+        requested: 100,
+      }),
+    ).toBe(0);
+  });
+
+  it('treats a missing shortfall as zero, so legacy orders are unaffected', () => {
+    // Every order written before this field defaults to 0 and must behave
+    // exactly as it did before.
+    expect(
+      creditableReturn({ pointsRedeemed: 300, alreadyReturned: 100, requested: 300 }),
+    ).toBe(200);
   });
 });

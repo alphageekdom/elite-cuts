@@ -232,6 +232,76 @@ export function applyRedemption({
   };
 }
 
+// How a redemption settles when the balance no longer covers it.
+//
+// `applyRedemption` above runs at checkout against a balance read at that
+// moment; the points are actually taken later, in the webhook. Between the two
+// the balance can have moved — most obviously when the same customer has two
+// checkouts in flight, each validated against the same points.
+//
+// By then the customer has paid the discounted total, so the order is honoured
+// and the shop absorbs the difference. This names that policy in one place so
+// the caller isn't deciding it inline, and so the arithmetic is pinned: a
+// `Math.min` written the wrong way round silently hands back a negative
+// shortfall, which reads as "nothing to see here".
+//
+// Both inputs are floored at zero — `available` comes from a stored balance
+// that predates the clamp guarding it, so a legacy negative must not invert the
+// result.
+export function splitRedemptionAgainstBalance({
+  requested,
+  available,
+}: {
+  /** Points the order was quoted a discount for. */
+  requested: number;
+  /** Points the customer actually held when the deduction ran. */
+  available: number;
+}): { applied: number; shortfall: number } {
+  const want = Math.max(0, Math.floor(requested));
+  const have = Math.max(0, Math.floor(available));
+  const applied = Math.min(want, have);
+  return { applied, shortfall: want - applied };
+}
+
+// How many points a cancellation or refund may hand back.
+//
+// The sibling of `splitRedemptionAgainstBalance`, and the reason it exists: the
+// order's `pointsRedeemed` is what the customer was QUOTED, which stopped being
+// what they were CHARGED once the deduction started clamping at the live
+// balance. Returning the quoted figure credits points that were never taken —
+// minting balance out of a cancellation, which is a worse failure than the
+// negative balance the clamp prevents.
+//
+// `alreadyReturned` makes repeat calls safe: several partial refunds, or a
+// refund followed by a full cancel, can never return more than was taken.
+//
+// The caller re-derives the same ceiling inside its update pipeline so the
+// claim stays atomic; this is the arithmetic half, split out because
+// `completion.ts` is DB-bound and cannot be tested here.
+export function creditableReturn({
+  pointsRedeemed,
+  shortfall = 0,
+  alreadyReturned = 0,
+  requested,
+}: {
+  /** Points the order was quoted a discount for. */
+  pointsRedeemed: number;
+  /** Of those, how many the shop could not actually take. */
+  shortfall?: number;
+  /** How many have already been handed back by earlier reversals. */
+  alreadyReturned?: number;
+  /** How many this call is asking to return. */
+  requested: number;
+}): number {
+  const deducted = Math.max(
+    0,
+    Math.floor(pointsRedeemed) - Math.max(0, Math.floor(shortfall)),
+  );
+  const returned = Math.max(0, Math.floor(alreadyReturned));
+  const want = Math.max(0, Math.floor(requested));
+  return Math.max(0, Math.min(deducted, returned + want) - returned);
+}
+
 // What a balance is actually worth, in whole dollars.
 //
 // `applyRedemption` floors the spend to whole `redemptionPoints` blocks before
