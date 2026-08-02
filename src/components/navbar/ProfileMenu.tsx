@@ -4,8 +4,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
-import { AVATAR_COLORS, MEMBER_AVATAR_COLORS } from '@/lib/admin/constants';
-import { avatarColorForId } from '@/lib/format';
+import { resolveAvatarColor } from '@/lib/admin/constants';
 import { FOCUS_RING, FOCUS_RING_DARK } from '@/lib/styles';
 import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
 import { PROFILE_TABS } from '@/components/profile/dashboard/tabs';
@@ -26,20 +25,8 @@ type ProfileMenuProps = {
   onSignOut: () => void;
 };
 
-const ADMIN_AVATAR = 'bg-linear-to-br from-ink to-oxblood-deep text-camel';
-
 const ROW_CLASS =
   'flex min-h-10.5 w-full items-center gap-2.75 rounded-sm px-3 text-left text-[14.5px] transition-colors motion-reduce:transition-none';
-
-const resolveAvatarColor = (
-  userId: string,
-  isAdmin: boolean,
-  rewardPoints: number,
-): string => {
-  if (isAdmin) return ADMIN_AVATAR;
-  if (rewardPoints >= 250) return avatarColorForId(userId, MEMBER_AVATAR_COLORS);
-  return avatarColorForId(userId, AVATAR_COLORS);
-};
 
 // Decorative left rail. In the redesign sketch these dots carried an accent
 // state — a gold one beside "Your orders · 1 ready" — which is gone along with
