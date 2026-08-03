@@ -22,19 +22,24 @@ const AuthLinks = ({ scrolled = false }: AuthLinksProps) => {
       >
         Demo
       </Link>
+      {/* "Sign in" / "Create account", not "Login" / "Register". The desktop
+          logged-out navbar was the last holdout: "Sign in" appears throughout
+          the app and "Create account" matches the register page's own CTA, so a
+          visitor met two different names for the same destination depending on
+          which surface they arrived from. */}
       <Link
         href='/login'
         aria-current={pathname === '/login' ? 'page' : undefined}
         className={`text-sm font-medium tracking-wide opacity-85 transition-opacity duration-300 hover:opacity-100 motion-reduce:transition-none ${FOCUS_RING} ${loginTone}`}
       >
-        Login
+        Sign in
       </Link>
       <Link
         href='/register'
         aria-current={pathname === '/register' ? 'page' : undefined}
         className={`inline-flex items-center rounded-full bg-oxblood px-5 py-2.5 text-sm font-medium tracking-wide text-cream transition-[background-color,transform] duration-300 hover:-translate-y-px hover:bg-oxblood-deep motion-reduce:transition-none motion-reduce:hover:translate-y-0 ${FOCUS_RING}`}
       >
-        Register
+        Create account
       </Link>
     </div>
   );

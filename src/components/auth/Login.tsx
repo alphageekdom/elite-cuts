@@ -241,7 +241,13 @@ export default function Login() {
       {/* Form Side. First in the DOM because it's what the page is for — a
           screen reader lands on the sign-in form rather than wading through
           the marketing panel to reach it. */}
-      <section className="flex flex-col px-8 py-8 md:px-14">
+      {/* The generous side padding waits for `lg` now. At `md:px-14` it took
+          112px out of a 384px column, squeezing the form to 272px — narrower
+          than the same form gets on a 375px phone, making the tightest
+          rendering of both auth pages a tablet rather than a handset. Register
+          carries the identical class; the two are visual siblings and drift
+          here reads as a mistake. */}
+      <section className="flex flex-col px-8 py-8 lg:px-14">
         <div className="flex justify-end text-sm">
           <span className="text-muted">
             New here?{' '}

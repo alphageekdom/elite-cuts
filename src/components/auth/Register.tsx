@@ -225,7 +225,7 @@ export default function Register({ emailParam = '' }: { emailParam?: string }) {
           screen reader lands on the signup form rather than wading through
           the marketing panel, and the h1 precedes the panel's h2. Same shape
           the sign-in page landed on. */}
-      <section className="flex flex-col px-8 py-8 md:px-14">
+      <section className="flex flex-col px-8 py-8 lg:px-14">
         <div className="flex justify-end text-sm">
           <span className="text-muted">
             Already a member?{' '}
@@ -239,7 +239,10 @@ export default function Register({ emailParam = '' }: { emailParam?: string }) {
         </div>
 
         <div className="flex-1 flex items-center justify-center py-10">
-          <div className="w-full max-w-110">
+          {/* `max-w-105`, matching Login. Register carried `max-w-110` — a 20px
+              divergence that was the only structural difference between the two
+              siblings, and read as drift rather than intent. */}
+          <div className="w-full max-w-105">
             <EditorialEyebrow className="auth-reveal mb-4 [animation-delay:100ms]">
               ↗ Create account
             </EditorialEyebrow>

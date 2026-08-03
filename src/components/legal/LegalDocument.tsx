@@ -194,9 +194,16 @@ export default function LegalDocument({
       )}
 
       {/* Body */}
+      {/* `max-w-3xl mx-auto` on the contents-less branch, not bare `max-w-3xl`.
+          Both legal pages currently pass `withContents`, so this branch has
+          never rendered — it was carried over from the pre-shell layout, which
+          centred its column with `mx-auto max-w-3xl`, and the `mx-auto` was
+          dropped in the move. A contents-less document would have hugged the
+          left edge at desktop with a screen of dead space beside it.
+          Nobody has seen this branch; if it is ever used, look at it. */}
       <div
         className={`grid items-start gap-10 px-6 py-16 sm:px-8 lg:px-12 lg:py-20 ${
-          withContents ? 'lg:grid-cols-[260px_1fr] lg:gap-16' : 'max-w-3xl'
+          withContents ? 'lg:grid-cols-[260px_1fr] lg:gap-16' : 'mx-auto max-w-3xl'
         }`}
       >
         {withContents && (
