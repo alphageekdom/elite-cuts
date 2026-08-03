@@ -37,7 +37,12 @@ export default function RewardsHowItWorks({ settings }: Props) {
           Climb the <em className='italic text-oxblood'>tiers.</em>
         </>
       ),
-      body: `Connoisseur at ${fmt(settings.connoisseurThreshold)} points, Master Cut at ${fmt(settings.masterCutThreshold)}. Each tier unlocks better perks — discounts, early access, and a birthday cut on us.`,
+      // Was "Each tier unlocks better perks — discounts, early access, and a
+      // birthday cut on us." None of the three is tier-gated: `currentTier`
+      // gates no behaviour anywhere in the app, the member discount is flat for
+      // every signed-in customer, and early access and birthdays don't exist at
+      // all. The tiers are recognition; say that, and say what earning does.
+      body: `Connoisseur at ${fmt(settings.connoisseurThreshold)} points, Master Cut at ${fmt(settings.masterCutThreshold)}. Your tier reflects what you've earned over the year — every member perk applies from your first order.`,
       meta: `3 TIERS · ${fmt(settings.masterCutThreshold)} PT TOP`,
     },
     {

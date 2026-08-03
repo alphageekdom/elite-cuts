@@ -110,7 +110,12 @@ export default function RewardsHero({ settings }: Props) {
                   )}
                 </div>
                 <ul className='flex flex-col gap-1.5'>
-                  {['Early access to weekly specials', 'Birthday cut on us'].map((perk) => (
+                  {/* Was "Early access to weekly specials" and "Birthday cut
+                      on us". Neither exists: nothing collects a birthday, and
+                      "weekly specials" is not a concept in this codebase. Both
+                      lines below are real code paths — see RewardsTiers, which
+                      carries the full measurement. */}
+                  {['Free in-store pickup, no minimum', 'Save cuts, add to cart in a tap'].map((perk) => (
                     <li key={perk} className='flex items-center gap-2 text-xs text-cream/85'>
                       <svg
                         viewBox='0 0 24 24'

@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import ArrowIcon from '@/components/ui/icons/ArrowIcon';
 import Reveal from '@/components/ui/Reveal';
+import { MEMBER_DISCOUNT_RATE } from '@/lib/pricing';
 
 export default function RewardsCtaStrip() {
   return (
@@ -12,9 +13,16 @@ export default function RewardsCtaStrip() {
       />
       <div className='relative z-10 mx-auto max-w-7xl px-6 text-center md:px-8'>
         <Reveal>
+          {/* Was "Worth joining for the birthday cut alone" — a perk nothing
+              in the app can deliver, since no surface collects a birthday. The
+              member discount is real and reads from the same constant the cart
+              and checkout summaries label the line with. */}
           <h2 className='mx-auto mb-7 max-w-180 font-display text-[clamp(40px,6vw,76px)] font-normal leading-none tracking-tight'>
             Worth joining for the{' '}
-            <em className='italic text-camel-soft'>birthday cut</em> alone.
+            <em className='italic text-camel-soft'>
+              {MEMBER_DISCOUNT_RATE * 100}% off
+            </em>{' '}
+            alone.
           </h2>
         </Reveal>
 

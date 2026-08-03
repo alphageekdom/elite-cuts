@@ -5,6 +5,7 @@ import {
   buildRegisterBenefits,
   type AuthBenefitSettings,
 } from './auth-benefits';
+import { MEMBER_DISCOUNT_RATE } from '@/lib/pricing';
 
 const base: AuthBenefitSettings = {
   pointsPerDollar: 1,
@@ -94,19 +95,45 @@ describe('the pickup lead time', () => {
   });
 });
 
-describe('the allocations benefit', () => {
-  // First dibs on Wagyu is a Master Cut tier perk, not something membership
-  // alone buys. The copy has to name the tier and its cost.
-  it('names the tier and quotes the configured threshold', () => {
-    const body = bodyOf(base, '04');
-    expect(body).toContain('Master Cut');
-    expect(body).toContain('1,000 points');
+describe('benefit 04 — the slot that was wrong twice', () => {
+  // It first claimed Wagyu allocations as a plain membership perk. The fix
+  // named the Master Cut tier instead — correcting the attribution while
+  // keeping the claim, on the reasoning that the tier list was authoritative.
+  // It wasn't: no allocation mechanism exists, `currentTier` gates nothing,
+  // and the only discount in the app is a flat member rate on everything.
+  //
+  // These assertions pin the *class* of claim, not the wording, because the
+  // failure mode is someone re-introducing a perk nobody built.
+  it('quotes the real member discount rate', () => {
+    // Anchored on a word boundary, not `toContain`. A plain substring check
+    // for "5% off" is satisfied by "15% off" — the exact wrong value this
+    // guards against, and the one the old copy shipped. Mutation testing
+    // caught that; the first version of this assertion passed the mutant.
+    expect(bodyOf(base, '04')).toMatch(
+      new RegExp(`\\b${MEMBER_DISCOUNT_RATE * 100}% off`),
+    );
+    expect(bodyOf(base, '04')).not.toContain('15%');
   });
 
-  it('follows the configured threshold', () => {
-    expect(bodyOf({ ...base, masterCutThreshold: 2500 }, '04')).toContain(
-      '2,500 points',
-    );
+  it('promises nothing the codebase cannot deliver', () => {
+    const all = [
+      ...buildLoginBenefits(base).map((b) => `${b.title} ${b.body}`),
+      ...buildRegisterBenefits(base).map((b) => `${b.title} ${b.body}`),
+    ]
+      .join(' ')
+      .toLowerCase();
+
+    for (const claim of [
+      'wagyu',
+      'allocation',
+      'dry-aged',
+      'birthday',
+      'early access',
+      'weekly special',
+      "butcher's box",
+    ]) {
+      expect(all).not.toContain(claim);
+    }
   });
 });
 

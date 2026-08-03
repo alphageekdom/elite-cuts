@@ -1,6 +1,7 @@
 import type { ShopSettings } from '@/models/ShopSettings';
 import { formatRedemptionRate } from '@/lib/rewards/calculator';
 import { formatReadyIn } from '@/lib/shop-settings/pickup-format';
+import { MEMBER_DISCOUNT_RATE } from '@/lib/pricing';
 
 // The numbered benefits on the two auth panels — sign-in and register.
 //
@@ -60,12 +61,27 @@ export function buildLoginBenefits(
       body: pointsBody(settings),
     },
     {
-      // The design billed allocations as a plain membership perk. They aren't:
-      // first dibs on Wagyu sits in the Master Cut tier list, so the copy has
-      // to name the tier and what reaching it takes.
+      // **This slot was wrong twice, in opposite directions.** The design
+      // billed Wagyu allocations as a plain membership perk; the first fix
+      // corrected the *attribution* — "first dibs sits in the Master Cut tier
+      // list, so name the tier" — and kept the claim, treating that tier list
+      // as the authority.
+      //
+      // The tier list was itself unbacked. `currentTier` gates no behaviour
+      // anywhere in this app, no allocation mechanism exists, and the only
+      // discount in the codebase is a flat `MEMBER_DISCOUNT_RATE` for every
+      // signed-in customer on everything — not 15%, not dry-aged, not tiered.
+      // So the fix propagated a false claim instead of retiring it.
+      //
+      // The lesson worth keeping: don't resolve a claim by pointing at another
+      // surface. Point at a code path. This one is `MEMBER_DISCOUNT_RATE`,
+      // read from the same constant the cart and checkout summaries label.
       num: '04',
-      title: 'First dibs, once you earn it',
-      body: `Reach Master Cut at ${settings.masterCutThreshold.toLocaleString('en-US')} points for first pick of Wagyu allocations and 15% off dry-aged.`,
+      title: 'A member price, every time',
+      // Not "every order": a promo carrying `excludesMember` suppresses the
+      // member rate, and one of the seeded codes does. What is unconditional
+      // is that it needs no action from the customer.
+      body: `${MEMBER_DISCOUNT_RATE * 100}% off at checkout once you're signed in — no minimum, no code to enter.`,
     },
   ];
 }
@@ -78,9 +94,14 @@ export function buildLoginBenefits(
 // Registration awards nothing, and inventing a signup bonus in copy is how the
 // profile page ended up claiming a weekend multiplier the shop wasn't running.
 // Also absent: "early access to dry-aged drops" and "cooking notes from the
-// butcher", both of which shipped on this page and are false — early access is
-// a tier perk, and the prep notes are on every public product page where a
-// guest can already read them.
+// butcher", both of which shipped on this page and are false — the prep notes
+// are on every public product page where a guest can already read them.
+//
+// This comment used to explain the first one with "early access is a tier
+// perk". That was wrong in the same way benefit 04 was: it deferred to the
+// tier table instead of to a code path. Early access is not a tier perk, it is
+// not a perk at all — nothing in this codebase implements it, and "weekly
+// specials" is not a concept here either. Right call, wrong reason.
 export function buildRegisterBenefits(
   settings: AuthBenefitSettings,
 ): AuthBenefit[] {
