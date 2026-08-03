@@ -11,7 +11,7 @@ import {
   realizedLineTotal,
   realizedOrderTotal,
 } from '@/lib/orders/line';
-import { DELIVERY_FEE } from '@/lib/pricing';
+import { DELIVERY_FEE } from '@/lib/checkout/totals';
 import { formatPickupLocation } from '@/lib/shop-settings/pickup-slots';
 import AdminEyebrow from '@/components/admin/AdminEyebrow';
 import SortPopover, { type SortOption } from '@/components/ui/SortPopover';

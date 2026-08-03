@@ -122,7 +122,7 @@ export const deleteStripeCustomer = async (
     if ((err as { code?: string })?.code === 'resource_missing') return;
 
     console.error(
-      `[savedCards] failed to delete Stripe Customer ${stripeCustomerId} during account deletion — the local cascade continued, so this object is now orphaned and must be removed from the Stripe dashboard by hand`,
+      `[savedCards] failed to delete Stripe Customer ${stripeCustomerId} during account deletion — the local cascade continued, so this object is now orphaned and must be removed from the Stripe dashboard by hand. The id is also on the AccountDeletionAudit row for this user (stripeCustomerIdSnapshot), so it is recoverable without this log line.`,
       err,
     );
   }

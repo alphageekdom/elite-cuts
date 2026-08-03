@@ -2,7 +2,7 @@ import { formatMoney } from '@/lib/format';
 import { PRICING_TYPE_IS_ESTIMATED, type PricingType } from '@/lib/products/constants';
 
 // Per-product pricing helpers. Cart-level totals (subtotal, tax, member
-// discount) live in `src/lib/pricing.ts` — different scope, kept separate.
+// discount) live in `src/lib/checkout/totals.ts` — different scope, kept separate.
 //
 // `PricingView` is the subset of a product these helpers care about. Both
 // the Product model and the admin form's draft state shape into this view

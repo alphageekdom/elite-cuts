@@ -1,3 +1,4 @@
+import { shopWeekdayIndex } from '@/lib/shop-settings/pickup-format';
 import type { ShopSettings } from '@/models/ShopSettings';
 import type { PointsHistoryEntry } from '@/models/User';
 
@@ -141,18 +142,36 @@ export function getTier(
 }
 
 // Earn rate per order: floor(subtotal * pointsPerDollar * weekendMultiplierIfWeekend).
-// Subtotal is in dollars (e.g. 24.50). Weekend = Sat or Sun in UTC; tier-based
-// multipliers (Connoisseur 2×, Master Cut 3× on the marketing page) are
-// orthogonal and will be applied as a separate factor in Phase B if/when wired.
+// Subtotal is in dollars (e.g. 24.50).
+//
+// The weekend is the shop's weekend, not UTC's. This read `getUTCDay()` until
+// 2026-08-03, which for a Pacific shop put the boundary at Friday 5pm–Saturday
+// 5pm local: a Sunday-afternoon pickup earned no bonus while a Friday-evening
+// one did. Nothing surfaced it because `weekendMultiplier` defaults to 1, which
+// makes both branches identical — but five customer surfaces state a weekend
+// claim the moment an admin raises that setting, and `RewardsHero` names the
+// window outright ("on Sat & Sun"). So the copy was one dropdown away from being
+// false, and the bug had no symptom until then.
+//
+// `timezone` is required rather than defaulted for that reason: a caller that
+// forgets it should fail to compile, not silently resume reading the server's
+// clock. This is the same shop-clock treatment the 2026-07-31 lib audit applied
+// to the day board, the schedule week and the holiday banner; this module was
+// simply not in that sweep.
+//
+// Tier-based multipliers are not a thing and never were — the marketing copy
+// that claimed them was retired on 2026-08-03, because `currentTier` gates no
+// behaviour anywhere in this app.
 export function computeAward(
   subtotalDollars: number,
-  settings: Pick<ShopSettings, 'pointsPerDollar' | 'weekendMultiplier'>,
+  settings: Pick<ShopSettings, 'pointsPerDollar' | 'weekendMultiplier' | 'timezone'>,
   awardedOn: Date = new Date(),
 ): number {
   if (!Number.isFinite(subtotalDollars) || subtotalDollars <= 0) return 0;
   const rate = Math.max(0, settings.pointsPerDollar);
-  const dow = awardedOn.getUTCDay(); // 0 = Sun, 6 = Sat
-  const isWeekend = dow === 0 || dow === 6;
+  // Monday-first, matching the shop-hours row order: 5 = Sat, 6 = Sun.
+  const dow = shopWeekdayIndex(settings.timezone, awardedOn);
+  const isWeekend = dow === 5 || dow === 6;
   const multiplier = isWeekend ? Math.max(1, settings.weekendMultiplier) : 1;
   return Math.floor(subtotalDollars * rate * multiplier);
 }

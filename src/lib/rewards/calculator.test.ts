@@ -27,6 +27,10 @@ import {
 type TestSettings = {
   pointsPerDollar: number;
   weekendMultiplier: number;
+  // Required by `computeAward` since 2026-08-03 — deliberately not optional, so
+  // a caller that forgets it fails to compile rather than silently resuming the
+  // server clock, which is the bug that hid here for months.
+  timezone: string;
   redemptionPoints: number;
   redemptionDollars: number;
   minToRedeem: number;
@@ -50,14 +54,27 @@ const settings = (overrides: Partial<TestSettings> = {}): TestSettings => ({
   masterCutThreshold: 5000,
   tierWindowMonths: 0,
   pointsExpiryMonths: 12,
+  timezone: 'America/Los_Angeles (PT)',
   ...overrides,
 });
 
 // Known UTC weekday anchors used across multiple tests. Verified manually:
 // 2026-05-15 is a Friday, 2026-05-16 is a Saturday, 2026-05-17 is a Sunday.
+// All three sit at midday UTC, which is early morning Pacific — the same
+// calendar day in both zones, so they deliberately do NOT distinguish the two
+// clocks. The pair below exists for that.
 const FRIDAY = new Date('2026-05-15T12:00:00.000Z');
 const SATURDAY = new Date('2026-05-16T12:00:00.000Z');
 const SUNDAY = new Date('2026-05-17T12:00:00.000Z');
+
+// The two instants where UTC and the shop disagree about the day. May is PDT
+// (UTC-7), so:
+//   2026-05-18T02:00Z = Sunday 7:00 PM in San Diego, Monday in UTC
+//   2026-05-16T01:00Z = Friday  6:00 PM in San Diego, Saturday in UTC
+// These are the exact cases the old `getUTCDay()` got backwards — a Sunday
+// evening pickup earning nothing while a Friday evening one earned double.
+const SUNDAY_EVENING_SHOP = new Date('2026-05-18T02:00:00.000Z');
+const FRIDAY_EVENING_SHOP = new Date('2026-05-16T01:00:00.000Z');
 
 describe('tierRank', () => {
   it('orders regular < connoisseur < masterCut', () => {
@@ -104,6 +121,32 @@ describe('computeAward', () => {
     expect(computeAward(10, settings({ weekendMultiplier: 2 }), SUNDAY)).toBe(
       20,
     );
+  });
+
+  // The regression these two exist for. Both fail against `getUTCDay()`, and
+  // both are silent on the default shop because `weekendMultiplier` is 1 —
+  // which is precisely why the bug survived: it has no symptom until an admin
+  // raises one dropdown, at which point five surfaces start stating a Sat/Sun
+  // claim the arithmetic doesn't honour.
+  it('counts Sunday evening at the shop as the weekend, though UTC calls it Monday', () => {
+    expect(
+      computeAward(10, settings({ weekendMultiplier: 2 }), SUNDAY_EVENING_SHOP),
+    ).toBe(20);
+  });
+
+  it('does not count Friday evening at the shop as the weekend, though UTC calls it Saturday', () => {
+    expect(
+      computeAward(10, settings({ weekendMultiplier: 2 }), FRIDAY_EVENING_SHOP),
+    ).toBe(10);
+  });
+
+  // An unrecognised zone must not throw mid-checkout. `shopWeekdayIndex` falls
+  // back to the server's own day, which is the honest degradation: wrong
+  // boundary, but an award still lands.
+  it('survives an unparseable timezone', () => {
+    expect(() =>
+      computeAward(10, settings({ timezone: 'Not/AZone' }), SATURDAY),
+    ).not.toThrow();
   });
 
   it('treats sub-1 weekend multipliers as 1× (no penalty)', () => {

@@ -79,6 +79,21 @@ export type AddItemArg = CartLineProduct & { quantity?: number };
 // 30-minute reservation timer to the canonical server timestamp.
 type CartApiResponse = { items: CartLine[]; updatedAt: string | null };
 
+// GET returns the payload bare (list convention); the mutations wrap it in
+// `{ data }` (mutation convention). Both are read through here so the four
+// mutation call sites don't each repeat the unwrap — and so that if a verb ever
+// moves between conventions, one place changes.
+//
+// The fallback is deliberate rather than defensive padding: it keeps a client
+// that is momentarily older or newer than the deployed route working through
+// the swap instead of silently emptying the customer's cart.
+const readCartPayload = async (res: Response): Promise<CartApiResponse> => {
+  const body = (await res.json()) as
+    | CartApiResponse
+    | { data: CartApiResponse };
+  return 'data' in body ? body.data : body;
+};
+
 type CartContextValue = {
   cartItems: CartLine[];
   cartCount: number;
@@ -300,7 +315,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       try {
         const res = await fetch('/api/cart', { credentials: 'include' });
         if (!res.ok) throw new Error('Failed to load cart');
-        const data = (await res.json()) as CartApiResponse;
+        const data = await readCartPayload(res);
         if (!isLatest()) return;
         setCartItems(dedupeLines(data.items ?? []));
         setCartUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : null);
@@ -521,7 +536,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             body: JSON.stringify({ productId: product._id, quantity: addBy }),
           });
           if (!res.ok) throw await cartRequestError(res, 'Failed to add item to cart');
-          const data = (await res.json()) as CartApiResponse;
+          const data = await readCartPayload(res);
           setCartItems(dedupeLines(data.items ?? []));
           setCartUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : null);
           // A successful round trip proves the server is reachable, so a stale
@@ -579,7 +594,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             body: JSON.stringify({ productId, quantity: next }),
           });
           if (!res.ok) throw await cartRequestError(res, 'Failed to update quantity');
-          const data = (await res.json()) as CartApiResponse;
+          const data = await readCartPayload(res);
           setCartItems(dedupeLines(data.items ?? []));
           setCartUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : null);
           // A successful round trip proves the server is reachable, so a stale
@@ -627,7 +642,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             body: JSON.stringify({ productId }),
           });
           if (!res.ok) throw await cartRequestError(res, 'Failed to remove item');
-          const data = (await res.json()) as CartApiResponse;
+          const data = await readCartPayload(res);
           setCartItems(dedupeLines(data.items ?? []));
           setCartUpdatedAt(data.updatedAt ? new Date(data.updatedAt) : null);
           // A successful round trip proves the server is reachable, so a stale

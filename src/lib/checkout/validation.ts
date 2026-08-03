@@ -52,8 +52,21 @@ export const isDeliveryReady = (state: {
   (state.deliveryCheck === 'valid' || state.deliveryCheck === 'error');
 
 // The whole fulfillment-side gate, so the button and any future caller agree.
+//
+// The pickup branch used to be a bare `true`, which let a slotless pickup order
+// through: the POST simply omitted `pickupSlot`, and the server's slot check was
+// itself behind `if (body.pickupSlot)` so it never ran. Both halves are closed —
+// this one so the button explains itself, the server one because a client is not
+// a security boundary.
+//
+// Delivery deliberately requires no slot: it has no schedule anywhere in the
+// app. That asymmetry is the honest state of the feature, not an oversight.
 export const isFulfillmentReady = (state: {
   fulfillment: string;
+  pickupSlot: string;
   deliveryAddress: AddressFields;
   deliveryCheck: string;
-}): boolean => (state.fulfillment === 'delivery' ? isDeliveryReady(state) : true);
+}): boolean =>
+  state.fulfillment === 'delivery'
+    ? isDeliveryReady(state)
+    : state.pickupSlot.trim().length > 0;

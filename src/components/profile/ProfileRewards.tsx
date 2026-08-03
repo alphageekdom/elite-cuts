@@ -9,7 +9,7 @@ import {
   type TierInfo,
 } from '@/lib/rewards/calculator';
 import { orderRef } from '@/lib/orders/reference';
-import { MEMBER_DISCOUNT_RATE } from '@/lib/pricing';
+import { MEMBER_DISCOUNT_RATE } from '@/lib/checkout/totals';
 import type { PointsHistoryReason } from '@/models/User';
 
 type Filter = 'all' | 'earned' | 'redeemed';

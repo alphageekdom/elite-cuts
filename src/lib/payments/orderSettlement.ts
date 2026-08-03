@@ -6,7 +6,7 @@ import {
   allVariableWeightLinesWeighed,
   realizedOrderTotal,
 } from '@/lib/orders/line';
-import { DELIVERY_FEE } from '@/lib/pricing';
+import { DELIVERY_FEE } from '@/lib/checkout/totals';
 import { roundMoney } from '@/lib/money';
 
 // Phase 4 — auto-settle at pickup. When an admin marks an order `Completed`

@@ -75,6 +75,7 @@ export const GET = withAdmin(async (req) => {
 
     const [rawUsers, orderAgg] = await Promise.all([
       UserModel.find(userQuery)
+        .select('+adminNote')
         .sort({ createdAt: -1 })
         .limit(10000)
         .lean<RawUserLean[]>()

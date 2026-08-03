@@ -6,8 +6,8 @@ import {
   MEMBER_DISCOUNT_RATE,
   TAX_RATE,
   fmtPrice,
-} from './pricing';
-import { computeOrderTotals, computeSubtotal, computeMemberDiscount } from './orders/builder';
+} from './totals';
+import { computeOrderTotals, computeSubtotal, computeMemberDiscount } from '../orders/builder';
 
 // The client-side twin of the server's order maths: this is what the cart and
 // checkout summaries show, while `orders/builder.ts` decides what Stripe

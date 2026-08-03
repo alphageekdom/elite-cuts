@@ -9,7 +9,7 @@ import {
   orderHasRealizedDifference,
   realizedOrderTotal,
 } from '@/lib/orders/line';
-import { DELIVERY_FEE } from '@/lib/pricing';
+import { DELIVERY_FEE } from '@/lib/checkout/totals';
 import {
   formatPhoneHref,
   formatShopCityStateZip,

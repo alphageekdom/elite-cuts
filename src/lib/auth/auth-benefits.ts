@@ -1,7 +1,7 @@
 import type { ShopSettings } from '@/models/ShopSettings';
 import { formatRedemptionRate } from '@/lib/rewards/calculator';
 import { formatReadyIn } from '@/lib/shop-settings/pickup-format';
-import { MEMBER_DISCOUNT_RATE } from '@/lib/pricing';
+import { MEMBER_DISCOUNT_RATE } from '@/lib/checkout/totals';
 
 // The numbered benefits on the two auth panels — sign-in and register.
 //

@@ -27,8 +27,8 @@ import HolidayInlineNote from '@/components/holiday/HolidayInlineNote';
 import { getHolidayForCut } from '@/lib/announcements/holidays';
 import { getSpecCells } from '@/lib/products/spec';
 import { getShopSettings } from '@/lib/shop-settings/queries';
-import { getShopHours } from '@/lib/shop-settings/hours-queries';
-import { getPickupNote, shopDateKey } from '@/lib/shop-settings/pickup-format';
+import { getPickupNoteNow } from '@/lib/shop-settings/pickup-note';
+import { shopDateKey } from '@/lib/shop-settings/pickup-format';
 import ReviewForm from './ReviewForm';
 import ReviewList, { type DetailReview, type UserTier } from './ReviewList';
 import { FORMER_CUSTOMER_NAME } from '@/lib/auth/account-deletion-constants';
@@ -305,18 +305,16 @@ export default async function ProductPage({ params }: PageProps) {
   // stock dot in the buy block and Arrival was a bare em-dash for most cuts.
   const specCells = getSpecCells(product);
 
-  // Pickup copy from settings + hours, not hard-coded. `getShopSettings` /
-  // `getShopHours` both dedupe within the request via React.cache.
-  const [shopSettings, shopHours] = await Promise.all([
+  // Pickup copy from settings + hours, not hard-coded. `getPickupNoteNow` owns
+  // the hours query and the composition; this page was the second place
+  // writing that pair out by hand, which is how two callers drift on the clock
+  // they pass. `getShopSettings` stays because the holiday key and the
+  // city/state line below need it — `React.cache` dedupes it against the one
+  // `getPickupNoteNow` makes internally, so this is still a single query.
+  const [shopSettings, pickup] = await Promise.all([
     getShopSettings(),
-    getShopHours(),
+    getPickupNoteNow(),
   ]);
-  const pickup = getPickupNote({
-    days: shopHours,
-    leadTime: shopSettings.leadTime,
-    timezone: shopSettings.timezone,
-    now: new Date(),
-  });
 
   // Holiday match for this cut, if a window is active. Computed once and
   // passed into HolidayInlineNote so the date math doesn't run twice.

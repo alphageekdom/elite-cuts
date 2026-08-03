@@ -35,6 +35,7 @@ export default async function AdminCustomersPage() {
   await connectDB();
 
   const rawUsers = await UserModel.find({ isAdmin: { $ne: true } })
+    .select('+adminNote')
     .sort({ createdAt: -1 })
     .limit(200)
     .lean()

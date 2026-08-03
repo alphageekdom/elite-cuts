@@ -50,7 +50,7 @@ export const GET = async (_request: NextRequest, { params }: Ctx) => {
     // and the internal dormancy bookkeeping fields, none of which any
     // customer-facing surface reads back via this endpoint.
     const projection = sessionUser.user?.isAdmin
-      ? '-password'
+      ? '-password +adminNote'
       : '-password -adminNote -stripeCustomerId -dormancyWarnedAt -lastActiveAt';
     const user = await User.findById(id).select(projection);
     if (!user) {

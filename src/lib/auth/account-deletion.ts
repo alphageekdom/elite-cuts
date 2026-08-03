@@ -29,6 +29,8 @@ type AuditWriteInput = ActorOptions & {
   userId: UserId;
   userEmailSnapshot: string;
   action: AccountDeletionAction;
+  /** Hard deletes only — see the field's comment on AccountDeletionAudit. */
+  stripeCustomerIdSnapshot?: string | null;
 };
 
 async function writeAudit({
@@ -37,6 +39,7 @@ async function writeAudit({
   action,
   performedBy,
   reason,
+  stripeCustomerIdSnapshot,
 }: AuditWriteInput): Promise<void> {
   await AccountDeletionAudit.create({
     userId,
@@ -44,6 +47,9 @@ async function writeAudit({
     action,
     performedBy: performedBy ?? null,
     ...(reason && reason.trim() ? { reason: reason.trim() } : {}),
+    ...(stripeCustomerIdSnapshot
+      ? { stripeCustomerIdSnapshot: stripeCustomerIdSnapshot.trim() }
+      : {}),
   });
 }
 
@@ -305,6 +311,10 @@ export async function hardDeleteUser(
         action: opts.actor === 'cron' ? 'cron_hard_delete' : 'admin_hard_delete',
         performedBy: opts.performedBy,
         reason: opts.reason,
+        // Written BEFORE the Stripe call below, deliberately. The whole point
+        // is to survive that call failing — snapshotting afterwards would
+        // record the id only in the cases where it wasn't needed.
+        stripeCustomerIdSnapshot: user.stripeCustomerId ?? null,
       });
     }
 

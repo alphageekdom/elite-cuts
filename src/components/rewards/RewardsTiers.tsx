@@ -1,7 +1,7 @@
 import CheckIcon from '@/components/ui/icons/CheckIcon';
 import Reveal from '@/components/ui/Reveal';
 import SectionHead from '@/components/ui/SectionHead';
-import { MEMBER_DISCOUNT_RATE } from '@/lib/pricing';
+import { MEMBER_DISCOUNT_RATE } from '@/lib/checkout/totals';
 import type { ShopSettings } from '@/models/ShopSettings';
 
 type Props = { settings: ShopSettings };

@@ -91,7 +91,16 @@ export const POST = withAdmin(async (req, _ctx, userId) => {
         const flat = flattenProductIssues(parsed.error.issues);
         const firstKey = Object.keys(flat)[0] ?? '_';
         const firstMessage = flat[firstKey] ?? 'Row is invalid';
-        const fallbackSlug = rec.slug?.trim() || (rec.name ? slugify(rec.name) : `row-${i + 1}`);
+        // Normalised, like every other row status. Error rows used to echo the
+        // raw cell, so a row failing on a missing description displayed
+        // `Ribeye-Steak` while the identical row displayed `ribeye-steak` once
+        // the description was supplied — the slug appearing to change as a side
+        // effect of an unrelated fix.
+        const fallbackSlug = rec.slug?.trim()
+          ? slugify(rec.slug.trim())
+          : rec.name
+            ? slugify(rec.name)
+            : `row-${i + 1}`;
         results.push({ index: i, status: 'error', slug: fallbackSlug, name: rec.name ?? '', error: firstMessage });
       } else {
         validated.push({ index: i, data: parsed.data });

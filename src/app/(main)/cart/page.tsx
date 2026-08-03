@@ -117,10 +117,15 @@ const CartPage = async () => {
             </h1>
             {/* Names checkout as where the pickup time gets chosen — that
                 control lives there, and saying so here stops the cart page
-                looking like it's missing one. */}
+                looking like it's missing one.
+                It used to open "Everything here is cut to order", which put the
+                freshness claim three times in one viewport: here, on every line
+                row, and in the summary badge strip. That lead-in was the one not
+                doing a job — the row label is per-line data, and the badge is
+                one of three. Dropping it leaves the sentence doing exactly what
+                this comment says it exists for. */}
             <p className='mt-4 max-w-[42ch] text-[15px] leading-relaxed text-ink-soft'>
-              Everything here is cut to order. Look it over, then pick your
-              pickup time at checkout.
+              Look it over, then pick your pickup time at checkout.
             </p>
           </div>
 
