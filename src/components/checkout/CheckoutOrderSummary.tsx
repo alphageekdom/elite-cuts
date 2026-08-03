@@ -6,7 +6,8 @@ import { useSession } from 'next-auth/react';
 
 import { useCartContext } from '@/context/CartContext';
 import { useCheckoutContext } from '@/context/CheckoutContext';
-import { computeTotals, DELIVERY_FEE, fmtPrice } from '@/lib/pricing';
+import { computeTotals, DELIVERY_FEE, fmtPrice, MEMBER_DISCOUNT_RATE } from '@/lib/pricing';
+import { findPriceChanges, repriceLines } from '@/lib/cart/reprice';
 import CheckoutTrustStrip from '@/components/checkout/CheckoutTrustStrip';
 import CheckoutRewardsRedeem from '@/components/checkout/CheckoutRewardsRedeem';
 import CheckoutPublicPromos from '@/components/checkout/CheckoutPublicPromos';
@@ -53,15 +54,27 @@ const CheckoutOrderSummary = () => {
   const isDelivery = fulfillment === 'delivery';
   const pointsApplied = pointsDiscount > 0;
 
+  // Cart lines carry the price snapshotted when they were added; the order
+  // builder re-reads the current product and calls that authoritative. If an
+  // admin repriced a cut in between, those two disagree — and until now the
+  // customer was shown the snapshot and charged the other one, with nothing
+  // reconciling them. The server stays authoritative; this makes the summary
+  // agree with it, and `priceChanges` says so out loud below.
+  //
+  // Returns the same array when nothing moved, so the memo below doesn't churn
+  // on every render of an ordinary cart.
+  const pricedItems = useMemo(() => repriceLines(cartItems), [cartItems]);
+  const priceChanges = useMemo(() => findPriceChanges(cartItems), [cartItems]);
+
   const totals = useMemo(
-    () => computeTotals(cartItems, {
+    () => computeTotals(pricedItems, {
       isLoggedIn,
       excludesMember: promoExcludesMember,
       promoDiscount,
       pointsDiscount,
       deliveryFee: isDelivery ? DELIVERY_FEE : 0,
     }),
-    [cartItems, isLoggedIn, promoExcludesMember, isDelivery, promoDiscount, pointsDiscount],
+    [pricedItems, isLoggedIn, promoExcludesMember, isDelivery, promoDiscount, pointsDiscount],
   );
 
   // Pre-discount, so applying a promo can't feed back into the effect that
@@ -80,7 +93,7 @@ const CheckoutOrderSummary = () => {
     if (!code) return;
     setPromo(code);
     const subtotalCents = Math.round(
-      cartItems.reduce((acc, l) => acc + l.price * l.quantity, 0) * 100,
+      pricedItems.reduce((acc, l) => acc + l.price * l.quantity, 0) * 100,
     );
     // Remember what this answer was computed against, so the effect below can
     // tell "already correct for this cart" from "needs recomputing".
@@ -90,7 +103,7 @@ const CheckoutOrderSummary = () => {
       const res = await fetch('/api/promos/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, subtotalCents }),
+        body: JSON.stringify({ code, subtotalCents, contactEmail: state.contactEmail }),
       });
       const data = (await res.json()) as
         | { valid: true; code: string; discountCents: number; promoId: string; excludesPoints: boolean; excludesMember: boolean }
@@ -226,7 +239,7 @@ const CheckoutOrderSummary = () => {
         </div>
 
         <div className='border-t border-line-soft'>
-          {cartItems.map((line) => {
+          {pricedItems.map((line) => {
             const lineTotal = fmtPrice(line.price * line.quantity);
             return (
               <div
@@ -360,6 +373,40 @@ const CheckoutOrderSummary = () => {
           )}
         </form>
 
+        {/* Shown only when the shop's price for a line moved after it was added
+            to the cart. The totals below are already the new ones — the server
+            was always going to charge these — so this explains a number that
+            would otherwise have silently changed under the customer between the
+            cart page and here.
+            `role="status"` rather than `alert`: it is informational and the
+            customer is not blocked, but it must still reach a screen reader,
+            because the whole point is that the figure moved without their
+            input. */}
+        {priceChanges.length > 0 && (
+          <div
+            role='status'
+            className='mt-5 rounded-sm border border-camel/40 bg-camel/8 px-4 py-3'
+          >
+            <p className='text-[13px] font-medium text-ink'>
+              {priceChanges.length === 1
+                ? 'A price changed since you added it'
+                : `${priceChanges.length} prices changed since you added them`}
+            </p>
+            <ul className='mt-1.5 space-y-1'>
+              {priceChanges.map((change) => (
+                <li key={change.productId} className='text-[12px] leading-relaxed text-ink-soft'>
+                  {change.name} — was{' '}
+                  <span className='font-mono line-through'>${fmtPrice(change.was)}</span>, now{' '}
+                  <span className='font-mono'>${fmtPrice(change.now)}</span>
+                </li>
+              ))}
+            </ul>
+            <p className='mt-1.5 text-[12px] leading-relaxed text-muted'>
+              Your total below reflects the new price.
+            </p>
+          </div>
+        )}
+
         <dl className='mt-5 space-y-2 border-t border-line-soft pt-5'>
           <div className='flex items-baseline justify-between text-[14px]'>
             <dt className='text-ink-soft'>Subtotal</dt>
@@ -373,7 +420,13 @@ const CheckoutOrderSummary = () => {
           </div>
           {isLoggedIn && totals.memberDiscount > 0 && (
             <div className='flex items-baseline justify-between text-[14px]'>
-              <dt className='text-ink-soft'>Member discount (5%)</dt>
+              {/* Derived, not hardcoded — the cart page and drawer both read
+                  the constant, and this was the last surface where changing
+                  MEMBER_DISCOUNT_RATE would have left a stale "5%" on screen
+                  beside a different number. */}
+              <dt className='text-ink-soft'>
+                Member discount ({MEMBER_DISCOUNT_RATE * 100}%)
+              </dt>
               <dd className='font-mono text-[13px] text-green'>
                 −${fmtPrice(totals.memberDiscount)}
               </dd>
@@ -418,9 +471,14 @@ const CheckoutOrderSummary = () => {
             </em>
           </span>
         </div>
+        {/* Matches the cart page and the cart drawer word for word. This was
+            the last site still saying "items"/"actual weight" after both cart
+            surfaces moved to "cuts"/"once they're weighed" — a shopper reads
+            all three within a minute of each other. */}
         {anyEstimated && (
           <p className='mt-2 text-[12px] leading-relaxed text-muted'>
-            Some items are priced by weight. Final price may vary slightly based on actual weight.
+            Some cuts are priced by weight — the final price may vary slightly
+            once they&apos;re weighed.
           </p>
         )}
       </div>

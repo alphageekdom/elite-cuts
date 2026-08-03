@@ -212,6 +212,22 @@ export const POST = async (request: NextRequest) => {
     // form — the picker is a one-shot server snapshot and never revalidates —
     // or, from a tampered request, 3am on a Monday the shop is shut. Checked
     // against the slots actually on offer now.
+    // A pickup order needs a slot. This used to be `if (body.pickupSlot)`
+    // alone, so the whole check was skippable by simply omitting the field —
+    // and the client permitted exactly that, because `isFulfillmentReady`
+    // returned `true` unconditionally for pickup. The result was an order the
+    // counter had no time for, contributing nothing to the schedule page's
+    // pickup buckets and printing a blank window on its own receipt.
+    //
+    // Delivery legitimately has no slot (it has no schedule at all), so the
+    // requirement is scoped to pickup rather than applied to every order.
+    if (!isDelivery && !body.pickupSlot) {
+      return NextResponse.json(
+        { message: 'Choose a pickup time before placing your order.' },
+        { status: 400 },
+      );
+    }
+
     if (body.pickupSlot) {
       const [slotSettings, slotHours] = await Promise.all([
         getShopSettings(),
@@ -308,6 +324,11 @@ export const POST = async (request: NextRequest) => {
       const promoResult = await validatePromo({
         code: body.promoCode,
         userId: userId ?? null,
+        // The order-placement check. This is the one that actually matters —
+        // the apply endpoint is advisory and a tampered client can skip it, so
+        // a guest's per-customer cap has to key off the same email the order is
+        // about to be written with.
+        guestEmail: userId ? null : (body.contactEmail ?? null),
         subtotalCents: Math.round(subtotal * 100),
         isMember: Boolean(userId),
       });

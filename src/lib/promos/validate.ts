@@ -14,6 +14,13 @@ import Promo, {
 export type ValidatePromoInput = {
   code: string;
   userId?: string | Types.ObjectId | null;
+  /**
+   * The email typed at checkout, for a guest with no `userId`. Keys the
+   * per-customer and first-order caps that guests used to skip entirely.
+   * Ignored when `userId` is present — an account is the stronger key.
+   * Unverified by design; see the comment at the check itself.
+   */
+  guestEmail?: string | null;
   subtotalCents: number;
   // True when the customer is a logged-in member and the 5% member discount
   // would otherwise apply. Drives the post-member-discount base for percent
@@ -54,14 +61,42 @@ export async function validatePromo(
     return { valid: false, reason: 'min_subtotal' };
   }
 
-  if (input.userId) {
+  // Who this customer is, for the two per-customer caps below.
+  //
+  // Both checks used to sit inside `if (input.userId)`, so a guest — who passes
+  // `userId: null` — skipped them entirely: a first-order-only code could be
+  // redeemed by guests without limit, as often as they liked. The global
+  // `usageLimit` still bounded a capped code, so an *uncapped* one was the
+  // fully exposed case.
+  //
+  // Guests are keyed on the checkout email, which the order already stores at
+  // `guestContact.email`.
+  //
+  // Be clear about what this is: the email is **never verified anywhere in this
+  // app**, so a determined guest defeats it by typing a different address. It is
+  // a speed bump, not a control. That is judged the right trade at portfolio
+  // scale — the alternative that would actually enforce is requiring an account
+  // to redeem, which costs a guest-checkout path the shop deliberately built.
+  // Do not describe this as enforcement in copy or in a commit message.
+  const customerFilter: Record<string, unknown> | null = input.userId
+    ? { user: input.userId }
+    : input.guestEmail?.trim()
+      ? // Anonymised orders are deliberately still counted. Deletion keeps
+        // `guestContact.email` (it clears the address and notes, not the
+        // contact), and a purged customer's past redemption was still a real
+        // redemption — forgetting it would hand a fresh allowance to anyone who
+        // deletes their account.
+        { 'guestContact.email': input.guestEmail.trim().toLowerCase() }
+      : null;
+
+  if (customerFilter) {
     if (promo.firstOrderOnly) {
       // Cancelled orders don't count as a prior order, matching the
       // per-customer branch below. A paid-then-cancelled first order used to
       // block first-order codes permanently, even though its promo seat had
       // already gone back to the pool.
       const paidCount = await Order.countDocuments({
-        user: input.userId,
+        ...customerFilter,
         isPaid: true,
         orderStatus: { $ne: 'Cancelled' },
       });
@@ -74,7 +109,7 @@ export async function validatePromo(
       // never block the customer from re-trying the code on a fresh
       // attempt. Matches the isPaid gate the firstOrderOnly branch uses.
       const usedCount = await Order.countDocuments({
-        user: input.userId,
+        ...customerFilter,
         promoId: promo._id,
         isPaid: true,
         orderStatus: { $ne: 'Cancelled' },

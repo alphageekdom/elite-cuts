@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as {
       code?: unknown;
       subtotalCents?: unknown;
+      contactEmail?: unknown;
     };
     const code = typeof body.code === 'string' ? body.code.trim() : '';
     const subtotalCents =
@@ -56,9 +57,17 @@ export async function POST(request: NextRequest) {
     }
 
     const sessionUser = await getSessionUser();
+    // A guest's email keys the per-customer caps. Advisory only — this endpoint
+    // exists so the chip strip and the promo field can answer before the order
+    // is placed, and a tampered client can simply not call it. The binding check
+    // is the identical one in the checkout-session route.
+    const guestEmail =
+      typeof body.contactEmail === 'string' ? body.contactEmail : null;
+
     const result = await validatePromo({
       code,
       userId: sessionUser?.userId ?? null,
+      guestEmail: sessionUser?.userId ? null : guestEmail,
       subtotalCents,
       isMember: Boolean(sessionUser?.userId),
     });

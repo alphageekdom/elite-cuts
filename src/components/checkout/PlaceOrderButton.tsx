@@ -8,6 +8,7 @@ import { useCartContext } from '@/context/CartContext';
 import { useCheckoutContext } from '@/context/CheckoutContext';
 import { useShopSettings } from '@/context/ShopSettingsContext';
 import { computeTotals, fmtPrice, DELIVERY_FEE } from '@/lib/pricing';
+import { repriceLines } from '@/lib/cart/reprice';
 import {
   isContactComplete,
   isDeliveryAddressComplete,
@@ -79,9 +80,13 @@ const PlaceOrderButton = () => {
   const shopSettings = useShopSettings();
   const shopAddress = formatShopAddress(shopSettings);
 
+  // Repriced for the same reason the summary is: the order builder charges the
+  // current product price, not the cart's snapshot. The figure printed on the
+  // button is the last number a customer reads before paying, so it above all
+  // must be the one they are charged.
   const total = useMemo(
     () =>
-      computeTotals(cartItems, {
+      computeTotals(repriceLines(cartItems), {
         isLoggedIn,
         excludesMember: promoExcludesMember,
         promoDiscount,
@@ -126,7 +131,13 @@ const PlaceOrderButton = () => {
                   ? `That address is outside our ${DELIVERY_RADIUS_MILES}-mile delivery area — switch to pickup to continue`
                   : fulfillment === 'delivery' && deliveryCheck === 'idle'
                     ? 'Checking whether we deliver to that address…'
-                    : '';
+                    : // The pickup counterpart. Sits last for the same reason
+                      // the delivery lines do — the slot picker renders below
+                      // payment — and is the visible half of closing the
+                      // slotless-pickup hole; the server refuses it too.
+                      fulfillment === 'pickup' && !pickupSlot.trim()
+                      ? 'Choose a pickup time to continue'
+                      : '';
 
   const handlePlaceOrder = async () => {
     if (!canSubmit || isSubmittingRef.current) return;
