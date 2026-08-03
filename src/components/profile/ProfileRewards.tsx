@@ -9,9 +9,8 @@ import {
   type TierInfo,
 } from '@/lib/rewards/calculator';
 import { orderRef } from '@/lib/orders/reference';
+import { MEMBER_DISCOUNT_RATE } from '@/lib/pricing';
 import type { PointsHistoryReason } from '@/models/User';
-
-const LOCKED_PERKS = ['15% off dry-aged cuts', "Quarterly butcher's box"];
 
 type Filter = 'all' | 'earned' | 'redeemed';
 
@@ -90,8 +89,18 @@ export default function ProfileRewards({
     ...(weekendMultiplier > 1
       ? [{ bold: `${weekendMultiplier}× points`, body: 'on weekend orders.' }]
       : []),
-    { bold: 'Early access', body: 'to weekly specials.' },
-    { bold: 'Free birthday cut', body: 'up to $50.' },
+    // The last two used to be "Early access to weekly specials" and "Free
+    // birthday cut, up to $50" — neither exists. Nothing in the app collects a
+    // birthday and "weekly specials" is not a concept. Replaced with the member
+    // discount, which is real and reads from the constant the cart and checkout
+    // summaries label the same line with, so the two cannot drift.
+    {
+      // "applied automatically", not "on every order" — a promo carrying
+      // `excludesMember` suppresses it, so the mechanism is universal, the
+      // coverage isn't.
+      bold: `${MEMBER_DISCOUNT_RATE * 100}% member discount`,
+      body: 'applied automatically at checkout.',
+    },
   ];
 
   const atMax = tier.nextTier === null;
@@ -228,15 +237,21 @@ export default function ProfileRewards({
                   >
                     <div className='h-full rounded-full bg-linear-to-r from-oxblood to-camel' style={{ width: `${progressPct}%` }} />
                   </div>
+                  {/* Both branches used to promise 15% off dry-aged, first
+                      dibs on Wagyu and a quarterly butcher's box on reaching
+                      the tier. None exists, and nothing unlocks at any tier —
+                      `currentTier` gates no behaviour in this app. */}
                   <p className='mt-3.5 text-[13px] leading-relaxed text-cream/70'>
                     Reach{' '}
                     <strong className='font-medium text-cream'>{nextTierLabel}</strong>{' '}
-                    to unlock 15% off dry-aged orders, first dibs on Wagyu, and a quarterly butcher&apos;s box.
+                    to mark what you&apos;ve earned this year. Every perk below
+                    already applies to your orders.
                   </p>
                 </>
               ) : (
                 <p className='text-[13px] leading-relaxed text-cream/70'>
-                  You&apos;ve reached the top tier. All perks are unlocked — enjoy 15% off dry-aged orders, first dibs on Wagyu, and a quarterly butcher&apos;s box.
+                  You&apos;ve reached the top tier — the most the counter can
+                  recognise. Every perk below applies to your orders.
                 </p>
               )}
               {periodEndLabel && (
@@ -254,16 +269,26 @@ export default function ProfileRewards({
             <h2 className='font-display text-xl font-medium tracking-tight leading-tight mb-1'>
               Your <em className='font-normal italic text-oxblood'>perks</em>
             </h2>
+            {/* Dropped the leading "Unlocked." — it only read as meaningful
+                against the padlocked list that sat below this one, and with
+                that gone it implies a locked set the shop doesn't have. */}
             <p className='text-[13px] text-muted'>
               {pointsExpiryMonths > 0
-                ? `Unlocked. Points expire after ${pointsExpiryMonths} months.`
-                : 'Unlocked. Your points never expire.'}
+                ? `Points expire after ${pointsExpiryMonths} months.`
+                : 'Your points never expire.'}
             </p>
           </div>
 
           <ul className='flex flex-col'>
+            {/* The padlocked list that used to follow this one is gone. It
+                showed "15% off dry-aged cuts" and "Quarterly butcher's box"
+                under a MASTER CUT chip, promising they unlock at the top tier.
+                Nothing unlocks at any tier — `currentTier` gates no behaviour
+                in this app — and neither perk exists in the first place. The
+                trailing `last:border-b-0` is what the removed block used to
+                provide by having no bottom border of its own. */}
             {unlockedPerks.map((perk) => (
-              <li key={perk.bold} className='flex items-start gap-3 border-b border-line-soft py-3 text-sm leading-snug text-ink-soft'>
+              <li key={perk.bold} className='flex items-start gap-3 border-b border-line-soft py-3 text-sm leading-snug text-ink-soft last:border-b-0 last:pb-0'>
                 <span className='mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-green text-cream'>
                   <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={3} strokeLinecap='round' strokeLinejoin='round' className='h-2.75 w-2.75' aria-hidden>
                     <polyline points='20 6 9 17 4 12' />
@@ -271,20 +296,6 @@ export default function ProfileRewards({
                 </span>
                 <span>
                   <strong className='font-medium text-ink'>{perk.bold}</strong>{' '}{perk.body}
-                </span>
-              </li>
-            ))}
-            {LOCKED_PERKS.map((perk) => (
-              <li key={perk} className='flex items-start gap-3 py-3 text-sm leading-snug text-ink-soft last:pb-0'>
-                <span className='mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-cream-deep text-muted'>
-                  <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2} strokeLinecap='round' strokeLinejoin='round' className='h-2.5 w-2.5' aria-hidden>
-                    <rect x='3' y='11' width='18' height='11' rx='2' />
-                    <path d='M7 11V7a5 5 0 0110 0v4' />
-                  </svg>
-                </span>
-                <span className='flex flex-wrap items-center gap-2'>
-                  <strong className='font-medium'>{perk}</strong>
-                  <span className='rounded bg-cream-deep px-1.5 py-0.5 font-mono text-[10px] tracking-[0.04em] text-muted'>MASTER CUT</span>
                 </span>
               </li>
             ))}

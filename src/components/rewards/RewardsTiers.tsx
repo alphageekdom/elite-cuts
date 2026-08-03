@@ -1,6 +1,7 @@
 import CheckIcon from '@/components/ui/icons/CheckIcon';
 import Reveal from '@/components/ui/Reveal';
 import SectionHead from '@/components/ui/SectionHead';
+import { MEMBER_DISCOUNT_RATE } from '@/lib/pricing';
 import type { ShopSettings } from '@/models/ShopSettings';
 
 type Props = { settings: ShopSettings };
@@ -19,32 +20,53 @@ export default function RewardsTiers({ settings }: Props) {
   const master = settings.masterCutThreshold;
   const weekend = settings.weekendMultiplier;
 
-  const regularPerks = [
-    `Earn ${ppd} per $1 spent`,
-    'Save cuts for quick reorder',
-    'Order history & quick reorder',
-    'Free in-store pickup',
-  ];
   // The shop-wide weekend multiplier applies to every tier when it's > 1;
   // we don't claim a tier-specific bonus because no code path actually
   // enforces one. Listing the real, working multiplier keeps the public
   // marketing aligned with the configured reality.
   const weekendPerk = weekend > 1 ? `Earn ${weekend}× on weekend orders` : null;
 
-  const connoisseurPerks = [
+  // Every line below traces to a real code path or a live setting. That was
+  // not true until 2026-08-03: this table advertised a free birthday cut (no
+  // surface anywhere collects a birthday), 15% off dry-aged (the only discount
+  // in the app is a flat `MEMBER_DISCOUNT_RATE` for any signed-in customer, on
+  // everything), first dibs on Wagyu allocations and a quarterly butcher's box
+  // (no mechanism for either), and early access to "weekly specials" (not a
+  // concept anywhere in the codebase).
+  //
+  // The measurement that settles it: `currentTier` is written by the tier
+  // recalculation and read by the display, and nothing else. No behaviour in
+  // this app differs by tier. So the perks are membership perks, and the tiers
+  // are the recognition — which is what the table now says, including the note
+  // beneath it. Don't add a line here without a code path behind it; the
+  // weekend comment above is the standard.
+  const memberPerks = [
+    `Earn ${ppd} per $1 spent`,
     ...(weekendPerk ? [weekendPerk] : []),
-    'Early access to weekly specials',
-    'Free birthday cut (up to $50)',
-    'All Regular tier perks',
+    // Reads from the same constant the cart and checkout summaries label this
+    // line with, so the marketing and the arithmetic cannot drift.
+    //
+    // "applied automatically", not "on every order": a promo carrying
+    // `excludesMember` suppresses it, and one of the seeded codes does exactly
+    // that. The mechanism is what's universal, not the coverage.
+    `${MEMBER_DISCOUNT_RATE * 100}% member discount, applied automatically`,
+    // Not "reorder" — that word survived the first pass of this cleanup and is
+    // unbacked: nothing in the customer UI re-places a past order, and every
+    // `reorder` in the tree is the admin inventory reorder-point. What does
+    // exist is add-to-cart on a saved cut, which is what this now says.
+    'Save cuts and add them to your cart in a tap',
+    'Full order history',
+    'Free in-store pickup',
+    // Real, and deliberately moved off the top tier: messaging is behind
+    // sign-in but carries no tier gate, so billing it as a Master Cut
+    // exclusive ("Direct line to our head butcher") was false about the
+    // exclusivity rather than about the feature.
+    'Message the counter direct',
   ];
-  const masterCutPerks = [
-    ...(weekendPerk ? [weekendPerk] : []),
-    '15% off all dry-aged cuts',
-    'First dibs on Wagyu allocations',
-    "Quarterly butcher's box (free)",
-    'Direct line to our head butcher',
-    'All Connoisseur tier perks',
-  ];
+
+  const regularPerks = memberPerks;
+  const connoisseurPerks = ['All Regular tier perks', 'Connoisseur status on your profile'];
+  const masterCutPerks = ['All Connoisseur tier perks', 'Master Cut status on your profile'];
 
   return (
     <section className='py-25'>
@@ -145,6 +167,20 @@ export default function RewardsTiers({ settings }: Props) {
             </article>
           </Reveal>
         </div>
+
+        {/* Says out loud what the lists above imply. Without it a reader sees
+            two tiers whose only new line is "status" and reasonably concludes
+            the page is broken; with it, the thinness is the message. Preferred
+            over padding the upper tiers back out with perks nobody built —
+            which is exactly how this table got into the state it was in. */}
+        <Reveal delayMs={200}>
+          <p className='mt-10 max-w-[62ch] text-sm leading-relaxed text-muted'>
+            Tiers track how much you&apos;ve earned with us. Every perk listed
+            above is available to every member today — we&apos;d rather show you
+            what the counter actually does than list benefits we haven&apos;t
+            built.
+          </p>
+        </Reveal>
       </div>
     </section>
   );
