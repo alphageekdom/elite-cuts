@@ -1,9 +1,9 @@
 'use client';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { TAX_RATE } from '@/lib/pricing';
+import { TAX_RATE } from '@/lib/checkout/totals';
 import { MAX_PER_LINE } from '@/lib/shop-settings/config';
-import { fmtPrice } from '@/lib/pricing';
+import { fmtPrice } from '@/lib/checkout/totals';
 import { getInitials } from '@/lib/format';
 import { DrawerHeader, DrawerBody, DrawerFooter } from '@/components/admin/DrawerChrome';
 import { labelCls } from '@/components/admin/AdminForm';
@@ -383,16 +383,34 @@ export default function OrderCreateDrawer({
               className="w-full px-3.5 py-2.5 rounded-md border border-line bg-paper text-[14px] outline-none focus:border-ink"
             />
           </div>
+          {/* A real datetime, not free text.
+              This was a `type="text"` box with the placeholder "e.g. Sat
+              10am–12pm", and three consumers parse `pickupSlot` as a date: the
+              receipt calls `new Date()` on it, the schedule page's pickup-slot
+              buckets call `.getHours()`, and the schedule query compares it
+              against an ISO string. Prose gave all three `Invalid Date` / `NaN`,
+              so an admin-created order contributed nothing to the pickup-slot
+              card and printed a raw string on its own receipt.
+              `datetime-local` emits exactly the `2026-08-04T16:00` shape the
+              customer checkout picker writes, so both paths now store one
+              format. Deliberately NOT the checkout day/slot picker: that one is
+              bounded by shop hours, and an admin booking a walk-in is by
+              definition already at the counter — they may need a time the
+              storefront would refuse. The freedom is kept; the unparseability
+              is not. */}
           <div>
             <label htmlFor="order-pickup-slot" className="block text-[12px] text-ink-soft mb-1">Pickup slot (optional)</label>
             <input
               id="order-pickup-slot"
-              type="text"
+              type="datetime-local"
               value={pickupSlot}
               onChange={(e) => setPickupSlot(e.target.value)}
-              placeholder="e.g. Sat 10am–12pm"
               className="w-full px-3.5 py-2.5 rounded-md border border-line bg-paper text-[14px] outline-none focus:border-ink"
             />
+            <p className="mt-1 text-[11px] text-muted">
+              Any time — not limited to shop hours. Leave blank if the customer
+              is waiting.
+            </p>
           </div>
         </section>
 
