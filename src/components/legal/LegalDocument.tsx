@@ -195,12 +195,15 @@ export default function LegalDocument({
 
       {/* Body */}
       {/* `max-w-3xl mx-auto` on the contents-less branch, not bare `max-w-3xl`.
-          Both legal pages currently pass `withContents`, so this branch has
-          never rendered — it was carried over from the pre-shell layout, which
-          centred its column with `mx-auto max-w-3xl`, and the `mx-auto` was
-          dropped in the move. A contents-less document would have hugged the
-          left edge at desktop with a screen of dead space beside it.
-          Nobody has seen this branch; if it is ever used, look at it. */}
+          Both legal pages pass `withContents`, so nothing renders this branch
+          today — it was carried over from the pre-shell layout, which centred
+          its column with `mx-auto max-w-3xl`, and the `mx-auto` was dropped in
+          the move.
+          Verified rather than reasoned about: rendering /terms without the prop
+          at 1440px puts the column at 329px left / 344px right (centred), and
+          reverting to bare `max-w-3xl` puts it at 0px left with 672px of dead
+          space beside it. So the branch is correct, and the bug it would have
+          shipped was real. */}
       <div
         className={`grid items-start gap-10 px-6 py-16 sm:px-8 lg:px-12 lg:py-20 ${
           withContents ? 'lg:grid-cols-[260px_1fr] lg:gap-16' : 'mx-auto max-w-3xl'
