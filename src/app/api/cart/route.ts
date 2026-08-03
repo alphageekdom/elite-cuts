@@ -94,10 +94,25 @@ const loadCart = async (userId: string) => {
   return cart;
 };
 
-// Returns the wire payload with the cart's updatedAt so the client can anchor
-// the 30-minute expiry timer against the canonical server timestamp.
-const respond = (items: CartLineWire[], updatedAt: Date | null) =>
-  NextResponse.json({ items, updatedAt: updatedAt?.toISOString() ?? null });
+// The cart payload: lines plus the cart's `updatedAt`, which anchors the
+// 30-minute expiry timer against the canonical server timestamp rather than the
+// browser's clock.
+const cartPayload = (items: CartLineWire[], updatedAt: Date | null) => ({
+  items,
+  updatedAt: updatedAt?.toISOString() ?? null,
+});
+
+// GET follows the list convention: `{ items, ...extras }`, with `updatedAt` as
+// the extra this list needs.
+const respondList = (items: CartLineWire[], updatedAt: Date | null) =>
+  NextResponse.json(cartPayload(items, updatedAt));
+
+// Mutations follow the mutation convention: `{ data, message? }`. All four verbs
+// returned the bare list shape until 2026-08-03, which is the one thing the
+// coding standard says a consumer should never have to check per-route — the
+// envelope is supposed to be readable from the verb alone.
+const respondMutation = (items: CartLineWire[], updatedAt: Date | null) =>
+  NextResponse.json({ data: cartPayload(items, updatedAt) });
 
 // Handles both populated ( { _id, ... } ) and unpopulated ( ObjectId string )
 // product references — Mongoose leaves the raw ObjectId when populate() hasn't
@@ -115,7 +130,7 @@ export const GET = withAuth(async (_req, _ctx, userId) => {
   try {
     const cart = await loadCart(userId);
     const json = cart.toJSON() as { items: CartLineWire[]; updatedAt: Date };
-    return respond(json.items, json.updatedAt);
+    return respondList(json.items, json.updatedAt);
   } catch (error) {
     console.error('[cart GET]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
@@ -175,7 +190,7 @@ export const POST = withAuth(async (request: NextRequest, _ctx, userId) => {
     await cart.save();
     await cart.populate(CART_PRODUCT_POPULATE);
     const json = cart.toJSON() as { items: CartLineWire[]; updatedAt: Date };
-    return respond(json.items, json.updatedAt);
+    return respondMutation(json.items, json.updatedAt);
   } catch (error) {
     console.error('[cart POST]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
@@ -220,7 +235,7 @@ export const PATCH = withAuth(async (request: NextRequest, _ctx, userId) => {
     await cart.save();
     await cart.populate(CART_PRODUCT_POPULATE);
     const json = cart.toJSON() as { items: CartLineWire[]; updatedAt: Date };
-    return respond(json.items, json.updatedAt);
+    return respondMutation(json.items, json.updatedAt);
   } catch (error) {
     console.error('[cart PATCH]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
@@ -238,7 +253,7 @@ export const DELETE = withAuth(async (request: NextRequest, _ctx, userId) => {
     if (!productId) {
       // Atomic clear-all — avoids concurrent-write conflicts from parallel deletes.
       await Cart.findOneAndUpdate({ user: userId }, { $set: { items: [] } });
-      return respond([], new Date());
+      return respondMutation([], new Date());
     }
 
     const cart = await loadCart(userId);
@@ -252,7 +267,7 @@ export const DELETE = withAuth(async (request: NextRequest, _ctx, userId) => {
 
     await cart.populate(CART_PRODUCT_POPULATE);
     const json = cart.toJSON() as { items: CartLineWire[]; updatedAt: Date };
-    return respond(json.items, json.updatedAt);
+    return respondMutation(json.items, json.updatedAt);
   } catch (error) {
     console.error('[cart DELETE]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
