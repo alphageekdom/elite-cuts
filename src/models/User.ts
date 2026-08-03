@@ -162,6 +162,18 @@ const UserSchema = new Schema<User>(
       type: String,
       trim: true,
       default: '',
+      // Admin-private: staff commentary about a customer, which that customer
+      // must never read back. Protection used to be N remembered projections
+      // rather than one default — every consumer happened to strip it, so
+      // nothing leaked, but a single future unprojected self-read would have
+      // reopened the leak the 2026-05-23 auth audit closed.
+      //
+      // Three readers legitimately need it and now say so with `+adminNote`:
+      // the admin branch of the user detail route, the customers CSV export,
+      // and the admin customers dashboard. Naming a `select: false` path in an
+      // inclusive projection also works — verified against a real Mongo, not
+      // assumed — but `+` is used where the query is otherwise unprojected.
+      select: false,
     },
     failedLoginAttempts: {
       type: Number,
@@ -192,6 +204,18 @@ const UserSchema = new Schema<User>(
     stripeCustomerId: {
       type: String,
       trim: true,
+      // Same reasoning as `adminNote` above. No call site needed changing:
+      // every reader already names this field in an inclusive projection
+      // (`savedCards.ts` selects it explicitly in all six of its reads, and the
+      // deletion cascade lists it), which overrides `select: false`.
+      //
+      // The parking-lot entry that filed this warned that the checkout-session
+      // route reads it off a plain `findById` and would start minting a
+      // duplicate Stripe Customer per checkout. That was wrong: the route calls
+      // `getOrCreateStripeCustomer`, which projects the field by name. Checked
+      // before changing anything, because the failure it predicted would have
+      // been invisible in stub mode.
+      select: false,
     },
     isDemo: {
       type: Boolean,
