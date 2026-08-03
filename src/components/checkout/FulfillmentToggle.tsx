@@ -134,12 +134,19 @@ const FulfillmentToggle = ({
             >
               Within {DELIVERY_RADIUS_MILES} miles of the shop
             </div>
+            {/* Was "${DELIVERY_FEE} · SAME DAY". Delivery has no schedule
+                anywhere in the app — no cutoff, no day picker, and no field on
+                `Order` recording when a delivery is due — so the shop could
+                neither honour nor even check that claim. The pickup tile beside
+                this one earns its timing line from `buildPickupDays`; this one
+                had nothing behind it. Do not restore a timing line here without
+                delivery scheduling to back it. */}
             <div
               className={`mt-1.5 font-mono text-[11px] tracking-[0.04em] ${
                 fulfillment === 'delivery' ? 'text-camel-soft' : 'text-muted'
               }`}
             >
-              ${DELIVERY_FEE} · SAME DAY
+              ${DELIVERY_FEE} DELIVERY FEE
             </div>
           </div>
         </button>
@@ -226,10 +233,19 @@ const FulfillmentToggle = ({
           </div>
         ) : (
           // Only reachable when the shop has no open day in the next week —
-          // every window past is handled by rolling to the next open day.
+          // every window past is handled by rolling to the next open day. On
+          // the live hours (6 of 7 days open) this branch never renders, which
+          // is why the wording below went unexamined for so long.
+          //
+          // It used to say "Choose local delivery". That was steering people
+          // toward the one fulfilment path with no schedule behind it, at
+          // exactly the times the shop is least able to serve it. Delivery is
+          // still selectable — it is a tile right above — but it is no longer
+          // recommended as the answer to "pickup is unavailable", because
+          // nothing about delivery is time-bound either.
           <p className='mb-8 text-[13px] text-muted'>
-            No pickup windows are open at the moment. Choose local delivery, or
-            give the shop a call and we&apos;ll sort a time.
+            No pickup windows are open at the moment. Give the shop a call and
+            we&apos;ll sort a time.
           </p>
         ))}
 

@@ -350,8 +350,19 @@ export default async function ConfirmationPage({ searchParams }: Props) {
                         No delivery address on file
                       </p>
                     )}
+                    {/* Was "${DELIVERY_FEE} · SAME DAY". Nothing in the app
+                        records, checks or honours a delivery day: `Order` stores
+                        `fulfillmentType` and `deliveryAddress` and no time of any
+                        kind, the checkout session route does no time handling,
+                        and no setting bounds delivery the way `leadTime` and
+                        `maxBookingWindow` bound pickup. So the promise was
+                        unbacked — and worst here, on the page a customer lands on
+                        *after paying*, where they can no longer act on it.
+                        Same class as the emailed confirmations, ready-order texts
+                        and weekend points bonus already retired. The fee is real,
+                        so it stays; the day does not. */}
                     <p className='mt-3 font-mono text-[11.5px] tracking-[0.06em] text-muted'>
-                      ${DELIVERY_FEE} · SAME DAY
+                      ${DELIVERY_FEE} DELIVERY FEE
                     </p>
                   </>
                 )}
