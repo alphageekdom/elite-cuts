@@ -15,13 +15,14 @@ vi.mock('@/config/database', () => ({
 
 const mocks = vi.hoisted(() => ({
   productFind: vi.fn(),
+  productBulkWrite: vi.fn(),
   orderInsertMany: vi.fn(),
   cardInsertMany: vi.fn(),
   shopHoursFindOne: vi.fn(),
 }));
 
 vi.mock('@/models/Product', () => ({
-  default: { find: mocks.productFind },
+  default: { find: mocks.productFind, bulkWrite: mocks.productBulkWrite },
 }));
 
 vi.mock('@/models/Order', () => ({
@@ -137,6 +138,7 @@ beforeEach(() => {
   mocks.cardInsertMany.mockImplementation(
     async (docs: Record<string, unknown>[]) => docs,
   );
+  mocks.productBulkWrite.mockResolvedValue({ modifiedCount: 0 });
 });
 
 describe('seedDemoOrders — qualifying window', () => {
@@ -246,7 +248,7 @@ describe('seedDemoOrders — documents', () => {
 
   it('totals each order as subtotal plus tax, rounded to cents', async () => {
     const { seedDemoOrders } = await import('./seed-customer');
-    const { TAX_RATE } = await import('@/lib/pricing');
+    const { TAX_RATE } = await import('@/lib/checkout/totals');
     await seedDemoOrders(DEMO_ID, NOW);
 
     const [docs] = mocks.orderInsertMany.mock.calls[0];
@@ -303,6 +305,66 @@ describe('seedDemoOrders — catalog resolution', () => {
       addressesSeeded: 0,
     });
     expect(result.pointsHistory).toEqual([]);
+  });
+});
+
+describe('seedDemoOrders — stock', () => {
+  // The seed stamps `paymentResult.status: 'Completed'` but used to leave
+  // `stockCount` alone, so `hasSettledPayment` answered true for orders that
+  // had never taken stock. The admin cancel path reads exactly that to decide
+  // whether to restock — so cancelling a seeded order ran `$inc` for units
+  // never removed, and the catalog gained inventory out of its own history.
+  it('takes the stock its seeded history represents', async () => {
+    const { seedDemoOrders } = await import('./seed-customer');
+    await seedDemoOrders(DEMO_ID, NOW);
+
+    expect(mocks.productBulkWrite).toHaveBeenCalledTimes(1);
+    const ops = mocks.productBulkWrite.mock.calls[0][0] as Array<{
+      updateOne: { filter: { _id: string }; update: unknown[] };
+    }>;
+    expect(ops.length).toBeGreaterThan(0);
+
+    // One op per distinct product, never one per line — a cut appearing in
+    // three seeded orders must be decremented once, by the summed quantity.
+    const ids = ops.map((op) => String(op.updateOne.filter._id));
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('sums quantities per product rather than issuing one write per line', async () => {
+    const { seedDemoOrders } = await import('./seed-customer');
+    await seedDemoOrders(DEMO_ID, NOW);
+
+    const ops = mocks.productBulkWrite.mock.calls[0][0] as Array<{
+      updateOne: { filter: { _id: string } };
+    }>;
+    const insertedDocs = mocks.orderInsertMany.mock.calls[0][0] as Array<{
+      orderItems: Array<{ product: unknown }>;
+    }>;
+    const distinctProducts = new Set(
+      insertedDocs.flatMap((d) => d.orderItems.map((l) => String(l.product))),
+    );
+    expect(ops.length).toBe(distinctProducts.size);
+  });
+
+  // A popular cut can legitimately appear in more seeded orders than it has
+  // units, because the history is generated against a snapshot that reserves
+  // nothing. Going negative would break the catalog's in-stock rendering.
+  it('floors the decrement at zero', async () => {
+    const { seedDemoOrders } = await import('./seed-customer');
+    await seedDemoOrders(DEMO_ID, NOW);
+
+    const ops = mocks.productBulkWrite.mock.calls[0][0] as Array<{
+      updateOne: { update: unknown[] };
+    }>;
+    expect(JSON.stringify(ops[0].updateOne.update)).toContain('$max');
+  });
+
+  it('writes nothing when no order survived catalog resolution', async () => {
+    mockCatalog([]); // every slug missing — every order dropped
+    const { seedDemoOrders } = await import('./seed-customer');
+    await seedDemoOrders(DEMO_ID, NOW);
+
+    expect(mocks.productBulkWrite).not.toHaveBeenCalled();
   });
 });
 

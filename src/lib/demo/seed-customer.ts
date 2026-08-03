@@ -10,7 +10,7 @@ import ShopHoursModel, {
   type ShopHoursDay,
 } from '@/models/ShopHours';
 import SavedCard from '@/models/SavedCard';
-import { TAX_RATE } from '@/lib/pricing';
+import { TAX_RATE } from '@/lib/checkout/totals';
 import { unitPrice } from '@/lib/products/pricing';
 import { computeAward } from '@/lib/rewards/calculator';
 import { DEMO_SHOP_SETTINGS } from './seed/settings';
@@ -148,6 +148,9 @@ export async function seedDemoOrders(
     : DEFAULT_DAYS;
 
   const docs: Record<string, unknown>[] = [];
+  // productId -> units this seeded history consumes. Drives the stock decrement
+  // after the insert; see the comment there for why it exists.
+  const takenByProduct = new Map<string, number>();
   const awards: { index: number; delta: number; createdAt: Date }[] = [];
 
   // Chronological, oldest first — the table is authored newest-first because
@@ -213,6 +216,14 @@ export async function seedDemoOrders(
       ? computeAward(subtotal, DEMO_SHOP_SETTINGS, placedAt)
       : 0;
 
+    // Accumulated here, where `lines` is still typed, rather than by re-walking
+    // `docs` afterwards — that array is `Record<string, unknown>[]`, so reading
+    // it back needs a cast that would silently outlive any change to the shape.
+    for (const line of lines) {
+      const key = String(line.product);
+      takenByProduct.set(key, (takenByProduct.get(key) ?? 0) + line.qty);
+    }
+
     docs.push({
       user: demoCustomerId,
       orderItems: lines,
@@ -267,6 +278,44 @@ export async function seedDemoOrders(
   // would otherwise stamp every order with "now" and collapse the history
   // into a single day, taking the habit stats and the ledger dates with it.
   const inserted = await Order.insertMany(docs, { timestamps: false });
+
+  // Take the stock these orders represent.
+  //
+  // The seed writes `paymentResult.status: 'Completed'` but used to leave
+  // `stockCount` untouched, so the seeded state was internally inconsistent:
+  // `hasSettledPayment` answers true for these orders, and the admin cancel path
+  // reads exactly that to decide whether to restock. Cancelling a seeded order
+  // therefore ran `$inc: { stockCount }` for stock that had never been taken,
+  // inflating the catalog — the demo minting inventory out of its own history.
+  //
+  // Bounded before (the nightly restore rewrites `stockCount` from the snapshot)
+  // but bounded is not correct, and an admin who cancels two seeded orders
+  // between resets sees the number climb. Decrementing here makes the seeded
+  // state match what a real order would have left behind, which is the thing the
+  // cancel path is entitled to assume.
+  //
+  // Floored at zero: the seeded history is generated against a snapshot that
+  // does not reserve stock, so a popular cut can legitimately appear in more
+  // seeded orders than it has units. Going negative would break the catalog's
+  // in-stock rendering for the sake of an arithmetic purity nothing reads.
+  if (takenByProduct.size > 0) {
+    await Product.bulkWrite(
+      [...takenByProduct].map(([productId, qty]) => ({
+        updateOne: {
+          filter: { _id: productId },
+          update: [
+            {
+              $set: {
+                stockCount: {
+                  $max: [0, { $subtract: ['$stockCount', qty] }],
+                },
+              },
+            },
+          ],
+        },
+      })),
+    );
+  }
 
   const pointsHistory: SeededPointsEntry[] = awards.map((award) => ({
     delta: award.delta,
