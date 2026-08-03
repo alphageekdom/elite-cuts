@@ -2,13 +2,18 @@
 
 import { useState } from 'react';
 
+// "Cut to order" used to sit at the end of this list, saying the same thing as
+// "Hand-cut daily" three items earlier — the site makes the freshness claim
+// eight times across five surfaces, and twice inside one scrolling strip was the
+// only place it repeated within a single element. Dropping it also makes the
+// "6-item set" comment below true again; it had been wrong since the seventh
+// item was added.
 const ITEMS = [
   { text: 'Hand-cut daily', italic: false },
   { text: 'Dry-aged beef', italic: true },
   { text: 'Local farms', italic: false },
   { text: 'Same-day pickup', italic: false },
   { text: 'Pasture-raised', italic: true },
-  { text: 'Cut to order', italic: false },
   { text: 'Custom orders welcome', italic: false },
 ] as const;
 

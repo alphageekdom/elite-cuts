@@ -67,9 +67,15 @@ const FeaturedProducts = async () => {
                 keep coming back for.
               </em>
             </h2>
+            {/* No freshness clause here. The homepage stated it three times in
+                one scroll — the marquee's "Hand-cut daily" above, this, and
+                About's founder rule below. This was the weakest of the three:
+                the sentence's actual content is the second clause, and a lineup
+                that changes with the case already implies it. The other two
+                stay — a two-word tagline, and one leg of a three-part sentence
+                that would read short without it. */}
             <p className='max-w-[34ch] pb-2 text-[15px] leading-relaxed text-ink-soft'>
-              A few counter favorites, cut fresh the day you pick them up. The
-              lineup changes as the case does.
+              A few counter favorites. The lineup changes as the case does.
             </p>
           </div>
         </Reveal>
