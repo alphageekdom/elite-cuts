@@ -7,7 +7,7 @@ import { useHandleAddToCart } from '@/hooks/useHandleAddToCart';
 import { useCartContext } from '@/context/CartContext';
 import { productImageSrc } from '@/lib/format';
 import { productPath } from '@/lib/products/paths';
-import { fmtPrice } from '@/lib/pricing';
+import { fmtPrice } from '@/lib/checkout/totals';
 import PlusIcon from '@/components/ui/icons/PlusIcon';
 import type { SerializedProduct } from '@/models/Product';
 

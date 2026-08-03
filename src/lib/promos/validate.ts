@@ -4,7 +4,7 @@ import { Types } from 'mongoose';
 
 import connectDB from '@/config/database';
 // The one rate — a local copy could drift from what checkout actually applies.
-import { MEMBER_DISCOUNT_RATE } from '@/lib/pricing';
+import { MEMBER_DISCOUNT_RATE } from '@/lib/checkout/totals';
 import Order from '@/models/Order';
 import Promo, {
   type PromoDocument,

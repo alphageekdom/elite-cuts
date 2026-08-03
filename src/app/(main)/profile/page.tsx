@@ -29,7 +29,7 @@ import { VISIBLE_PRODUCT_FILTER } from '@/lib/products/constants';
 import { PUBLIC_PRODUCT_PROJECTION } from '@/lib/products/public-projection';
 import type { ProfileOrder } from '@/types/profile';
 import { orderHasRealizedDifference, realizedOrderTotal } from '@/lib/orders/line';
-import { DELIVERY_FEE } from '@/lib/pricing';
+import { DELIVERY_FEE } from '@/lib/checkout/totals';
 import type { SerializedAddress } from '@/types/address';
 import ProfileSidebar from '@/components/profile/dashboard/ProfileSidebar';
 import OverviewTab from '@/components/profile/dashboard/OverviewTab';

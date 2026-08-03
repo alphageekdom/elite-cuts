@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { useCartContext } from '@/context/CartContext';
 import { useCheckoutContext } from '@/context/CheckoutContext';
 import { useShopSettings } from '@/context/ShopSettingsContext';
-import { computeTotals, fmtPrice, DELIVERY_FEE } from '@/lib/pricing';
+import { computeTotals, fmtPrice, DELIVERY_FEE } from '@/lib/checkout/totals';
 import { repriceLines } from '@/lib/cart/reprice';
 import {
   isContactComplete,

@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { useCartContext, type CartLine } from '@/context/CartContext';
 import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
 import { productImageSrc } from '@/lib/format';
-import { fmtPrice } from '@/lib/pricing';
+import { fmtPrice } from '@/lib/checkout/totals';
 import { LOW_STOCK_THRESHOLD, MAX_PER_LINE } from '@/lib/shop-settings/config';
 import { FOCUS_RING } from '@/lib/styles';
 

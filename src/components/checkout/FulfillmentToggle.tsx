@@ -10,7 +10,7 @@ import type { PickupDay } from '@/lib/shop-settings/pickup-slots';
 import { BLOCK_LABEL_CLASS } from '@/components/checkout/checkoutStyles';
 import DeliveryAddressForm from '@/components/checkout/DeliveryAddressForm';
 import { DELIVERY_RADIUS_MILES } from '@/lib/shop-settings/config';
-import { DELIVERY_FEE } from '@/lib/pricing';
+import { DELIVERY_FEE } from '@/lib/checkout/totals';
 
 type FulfillmentToggleProps = {
   // Built on the server from real shop hours — see pickup-slots.ts for why

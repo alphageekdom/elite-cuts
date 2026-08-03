@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 
 import { useCartContext } from '@/context/CartContext';
 import { useCheckoutContext } from '@/context/CheckoutContext';
-import { computeTotals, DELIVERY_FEE, fmtPrice, MEMBER_DISCOUNT_RATE } from '@/lib/pricing';
+import { computeTotals, DELIVERY_FEE, fmtPrice, MEMBER_DISCOUNT_RATE } from '@/lib/checkout/totals';
 import { findPriceChanges, repriceLines } from '@/lib/cart/reprice';
 import CheckoutTrustStrip from '@/components/checkout/CheckoutTrustStrip';
 import CheckoutRewardsRedeem from '@/components/checkout/CheckoutRewardsRedeem';

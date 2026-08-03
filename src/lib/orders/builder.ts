@@ -2,7 +2,7 @@ import type { Types } from 'mongoose';
 
 import Cart from '@/models/Cart';
 import Product from '@/models/Product';
-import { MEMBER_DISCOUNT_RATE, DELIVERY_FEE, TAX_RATE } from '@/lib/pricing';
+import { MEMBER_DISCOUNT_RATE, DELIVERY_FEE, TAX_RATE } from '@/lib/checkout/totals';
 import { roundMoney } from '@/lib/money';
 import { unitPrice } from '@/lib/products/pricing';
 import type { PricingType } from '@/lib/products/constants';

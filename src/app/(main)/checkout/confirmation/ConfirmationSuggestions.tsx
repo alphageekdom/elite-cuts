@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 import { FOCUS_RING } from '@/lib/styles';
 import { productPath } from '@/lib/products/paths';
-import { fmtPrice } from '@/lib/pricing';
+import { fmtPrice } from '@/lib/checkout/totals';
 import type { SerializedProduct } from '@/models/Product';
 
 type Props = {

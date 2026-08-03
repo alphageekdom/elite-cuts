@@ -24,7 +24,7 @@ import {
   computeTotals,
   fmtPrice,
   MEMBER_DISCOUNT_RATE,
-} from '@/lib/pricing';
+} from '@/lib/checkout/totals';
 import { formatCartCount } from '@/lib/cart/counts';
 import { computeAward } from '@/lib/rewards/calculator';
 import { FOCUS_RING } from '@/lib/styles';

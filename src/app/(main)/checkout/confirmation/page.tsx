@@ -8,7 +8,7 @@ import Product, { type SerializedProduct } from '@/models/Product';
 import { PUBLIC_PRODUCT_PROJECTION } from '@/lib/products/public-projection';
 import { convertToSerializableObject } from '@/lib/convertToObject';
 import { getSessionUser } from '@/lib/auth/session';
-import { DELIVERY_FEE } from '@/lib/pricing';
+import { DELIVERY_FEE } from '@/lib/checkout/totals';
 import { formatOrderCount } from '@/lib/cart/counts';
 import { computeAward } from '@/lib/rewards/calculator';
 import {

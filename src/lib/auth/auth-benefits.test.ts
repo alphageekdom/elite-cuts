@@ -5,7 +5,7 @@ import {
   buildRegisterBenefits,
   type AuthBenefitSettings,
 } from './auth-benefits';
-import { MEMBER_DISCOUNT_RATE } from '@/lib/pricing';
+import { MEMBER_DISCOUNT_RATE } from '@/lib/checkout/totals';
 
 const base: AuthBenefitSettings = {
   pointsPerDollar: 1,

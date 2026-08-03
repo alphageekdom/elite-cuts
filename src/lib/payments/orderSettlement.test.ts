@@ -36,7 +36,7 @@ vi.mock('@/lib/payments/stripe', () => ({
   dollarsToCents: (n: number) => Math.round(n * 100),
 }));
 
-vi.mock('@/lib/pricing', () => ({ DELIVERY_FEE: 8 }));
+vi.mock('@/lib/checkout/totals', () => ({ DELIVERY_FEE: 8 }));
 
 import { runOrderSettlement } from './orderSettlement';
 

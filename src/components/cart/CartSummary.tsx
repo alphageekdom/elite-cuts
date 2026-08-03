@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 
 import { useCartContext } from '@/context/CartContext';
 import { useShopSettings } from '@/context/ShopSettingsContext';
-import { computeTotals, fmtPrice, MEMBER_DISCOUNT_RATE } from '@/lib/pricing';
+import { computeTotals, fmtPrice, MEMBER_DISCOUNT_RATE } from '@/lib/checkout/totals';
 import { countCartCuts } from '@/lib/cart/counts';
 import { formatReadyIn } from '@/lib/shop-settings/pickup-format';
 import { formatDaysUntil } from '@/lib/announcements/holidays';

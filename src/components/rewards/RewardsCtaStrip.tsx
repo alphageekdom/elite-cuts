@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 import ArrowIcon from '@/components/ui/icons/ArrowIcon';
 import Reveal from '@/components/ui/Reveal';
-import { MEMBER_DISCOUNT_RATE } from '@/lib/pricing';
+import { MEMBER_DISCOUNT_RATE } from '@/lib/checkout/totals';
 
 export default function RewardsCtaStrip() {
   return (
