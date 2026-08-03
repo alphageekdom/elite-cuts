@@ -27,10 +27,16 @@ import { getShopSettings } from '@/lib/shop-settings/queries';
 // keep your name; an audit row keeps your email). The dormancy sweep, which
 // deletes accounts for inactivity, was disclosed nowhere. All of that is
 // corrected below.
-// Moves whenever this page's substance changes. 2026-08-02: the deletion
-// section gained the "signing up again won't hand your old orders back" clause,
-// and "saved cards" became true of the Stripe copy as well as the local one.
-const LAST_UPDATED = '2026-08-02';
+// Moves whenever this page's substance changes.
+//   2026-08-02 — the deletion section gained the "signing up again won't hand
+//     your old orders back" clause, and "saved cards" became true of the Stripe
+//     copy as well as the local one.
+//   2026-08-03 — the deletion section now states the page's own update rule
+//     (it was honoured but never written down, so it lived only in a comment),
+//     and discloses the payment-processor reference retained on the audit row.
+// The rule is now on the page in the reader's words, so this constant must move
+// with any substantive edit below — that is a promise, not a convention.
+const LAST_UPDATED = '2026-08-03';
 
 export async function generateMetadata(): Promise<Metadata> {
   const { shopName } = await getShopSettings();
@@ -300,7 +306,10 @@ export default async function PrivacyPage() {
             from any account. And a short audit record of the deletion is kept
             indefinitely so the action can be accounted for afterwards — each
             entry carries your email, and where an admin deleted the account
-            rather than you, the reason they typed is kept on it too.
+            rather than you, the reason they typed is kept on it too. If you
+            ever saved a card, it also carries the reference our payment
+            processor knew you by — kept so that if deleting your card at their
+            end ever fails, we can still find and remove it by hand.
           </LegalParagraph>
           <LegalParagraph>
             Everything else goes: the account itself, your cart, your saved
@@ -322,6 +331,17 @@ export default async function PrivacyPage() {
               the clock.
             </LegalParagraph>
           )}
+          {/* The Terms page makes this promise in its own words and honours it.
+              Privacy honoured the same discipline but never told the reader,
+              so the commitment lived only in a code comment — which is not
+              somewhere a reader can hold you to. Saying it here is also what
+              obliges `LAST_UPDATED` above to move with any edit to this file. */}
+          <LegalParagraph>
+            If any of this changes, the date at the top of this page moves with
+            it. There&apos;s no mailing list to announce it on — the shop
+            doesn&apos;t send email — so that date is the honest signal, and
+            it&apos;s the one to check.
+          </LegalParagraph>
         </>
       ),
     },

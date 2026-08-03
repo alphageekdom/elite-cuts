@@ -207,6 +207,29 @@ describe('hardDeleteUser — personal-data cascade', () => {
     expect(stripeOrder).toBeLessThan(userOrder);
   });
 
+  it('snapshots the Stripe id onto the audit row, before calling Stripe', async () => {
+    // The recovery path for the case the ordering test above cannot close.
+    // `deleteStripeCustomer` never throws by design, so a Stripe timeout leaves
+    // the Customer alive while the local cascade completes and destroys the
+    // only pointer to it. Persisting the id on the append-only audit row is
+    // what makes that orphan findable by hand afterwards.
+    //
+    // The write must come BEFORE the Stripe call, or it would record the id
+    // only in the runs where it turns out not to be needed.
+    await hardDeleteUser(USER_ID, { actor: 'admin' });
+
+    expect(mocks.auditCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'admin_hard_delete',
+        stripeCustomerIdSnapshot: 'cus_test_dana',
+      }),
+    );
+
+    const auditOrder = mocks.auditCreate.mock.invocationCallOrder[0];
+    const stripeOrder = mocks.deleteStripeCustomer.mock.invocationCallOrder[0];
+    expect(auditOrder).toBeLessThan(stripeOrder);
+  });
+
   it('stamps the orders it anonymises so they cannot be claimed back', async () => {
     // Anonymisation leaves `user: null` plus a real email in `guestContact`,
     // which is byte-identical to a genuine guest checkout. Without the stamp,
