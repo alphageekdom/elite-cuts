@@ -47,6 +47,13 @@ type RawProduct = {
 type RawOrder = {
   _id: { toString(): string };
   user: { _id: { toString(): string }; name: string; email: string; isDemo?: boolean } | null;
+  // A guest order has no `user` but does know who placed it. Both shapes exist:
+  // `guestContact` is the durable record written at checkout, `contactName` /
+  // `contactEmail` the flatter legacy pair. Read both so neither era shows as
+  // "Unknown".
+  guestContact?: { name?: string; email?: string } | null;
+  contactName?: string;
+  contactEmail?: string;
   orderItems: Array<{
     name: string;
     image: string;
@@ -165,8 +172,19 @@ export function serializeOrderRow(order: RawOrder): OrderTableRow {
   return {
     id: idStr,
     orderRef: orderRef(idStr),
-    customerName: order.user?.name ?? 'Unknown',
-    customerEmail: order.user?.email ?? '',
+    // Guest orders used to print "Unknown" with a "U" avatar even though the
+    // shop knows exactly who placed them — the name and email were typed at
+    // checkout and sit on the order. The dashboard home fixed this for its own
+    // cut list in July; this is the same fallback chain, and because the orders
+    // tab and every CSV export read through this serializer, fixing it here
+    // fixes all of them at once.
+    //
+    // "Guest" rather than "Unknown" as the last resort: an order with no
+    // contact at all is a guest order missing its contact, not a mystery.
+    customerName:
+      order.user?.name ?? order.guestContact?.name ?? order.contactName ?? 'Guest',
+    customerEmail:
+      order.user?.email ?? order.guestContact?.email ?? order.contactEmail ?? '',
     isDemo: Boolean(order.user?.isDemo),
     items,
     subtotal: order.subtotal,
