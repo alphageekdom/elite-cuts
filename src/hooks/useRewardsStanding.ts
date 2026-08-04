@@ -27,7 +27,16 @@ export type RewardsStanding = {
 let cache: { userId: string; promise: Promise<RewardsStanding | null> } | null =
   null;
 
-function loadStanding(userId: string): Promise<RewardsStanding | null> {
+/**
+ * Exported for tests only — no runtime consumer outside this module.
+ *
+ * The hook itself needs a DOM and this repo has no component-test setup, but
+ * the cache rules below are plain module logic and are where the risk actually
+ * sits: the user-keying was broken once during implementation and caught by
+ * hand. The sibling `CartContext` leak was this same class of bug and shipped
+ * for months because nothing pinned it.
+ */
+export function loadStanding(userId: string): Promise<RewardsStanding | null> {
   if (cache?.userId === userId) return cache.promise;
   const promise = fetch('/api/me/rewards')
     .then((res) => (res.ok ? res.json() : Promise.reject(new Error('failed'))))

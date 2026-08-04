@@ -1,9 +1,16 @@
 import { defineConfig } from 'vitest/config';
 
-// Pure-Node test environment — no DOM, no React. Tests in this project
-// exercise business-logic helpers (rewards math, Zod schemas, the atomic
-// order-completion claim). When a component test spec lands, that suite
-// will get its own config with jsdom + the React plugin layered on top.
+// Pure-Node test environment — no DOM, and nothing renders. Tests in this
+// project exercise plain functions: business-logic helpers (rewards math, Zod
+// schemas, the atomic order-completion claim) and, since 2026-08-04, module
+// functions that happen to live beside a hook (`useRewardsStanding`'s cache).
+//
+// That last case means React *is* in the module graph — importing a
+// `'use client'` module pulls it in — so the old "no React" here is no longer
+// true. It loads fine and nothing calls it; the boundary that actually holds
+// is that no component is rendered and no DOM exists. When a component test
+// spec lands, that suite gets its own config with jsdom + the React plugin
+// layered on top.
 //
 // `resolve.tsconfigPaths: true` is Vite's native replacement for the
 // vite-tsconfig-paths plugin and resolves the `@/` aliases from

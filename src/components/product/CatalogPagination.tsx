@@ -32,6 +32,23 @@ const NAV_BTN =
 const NAV_BTN_DISABLED =
   'inline-flex items-center gap-2 rounded-full border border-line px-4.5 py-2.5 text-[13px] font-medium text-ink opacity-30 pointer-events-none';
 
+// The two disabled controls below carry `role='link'`, and it is load-bearing
+// rather than decoration. `aria-disabled` is not a global attribute — it is
+// only exposed on roles that support it, and a bare `<span>` maps to `generic`,
+// which does not. Without a role the attribute is inert: a screen reader read
+// "Previous" as plain text, indistinguishable from static copy, while sighted
+// users saw it dimmed to 30%. Measured against a control rig — `<button
+// disabled>`, `<button aria-disabled>` and `<a href aria-disabled>` all report
+// `[disabled]` in the accessibility tree; the bare span reported no role and no
+// state at all.
+//
+// Deliberately not focusable. A disabled control that takes a tab stop and then
+// does nothing is worse than one that doesn't, and the "Page 1 of 4" line above
+// already states the position. Every other `aria-disabled` in this app sits on
+// a real `<button>`; this file was the only place it sat on something that
+// could not carry it.
+const NAV_DISABLED_ROLE = 'link' as const;
+
 const CatalogPagination = ({
   page,
   totalPages,
@@ -55,7 +72,11 @@ const CatalogPagination = ({
 
       <div className='inline-flex items-center gap-1'>
         {prevDisabled ? (
-          <span className={NAV_BTN_DISABLED} aria-disabled='true'>
+          <span
+            className={NAV_BTN_DISABLED}
+            role={NAV_DISABLED_ROLE}
+            aria-disabled='true'
+          >
             <ChevronIcon direction='left' className='h-3 w-3' />
             Previous
           </span>
@@ -67,7 +88,17 @@ const CatalogPagination = ({
           </Link>
         )}
 
-        <ol className='mx-3 inline-flex items-center gap-1'>
+        {/* Hidden below sm. This row is 384px wide with the numbers in it —
+            two ~99px nav buttons plus the list — which overflows every phone
+            viewport and was the only in-flow element on the catalog reaching
+            past the edge. Below sm the nav is `flex-col`, so the "Page 1 of 4"
+            line sits directly above this and already states the position; the
+            numbers are duplicating it at exactly the width where they don't
+            fit. Previous/Next still page through. Trimming padding instead was
+            measured and doesn't work: every saving available (list margin, both
+            buttons' padding, the inner gaps) comes to ~44px against the ~80px
+            needed at 320px. */}
+        <ol className='hidden items-center gap-1 sm:mx-3 sm:inline-flex'>
           {pageList.map((item, i) =>
             item === 'ellipsis' ? (
               <li
@@ -102,7 +133,11 @@ const CatalogPagination = ({
         </ol>
 
         {nextDisabled ? (
-          <span className={NAV_BTN_DISABLED} aria-disabled='true'>
+          <span
+            className={NAV_BTN_DISABLED}
+            role={NAV_DISABLED_ROLE}
+            aria-disabled='true'
+          >
             Next
             <ChevronIcon direction='right' className='h-3 w-3' />
           </span>
