@@ -29,6 +29,7 @@ import { formatCartCount } from '@/lib/cart/counts';
 import { computeAward } from '@/lib/rewards/calculator';
 import { FOCUS_RING } from '@/lib/styles';
 import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
+import DismissBoundary from '@/components/ui/DismissBoundary';
 import ArrowIcon from '@/components/ui/icons/ArrowIcon';
 import CartIcon from '@/components/ui/icons/CartIcon';
 import CheckIcon from '@/components/ui/icons/CheckIcon';
@@ -388,7 +389,10 @@ const CartDrawer = ({ isOpen, onClose }: Props) => {
   if (!mounted) return null;
 
   return createPortal(
-    <>
+    // Standing in for the fragment that used to be here: everything the drawer
+    // renders — its per-line remove confirms in particular — sits one level
+    // deeper than the drawer itself, so Escape reaches them first.
+    <DismissBoundary>
       <div
         aria-hidden={!isOpen}
         onClick={onClose}
@@ -593,7 +597,7 @@ const CartDrawer = ({ isOpen, onClose }: Props) => {
           </footer>
         )}
       </aside>
-    </>,
+    </DismissBoundary>,
     document.body,
   );
 };

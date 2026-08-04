@@ -4,6 +4,7 @@ import { useRef, type ReactNode } from 'react';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
+import DismissBoundary from '@/components/ui/DismissBoundary';
 
 type Props = {
   open: boolean;
@@ -41,7 +42,9 @@ export default function SlideDrawer({
 
   // Escape goes through the shared stack so a popover opened *inside* the
   // drawer claims it first — closing only itself instead of taking the whole
-  // drawer (and any unsaved edits) with it.
+  // drawer (and any unsaved edits) with it. The `DismissBoundary` around
+  // `children` below is what makes that ordering structural: this hook call
+  // sits at the drawer's own depth, everything it hosts sits one deeper.
   useDismissOnEscape(open, onClose);
 
   // Focus moves into the drawer on open, Tab cycles inside it, and focus
@@ -71,7 +74,7 @@ export default function SlideDrawer({
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        {children}
+        <DismissBoundary>{children}</DismissBoundary>
       </aside>
     </>
   );

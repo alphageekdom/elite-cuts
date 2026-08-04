@@ -8,6 +8,7 @@ import { ANNOUNCEMENT_DOT_BG } from '@/lib/announcements/display';
 import { FOCUS_RING, scrollAwareTone } from '@/lib/styles';
 import { useIsMounted } from '@/hooks/useIsMounted';
 import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
+import DismissBoundary from '@/components/ui/DismissBoundary';
 import AnnouncementBellPopover from './AnnouncementBellPopover';
 
 type AnnouncementBellProps = {
@@ -131,10 +132,15 @@ const AnnouncementBell = ({
       </button>
 
       {open && (
-        <AnnouncementBellPopover
-          announcements={visible}
-          onDismiss={handleDismiss}
-        />
+        // The popover hosts a `StoreInfoModal`, which the `{open && …}` guard
+        // above unmounts along with the popover — so Escape must reach the
+        // modal first or closing the bell takes an open modal with it.
+        <DismissBoundary>
+          <AnnouncementBellPopover
+            announcements={visible}
+            onDismiss={handleDismiss}
+          />
+        </DismissBoundary>
       )}
     </div>
   );
