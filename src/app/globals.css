@@ -132,10 +132,44 @@
   background-position: center;
 }
 
+/* The `rect` crop is load-bearing, not a stylistic choice. This source is
+   2786x4953 and its top half is an unlit background — a decile scan down the
+   frame reads 13, 14, 13, 10, 12 before jumping to 80, 122, 105, 141, 104. The
+   subject is entirely in the lower half, so an uncropped `cover` framed the
+   empty part: the panel's top two-thirds measured 33.6 mean luminance against
+   login's 95.8, and read as a near-black slab beside it.
+
+   `rect=x,y,w,h` is in ORIGINAL pixel space (2786x4953), not the `w=` output
+   space — 2476 is the halfway point of 4953. Re-derive both numbers if the
+   photo is ever swapped; they do not travel.
+
+   Cropping in the URL rather than with `background-size`/`background-position`
+   is deliberate. Repositioning cannot work: `cover` leaves only ~151px of
+   vertical slide out of 1433, verified in the browser. And a zoom-crop
+   (`background-size: auto N%`) needs an N that depends on the panel's aspect
+   ratio — measured between 112% and 224% across 1440-wide and 3440-wide
+   viewports, so no fixed value covers the range, and falling short tiles the
+   image rather than failing visibly.
+
+   THE GRADIENT STOPS ARE PART OF THE SAME FIX — do not "simplify" them back
+   toward login's three-stop ramp. The old scrim (0.45 / 0.35 / 0.85) worked
+   only because the image beneath it was nearly black; the darkness was doing
+   accessibility work. Cropping to the lit half on its own took contrast from
+   1 failing element to 6, measured per element: `01` 5.75 -> 2.52, `02`
+   5.20 -> 2.01, the 70%-alpha sub-copy 5.15 -> 3.00. The parking-lot entry's
+   claim that "text contrast is generously safe either way" was wrong.
+
+   These stops hold the scrim low (0.34) across the top third, which carries no
+   text and is where the newly-revealed subject sits, then ramp hard to 0.88 by
+   56% — just above the numbered list — and finish at 0.93. That reproduces the
+   vertical profile login gets for free from its own photograph, which is lit
+   through the middle and falls away to 72-81 exactly where its text lands.
+   All 14 text elements now pass, worst case 6.05 against a 4.5 requirement,
+   including `04` which was already failing at 4.43 before any of this. */
 @utility hero-bg-register {
   background-image:
-    linear-gradient(180deg, rgba(20,16,14,0.45) 0%, rgba(20,16,14,0.35) 50%, rgba(20,16,14,0.85) 100%),
-    url('https://images.unsplash.com/photo-1588168333986-5078d3ae3976?w=1600&q=80');
+    linear-gradient(180deg, rgba(20,16,14,0.34) 0%, rgba(20,16,14,0.34) 34%, rgba(20,16,14,0.88) 56%, rgba(20,16,14,0.93) 100%),
+    url('https://images.unsplash.com/photo-1588168333986-5078d3ae3976?rect=0,2476,2786,2477&w=1800&q=60');
   background-size: cover;
   background-position: center;
 }
