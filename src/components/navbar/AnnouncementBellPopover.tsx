@@ -5,6 +5,7 @@ import { useEffect, useRef } from 'react';
 import type { Announcement } from '@/lib/announcements/data';
 import { ANNOUNCEMENT_DOT_BG } from '@/lib/announcements/display';
 import StoreInfoModal from '@/components/ui/StoreInfoModal';
+import XIcon from '@/components/ui/icons/XIcon';
 
 type AnnouncementBellPopoverProps = {
   announcements: Announcement[];
@@ -80,18 +81,7 @@ const AnnouncementBellPopover = ({
               aria-label={`Dismiss ${a.title}`}
               className='-mr-1 -mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-cream-deep hover:text-ink'
             >
-              <svg
-                width='12'
-                height='12'
-                viewBox='0 0 24 24'
-                fill='none'
-                stroke='currentColor'
-                strokeWidth='2'
-                aria-hidden='true'
-              >
-                <line x1='18' y1='6' x2='6' y2='18' />
-                <line x1='6' y1='6' x2='18' y2='18' />
-              </svg>
+              <XIcon className='w-3 h-3' strokeWidth={2} />
             </button>
           </li>
         ))}

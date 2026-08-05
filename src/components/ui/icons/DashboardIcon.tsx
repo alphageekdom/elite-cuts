@@ -2,6 +2,11 @@ type DashboardIconProps = { className?: string };
 
 // Four unequal panels — the conventional "dashboard" glyph. Deliberately not a
 // symmetric 2×2 grid, which reads as a gallery or a category picker instead.
+//
+// HAND-DRAWN ON PURPOSE. Every other glyph in this folder is Feather via
+// react-icons; this one is not, because Feather's FiGrid is exactly the
+// symmetric 2×2 of equal squares the comment above rules out — measured 48%
+// different at every size. Do not "finish the migration" here.
 const DashboardIcon = ({ className }: DashboardIconProps) => (
   <svg
     viewBox='0 0 24 24'

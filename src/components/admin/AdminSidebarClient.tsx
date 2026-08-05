@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { GiMeatCleaver } from 'react-icons/gi';
 import AdminNavLinks from './AdminNavLinks';
 import AdminUserMenu from './AdminUserMenu';
+import ChevronIcon from '@/components/ui/icons/ChevronIcon';
 
 type Props = {
   name: string;
@@ -95,12 +96,12 @@ export default function AdminSidebarClient({ name, initial, criticalInventoryCou
               collapsed ? '' : 'ml-auto'
             }`}
           >
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              {collapsed
-                ? <polyline points="9 18 15 12 9 6" />
-                : <polyline points="15 18 9 12 15 6" />
-              }
-            </svg>
+            {/* Points the way it will move the sidebar, so the glyph and the
+                aria-label above always agree. */}
+            <ChevronIcon
+              className="w-3.5 h-3.5"
+              direction={collapsed ? 'right' : 'left'}
+            />
           </button>
         </div>
 

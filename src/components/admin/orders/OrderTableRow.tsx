@@ -5,6 +5,7 @@ import { TABLE_ORDER_STATUS_PILL } from '@/lib/orders/status';
 import type { OrderTableRow } from '@/types/admin';
 import type { OrderColumnVisibility } from '@/hooks/admin/useOrderColumns';
 import DemoPill from '@/components/demo/DemoPill';
+import PinIcon from '@/components/ui/icons/PinIcon';
 
 type Props = {
   order: OrderTableRow;
@@ -112,9 +113,7 @@ export default function OrderTableRowComponent({
       {visibleColumns.pickup && (
         <td className="px-4 py-4">
           <span className="inline-flex items-center gap-1.5 font-mono text-[12px] text-ink-soft tracking-[0.04em]">
-            <svg className="w-3 h-3 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
-            </svg>
+            <PinIcon className="w-3 h-3 opacity-70" />
             PICKUP
           </span>
         </td>

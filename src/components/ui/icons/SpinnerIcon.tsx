@@ -4,6 +4,11 @@ type SpinnerIconProps = { className?: string };
 // Stroke uses currentColor so the spinner picks up whatever color the parent
 // button uses. The track ring is dimmed to 25% opacity and the progress arc
 // is full-opacity, which gives the classic ClipLoader look at any size.
+//
+// HAND-DRAWN ON PURPOSE. Every other glyph in this folder is Feather via
+// react-icons; this one is not, because Feather's nearest equivalent (FiLoader)
+// is an eight-spoke sunburst rather than a ring and arc — measured 92% different
+// at every size, and it does not animate. Do not "finish the migration" here.
 const SpinnerIcon = ({ className }: SpinnerIconProps) => (
   <svg
     viewBox='0 0 24 24'

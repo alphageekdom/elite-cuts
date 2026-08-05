@@ -2,6 +2,8 @@
 
 import { useShopSettings } from '@/context/ShopSettingsContext';
 import { formatReadyIn } from '@/lib/shop-settings/pickup-format';
+import CheckIcon from '@/components/ui/icons/CheckIcon';
+import ClockIcon from '@/components/ui/icons/ClockIcon';
 
 // The third row used to read "~1 hour · pickup-ready notification". Both halves
 // were false: the shop's configured lead time is 30 minutes by default, so the
@@ -22,16 +24,11 @@ const CheckoutTrustStrip = () => {
       <span><strong className='font-medium text-ink'>Secure</strong> · 256-bit SSL encryption</span>
     </div>
     <div className='flex items-center gap-3 border-b border-line-soft py-2 text-[13px] text-ink-soft'>
-      <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2} aria-hidden='true' className='h-3.5 w-3.5 shrink-0 text-green'>
-        <polyline points='20 6 9 17 4 12' />
-      </svg>
+      <CheckIcon className='h-3.5 w-3.5 shrink-0 text-green' strokeWidth={2} />
       <span><strong className='font-medium text-ink'>Hand-cut</strong> after you order — never sitting</span>
     </div>
     <div className='flex items-center gap-3 py-2 text-[13px] text-ink-soft'>
-      <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2} aria-hidden='true' className='h-3.5 w-3.5 shrink-0 text-green'>
-        <circle cx='12' cy='12' r='9' />
-        <polyline points='12 6 12 12 16 14' />
-      </svg>
+      <ClockIcon className='h-3.5 w-3.5 shrink-0 text-green' />
       <span><strong className='font-medium text-ink'>{formatReadyIn(leadTime)}</strong> · ready at the counter</span>
     </div>
   </div>

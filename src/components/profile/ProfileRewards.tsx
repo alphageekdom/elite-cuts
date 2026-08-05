@@ -11,6 +11,8 @@ import {
 import { orderRef } from '@/lib/orders/reference';
 import { MEMBER_DISCOUNT_RATE } from '@/lib/checkout/totals';
 import type { PointsHistoryReason } from '@/models/User';
+import CheckIcon from '@/components/ui/icons/CheckIcon';
+import ArrowIcon from '@/components/ui/icons/ArrowIcon';
 
 type Filter = 'all' | 'earned' | 'redeemed';
 
@@ -160,9 +162,7 @@ export default function ProfileRewards({
           className='text-[13px] font-medium text-ink-soft inline-flex items-center gap-1.5 border-b border-current pb-px hover:text-oxblood hover:gap-2.5 transition-all focus-visible:outline-none focus-visible:text-oxblood'
         >
           How rewards work
-          <svg width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2} aria-hidden>
-            <path d='M5 12h14M13 5l7 7-7 7' />
-          </svg>
+          <ArrowIcon className='w-2.75 h-2.75' />
         </Link>
       </div>
 
@@ -290,9 +290,7 @@ export default function ProfileRewards({
             {unlockedPerks.map((perk) => (
               <li key={perk.bold} className='flex items-start gap-3 border-b border-line-soft py-3 text-sm leading-snug text-ink-soft last:border-b-0 last:pb-0'>
                 <span className='mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-green text-cream'>
-                  <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={3} strokeLinecap='round' strokeLinejoin='round' className='h-2.75 w-2.75' aria-hidden>
-                    <polyline points='20 6 9 17 4 12' />
-                  </svg>
+                  <CheckIcon className='h-2.75 w-2.75' strokeWidth={3} />
                 </span>
                 <span>
                   <strong className='font-medium text-ink'>{perk.bold}</strong>{' '}{perk.body}

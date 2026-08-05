@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import ArrowIcon from '@/components/ui/icons/ArrowIcon';
 
 type Props = {
   title: ReactNode;     // the prefix before the accent (e.g. "On")
@@ -22,9 +23,7 @@ export default function ScheduleCardHeader({ title, accent, linkHref, linkLabel 
         className="text-xs text-ink-soft border-b border-line pb-px inline-flex items-center gap-1 hover:text-oxblood transition-colors"
       >
         {linkLabel}
-        <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-          <path d="M5 12h14M13 5l7 7-7 7" />
-        </svg>
+        <ArrowIcon className="w-2.5 h-2.5" />
       </Link>
     </div>
   );

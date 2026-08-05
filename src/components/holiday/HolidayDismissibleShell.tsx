@@ -3,6 +3,7 @@
 import { useSyncExternalStore, type ReactNode } from 'react';
 
 import type { HolidaySlug } from '@/lib/announcements/holidays';
+import XIcon from '@/components/ui/icons/XIcon';
 
 type Props = {
   slug: HolidaySlug;
@@ -54,17 +55,7 @@ export default function HolidayDismissibleShell({ slug, year, children }: Props)
         aria-label='Dismiss holiday reminder'
         className='absolute right-2 top-2 grid h-9 w-9 place-items-center rounded-full text-muted transition-colors duration-200 hover:bg-cream-deep hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cream focus-visible:ring-offset-2 focus-visible:ring-offset-ink/40'
       >
-        <svg
-          width='12'
-          height='12'
-          viewBox='0 0 24 24'
-          fill='none'
-          stroke='currentColor'
-          strokeWidth='2'
-        >
-          <line x1='18' y1='6' x2='6' y2='18' />
-          <line x1='6' y1='6' x2='18' y2='18' />
-        </svg>
+        <XIcon className='w-3 h-3' strokeWidth={2} />
       </button>
     </div>
   );

@@ -14,6 +14,7 @@ import PromosPageHeader from '@/components/admin/promos/PromosPageHeader';
 import { useStatFilter } from '@/hooks/admin/useStatFilter';
 import { formatMoney } from '@/lib/format';
 import { formatPromoLabel } from '@/lib/promos/format';
+import ChevronIcon from '@/components/ui/icons/ChevronIcon';
 
 type PromoStatus = 'active' | 'scheduled' | 'expired' | 'exhausted' | 'disabled';
 type FilterKey = 'all' | PromoStatus;
@@ -308,18 +309,7 @@ export default function PromosClient({ promos, savingsByPromoId }: Props) {
                               {togglingId === p.id ? '…' : p.isActive ? 'Disable' : 'Enable'}
                             </button>
                           </span>
-                          <svg
-                            aria-hidden="true"
-                            className="h-3.5 w-3.5 shrink-0 text-muted/40 transition-colors group-hover:text-oxblood"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <polyline points="9 18 15 12 9 6" />
-                          </svg>
+                          <ChevronIcon className="h-3.5 w-3.5 shrink-0 text-muted/40 transition-colors group-hover:text-oxblood" direction="right" />
                         </div>
                       </td>
                     </tr>

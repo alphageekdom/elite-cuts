@@ -3,6 +3,7 @@ import { avatarColorForId, relativeTime, getInitials } from '@/lib/format';
 import { AVATAR_COLORS } from '@/lib/admin/constants';
 import MessageStatusPill from './MessageStatusPill';
 import type { MessageRow } from './MessagesClient';
+import ChevronIcon from '@/components/ui/icons/ChevronIcon';
 
 type Props = {
   msg: MessageRow;
@@ -80,18 +81,7 @@ export default function MessageTableRow({ msg, toggling, onOpen, onToggleStatus 
           >
             {msg.status === 'open' ? 'Close' : 'Re-open'}
           </button>
-          <svg
-            aria-hidden="true"
-            className="h-3.5 w-3.5 shrink-0 text-muted/40 transition-colors group-hover:text-oxblood"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
+          <ChevronIcon className="h-3.5 w-3.5 shrink-0 text-muted/40 transition-colors group-hover:text-oxblood" direction="right" />
         </div>
       </td>
     </tr>

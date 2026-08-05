@@ -1,20 +1,21 @@
+import { FiArrowRight } from 'react-icons/fi';
+
 type ArrowIconProps = {
   className?: string;
   // Some call sites draw it heavier than the default.
   strokeWidth?: number;
 };
 
+// Feather, via react-icons. This used to be Lucide's single-path arrow in an
+// otherwise-Feather set — a mixed-source accident rather than a design. Feather's
+// head is about one unit wider; measured indistinguishable at the 14–20px sizes
+// the app uses, visible side by side at 72px.
 const ArrowIcon = ({ className, strokeWidth = 2 }: ArrowIconProps) => (
-  <svg
-    viewBox='0 0 24 24'
-    fill='none'
-    stroke='currentColor'
+  <FiArrowRight
+    className={className}
     strokeWidth={strokeWidth}
     aria-hidden='true'
-    className={className}
-  >
-    <path d='M5 12h14M13 5l7 7-7 7' />
-  </svg>
+  />
 );
 
 export default ArrowIcon;

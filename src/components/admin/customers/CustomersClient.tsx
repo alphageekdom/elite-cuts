@@ -28,6 +28,7 @@ import {
   countForStat,
   type CustomerSortMode,
 } from '@/lib/admin/customers';
+import XIcon from '@/components/ui/icons/XIcon';
 
 export type { CustomerTableRow, CustomerCounts };
 
@@ -222,9 +223,7 @@ export default function CustomersClient({ customers, counts, total, newThisWeek 
                     aria-label="Cancel points adjustment"
                     className="text-cream/60 px-2 hover:text-cream transition-colors"
                   >
-                    <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
+                    <XIcon className="w-3 h-3" strokeWidth={2} />
                   </button>
                 </div>
               ) : (

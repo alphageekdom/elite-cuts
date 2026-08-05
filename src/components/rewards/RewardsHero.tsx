@@ -3,6 +3,7 @@ import Link from 'next/link';
 import ArrowIcon from '@/components/ui/icons/ArrowIcon';
 import Reveal from '@/components/ui/Reveal';
 import type { ShopSettings } from '@/models/ShopSettings';
+import CheckIcon from '@/components/ui/icons/CheckIcon';
 
 type Props = { settings: ShopSettings };
 
@@ -117,16 +118,7 @@ export default function RewardsHero({ settings }: Props) {
                       carries the full measurement. */}
                   {['Free in-store pickup, no minimum', 'Save cuts, add to cart in a tap'].map((perk) => (
                     <li key={perk} className='flex items-center gap-2 text-xs text-cream/85'>
-                      <svg
-                        viewBox='0 0 24 24'
-                        fill='none'
-                        stroke='currentColor'
-                        strokeWidth={2.5}
-                        className='h-2.75 w-2.75 shrink-0 text-camel-soft'
-                        aria-hidden
-                      >
-                        <polyline points='20 6 9 17 4 12' />
-                      </svg>
+                      <CheckIcon className='h-2.75 w-2.75 shrink-0 text-camel-soft' />
                       {perk}
                     </li>
                   ))}

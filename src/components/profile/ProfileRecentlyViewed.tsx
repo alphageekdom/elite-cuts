@@ -13,6 +13,7 @@ import {
 import type { SerializedProduct } from '@/models/Product';
 import { useHandleAddToCart } from '@/hooks/useHandleAddToCart';
 import { useIsMounted } from '@/hooks/useIsMounted';
+import PlusIcon from '@/components/ui/icons/PlusIcon';
 
 // How many of the remembered cuts to show. The store keeps more so that a
 // withdrawn one dropping out of the API response doesn't shorten the list.
@@ -56,10 +57,7 @@ function RecentItem({ product }: { product: SerializedProduct }) {
         aria-label={`Add ${product.name} to cart`}
         className="w-9 h-9 rounded-full bg-ink text-cream flex items-center justify-center shrink-0 transition-all hover:bg-oxblood hover:scale-[1.08] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-1"
       >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-          <line x1="12" y1="5" x2="12" y2="19" />
-          <line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
+        <PlusIcon className="w-3.25 h-3.25" strokeWidth={2} />
       </button>
     </li>
   );

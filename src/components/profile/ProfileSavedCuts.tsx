@@ -8,6 +8,8 @@ import { formatMoney, productImageSrc } from '@/lib/format';
 import { productPath } from '@/lib/products/paths';
 import type { SerializedProduct } from '@/models/Product';
 import { useHandleAddToCart } from '@/hooks/useHandleAddToCart';
+import PlusIcon from '@/components/ui/icons/PlusIcon';
+import HeartIcon from '@/components/ui/icons/HeartIcon';
 
 type Props = {
   savedCuts: SerializedProduct[];
@@ -85,10 +87,7 @@ function BookmarkCard({
               aria-label={`Add ${bookmark.name} to cart`}
               className="w-9 h-9 rounded-full bg-ink text-cream flex items-center justify-center transition-all hover:bg-oxblood hover:scale-[1.08] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-1"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
+              <PlusIcon className="w-3.5 h-3.5" strokeWidth={2} />
             </button>
           </div>
         </div>
@@ -109,9 +108,7 @@ export default function ProfileSavedCuts({ savedCuts: initial, showAll = false }
     return (
       <div className="bg-paper border border-dashed border-line rounded p-14 text-center">
         <div className="w-14 h-14 rounded-full bg-cream-deep text-ink-soft flex items-center justify-center mx-auto mb-5" aria-hidden="true">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-          </svg>
+          <HeartIcon className="w-5.5 h-5.5" strokeWidth={1.5} />
         </div>
         <h2 className="font-display font-medium text-[22px] tracking-tight mb-2">No saved cuts yet</h2>
         <p className="text-muted text-sm mb-6 max-w-[32ch] mx-auto">

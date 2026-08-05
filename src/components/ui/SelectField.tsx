@@ -1,5 +1,7 @@
 'use client';
 
+import ChevronIcon from '@/components/ui/icons/ChevronIcon';
+
 // Cross-context select wrapper used by admin drawers / settings tabs and
 // customer profile / catalog forms alike. Originally lived in
 // `components/admin/AdminForm.tsx` but moved here once consumers outside
@@ -21,15 +23,7 @@ export function SelectField({
       >
         {children}
       </select>
-      <svg
-        className="absolute right-3.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted pointer-events-none"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-      >
-        <polyline points="6 9 12 15 18 9" />
-      </svg>
+      <ChevronIcon className="absolute right-3.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted pointer-events-none" direction="down" />
     </div>
   );
 }

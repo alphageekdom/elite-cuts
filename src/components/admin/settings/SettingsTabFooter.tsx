@@ -1,4 +1,5 @@
 import { btnPrimary, btnGhost } from '@/components/admin/AdminForm';
+import CheckIcon from '@/components/ui/icons/CheckIcon';
 
 type Props = {
   saving: boolean;
@@ -20,9 +21,7 @@ export default function SettingsTabFooter({ saving, dirty, onSave, onDiscard }: 
           onClick={onSave}
           disabled={saving || !dirty}
         >
-          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
+          <CheckIcon className="w-3 h-3" strokeWidth={2} />
           {saving ? 'Saving…' : 'Save changes'}
         </button>
         <button

@@ -17,6 +17,10 @@ import SectionLabel from '@/components/ui/SectionLabel';
 import CheckIcon from '@/components/ui/icons/CheckIcon';
 import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
+import ArrowIcon from '@/components/ui/icons/ArrowIcon';
+import PhoneIcon from '@/components/ui/icons/PhoneIcon';
+import PinIcon from '@/components/ui/icons/PinIcon';
+import XIcon from '@/components/ui/icons/XIcon';
 
 // dayIndex: 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
 type HoursRow = {
@@ -184,18 +188,7 @@ export default function StoreInfoModal({
                 aria-label='Close'
                 className='grid h-9 w-9 shrink-0 place-items-center rounded-full border border-line bg-cream text-ink transition-colors duration-200 hover:border-ink hover:bg-cream-deep'
               >
-                <svg
-                  width='14'
-                  height='14'
-                  viewBox='0 0 24 24'
-                  fill='none'
-                  stroke='currentColor'
-                  strokeWidth='2'
-                  aria-hidden='true'
-                >
-                  <line x1='18' y1='6' x2='6' y2='18' />
-                  <line x1='6' y1='6' x2='18' y2='18' />
-                </svg>
+                <XIcon className='w-3.5 h-3.5' strokeWidth={2} />
               </button>
             </div>
 
@@ -204,17 +197,7 @@ export default function StoreInfoModal({
               {/* Address */}
               <div className='flex items-start justify-between gap-4'>
                 <div className='flex items-start gap-3 text-sm text-ink-soft'>
-                  <svg
-                    className='mt-0.5 h-4 w-4 shrink-0 text-oxblood'
-                    viewBox='0 0 24 24'
-                    fill='none'
-                    stroke='currentColor'
-                    strokeWidth={2}
-                    aria-hidden='true'
-                  >
-                    <path d='M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z' />
-                    <circle cx='12' cy='10' r='3' />
-                  </svg>
+                  <PinIcon className='mt-0.5 h-4 w-4 shrink-0 text-oxblood' />
                   <span>
                     <strong className='font-medium text-ink'>{shopAddress}</strong>
                     <br />
@@ -228,17 +211,10 @@ export default function StoreInfoModal({
                     >
                       Get directions
                       <span className='sr-only'> (opens in new tab)</span>
-                      <svg
-                        width='10'
-                        height='10'
-                        viewBox='0 0 24 24'
-                        fill='none'
-                        stroke='currentColor'
-                        strokeWidth='2.5'
-                        aria-hidden='true'
-                      >
-                        <path d='M5 12h14M13 5l7 7-7 7' />
-                      </svg>
+                      <ArrowIcon
+                        className='w-2.5 h-2.5'
+                        strokeWidth={2.5}
+                      />
                     </a>
                   </span>
                 </div>
@@ -248,16 +224,7 @@ export default function StoreInfoModal({
               {/* Phone */}
               <div className='flex items-center justify-between gap-4'>
                 <div className='flex items-start gap-3 text-sm text-ink-soft'>
-                  <svg
-                    className='mt-0.5 h-4 w-4 shrink-0 text-oxblood'
-                    viewBox='0 0 24 24'
-                    fill='none'
-                    stroke='currentColor'
-                    strokeWidth={2}
-                    aria-hidden='true'
-                  >
-                    <path d='M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z' />
-                  </svg>
+                  <PhoneIcon className='mt-0.5 h-4 w-4 shrink-0 text-oxblood' />
                   <a
                     href={phoneHref}
                     className='font-medium text-ink transition-colors duration-200 hover:text-oxblood'

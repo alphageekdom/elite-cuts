@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 
 import { useCheckoutContext } from '@/context/CheckoutContext';
 import { applyRedemption, computeRedemptionCap } from '@/lib/rewards/calculator';
+import CheckIcon from '@/components/ui/icons/CheckIcon';
 
 type RewardsInfo = {
   balance: number;
@@ -212,9 +213,7 @@ export default function CheckoutRewardsRedeem({ subtotal, maxDiscountable }: Pro
 
       {active ? (
         <p className='flex items-center gap-1.5 text-[12px] text-green'>
-          <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2.5} aria-hidden='true' className='h-3 w-3 shrink-0'>
-            <polyline points='20 6 9 17 4 12' />
-          </svg>
+          <CheckIcon className='h-3 w-3 shrink-0' />
           {fmt(state.pointsToRedeem)} pts applied · ${state.pointsDiscount.toFixed(2)} off
         </p>
       ) : blockedByPromo ? (

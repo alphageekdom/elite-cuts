@@ -8,6 +8,7 @@ import AnalyticsInsightsCard from './sections/AnalyticsInsightsCard';
 import AnalyticsHeatmap from './sections/AnalyticsHeatmap';
 import { buildSparklinePath } from '@/lib/sparkline';
 import type { RangeKey } from '@/lib/admin/range-buckets';
+import ChevronIcon from '@/components/ui/icons/ChevronIcon';
 
 export type AnalyticsRange = RangeKey;
 
@@ -92,9 +93,7 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
               <em className="italic text-camel text-[0.42em] -ml-1.5 font-normal">.{revFrac}</em>
             </div>
             <span className="inline-flex items-center gap-1.5 bg-green/25 text-green-bright px-3 py-1 rounded-full text-[13px] font-medium tracking-[0.02em] font-mono">
-              <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                <polyline points="18 15 12 9 6 15" />
-              </svg>
+              <ChevronIcon className="w-2.5 h-2.5" direction="up" strokeWidth={3} />
               {data.revenueChange >= 0 ? '+' : ''}{data.revenueChange.toFixed(1)}% vs previous
             </span>
             <div className="mt-4 text-[13px] text-cream/65 font-mono tracking-[0.04em]">

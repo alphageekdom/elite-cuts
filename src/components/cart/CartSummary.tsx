@@ -13,6 +13,8 @@ import { formatDaysUntil } from '@/lib/announcements/holidays';
 import StoreInfoModal from '@/components/ui/StoreInfoModal';
 import ArrowIcon from '@/components/ui/icons/ArrowIcon';
 import { CTA_ARROW, FOCUS_RING } from '@/lib/styles';
+import CheckIcon from '@/components/ui/icons/CheckIcon';
+import ClockIcon from '@/components/ui/icons/ClockIcon';
 
 type Props = {
   activeHoliday?: { name: string; daysUntil: number } | null;
@@ -147,30 +149,11 @@ const CartSummary = ({ activeHoliday }: Props) => {
           Secure checkout
         </li>
         <li className='inline-flex items-center gap-2'>
-          <svg
-            viewBox='0 0 24 24'
-            fill='none'
-            stroke='currentColor'
-            strokeWidth={2}
-            aria-hidden='true'
-            className='h-3.5 w-3.5 text-green'
-          >
-            <polyline points='20 6 9 17 4 12' />
-          </svg>
+          <CheckIcon className='h-3.5 w-3.5 text-green' strokeWidth={2} />
           Hand-cut fresh
         </li>
         <li className='inline-flex items-center gap-2'>
-          <svg
-            viewBox='0 0 24 24'
-            fill='none'
-            stroke='currentColor'
-            strokeWidth={2}
-            aria-hidden='true'
-            className='h-3.5 w-3.5 text-green'
-          >
-            <circle cx='12' cy='12' r='9' />
-            <polyline points='12 6 12 12 16 14' />
-          </svg>
+          <ClockIcon className='h-3.5 w-3.5 text-green' />
           Ready in {formatReadyIn(leadTime)}
         </li>
       </ul>

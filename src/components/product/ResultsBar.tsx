@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import CheckIcon from '@/components/ui/icons/CheckIcon';
 import LinkPendingDot from '@/components/product/LinkPendingDot';
+import XIcon from '@/components/ui/icons/XIcon';
 
 type ActiveFilter = {
   label: string;
@@ -91,16 +92,7 @@ const ResultsBar = ({
                   aria-hidden='true'
                   className='grid h-4 w-4 place-items-center rounded-full bg-cream/20 transition-[background-color] duration-300 group-hover:bg-cream/35 motion-reduce:transition-none'
                 >
-                  <svg
-                    viewBox='0 0 24 24'
-                    fill='none'
-                    stroke='currentColor'
-                    strokeWidth={3}
-                    className='h-2 w-2'
-                  >
-                    <line x1='6' y1='6' x2='18' y2='18' />
-                    <line x1='18' y1='6' x2='6' y2='18' />
-                  </svg>
+                  <XIcon className='h-2 w-2' strokeWidth={3} />
                 </span>
                 <span className='sr-only'>Remove filter</span>
               </Link>

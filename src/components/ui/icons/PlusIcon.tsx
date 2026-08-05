@@ -1,17 +1,14 @@
-type PlusIconProps = { className?: string };
+import { FiPlus } from 'react-icons/fi';
 
-const PlusIcon = ({ className }: PlusIconProps) => (
-  <svg
-    viewBox='0 0 24 24'
-    fill='none'
-    stroke='currentColor'
-    strokeWidth={2.5}
-    aria-hidden='true'
-    className={className}
-  >
-    <line x1='12' y1='5' x2='12' y2='19' />
-    <line x1='5' y1='12' x2='19' y2='12' />
-  </svg>
+type PlusIconProps = {
+  className?: string;
+  // The admin page-header "add" buttons and the quantity steppers draw at 2.
+  strokeWidth?: number;
+};
+
+// Feather, via react-icons — the same paths this file used to inline by hand.
+const PlusIcon = ({ className, strokeWidth = 2.5 }: PlusIconProps) => (
+  <FiPlus className={className} strokeWidth={strokeWidth} aria-hidden='true' />
 );
 
 export default PlusIcon;

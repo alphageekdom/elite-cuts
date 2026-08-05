@@ -12,22 +12,12 @@ import CartLoadError from './CartLoadError';
 
 import CheckIcon from '@/components/ui/icons/CheckIcon';
 import XIcon from '@/components/ui/icons/XIcon';
+import CartIcon from '@/components/ui/icons/CartIcon';
 
 const EmptyState = () => (
   <div className='flex flex-col items-center justify-center px-8 py-16 text-center'>
     <div className='mb-5 grid h-14 w-14 place-items-center rounded-full bg-cream-deep text-ink-soft'>
-      <svg
-        viewBox='0 0 24 24'
-        fill='none'
-        stroke='currentColor'
-        strokeWidth={1.6}
-        aria-hidden='true'
-        className='h-6 w-6'
-      >
-        <circle cx='9' cy='21' r='1' />
-        <circle cx='20' cy='21' r='1' />
-        <path d='M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6' />
-      </svg>
+      <CartIcon className='h-6 w-6' strokeWidth={1.6} />
     </div>
     <h3 className='mb-1.5 font-display text-2xl font-medium tracking-tight'>
       Your cart is empty

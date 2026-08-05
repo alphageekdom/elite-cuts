@@ -32,6 +32,7 @@ import { shopDateKey } from '@/lib/shop-settings/pickup-format';
 import ReviewForm from './ReviewForm';
 import ReviewList, { type DetailReview, type UserTier } from './ReviewList';
 import { FORMER_CUSTOMER_NAME } from '@/lib/auth/account-deletion-constants';
+import PinIcon from '@/components/ui/icons/PinIcon';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -443,17 +444,7 @@ export default async function ProductPage({ params }: PageProps) {
 
             {/* Pickup info */}
             <div className='bg-cream-deep text-ink-soft flex items-start gap-3 rounded-sm px-5 py-4 text-[13px] leading-relaxed'>
-              <svg
-                viewBox='0 0 24 24'
-                fill='none'
-                stroke='currentColor'
-                strokeWidth={2}
-                aria-hidden
-                className='text-oxblood mt-0.5 h-4 w-4 shrink-0'
-              >
-                <path d='M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z' />
-                <circle cx='12' cy='10' r='3' />
-              </svg>
+              <PinIcon className='text-oxblood mt-0.5 h-4 w-4 shrink-0' />
               <div>
                 <strong className='text-ink font-medium'>Free pickup</strong> at
                 our shop — ready in {pickup.readyIn}.

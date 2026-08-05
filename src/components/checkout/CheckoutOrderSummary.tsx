@@ -14,6 +14,9 @@ import CheckoutPublicPromos from '@/components/checkout/CheckoutPublicPromos';
 import { productImageSrc } from '@/lib/format';
 import type { PromoFailureReason } from '@/models/Promo';
 import { PROMO_FAILURE_MESSAGES } from '@/lib/promos/constants';
+import CheckIcon from '@/components/ui/icons/CheckIcon';
+import MinusIcon from '@/components/ui/icons/MinusIcon';
+import PlusIcon from '@/components/ui/icons/PlusIcon';
 
 type PromoStatus = 'idle' | 'valid' | 'invalid';
 
@@ -273,9 +276,7 @@ const CheckoutOrderSummary = () => {
                       aria-label='Decrease quantity'
                       className='grid h-6 w-6 place-items-center text-muted transition-colors duration-200 hover:bg-cream-deep disabled:cursor-not-allowed disabled:opacity-30'
                     >
-                      <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2.5} className='h-2.5 w-2.5' aria-hidden='true'>
-                        <line x1='5' y1='12' x2='19' y2='12' />
-                      </svg>
+                      <MinusIcon className='h-2.5 w-2.5' />
                     </button>
                     <span className='min-w-6 text-center font-mono text-[12px] text-ink'>
                       {line.quantity}
@@ -286,10 +287,7 @@ const CheckoutOrderSummary = () => {
                       aria-label='Increase quantity'
                       className='grid h-6 w-6 place-items-center text-muted transition-colors duration-200 hover:bg-cream-deep'
                     >
-                      <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2.5} className='h-2.5 w-2.5' aria-hidden='true'>
-                        <line x1='12' y1='5' x2='12' y2='19' />
-                        <line x1='5' y1='12' x2='19' y2='12' />
-                      </svg>
+                      <PlusIcon className='h-2.5 w-2.5' />
                     </button>
                   </div>
                   )}
@@ -352,9 +350,7 @@ const CheckoutOrderSummary = () => {
 
           {promoStatus === 'valid' && (
             <p className='mt-2 flex items-center gap-1.5 text-[12px] text-green'>
-              <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2.5} aria-hidden='true' className='h-3 w-3 shrink-0'>
-                <polyline points='20 6 9 17 4 12' />
-              </svg>
+              <CheckIcon className='h-3 w-3 shrink-0' />
               {promoCode} applied · −${fmtPrice(promoDiscount)}
             </p>
           )}

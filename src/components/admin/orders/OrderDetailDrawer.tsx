@@ -16,6 +16,9 @@ import { formatPickupLocation } from '@/lib/shop-settings/pickup-slots';
 import AdminEyebrow from '@/components/admin/AdminEyebrow';
 import SortPopover, { type SortOption } from '@/components/ui/SortPopover';
 import type { OrderTableRow } from '@/types/admin';
+import ArrowIcon from '@/components/ui/icons/ArrowIcon';
+import CheckIcon from '@/components/ui/icons/CheckIcon';
+import XIcon from '@/components/ui/icons/XIcon';
 
 // Cancellation reasons never vary by order — build once at module scope
 // so each render reuses the same array reference. The status options
@@ -191,9 +194,7 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
           aria-label="Close order detail"
           className="w-9 h-9 rounded-full bg-cream border border-line text-ink grid place-items-center hover:border-ink transition-colors shrink-0"
         >
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
+          <XIcon className="w-3.5 h-3.5" strokeWidth={2} />
         </button>
       </div>
 
@@ -229,9 +230,7 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
                   }`}
                 >
                   {(step.done || step.current) && (
-                    <svg className="w-2.75 h-2.75" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
+                    <CheckIcon className="w-2.75 h-2.75" strokeWidth={3} />
                   )}
                 </div>
                 <div className="pt-px">
@@ -295,9 +294,7 @@ export default function OrderDetailDrawer({ order, statusUpdate, setStatusUpdate
               className="inline-flex items-center gap-1 bg-paper border border-line rounded-full px-3.5 py-1.5 text-[12px] text-ink-soft hover:border-ink hover:text-ink transition-colors"
             >
               View
-              <svg className="w-2.75 h-2.75" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M5 12h14M13 5l7 7-7 7" />
-              </svg>
+              <ArrowIcon className="w-2.75 h-2.75" />
             </a>
           </div>
         </div>

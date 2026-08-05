@@ -1,6 +1,8 @@
 'use client';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
+import CheckIcon from '@/components/ui/icons/CheckIcon';
+import XIcon from '@/components/ui/icons/XIcon';
 
 type DiffEntry = { field: string; from: unknown; to: unknown };
 
@@ -155,9 +157,7 @@ export default function ProductImportDrawer({ onClose, onCommitted }: Props) {
           aria-label="Close"
           className="w-8 h-8 rounded-full border border-line text-ink-soft grid place-items-center hover:border-ink hover:bg-cream hover:text-ink transition-colors"
         >
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
+          <XIcon className="w-3.5 h-3.5" strokeWidth={2} />
         </button>
       </div>
 
@@ -312,9 +312,7 @@ export default function ProductImportDrawer({ onClose, onCommitted }: Props) {
         {step === 'done' && (
           <div className="text-center py-10">
             <div className="w-12 h-12 mx-auto rounded-full bg-green text-cream grid place-items-center mb-4">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
+              <CheckIcon className="w-5 h-5" />
             </div>
             <div className="font-display text-[22px] tracking-[-0.01em] mb-1">Import complete</div>
             <div className="text-[13px] text-ink-soft">

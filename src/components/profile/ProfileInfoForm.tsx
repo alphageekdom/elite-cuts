@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import { EMAIL_RE } from '@/lib/validation';
 import DemoDisabledHint from '@/components/demo/DemoDisabledHint';
+import CheckIcon from '@/components/ui/icons/CheckIcon';
 
 type Props = {
   initialName: string;
@@ -115,9 +116,7 @@ export default function ProfileInfoForm({ initialName, initialEmail, initialPhon
               <p className="text-sm text-ink">{value}</p>
               {updatedFields.has(field) && (
                 <span className="inline-flex items-center gap-1 text-[11px] font-medium text-green">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
+                  <CheckIcon className="w-3 h-3" />
                   Updated
                 </span>
               )}
