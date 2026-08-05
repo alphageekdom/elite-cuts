@@ -325,7 +325,7 @@ cp .env.example .env
 
 ```env
 MONGODB_URI=mongodb+srv://<user>:<password>@<cluster>.mongodb.net/<dbname>
-NEXT_PUBLIC_DOMAIN=http://localhost:3000
+NEXTAUTH_URL=http://localhost:3000  # next-auth reads this itself, not src
 NEXTAUTH_SECRET=                    # openssl rand -base64 32
 
 CLOUDINARY_CLOUD_NAME=
@@ -337,7 +337,6 @@ STRIPE_WEBHOOK_SECRET=
 
 CRON_SECRET=                        # shared bearer for all three cron endpoints (dormancy, purge, demo reset)
 
-NEXT_PUBLIC_API_URL=
 NEXT_PUBLIC_SITE_URL=
 
 ENABLE_DEMO_CARD_TILE=              # 'true' enables the no-charge demo checkout tile
