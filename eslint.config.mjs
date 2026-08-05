@@ -11,10 +11,12 @@ const config = [
     // --max-warnings=0, so a warning fails that command exactly like an error. The severity
     // is a label here, not an escape hatch.
     //
-    // Caveat worth knowing: `npm run lint` is the ONLY thing that enforces this. Next 16
-    // removed ESLint from `next build` (the `next lint` subsystem is gone), and there is no
-    // CI workflow or git hook in this repo — so a push can deploy warning-dirty. Until a CI
-    // step exists, the gate is a convention backed by a flag, not an automatic check.
+    // Worth knowing: `npm run lint` is the ONLY thing that enforces this, because Next 16
+    // removed ESLint from `next build` (the `next lint` subsystem is gone). Since 2026-07-25
+    // that command runs in CI on every branch push (.github/workflows/ci.yml), so the gate is
+    // automatic — this comment previously said no CI existed, which stopped being true three
+    // days after it was written. There is still no git hook, so a local commit is unchecked
+    // until it is pushed.
     rules: {
       'react-hooks/set-state-in-effect': 'warn',
       'react-hooks/purity': 'warn',

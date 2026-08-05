@@ -40,11 +40,17 @@ export function useFocusTrap(
   // the same identity for the life of the component, so in practice this only
   // re-runs when `open` flips. That matters — a previous bug had an effect like
   // this re-running on every parent render, which yanked focus back to the
-  // close button each time a quantity changed inside the open cart drawer. The
-  // guard against that is depending on nothing that is recreated per render:
-  // note the options object is destructured in the signature, so `initialFocusRef`
-  // is the caller's stable ref rather than the fresh `{ … }` literal wrapping it.
-  // Never add a callback or an inline object here.
+  // close button each time a quantity changed inside the open cart drawer.
+  //
+  // **The dependency array is the guard, and it is the only guard.** Never add
+  // a callback or an inline object here. Callers pass their options as a fresh
+  // `{ … }` literal on every render, so listing that object would reintroduce
+  // the bug exactly; listing the stable ref pulled out of it does not.
+  //
+  // The signature destructure is readability, not protection — this was checked
+  // rather than assumed. Rewriting it as `options.initialFocusRef` and keeping
+  // this array as-is passes every test in `useFocusTrap.test.tsx`; widening the
+  // array to include the options object fails the re-render test immediately.
   useEffect(() => {
     if (!open) return;
     const previouslyFocused = document.activeElement as HTMLElement | null;
@@ -55,9 +61,20 @@ export function useFocusTrap(
     target?.focus();
 
     return () => {
-      // Guard against restoring to something that has since left the DOM —
-      // focus() on a detached node silently does nothing and leaves focus on
-      // <body>, which is the exact failure this hook exists to prevent.
+      // Documentation, not defence — kept deliberately, and worth reading
+      // before "simplifying" it either way.
+      //
+      // `focus()` on a detached node is already a no-op: it neither throws nor
+      // moves `activeElement` (verified in jsdom, and it is what the spec's
+      // focusing steps require of an element that is not being rendered). So
+      // this check skips a call that would do nothing, and removing it changes
+      // no behaviour — which is why no test covers it, and why an earlier
+      // version of this comment was wrong to claim the guard prevented focus
+      // landing on <body>. Nothing prevents that: when the opener is gone,
+      // there is no longer anywhere to restore focus to.
+      //
+      // It stays because it says out loud that the opener may have unmounted
+      // while the dialog was up, which is a real case and not obvious.
       if (previouslyFocused?.isConnected) previouslyFocused.focus();
     };
   }, [open, containerRef, initialFocusRef]);
