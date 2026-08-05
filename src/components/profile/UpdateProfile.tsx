@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import DemoDisabledHint from '@/components/demo/DemoDisabledHint';
 import { MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH } from '@/lib/auth/password';
+import CheckIcon from '@/components/ui/icons/CheckIcon';
 
 const empty = { currentPassword: '', newPassword: '', confirmNewPassword: '' };
 
@@ -140,9 +141,7 @@ export default function UpdateProfile() {
 
         {saved && (
           <span className="inline-flex items-center gap-1.5 text-[13px] text-green font-medium">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
+            <CheckIcon className="w-3.75 h-3.75" />
             Password updated
           </span>
         )}

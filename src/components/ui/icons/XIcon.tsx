@@ -1,3 +1,5 @@
+import { FiX } from 'react-icons/fi';
+
 type XIconProps = {
   className?: string;
   // Not every call site wants the heavier default — the store-info modal's
@@ -5,18 +7,9 @@ type XIconProps = {
   strokeWidth?: number;
 };
 
+// Feather, via react-icons — the same paths this file used to inline by hand.
 const XIcon = ({ className, strokeWidth = 2.5 }: XIconProps) => (
-  <svg
-    viewBox='0 0 24 24'
-    fill='none'
-    stroke='currentColor'
-    strokeWidth={strokeWidth}
-    aria-hidden='true'
-    className={className}
-  >
-    <line x1='18' y1='6' x2='6' y2='18' />
-    <line x1='6' y1='6' x2='18' y2='18' />
-  </svg>
+  <FiX className={className} strokeWidth={strokeWidth} aria-hidden='true' />
 );
 
 export default XIcon;

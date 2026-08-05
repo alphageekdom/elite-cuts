@@ -7,6 +7,8 @@ import { fmtPrice } from '@/lib/checkout/totals';
 import { getInitials } from '@/lib/format';
 import { DrawerHeader, DrawerBody, DrawerFooter } from '@/components/admin/DrawerChrome';
 import { labelCls } from '@/components/admin/AdminForm';
+import ChevronIcon from '@/components/ui/icons/ChevronIcon';
+import PlusIcon from '@/components/ui/icons/PlusIcon';
 
 export type AdminOrderCustomer = {
   id: string;
@@ -238,16 +240,7 @@ export default function OrderCreateDrawer({
                       >
                         <span className="font-medium flex-1 min-w-0 truncate">{c.name}</span>
                         <span className="text-muted text-[12px] min-w-0 truncate">{c.email}</span>
-                        <svg
-                          aria-hidden="true"
-                          className="w-3.5 h-3.5 text-muted shrink-0 group-hover:text-oxblood transition-colors"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <polyline points="9 18 15 12 9 6" />
-                        </svg>
+                        <ChevronIcon className="w-3.5 h-3.5 text-muted shrink-0 group-hover:text-oxblood transition-colors" direction="right" />
                       </button>
                     ))}
                   </>
@@ -358,9 +351,7 @@ export default function OrderCreateDrawer({
                         aria-hidden="true"
                         className="w-6 h-6 rounded-full border border-line text-muted grid place-items-center group-hover:border-oxblood group-hover:text-oxblood transition-colors"
                       >
-                        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                          <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-                        </svg>
+                        <PlusIcon className="w-3 h-3" />
                       </span>
                     </div>
                   </button>

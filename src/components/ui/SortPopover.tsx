@@ -2,6 +2,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { useDismissOnEscape } from '@/hooks/useDismissOnEscape';
+import CheckIcon from '@/components/ui/icons/CheckIcon';
+import ChevronIcon from '@/components/ui/icons/ChevronIcon';
 
 // `useLayoutEffect` is fine in the browser but warns during SSR. Swap to
 // `useEffect` on the server so the SSR pass stays silent — the measure
@@ -136,9 +138,7 @@ export default function SortPopover<T extends string>({
           {prefix}
         </span>
         {triggerLabel}
-        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
+        <ChevronIcon className="w-3 h-3" direction="down" />
       </button>
       {open && (
         <>
@@ -167,9 +167,7 @@ export default function SortPopover<T extends string>({
                 >
                   {o.label}
                   {active && (
-                    <svg className="w-3.5 h-3.5 text-oxblood" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
+                    <CheckIcon className="w-3.5 h-3.5 text-oxblood" />
                   )}
                 </button>
               );

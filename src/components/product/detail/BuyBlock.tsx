@@ -11,6 +11,8 @@ import { MAX_PER_LINE } from '@/lib/shop-settings/config';
 import type { SerializedProduct } from '@/models/Product';
 import CartIcon from '@/components/ui/icons/CartIcon';
 import HeartIcon from '@/components/ui/icons/HeartIcon';
+import MinusIcon from '@/components/ui/icons/MinusIcon';
+import PlusIcon from '@/components/ui/icons/PlusIcon';
 
 type Props = {
   product: Pick<
@@ -148,9 +150,7 @@ export default function BuyBlock({ product }: Props) {
             aria-label='Decrease quantity'
             className='grid h-11 w-11 place-items-center transition-colors duration-300 hover:bg-cream-deep disabled:opacity-40 motion-reduce:transition-none'
           >
-            <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2} aria-hidden className='h-3 w-3'>
-              <line x1='5' y1='12' x2='19' y2='12' />
-            </svg>
+            <MinusIcon className='h-3 w-3' strokeWidth={2} />
           </button>
           <span className='w-10 text-center font-display text-base font-medium'>
             {qty}
@@ -162,10 +162,7 @@ export default function BuyBlock({ product }: Props) {
             aria-label='Increase quantity'
             className='grid h-11 w-11 place-items-center transition-colors duration-300 hover:bg-cream-deep disabled:opacity-40 motion-reduce:transition-none'
           >
-            <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2} aria-hidden className='h-3 w-3'>
-              <line x1='12' y1='5' x2='12' y2='19' />
-              <line x1='5' y1='12' x2='19' y2='12' />
-            </svg>
+            <PlusIcon className='h-3 w-3' strokeWidth={2} />
           </button>
         </div>
 

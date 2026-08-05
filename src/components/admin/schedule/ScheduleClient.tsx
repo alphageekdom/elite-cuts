@@ -22,6 +22,8 @@ import {
   type StaffUserOption,
 } from '@/lib/admin/schedule';
 import { useScheduleWeek } from '@/hooks/admin/useScheduleWeek';
+import ChevronIcon from '@/components/ui/icons/ChevronIcon';
+import PlusIcon from '@/components/ui/icons/PlusIcon';
 
 type Props = {
   initialShifts: ShiftRow[];
@@ -80,10 +82,7 @@ export default function ScheduleClient({
               Print
             </button>
             <button onClick={() => openCreate()} className="inline-flex items-center gap-2 px-4.5 py-2.5 rounded-full bg-ink text-cream text-[13px] font-medium tracking-[0.02em] hover:bg-oxblood transition-colors">
-              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
+              <PlusIcon className="w-3.5 h-3.5" strokeWidth={2} />
               Add shift
             </button>
           </>
@@ -95,10 +94,10 @@ export default function ScheduleClient({
         <div className="flex items-center gap-3">
           <div className="flex gap-1">
             <button onClick={prevWeek} aria-label="Previous week" className="w-8 h-8 rounded-full bg-paper border border-line text-ink-soft grid place-items-center hover:border-ink hover:text-ink transition-colors">
-              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><polyline points="15 18 9 12 15 6" /></svg>
+              <ChevronIcon className="w-3 h-3" direction="left" />
             </button>
             <button onClick={nextWeek} aria-label="Next week" className="w-8 h-8 rounded-full bg-paper border border-line text-ink-soft grid place-items-center hover:border-ink hover:text-ink transition-colors">
-              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
+              <ChevronIcon className="w-3 h-3" direction="right" />
             </button>
           </div>
           <div>

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import AdminEyebrow from './AdminEyebrow';
+import ChevronIcon from '@/components/ui/icons/ChevronIcon';
 
 type Props = {
   eyebrow: string;
@@ -25,9 +26,7 @@ export default function AdminPageHeader({
         <Link href="/dashboard" className="hover:text-oxblood transition-colors">
           Dashboard
         </Link>
-        <svg className="w-2.5 h-2.5 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
+        <ChevronIcon className="w-2.5 h-2.5 opacity-50" direction="right" />
         <span className="text-ink">{breadcrumb}</span>
       </div>
 

@@ -1,17 +1,14 @@
-type ClockIconProps = { className?: string };
+import { FiClock } from 'react-icons/fi';
 
-const ClockIcon = ({ className }: ClockIconProps) => (
-  <svg
-    viewBox='0 0 24 24'
-    fill='none'
-    stroke='currentColor'
-    strokeWidth={2}
-    aria-hidden='true'
-    className={className}
-  >
-    <circle cx='12' cy='12' r='10' />
-    <polyline points='12 6 12 12 16 14' />
-  </svg>
+type ClockIconProps = {
+  className?: string;
+  // The customer-detail hero draws it at 2.5.
+  strokeWidth?: number;
+};
+
+// Feather, via react-icons — the same paths this file used to inline by hand.
+const ClockIcon = ({ className, strokeWidth = 2 }: ClockIconProps) => (
+  <FiClock className={className} strokeWidth={strokeWidth} aria-hidden='true' />
 );
 
 export default ClockIcon;

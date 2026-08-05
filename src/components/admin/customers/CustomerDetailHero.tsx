@@ -4,6 +4,8 @@ import { getLifecycle } from '@/lib/admin/customer-tier';
 import AdminEyebrow from '@/components/admin/AdminEyebrow';
 import type { CustomerTableRow } from '@/types/admin';
 import { ACTIVITY_CONFIG, TIER_CONFIG_DARK, getActivity, getTier } from './customerUtils';
+import ClockIcon from '@/components/ui/icons/ClockIcon';
+import XIcon from '@/components/ui/icons/XIcon';
 
 type Props = {
   customer: CustomerTableRow;
@@ -58,9 +60,7 @@ export default function CustomerDetailHero({ customer, onClose }: Props) {
             aria-label="Close customer profile"
             className="w-9 h-9 rounded-full border border-cream/15 bg-cream/8 text-cream grid place-items-center hover:border-cream/30 transition-colors shrink-0"
           >
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <XIcon className="w-3.5 h-3.5" strokeWidth={2} />
           </button>
         </div>
 
@@ -96,10 +96,7 @@ export default function CustomerDetailHero({ customer, onClose }: Props) {
               )}
               {isDormancyWarned && (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-[0.04em] bg-camel/25 text-cream border border-camel/40">
-                  <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <circle cx="12" cy="12" r="10" />
-                    <polyline points="12 6 12 12 16 14" />
-                  </svg>
+                  <ClockIcon className="w-2.5 h-2.5" strokeWidth={2.5} />
                   {dormancyLabels.warned && dormancyLabels.cleanup
                     ? `Dormancy warning sent ${dormancyLabels.warned} · cleanup on ${dormancyLabels.cleanup}`
                     : 'Dormancy warning sent'}

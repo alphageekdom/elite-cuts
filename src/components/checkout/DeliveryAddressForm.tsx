@@ -21,6 +21,7 @@ import {
   type PhotonFeature,
 } from '@/lib/checkout/geocoding';
 import { DELIVERY_RADIUS_MILES } from '@/lib/shop-settings/config';
+import CheckIcon from '@/components/ui/icons/CheckIcon';
 
 
 // Address fields are the source of truth on context — every input reads from
@@ -298,9 +299,7 @@ const DeliveryAddressForm = () => {
       )}
       {deliveryCheck === 'valid' && (
         <p className='flex items-center gap-2 text-[13px] text-green'>
-          <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2.5} aria-hidden='true' className='h-3.5 w-3.5 shrink-0'>
-            <polyline points='20 6 9 17 4 12' />
-          </svg>
+          <CheckIcon className='h-3.5 w-3.5 shrink-0' />
           Great news — this address is within our delivery area.
         </p>
       )}

@@ -10,6 +10,7 @@ import StaffMobileCards from './StaffMobileCards';
 import StaffProfileDrawer from './StaffProfileDrawer';
 import StaffFormDrawer from './StaffFormDrawer';
 import { useStaffTable } from '@/hooks/admin/useStaffTable';
+import PlusIcon from '@/components/ui/icons/PlusIcon';
 
 type Props = {
   rows: StaffRow[];
@@ -52,10 +53,7 @@ export default function StaffPageClient({ rows, headerSubtitle }: Props) {
             onClick={openCreate}
             className="inline-flex items-center gap-2 bg-ink text-cream text-[12px] font-medium tracking-[0.04em] px-4 py-2.5 rounded-full hover:bg-oxblood transition-colors"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
+            <PlusIcon className="w-3 h-3" />
             Add staff
           </button>
         }

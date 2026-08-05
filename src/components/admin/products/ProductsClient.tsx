@@ -26,6 +26,7 @@ import { formatMoney } from '@/lib/format';
 import { downloadCsvFromUrl } from '@/lib/admin/download';
 import type { ProductTableRow, ProductCounts } from '@/types/admin';
 import ProductFormDrawer from './ProductFormDrawer';
+import PlusIcon from '@/components/ui/icons/PlusIcon';
 
 export type { ProductTableRow, ProductCounts };
 
@@ -186,9 +187,7 @@ export default function ProductsClient({ products, counts, categoryCounts, heade
               onClick={() => openDrawer()}
               className="inline-flex items-center gap-1.5 bg-ink text-cream rounded-full px-3.5 py-2 text-[13px] font-medium hover:bg-oxblood transition-colors"
             >
-              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
+              <PlusIcon className="w-3 h-3" strokeWidth={2} />
               Add cut
             </button>
           </div>

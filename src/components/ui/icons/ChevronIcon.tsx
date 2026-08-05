@@ -1,3 +1,10 @@
+import {
+  FiChevronDown,
+  FiChevronLeft,
+  FiChevronRight,
+  FiChevronUp,
+} from 'react-icons/fi';
+
 type ChevronIconProps = {
   className?: string;
   // Required rather than defaulted: a chevron's whole job is to point
@@ -8,28 +15,25 @@ type ChevronIconProps = {
   strokeWidth?: number;
 };
 
-const POINTS = {
-  right: '9 18 15 12 9 6',
-  left: '15 18 9 12 15 6',
-  up: '18 15 12 9 6 15',
-  down: '6 9 12 15 18 9',
+// Feather, via react-icons — the same paths this file used to inline by hand.
+// The `direction` prop is kept rather than asking call sites to pick one of four
+// imports: it is the reason this wrapper exists at all.
+const BY_DIRECTION = {
+  right: FiChevronRight,
+  left: FiChevronLeft,
+  up: FiChevronUp,
+  down: FiChevronDown,
 } as const;
 
 const ChevronIcon = ({
   className,
   direction,
   strokeWidth = 2,
-}: ChevronIconProps) => (
-  <svg
-    viewBox='0 0 24 24'
-    fill='none'
-    stroke='currentColor'
-    strokeWidth={strokeWidth}
-    aria-hidden='true'
-    className={className}
-  >
-    <polyline points={POINTS[direction]} />
-  </svg>
-);
+}: ChevronIconProps) => {
+  const Glyph = BY_DIRECTION[direction];
+  return (
+    <Glyph className={className} strokeWidth={strokeWidth} aria-hidden='true' />
+  );
+};
 
 export default ChevronIcon;

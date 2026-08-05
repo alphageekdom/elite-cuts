@@ -1,6 +1,7 @@
 'use client';
 
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import PlusIcon from '@/components/ui/icons/PlusIcon';
 
 type Props = {
   totalProducts: number;
@@ -58,10 +59,7 @@ export default function InventoryPageHeader({
             onClick={onLogDelivery}
             className="inline-flex items-center gap-2 px-4.5 py-2.5 rounded-full bg-ink text-cream text-[13px] font-medium tracking-[0.02em] hover:bg-oxblood transition-colors"
           >
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
+            <PlusIcon className="w-3.5 h-3.5" strokeWidth={2} />
             Log delivery
           </button>
         </>

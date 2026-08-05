@@ -22,6 +22,8 @@ import { RECEIPT_ORDER_STATUS_STYLES } from '@/lib/orders/status';
 import ReceiptToolbar from './ReceiptToolbar';
 import ReceiptHeader from './ReceiptHeader';
 import ReceiptItemsTable from './ReceiptItemsTable';
+import CheckIcon from '@/components/ui/icons/CheckIcon';
+import ClockIcon from '@/components/ui/icons/ClockIcon';
 
 export const dynamic = 'force-dynamic';
 
@@ -215,9 +217,7 @@ export default async function ReceiptPage({ params }: Props) {
               )}
               {pickupWindow && (
                 <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-full bg-cream border border-line-soft text-[11px] font-medium text-ink-soft">
-                  <svg className="w-3 h-3 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-                  </svg>
+                  <ClockIcon className="w-3 h-3 opacity-70" />
                   Window: {pickupWindow}
                 </div>
               )}
@@ -247,9 +247,7 @@ export default async function ReceiptPage({ params }: Props) {
           {order.orderStatus === 'Ready for Pickup' && (
             <div className="mx-8 sm:mx-12 mt-5 px-5 py-4 rounded border border-camel/25 bg-camel/8 flex items-start gap-3.5">
               <span className="w-7 h-7 rounded-full bg-camel/20 text-camel-deep grid place-items-center shrink-0 mt-0.5">
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
+                <CheckIcon className="w-3.5 h-3.5" />
               </span>
               <div>
                 <div className="font-display text-[15px] font-medium tracking-tight text-ink leading-snug">

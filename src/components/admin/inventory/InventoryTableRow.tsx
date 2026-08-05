@@ -3,6 +3,8 @@ import Image from 'next/image';
 import { productImageSrc } from '@/lib/format';
 import { CATEGORY_COLORS } from '@/lib/admin/constants';
 import { CATEGORY_PAR, DEFAULT_PAR, getStockState, type StockState, type InventoryRow } from '@/lib/inventory';
+import CheckIcon from '@/components/ui/icons/CheckIcon';
+import XIcon from '@/components/ui/icons/XIcon';
 
 const STOCK_BAR_COLOR: Record<StockState, string> = {
   healthy: 'bg-green',
@@ -132,10 +134,10 @@ export default function InventoryTableRowComponent({
               className="w-16 border border-ink rounded-lg px-2 py-1 text-[13px] text-ink bg-paper outline-none text-center"
             />
             <button onClick={() => onStockSave(row.id)} disabled={stockSaving} aria-label={`Save stock count for ${row.name}`} className="w-7 h-7 rounded-full bg-ink text-cream grid place-items-center hover:bg-oxblood transition-colors disabled:opacity-50">
-              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>
+              <CheckIcon className="w-3 h-3" strokeWidth={3} />
             </button>
             <button onClick={onStockCancel} aria-label="Cancel stock edit" className="w-7 h-7 rounded-full border border-line text-ink-soft grid place-items-center hover:border-ink transition-colors">
-              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              <XIcon className="w-3 h-3" strokeWidth={2} />
             </button>
           </div>
         ) : (

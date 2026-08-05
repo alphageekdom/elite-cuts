@@ -1,5 +1,7 @@
 'use client';
 
+import ChevronIcon from '@/components/ui/icons/ChevronIcon';
+
 type Props = {
   backHref: string;
   email: string;
@@ -55,9 +57,7 @@ export default function ReceiptToolbar({ backHref, email, orderRef, orderId, sho
         href={backHref}
         className="inline-flex items-center gap-1.5 text-[13px] text-ink-soft px-3.5 py-2 rounded-full bg-paper border border-line hover:border-ink hover:text-ink transition-colors self-start"
       >
-        <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <polyline points="15 18 9 12 15 6" />
-        </svg>
+        <ChevronIcon className="w-3 h-3 shrink-0" direction="left" />
         Back to orders
       </a>
 

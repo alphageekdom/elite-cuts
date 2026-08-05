@@ -1,4 +1,5 @@
 import React from 'react';
+import ClockIcon from '@/components/ui/icons/ClockIcon';
 
 export type NavItem = {
   href: string;
@@ -58,9 +59,7 @@ const InventoryIcon = ({ className = 'w-4 h-4 shrink-0' }: { className?: string 
 );
 
 const ScheduleIcon = ({ className = 'w-4 h-4 shrink-0' }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-  </svg>
+  <ClockIcon className={className} />
 );
 
 const StaffIcon = ({ className = 'w-4 h-4 shrink-0' }: { className?: string }) => (

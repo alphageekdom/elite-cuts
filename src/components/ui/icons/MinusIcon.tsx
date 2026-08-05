@@ -1,16 +1,14 @@
-type MinusIconProps = { className?: string };
+import { FiMinus } from 'react-icons/fi';
 
-const MinusIcon = ({ className }: MinusIconProps) => (
-  <svg
-    viewBox='0 0 24 24'
-    fill='none'
-    stroke='currentColor'
-    strokeWidth={2.5}
-    aria-hidden='true'
-    className={className}
-  >
-    <line x1='5' y1='12' x2='19' y2='12' />
-  </svg>
+type MinusIconProps = {
+  className?: string;
+  // Pairs with PlusIcon on the quantity steppers, which draw both at 2.
+  strokeWidth?: number;
+};
+
+// Feather, via react-icons — the same paths this file used to inline by hand.
+const MinusIcon = ({ className, strokeWidth = 2.5 }: MinusIconProps) => (
+  <FiMinus className={className} strokeWidth={strokeWidth} aria-hidden='true' />
 );
 
 export default MinusIcon;

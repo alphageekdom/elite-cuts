@@ -9,6 +9,7 @@ import {
   getDashboardOrderStatusLabel,
 } from '@/lib/orders/status';
 import type { OrderRow } from '@/types/admin';
+import ArrowIcon from '@/components/ui/icons/ArrowIcon';
 export type { OrderRow };
 
 
@@ -49,9 +50,7 @@ export default function DashboardRecentOrders({ orders }: Props) {
           className="text-ink-soft text-[13px] font-medium inline-flex items-center gap-1.5 border-b border-current pb-px hover:text-oxblood transition-colors hover:gap-2.5"
         >
           All orders
-          <svg className="w-2.75 h-2.75" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M5 12h14M13 5l7 7-7 7" />
-          </svg>
+          <ArrowIcon className="w-2.75 h-2.75" />
         </Link>
       </div>
 

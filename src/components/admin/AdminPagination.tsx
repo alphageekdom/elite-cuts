@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import ChevronIcon from '@/components/ui/icons/ChevronIcon';
 
 type Props = {
   page: number;
@@ -42,9 +43,7 @@ export default function AdminPagination({
           aria-label="Previous page"
           className="w-8 h-8 rounded-full border border-line text-ink-soft grid place-items-center hover:border-ink hover:bg-paper hover:text-ink transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
         >
-          <svg aria-hidden="true" className="w-2.75 h-2.75" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
+          <ChevronIcon className="w-2.75 h-2.75" direction="left" />
         </button>
 
         <div className="flex items-center gap-0.5 mx-2">
@@ -87,9 +86,7 @@ export default function AdminPagination({
           aria-label="Next page"
           className="w-8 h-8 rounded-full border border-line text-ink-soft grid place-items-center hover:border-ink hover:bg-paper hover:text-ink transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
         >
-          <svg aria-hidden="true" className="w-2.75 h-2.75" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
+          <ChevronIcon className="w-2.75 h-2.75" direction="right" />
         </button>
       </div>
 

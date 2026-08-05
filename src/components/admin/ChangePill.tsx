@@ -1,3 +1,5 @@
+import ChevronIcon from '@/components/ui/icons/ChevronIcon';
+
 export default function ChangePill({
   val,
   suffix = '%',
@@ -17,13 +19,9 @@ export default function ChangePill({
       }`}
     >
       {isUp ? (
-        <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-          <polyline points="18 15 12 9 6 15" />
-        </svg>
+        <ChevronIcon className="w-2.5 h-2.5" direction="up" strokeWidth={3} />
       ) : (
-        <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
+        <ChevronIcon className="w-2.5 h-2.5" direction="down" strokeWidth={3} />
       )}
       {display}
     </span>
