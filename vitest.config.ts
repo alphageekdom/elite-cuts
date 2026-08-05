@@ -7,10 +7,15 @@ import { defineConfig } from 'vitest/config';
 //
 // That last case means React *is* in the module graph — importing a
 // `'use client'` module pulls it in — so the old "no React" here is no longer
-// true. It loads fine and nothing calls it; the boundary that actually holds
-// is that no component is rendered and no DOM exists. When a component test
-// spec lands, that suite gets its own config with jsdom + the React plugin
-// layered on top.
+// true. It loads fine and nothing calls it.
+//
+// `environment: 'node'` is the DEFAULT, not the rule. A file that needs a DOM
+// opts in with a `// @vitest-environment jsdom` docblock on its first line, and
+// pays ~215ms to boot jsdom — per file, not per test. `useFocusTrap.test.tsx`
+// is the first such file. This replaces an earlier plan for a second config
+// with jsdom plus a React plugin: neither is needed. React 19 exports `act`
+// itself, `react-dom/client` renders into a jsdom document, and esbuild handles
+// the JSX from tsconfig's `jsx: "react-jsx"`. One package, one glob entry.
 //
 // `resolve.tsconfigPaths: true` is Vite's native replacement for the
 // vite-tsconfig-paths plugin and resolves the `@/` aliases from
@@ -22,7 +27,8 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    // `.test.tsx` needs its own entry: `*.test.ts` does not match it.
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
     globals: false,
     // Pin a shop-zone default so a plain `vitest` run sits WEST of UTC. Date
     // bugs in this codebase are zone-shaped — a UTC-midnight calendar value
