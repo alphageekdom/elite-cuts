@@ -24,6 +24,15 @@ export const maxDuration = 300;
 // ad-hoc admin or test triggering. The shared cron wrapper handles 503/401
 // envelopes, success message, and 500 fall-through identically to the other
 // crons.
-const handler = withCronSecret(resetDemoData, 'Demo data reset');
+//
+// `failureCount` was previously omitted here, on the stated grounds that this
+// job either succeeds or throws outright. It does not: the rating recompute
+// swallows per-product failures on purpose, so the ~100 restore round-trips
+// behind it still run. Without this, a night where every recompute failed
+// answered 200 with a clean-looking count — the same "reported success on a
+// fully failed run" defect the other two crons already fixed.
+const handler = withCronSecret(resetDemoData, 'Demo data reset', {
+  failureCount: (r) => r.ratingRecomputeFailures,
+});
 export const GET = handler;
 export const POST = handler;

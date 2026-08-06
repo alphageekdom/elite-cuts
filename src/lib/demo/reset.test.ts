@@ -179,6 +179,7 @@ describe('resetDemoCustomerState — demo customer not found', () => {
       reviewsDeleted: 0,
       messagesDeleted: 0,
       userReset: false,
+      ratingRecomputeFailures: 0,
     });
 
     // Critical guarantee: when the demo customer isn't found, NONE of the
@@ -337,6 +338,7 @@ describe('resetDemoCustomerState — demo customer found', () => {
       reviewsDeleted: 0,
       messagesDeleted: 4,
       userReset: true,
+      ratingRecomputeFailures: 0,
     });
   });
 
@@ -433,6 +435,44 @@ describe('resetDemoCustomerState — authored reviews', () => {
     // The ~100 round-trips of catalog restore behind this must not be gated
     // on a two-round-trip cleanup step.
     expect(mocks.orderDeleteMany).toHaveBeenCalled();
+  });
+
+  // Swallowing the failure is right; swallowing it SILENTLY was not. The cron
+  // wrapper answers 500 off this count, so a run where recomputes failed stops
+  // being indistinguishable from a clean one. Without it the nightly reset
+  // reported 200 with a tidy-looking count and the stale ratings sat there.
+  it('reports no rating failures on a clean run', async () => {
+    const { resetDemoCustomerState } = await import('./reset');
+
+    await expect(resetDemoCustomerState()).resolves.toMatchObject({
+      ratingRecomputeFailures: 0,
+    });
+  });
+
+  it('counts a swallowed recompute failure', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    mocks.recomputeProductRating
+      .mockRejectedValueOnce(new Error('transient'))
+      .mockResolvedValue(undefined);
+
+    const { resetDemoCustomerState } = await import('./reset');
+
+    await expect(resetDemoCustomerState()).resolves.toMatchObject({
+      ratingRecomputeFailures: 1,
+    });
+  });
+
+  it('counts every failure when the whole recompute step fails', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    mocks.recomputeProductRating.mockRejectedValue(new Error('mongo down'));
+
+    const { resetDemoCustomerState } = await import('./reset');
+    const counts = await resetDemoCustomerState();
+
+    // Two distinct products from the three mocked reviews.
+    expect(counts.ratingRecomputeFailures).toBe(2);
+    // Still a completed wipe — the count is the signal, not an abort.
+    expect(counts.userReset).toBe(true);
   });
 });
 
@@ -550,6 +590,7 @@ describe('resetDemoData', () => {
       reviewsDeleted: 0,
       messagesDeleted: 4,
       userReset: true,
+      ratingRecomputeFailures: 0,
       productsRestored: 39,
       productsDeleted: 0,
       promosRestored: 5,

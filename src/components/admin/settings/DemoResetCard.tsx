@@ -46,7 +46,19 @@ export default function DemoResetCard() {
           ? `${counts.ordersDeleted} order${counts.ordersDeleted === 1 ? '' : 's'} cleared, ${counts.ordersSeeded} reseeded`
           : 'no demo customer found';
         const catalogPart = `${counts.productsRestored} cut${counts.productsRestored === 1 ? '' : 's'} restored`;
-        toast.success(`Demo data reset · ${customerPart} · ${catalogPart}.`);
+        const summary = `Demo data reset · ${customerPart} · ${catalogPart}.`;
+        // A swallowed rating recompute leaves a stale star average on the
+        // product page, and this button is the recovery path an admin reaches
+        // for when the nightly run misbehaved — reporting a plain success here
+        // is what sent them away thinking it was fixed.
+        const failed = counts.ratingRecomputeFailures;
+        if (failed > 0) {
+          toast.warning(
+            `${summary} ${failed} rating${failed === 1 ? '' : 's'} could not be recomputed — run it again.`,
+          );
+        } else {
+          toast.success(summary);
+        }
       }
       setConfirming(false);
     } catch (error) {

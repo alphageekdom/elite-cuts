@@ -56,6 +56,12 @@ export type ResetCounts = {
   // when the demo customer's saved cuts / addresses / rewards / dormancy
   // fields were reset to the zero state on this run.
   userReset: boolean;
+  // Ratings whose recompute failed and was swallowed so the restore behind it
+  // could still run (see the catch below). Counted rather than only logged so
+  // `withCronSecret` can answer 500 — a run where every recompute failed used
+  // to report a clean 200, which is the exact defect the other two crons'
+  // `failureCount` exists to prevent.
+  ratingRecomputeFailures: number;
 };
 
 // Shape returned by `resetDemoData` — surfaced by the cron + admin endpoint
@@ -94,6 +100,7 @@ export async function resetDemoCustomerState(): Promise<ResetCounts> {
       reviewsDeleted: 0,
       messagesDeleted: 0,
       userReset: false,
+      ratingRecomputeFailures: 0,
     };
   }
 
@@ -139,9 +146,11 @@ export async function resetDemoCustomerState(): Promise<ResetCounts> {
   // deliberately never writes `rating`. Per-product catch so one transient
   // failure stales one rating (visibly, in the log) instead of aborting the
   // ~100 restore round-trips behind it.
+  let ratingRecomputeFailures = 0;
   await Promise.all(
     reviewedProductIds.map((id) =>
       recomputeProductRating(id).catch((error) => {
+        ratingRecomputeFailures += 1;
         console.error('[demo reset] rating recompute failed', id, error);
       }),
     ),
@@ -246,6 +255,7 @@ export async function resetDemoCustomerState(): Promise<ResetCounts> {
     reviewsDeleted: reviewsRes.deletedCount ?? 0,
     messagesDeleted: messagesRes.deletedCount ?? 0,
     userReset: true,
+    ratingRecomputeFailures,
   };
 }
 

@@ -125,10 +125,15 @@ type CronJob<TResult> = () => Promise<TResult>;
  * Wraps a scheduled job behind the shared bearer gate.
  *
  * `opts.failureCount` is how a job that collects per-item failures and keeps
- * going tells the wrapper the run was not clean. Jobs that either succeed or
- * throw outright (the demo reset) omit it. Reading a conventional key off the
- * result was the alternative and was rejected — the job knows what a failure
- * means, the generic wrapper does not.
+ * going tells the wrapper the run was not clean. Reading a conventional key off
+ * the result was the alternative and was rejected — the job knows what a
+ * failure means, the generic wrapper does not.
+ *
+ * All three crons pass it. This used to name the demo reset as a job that
+ * "either succeeds or throws outright", which was wrong — it swallows
+ * per-product rating-recompute failures by design — and that sentence is what
+ * licensed the omission that let a fully failed run report 200. If a future job
+ * omits this, check that it really has no swallowing catch.
  */
 export function withCronSecret<TResult extends Record<string, unknown>>(
   job: CronJob<TResult>,
