@@ -56,7 +56,9 @@ const product = (over: Partial<OrderProductLean> = {}): OrderProductLean =>
 
 // `Cart.findOne(...)` returns a query whose `.populate()` resolves to the doc.
 const cartResolving = (doc: unknown) => {
-  mocks.cartFindOne.mockReturnValue({ populate: vi.fn().mockResolvedValue(doc) });
+  mocks.cartFindOne.mockReturnValue({
+    populate: vi.fn().mockResolvedValue(doc),
+  });
 };
 
 // `Product.find(...)` returns a query whose `.lean()` resolves to the array.
@@ -73,14 +75,22 @@ describe('buildOrderItemsFromCart', () => {
     cartResolving(null);
     const result = await buildOrderItemsFromCart('user-1');
 
-    expect(result).toEqual({ ok: false, status: 400, message: 'Cart is empty' });
+    expect(result).toEqual({
+      ok: false,
+      status: 400,
+      message: 'Cart is empty',
+    });
   });
 
   it('refuses a cart whose items were all removed', async () => {
     cartResolving({ items: [] });
     const result = await buildOrderItemsFromCart('user-1');
 
-    expect(result).toEqual({ ok: false, status: 400, message: 'Cart is empty' });
+    expect(result).toEqual({
+      ok: false,
+      status: 400,
+      message: 'Cart is empty',
+    });
   });
 
   // The cart API enforces this cap on add/edit; this is the backstop for a
@@ -101,7 +111,13 @@ describe('buildOrderItemsFromCart', () => {
 
   it('accepts a line exactly at the cap', async () => {
     cartResolving({
-      items: [{ product: product({ stockCount: 99 }), quantity: MAX_PER_LINE, price: 24.99 }],
+      items: [
+        {
+          product: product({ stockCount: 99 }),
+          quantity: MAX_PER_LINE,
+          price: 24.99,
+        },
+      ],
     });
     const result = await buildOrderItemsFromCart('user-1');
 
@@ -112,7 +128,15 @@ describe('buildOrderItemsFromCart', () => {
     cartResolving({
       items: [
         { product: product({ name: 'Ribeye' }), quantity: 2, price: 24.99 },
-        { product: product({ name: 'Bacon', pricingType: 'fixed_package', packagePrice: 9.99 }), quantity: 1, price: 9.99 },
+        {
+          product: product({
+            name: 'Bacon',
+            pricingType: 'fixed_package',
+            packagePrice: 9.99,
+          }),
+          quantity: 1,
+          price: 9.99,
+        },
       ],
     });
     const result = await buildOrderItemsFromCart('user-1');
@@ -130,8 +154,16 @@ describe('buildOrderItemsFromCart', () => {
   it('reports a stock shortfall without refusing the build', async () => {
     cartResolving({
       items: [
-        { product: product({ name: 'Ribeye', stockCount: 1 }), quantity: 3, price: 24.99 },
-        { product: product({ name: 'Bacon', stockCount: 50 }), quantity: 1, price: 9.99 },
+        {
+          product: product({ name: 'Ribeye', stockCount: 1 }),
+          quantity: 3,
+          price: 24.99,
+        },
+        {
+          product: product({ name: 'Bacon', stockCount: 50 }),
+          quantity: 1,
+          price: 9.99,
+        },
       ],
     });
     const result = await buildOrderItemsFromCart('user-1');
@@ -148,7 +180,13 @@ describe('buildOrderItemsFromCart', () => {
     // The cart line's own `price` is a stale snapshot. Trusting it would let a
     // shopper hold yesterday's price by leaving a tab open.
     cartResolving({
-      items: [{ product: product({ pricePerLb: 30, estimatedWeightLb: 1 }), quantity: 1, price: 0.01 }],
+      items: [
+        {
+          product: product({ pricePerLb: 30, estimatedWeightLb: 1 }),
+          quantity: 1,
+          price: 0.01,
+        },
+      ],
     });
     const result = await buildOrderItemsFromCart('user-1');
 
@@ -202,11 +240,15 @@ describe('buildOrderItemsFromGuestItems', () => {
   });
 
   it('reports a stock shortfall without refusing the build', async () => {
-    productsResolving([product({ _id: 'p1' as never, name: 'Ribeye', stockCount: 2 })]);
+    productsResolving([
+      product({ _id: 'p1' as never, name: 'Ribeye', stockCount: 2 }),
+    ]);
     const result = await buildOrderItemsFromGuestItems([guestItem('p1', 5)]);
 
     if (!result.ok) throw new Error('expected ok');
-    expect(result.stockErrors).toEqual(['Ribeye: only 2 in stock (5 requested)']);
+    expect(result.stockErrors).toEqual([
+      'Ribeye: only 2 in stock (5 requested)',
+    ]);
     expect(result.orderItems).toHaveLength(1);
   });
 
@@ -239,6 +281,8 @@ describe('buildOrderItemsFromGuestItems', () => {
     productsResolving([product({ _id: 'p1' as never })]);
     await buildOrderItemsFromGuestItems([guestItem('p1', 1)]);
 
-    expect(mocks.productFind.mock.calls[0][0]).toEqual({ _id: { $in: ['p1'] } });
+    expect(mocks.productFind.mock.calls[0][0]).toEqual({
+      _id: { $in: ['p1'] },
+    });
   });
 });

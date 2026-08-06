@@ -26,7 +26,9 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('@/models/Promo', () => ({ default: { findOne: mocks.promoFindOne } }));
-vi.mock('@/models/Order', () => ({ default: { countDocuments: mocks.orderCountDocuments } }));
+vi.mock('@/models/Order', () => ({
+  default: { countDocuments: mocks.orderCountDocuments },
+}));
 
 import { validatePromo } from './validate';
 
@@ -58,7 +60,10 @@ const validate = (over: Record<string, unknown> = {}) =>
 describe('validatePromo — finding the code', () => {
   it('rejects a code that does not exist', async () => {
     mocks.promoFindOne.mockResolvedValue(null);
-    await expect(validate()).resolves.toEqual({ valid: false, reason: 'not_found' });
+    await expect(validate()).resolves.toEqual({
+      valid: false,
+      reason: 'not_found',
+    });
   });
 
   it('rejects a blank code without hitting the database', async () => {
@@ -78,23 +83,34 @@ describe('validatePromo — finding the code', () => {
 
   it('rejects a disabled code', async () => {
     mocks.promoFindOne.mockResolvedValue(promo({ isActive: false }));
-    await expect(validate()).resolves.toEqual({ valid: false, reason: 'disabled' });
+    await expect(validate()).resolves.toEqual({
+      valid: false,
+      reason: 'disabled',
+    });
   });
 });
 
 describe('validatePromo — the active window', () => {
   it('rejects a campaign that has not started', async () => {
     mocks.promoFindOne.mockResolvedValue(promo({ startsAt: future() }));
-    await expect(validate()).resolves.toEqual({ valid: false, reason: 'not_started' });
+    await expect(validate()).resolves.toEqual({
+      valid: false,
+      reason: 'not_started',
+    });
   });
 
   it('rejects a campaign that has ended', async () => {
     mocks.promoFindOne.mockResolvedValue(promo({ endsAt: past() }));
-    await expect(validate()).resolves.toEqual({ valid: false, reason: 'expired' });
+    await expect(validate()).resolves.toEqual({
+      valid: false,
+      reason: 'expired',
+    });
   });
 
   it('accepts a campaign inside its window', async () => {
-    mocks.promoFindOne.mockResolvedValue(promo({ startsAt: past(), endsAt: future() }));
+    mocks.promoFindOne.mockResolvedValue(
+      promo({ startsAt: past(), endsAt: future() }),
+    );
     await expect(validate()).resolves.toMatchObject({ valid: true });
   });
 
@@ -113,24 +129,35 @@ describe('validatePromo — the active window', () => {
   });
 
   it('treats an absent window as always-on', async () => {
-    mocks.promoFindOne.mockResolvedValue(promo({ startsAt: undefined, endsAt: undefined }));
+    mocks.promoFindOne.mockResolvedValue(
+      promo({ startsAt: undefined, endsAt: undefined }),
+    );
     await expect(validate()).resolves.toMatchObject({ valid: true });
   });
 });
 
 describe('validatePromo — the global usage limit', () => {
   it('rejects a code whose seats are gone', async () => {
-    mocks.promoFindOne.mockResolvedValue(promo({ usageLimit: 5, usageCount: 5 }));
-    await expect(validate()).resolves.toEqual({ valid: false, reason: 'exhausted' });
+    mocks.promoFindOne.mockResolvedValue(
+      promo({ usageLimit: 5, usageCount: 5 }),
+    );
+    await expect(validate()).resolves.toEqual({
+      valid: false,
+      reason: 'exhausted',
+    });
   });
 
   it('accepts a code with one seat left', async () => {
-    mocks.promoFindOne.mockResolvedValue(promo({ usageLimit: 5, usageCount: 4 }));
+    mocks.promoFindOne.mockResolvedValue(
+      promo({ usageLimit: 5, usageCount: 4 }),
+    );
     await expect(validate()).resolves.toMatchObject({ valid: true });
   });
 
   it('treats a missing limit as unlimited', async () => {
-    mocks.promoFindOne.mockResolvedValue(promo({ usageLimit: undefined, usageCount: 9999 }));
+    mocks.promoFindOne.mockResolvedValue(
+      promo({ usageLimit: undefined, usageCount: 9999 }),
+    );
     await expect(validate()).resolves.toMatchObject({ valid: true });
   });
 
@@ -144,8 +171,13 @@ describe('validatePromo — the global usage limit', () => {
   // from a truthiness check. With only the `undefined` test above, rewriting it
   // as `promo.usageLimit &&` passes every test in this file.
   it('treats a stored limit of 0 as exhausted, not as unlimited', async () => {
-    mocks.promoFindOne.mockResolvedValue(promo({ usageLimit: 0, usageCount: 0 }));
-    await expect(validate()).resolves.toEqual({ valid: false, reason: 'exhausted' });
+    mocks.promoFindOne.mockResolvedValue(
+      promo({ usageLimit: 0, usageCount: 0 }),
+    );
+    await expect(validate()).resolves.toEqual({
+      valid: false,
+      reason: 'exhausted',
+    });
   });
 });
 
@@ -160,7 +192,9 @@ describe('validatePromo — the minimum subtotal', () => {
 
   it('accepts a basket exactly at the minimum', async () => {
     mocks.promoFindOne.mockResolvedValue(promo({ minSubtotal: 5_000 }));
-    await expect(validate({ subtotalCents: 5_000 })).resolves.toMatchObject({ valid: true });
+    await expect(validate({ subtotalCents: 5_000 })).resolves.toMatchObject({
+      valid: true,
+    });
   });
 });
 
@@ -179,7 +213,9 @@ describe('validatePromo — firstOrderOnly', () => {
 
   it('accepts a genuine first-time customer', async () => {
     mocks.promoFindOne.mockResolvedValue(promo({ firstOrderOnly: true }));
-    await expect(validate({ userId: 'user-1' })).resolves.toMatchObject({ valid: true });
+    await expect(validate({ userId: 'user-1' })).resolves.toMatchObject({
+      valid: true,
+    });
   });
 
   // A paid-then-cancelled first order used to block first-order codes forever,
@@ -211,7 +247,9 @@ describe('validatePromo — perCustomerLimit', () => {
     mocks.promoFindOne.mockResolvedValue(promo({ perCustomerLimit: 2 }));
     mocks.orderCountDocuments.mockResolvedValue(1);
 
-    await expect(validate({ userId: 'user-1' })).resolves.toMatchObject({ valid: true });
+    await expect(validate({ userId: 'user-1' })).resolves.toMatchObject({
+      valid: true,
+    });
   });
 
   // An abandoned checkout leaves an unpaid Pending order. Counting it would
@@ -236,7 +274,9 @@ describe('validatePromo — perCustomerLimit', () => {
     mocks.promoFindOne.mockResolvedValue(promo({ perCustomerLimit: 0 }));
     mocks.orderCountDocuments.mockResolvedValue(99);
 
-    await expect(validate({ userId: 'user-1' })).resolves.toMatchObject({ valid: true });
+    await expect(validate({ userId: 'user-1' })).resolves.toMatchObject({
+      valid: true,
+    });
   });
 });
 
@@ -247,10 +287,12 @@ describe('validatePromo — who the customer is', () => {
 
     // The account wins outright — a guest email alongside it is ignored, so a
     // signed-in customer cannot buy a second allowance by typing a new address.
-    expect(mocks.orderCountDocuments.mock.calls[0][0]).toMatchObject({ user: 'user-1' });
-    expect(JSON.stringify(mocks.orderCountDocuments.mock.calls[0][0])).not.toContain(
-      'someone@else.test',
-    );
+    expect(mocks.orderCountDocuments.mock.calls[0][0]).toMatchObject({
+      user: 'user-1',
+    });
+    expect(
+      JSON.stringify(mocks.orderCountDocuments.mock.calls[0][0]),
+    ).not.toContain('someone@else.test');
   });
 
   // Guests used to skip both caps entirely, so an uncapped first-order-only
@@ -280,7 +322,9 @@ describe('validatePromo — who the customer is', () => {
   // Nothing identifies this shopper, so there is no key to count against. The
   // global usage limit is the only thing still bounding the code.
   it('skips the per-customer caps entirely when nothing identifies the shopper', async () => {
-    mocks.promoFindOne.mockResolvedValue(promo({ perCustomerLimit: 1, firstOrderOnly: true }));
+    mocks.promoFindOne.mockResolvedValue(
+      promo({ perCustomerLimit: 1, firstOrderOnly: true }),
+    );
     const result = await validate({ userId: null, guestEmail: null });
 
     expect(result).toMatchObject({ valid: true });
@@ -309,21 +353,27 @@ describe('validatePromo — the discount', () => {
   });
 
   it('never lets a fixed promo exceed the basket', async () => {
-    mocks.promoFindOne.mockResolvedValue(promo({ type: 'fixed', value: 50_000 }));
+    mocks.promoFindOne.mockResolvedValue(
+      promo({ type: 'fixed', value: 50_000 }),
+    );
     await expect(validate({ subtotalCents: 10_000 })).resolves.toMatchObject({
       discountCents: 10_000,
     });
   });
 
   it('caps a percentage promo at maxDiscount', async () => {
-    mocks.promoFindOne.mockResolvedValue(promo({ value: 50, maxDiscount: 2_000 }));
+    mocks.promoFindOne.mockResolvedValue(
+      promo({ value: 50, maxDiscount: 2_000 }),
+    );
     await expect(validate({ subtotalCents: 10_000 })).resolves.toMatchObject({
       discountCents: 2_000,
     });
   });
 
   it('leaves a percentage promo alone when the cap does not bite', async () => {
-    mocks.promoFindOne.mockResolvedValue(promo({ value: 10, maxDiscount: 2_000 }));
+    mocks.promoFindOne.mockResolvedValue(
+      promo({ value: 10, maxDiscount: 2_000 }),
+    );
     await expect(validate({ subtotalCents: 10_000 })).resolves.toMatchObject({
       discountCents: 1_000,
     });
@@ -333,16 +383,16 @@ describe('validatePromo — the discount', () => {
   // figure. Applying both to the full subtotal would discount the same dollars
   // twice: 10% of 10000 is 1000, but 10% of the post-member 9500 is 950.
   it('takes its cut after the member discount for a signed-in member', async () => {
-    await expect(validate({ subtotalCents: 10_000, isMember: true })).resolves.toMatchObject(
-      { discountCents: 950 },
-    );
+    await expect(
+      validate({ subtotalCents: 10_000, isMember: true }),
+    ).resolves.toMatchObject({ discountCents: 950 });
   });
 
   it('uses the full subtotal when the promo excludes the member discount', async () => {
     mocks.promoFindOne.mockResolvedValue(promo({ excludesMember: true }));
-    await expect(validate({ subtotalCents: 10_000, isMember: true })).resolves.toMatchObject(
-      { discountCents: 1_000 },
-    );
+    await expect(
+      validate({ subtotalCents: 10_000, isMember: true }),
+    ).resolves.toMatchObject({ discountCents: 1_000 });
   });
 
   it('hands back the promo document so the caller can read its stacking flags', async () => {
@@ -352,6 +402,9 @@ describe('validatePromo — the discount', () => {
     const result = await validate();
 
     if (!result.valid) throw new Error('expected valid');
-    expect(result.promo).toMatchObject({ code: 'TENOFF', excludesPoints: true });
+    expect(result.promo).toMatchObject({
+      code: 'TENOFF',
+      excludesPoints: true,
+    });
   });
 });
