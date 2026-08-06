@@ -53,35 +53,35 @@ This repository is a **TypeScript redesign** of the original JavaScript app — 
 
 **Editorial homepage** — hero, marquee, and the featured grid
 
-<img src="docs/screenshots/homepage.jpeg" alt="EliteCuts homepage: full-bleed hero reading The art of the cut, a scrolling marquee, and the featured cuts grid" width="800" />
+<img src=".github/screenshots/homepage.jpeg" alt="EliteCuts homepage: full-bleed hero reading The art of the cut, a scrolling marquee, and the featured cuts grid" width="800" />
 
 **Product detail** — gallery, weight-aware pricing, category-aware cooking notes
 
-<img src="docs/screenshots/product-detail.jpeg" alt="Tomahawk Steak detail page with image gallery, spec strip, per-pound price with running total, and cooking notes" width="800" />
+<img src=".github/screenshots/product-detail.jpeg" alt="Tomahawk Steak detail page with image gallery, spec strip, per-pound price with running total, and cooking notes" width="800" />
 
 **Cart drawer** — item and cut counts, bundle contents, estimated total
 
-<img src="docs/screenshots/cart-drawer.jpeg" alt="Cart drawer open over the catalog showing two lines totalling six cuts, an expandable bundle, and an estimated total" width="800" />
+<img src=".github/screenshots/cart-drawer.jpeg" alt="Cart drawer open over the catalog showing two lines totalling six cuts, an expandable bundle, and an estimated total" width="800" />
 
 **Checkout** — pickup slots drawn from real shop hours, promo and points
 
-<img src="docs/screenshots/checkout.jpeg" alt="Checkout page with details form, pickup day and time slot picker, notes field, payment tiles, and order summary" width="800" />
+<img src=".github/screenshots/checkout.jpeg" alt="Checkout page with details form, pickup day and time slot picker, notes field, payment tiles, and order summary" width="800" />
 
 **Account dashboard** — the order in progress, reorder strip, and habits
 
-<img src="docs/screenshots/account-dashboard.jpeg" alt="Customer account dashboard with rewards tier, current order tracker, buy it again strip, recent orders, and habits panel" width="800" />
+<img src=".github/screenshots/account-dashboard.jpeg" alt="Customer account dashboard with rewards tier, current order tracker, buy it again strip, recent orders, and habits panel" width="800" />
 
 **Admin dashboard** — the day's cut list, not a monthly report
 
-<img src="docs/screenshots/admin-dashboard.jpeg" alt="Admin dashboard home showing today's counts, the cut list for the day, revenue chart, reorder panel, and who is on the floor" width="800" />
+<img src=".github/screenshots/admin-dashboard.jpeg" alt="Admin dashboard home showing today's counts, the cut list for the day, revenue chart, reorder panel, and who is on the floor" width="800" />
 
 **Admin catalog** — stat strip, stock bars, per-pricing-type units, CSV import/export
 
-<img src="docs/screenshots/admin-products.jpeg" alt="Admin products table listing 39 cuts with category pills, stock bars, and pagination" width="800" />
+<img src=".github/screenshots/admin-products.jpeg" alt="Admin products table listing 39 cuts with category pills, stock bars, and pagination" width="800" />
 
 **Mobile catalog (iPhone 12 Pro)**
 
-<img src="docs/screenshots/mobile-products.jpeg" alt="Mobile catalog with sticky filter row, in-stock toggle, and product cards" width="300" />
+<img src=".github/screenshots/mobile-products.jpeg" alt="Mobile catalog with sticky filter row, in-stock toggle, and product cards" width="300" />
 
 ---
 
