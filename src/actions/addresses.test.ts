@@ -147,7 +147,11 @@ describe('addAddress', () => {
 
     await addAddress(form({ isDefault: true }));
 
-    expect(user.addresses.map((a) => a.isDefault)).toEqual([false, false, true]);
+    expect(user.addresses.map((a) => a.isDefault)).toEqual([
+      false,
+      false,
+      true,
+    ]);
   });
 
   it('trims every field and drops a blank unit line', async () => {
@@ -155,7 +159,12 @@ describe('addAddress', () => {
     mocks.findById.mockResolvedValue(user);
 
     await addAddress(
-      form({ label: '  Home  ', address1: ' 1 Main St ', address2: '   ', city: ' SD ' }),
+      form({
+        label: '  Home  ',
+        address1: ' 1 Main St ',
+        address2: '   ',
+        city: ' SD ',
+      }),
     );
 
     expect(user.addresses[0]).toMatchObject({
@@ -216,7 +225,10 @@ describe('updateAddress', () => {
 
     await updateAddress('a2', form({ label: 'Work', city: 'Encinitas' }));
 
-    expect(user.addresses[1]).toMatchObject({ label: 'Work', city: 'Encinitas' });
+    expect(user.addresses[1]).toMatchObject({
+      label: 'Work',
+      city: 'Encinitas',
+    });
     expect(user.addresses[0].label).toBe('Label a1');
   });
 
@@ -254,7 +266,11 @@ describe('deleteAddress', () => {
   // Otherwise deleting the default leaves the customer with addresses but no
   // default — the same broken state the addAddress invariant exists to prevent.
   it('promotes the first survivor when the default is deleted', async () => {
-    const user = userWith([addr('a1', { isDefault: true }), addr('a2'), addr('a3')]);
+    const user = userWith([
+      addr('a1', { isDefault: true }),
+      addr('a2'),
+      addr('a3'),
+    ]);
     mocks.findById.mockResolvedValue(user);
 
     await deleteAddress('a1');
@@ -291,7 +307,9 @@ describe('deleteAddress', () => {
     const user = userWith([addr('a1', { isDefault: true }), addr('a2')]);
     mocks.findById.mockResolvedValue(user);
 
-    await expect(deleteAddress('already-deleted')).resolves.toEqual({ success: true });
+    await expect(deleteAddress('already-deleted')).resolves.toEqual({
+      success: true,
+    });
     expect(user.addresses.map((a) => [a._id.toString(), a.isDefault])).toEqual([
       ['a1', true],
       ['a2', false],
@@ -310,7 +328,11 @@ describe('setDefaultAddress', () => {
 
     await setDefaultAddress('a3');
 
-    expect(user.addresses.map((a) => a.isDefault)).toEqual([false, false, true]);
+    expect(user.addresses.map((a) => a.isDefault)).toEqual([
+      false,
+      false,
+      true,
+    ]);
   });
 
   // Was a real bug, found while writing these tests and fixed on the same
