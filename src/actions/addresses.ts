@@ -113,6 +113,15 @@ export async function setDefaultAddress(addressId: string): Promise<ActionResult
     const user = await UserModel.findById(userId);
     if (!user) return { success: false, error: 'User not found' };
 
+    // Confirm the target exists BEFORE reassigning, or an id that matches
+    // nothing clears every default and saves that: the customer keeps their
+    // addresses but has none pre-selected, and the UI reports success. Reachable
+    // from a stale page — deleting an address in one tab leaves another tab
+    // holding a dead id. Same guard, and the same message, as `updateAddress`.
+    if (!user.addresses.id(addressId)) {
+      return { success: false, error: 'Address not found' };
+    }
+
     for (const addr of user.addresses) {
       addr.isDefault = addr._id.toString() === addressId;
     }
