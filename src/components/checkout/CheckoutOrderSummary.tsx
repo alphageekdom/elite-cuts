@@ -8,6 +8,7 @@ import { useCartContext } from '@/context/CartContext';
 import { useCheckoutContext } from '@/context/CheckoutContext';
 import { computeTotals, DELIVERY_FEE, fmtPrice, MEMBER_DISCOUNT_RATE } from '@/lib/checkout/totals';
 import { findPriceChanges, repriceLines } from '@/lib/cart/reprice';
+import { formatCartCount } from '@/lib/cart/counts';
 import CheckoutTrustStrip from '@/components/checkout/CheckoutTrustStrip';
 import CheckoutRewardsRedeem from '@/components/checkout/CheckoutRewardsRedeem';
 import CheckoutPublicPromos from '@/components/checkout/CheckoutPublicPromos';
@@ -53,7 +54,6 @@ const CheckoutOrderSummary = () => {
   const [promoError, setPromoError] = useState('');
   const [isEditing, setIsEditing] = useState(false);
 
-  const itemCount = cartItems.reduce((acc, line) => acc + line.quantity, 0);
   const isDelivery = fulfillment === 'delivery';
   const pointsApplied = pointsDiscount > 0;
 
@@ -205,7 +205,7 @@ const CheckoutOrderSummary = () => {
 
         <div className='mb-4 flex items-baseline justify-between gap-2'>
           <span className='font-display text-[22px] font-medium tracking-tight'>
-            {itemCount} cut{itemCount !== 1 ? 's' : ''}{' '}
+            {formatCartCount(cartItems)}{' '}
             <em className='text-[14px] font-normal text-muted'>· in your cart</em>
           </span>
           <button
