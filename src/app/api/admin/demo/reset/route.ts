@@ -20,15 +20,21 @@ const handler = withAdminNonDemo(async (_req: NextRequest) => {
   try {
     const counts = await resetDemoData();
     // Stays a 200: the wipe and restore did run, and the admin needs the counts.
-    // But the message must not say "reset" flat when a recompute was swallowed —
-    // this is the manual RECOVERY path, so a false clean answer here is what
-    // sends an admin away believing a broken nightly run has been repaired.
+    // A 500 would send the card into its `!res.ok` branch, which throws `data`
+    // away — the admin would lose the counts and be told nothing happened.
+    //
+    // The message is API hygiene, NOT what the admin reads. `DemoResetCard` is
+    // the only consumer and it ignores this string on the success path,
+    // building its own summary from `data` — the admin-facing warning lives
+    // there. This exists so the payload does not claim a clean "Demo data
+    // reset" while `data` reports failures, for anything reading the endpoint
+    // directly (a log, a curl, a future consumer).
     return NextResponse.json({
       data: counts,
       message:
-        counts.ratingRecomputeFailures > 0 ?
-          'Demo data reset, but some ratings could not be recomputed'
-        : 'Demo data reset',
+        counts.ratingRecomputeFailures > 0
+          ? 'Demo data reset, but some ratings could not be recomputed'
+          : 'Demo data reset',
     });
   } catch (error) {
     // The advisory lock's refusal is a state, not a malfunction — the admin

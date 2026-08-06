@@ -10,10 +10,16 @@ import type { NextRequest } from 'next/server';
 //
 // Deliberately still a 200. A 500 would send the client down its `!res.ok`
 // branch, which discards `data` — so the admin would lose the counts and be
-// told nothing had happened, when the wipe and restore genuinely ran. The
-// signal belongs in the message, not the status. The cron sibling answers 500
-// on the same condition because its consumer is a status-based monitor, not a
-// person reading a toast.
+// told nothing had happened, when the wipe and restore genuinely ran. The cron
+// sibling answers 500 on the same condition because its consumer is a
+// status-based monitor, not a person reading a toast.
+//
+// Note what this message is NOT. `DemoResetCard` is the only consumer and it
+// ignores this string on the success path, building its own summary from
+// `data`; the admin-facing warning is covered in `DemoResetCard.test.tsx`.
+// This is here so the payload cannot claim a clean reset while `data` reports
+// failures — an earlier version of this comment said "the signal belongs in
+// the message", which was wrong: no admin ever reads it.
 //
 // `resetDemoData` is mocked for the same reason as in the cron sibling's test:
 // importing it for real drags `server-only` and a dozen Mongoose models in.
@@ -34,7 +40,9 @@ vi.mock('@/lib/demo/reset', () => ({
 }));
 vi.mock('@/config/database', () => ({ default: vi.fn(async () => undefined) }));
 vi.mock('@/lib/auth/session', () => ({ getSessionUser: mocks.getSessionUser }));
-vi.mock('@/lib/auth/demo-permissions', () => ({ isDemoAdmin: mocks.isDemoAdmin }));
+vi.mock('@/lib/auth/demo-permissions', () => ({
+  isDemoAdmin: mocks.isDemoAdmin,
+}));
 
 const req = () => ({}) as unknown as NextRequest;
 
@@ -74,7 +82,9 @@ describe('POST /api/admin/demo/reset', () => {
     // 200 on purpose — see the note at the top of this file.
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.message).toBe('Demo data reset, but some ratings could not be recomputed');
+    expect(body.message).toBe(
+      'Demo data reset, but some ratings could not be recomputed',
+    );
     // The counts must survive, so the card can say how many.
     expect(body.data.ratingRecomputeFailures).toBe(3);
     expect(body.data.productsRestored).toBe(39);
