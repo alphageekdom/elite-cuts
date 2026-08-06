@@ -19,9 +19,16 @@ export const maxDuration = 300;
 const handler = withAdminNonDemo(async (_req: NextRequest) => {
   try {
     const counts = await resetDemoData();
+    // Stays a 200: the wipe and restore did run, and the admin needs the counts.
+    // But the message must not say "reset" flat when a recompute was swallowed —
+    // this is the manual RECOVERY path, so a false clean answer here is what
+    // sends an admin away believing a broken nightly run has been repaired.
     return NextResponse.json({
       data: counts,
-      message: 'Demo data reset',
+      message:
+        counts.ratingRecomputeFailures > 0 ?
+          'Demo data reset, but some ratings could not be recomputed'
+        : 'Demo data reset',
     });
   } catch (error) {
     // The advisory lock's refusal is a state, not a malfunction — the admin
