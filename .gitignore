@@ -39,6 +39,23 @@ next-env.d.ts
 # json
 products.json
 
+# local-only working files
+# Audit notes, agent context, and the pre-prod seed scripts. These were ignored
+# only via .git/info/exclude, which git does not track, so the rule protected
+# this machine and nothing else — a clone that regenerated these files would
+# have swept security reviews and seed scripts into a public repo on the next
+# `git add -A`. Kept here so the rule travels with the repo.
+#
+# Published README assets deliberately live in .github/screenshots/, not under
+# docs/, so this stays a plain directory ignore. Do not move them back and add
+# a negation: git cannot re-include a path whose parent directory is excluded,
+# so `/docs/` + `!/docs/screenshots/` silently ignores the negation and the
+# README ends up linking images that were never committed.
+/docs/
+/context/
+/scripts/
+CLAUDE.md
+
 # verification screenshots
 # Every audit cycle leaves browser shots in the repo root, and they pile up
 # until someone sweeps them by hand. Root-level only — `public/` images and
