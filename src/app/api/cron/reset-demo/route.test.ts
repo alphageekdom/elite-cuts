@@ -21,8 +21,12 @@ const mocks = vi.hoisted(() => ({ resetDemoData: vi.fn() }));
 
 vi.mock('@/lib/demo/reset', () => ({ resetDemoData: mocks.resetDemoData }));
 vi.mock('@/config/database', () => ({ default: vi.fn(async () => undefined) }));
-vi.mock('@/lib/auth/session', () => ({ getSessionUser: vi.fn(async () => null) }));
-vi.mock('@/lib/auth/demo-permissions', () => ({ isDemoAdmin: vi.fn(() => false) }));
+vi.mock('@/lib/auth/session', () => ({
+  getSessionUser: vi.fn(async () => null),
+}));
+vi.mock('@/lib/auth/demo-permissions', () => ({
+  isDemoAdmin: vi.fn(() => false),
+}));
 
 const SECRET = 'correct-horse-battery-staple';
 
