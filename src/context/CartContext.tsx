@@ -17,6 +17,7 @@ import type { SerializedProduct } from '@/models/Product';
 import { MAX_PER_LINE } from '@/lib/shop-settings/config';
 import { countCartItems } from '@/lib/cart/counts';
 import { resolveCartHydration } from '@/lib/cart/hydration';
+import { isCartMutationCurrent } from '@/lib/cart/mutation-guard';
 import {
   applyAddToLines,
   dedupeLines,
@@ -251,17 +252,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
     <T,>(task: (isLatest: () => boolean) => Promise<T>): Promise<T> => {
       const seq = (mutationSeqRef.current += 1);
       const owner = currentUserIdRef.current;
-      // Recency AND identity. Recency alone is not enough across an account
-      // change: a hydration never advances `mutationSeqRef`, so a mutation
-      // dispatched by the previous account still counted as "latest" and could
-      // apply its echo — or revert to its pre-click snapshot — over the new
-      // account's cart, indefinitely. Reproduced both ways. The owner half also
-      // stops a task that is still queued from being sent at all once the
-      // session has moved on: `credentials: 'include'` would put it on the new
-      // account's cookie and write the previous account's product into their
-      // server cart, which checkout then charges from.
+      // Recency AND identity — see `isCartMutationCurrent` for why each half is
+      // load-bearing on its own. The decision lives there rather than inline so
+      // it can be tested without mocking this component's session, toast and
+      // fetch dependencies; it is the write-side counterpart to
+      // `resolveCartHydration` above.
       const isLatest = () =>
-        seq === mutationSeqRef.current && owner === currentUserIdRef.current;
+        isCartMutationCurrent({
+          seq,
+          currentSeq: mutationSeqRef.current,
+          owner,
+          currentOwner: currentUserIdRef.current,
+        });
       const next = mutationChainRef.current.then(() => task(isLatest));
       // The chain must survive a rejecting task, or one failed mutation would
       // wedge every later one. Callers still see their own rejection via

@@ -4,9 +4,18 @@
  * Lifted out of `CartContext` because the decision is where a real bug lived:
  * the effect keyed on auth *status* and on whether a user existed, but not on
  * *which* user — so changing account in place (no reload) left the previous
- * account's lines on screen indefinitely. `CartContext.tsx` cannot be tested
- * here (Vitest runs `environment: 'node'` and collects only `*.test.ts`), and
- * this is the part of it worth pinning.
+ * account's lines on screen indefinitely. Testing it through `CartContext`
+ * would mean rendering the provider — which throws unmocked, because
+ * `useSession` needs a `<SessionProvider />` — for no added confidence in a
+ * branch choice over five values, so the decision is pinned here instead.
+ *
+ * Corrected 2026-08-05: this used to say `CartContext.tsx` "cannot be tested
+ * here (Vitest runs `environment: 'node'` and collects only `*.test.ts`)".
+ * That stopped being true when the glob widened to `*.test.tsx` and a jsdom
+ * tier landed behind a per-file docblock — and a node-env test already renders
+ * `.tsx` client components. Cost was the real reason, not capability.
+ *
+ * See `mutation-guard.ts` for the write-side counterpart to this decision.
  */
 
 export type CartHydrationInput = {
