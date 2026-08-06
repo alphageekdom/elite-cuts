@@ -26,7 +26,7 @@ This repository is a **TypeScript redesign** of the original JavaScript app — 
 ## Features
 
 **Customer**
-- Browse products by category (Beef, Chicken, Pork, Charcuterie, Sausage, Prepared, Bundles, Other)
+- Browse products by category (Beef, Chicken, Pork, Lamb, Sausage, Prepared, Bundles, Charcuterie, Other)
 - View product detail with image gallery (PhotoSwipe)
 - Guest checkout or authenticated cart with rewards
 - Stripe Checkout with pickup time selection (test mode only — this is a portfolio demo)
@@ -51,29 +51,37 @@ This repository is a **TypeScript redesign** of the original JavaScript app — 
 
 ## Screenshots
 
-**Editorial homepage**
+**Editorial homepage** — hero, marquee, and the featured grid
 
-<img src="docs/screenshots/homepage.jpeg" alt="EliteCuts homepage with hero, featured cuts, and shop story" width="800" />
+<img src="docs/screenshots/homepage.jpeg" alt="EliteCuts homepage: full-bleed hero reading The art of the cut, a scrolling marquee, and the featured cuts grid" width="800" />
 
-**Product detail — realistic per-pound and bundle pricing**
+**Product detail** — gallery, weight-aware pricing, category-aware cooking notes
 
-<img src="docs/screenshots/product-detail.jpeg" alt="Steakhouse Beef Sampler Bundle detail page with cooking notes" width="800" />
+<img src="docs/screenshots/product-detail.jpeg" alt="Tomahawk Steak detail page with image gallery, spec strip, per-pound price with running total, and cooking notes" width="800" />
 
-**Cart drawer — subtotal, estimated tax, total, free pickup ETA**
+**Cart drawer** — item and cut counts, bundle contents, estimated total
 
-<img src="docs/screenshots/cart-drawer.jpeg" alt="Cart drawer open over the products listing" width="800" />
+<img src="docs/screenshots/cart-drawer.jpeg" alt="Cart drawer open over the catalog showing two lines totalling six cuts, an expandable bundle, and an estimated total" width="800" />
 
-**Admin dashboard — KPIs, revenue chart, top cuts, recent orders**
+**Checkout** — pickup slots drawn from real shop hours, promo and points
 
-<img src="docs/screenshots/admin-dashboard.jpeg" alt="Admin dashboard home with month-to-date KPIs and recent orders" width="800" />
+<img src="docs/screenshots/checkout.jpeg" alt="Checkout page with details form, pickup day and time slot picker, notes field, payment tiles, and order summary" width="800" />
 
-**Admin orders — filter, search, sort, column visibility**
+**Account dashboard** — the order in progress, reorder strip, and habits
 
-<img src="docs/screenshots/admin-orders.jpeg" alt="Admin orders table with stat strip, range toggle, and column controls" width="800" />
+<img src="docs/screenshots/account-dashboard.jpeg" alt="Customer account dashboard with rewards tier, current order tracker, buy it again strip, recent orders, and habits panel" width="800" />
+
+**Admin dashboard** — the day's cut list, not a monthly report
+
+<img src="docs/screenshots/admin-dashboard.jpeg" alt="Admin dashboard home showing today's counts, the cut list for the day, revenue chart, reorder panel, and who is on the floor" width="800" />
+
+**Admin catalog** — stat strip, stock bars, per-pricing-type units, CSV import/export
+
+<img src="docs/screenshots/admin-products.jpeg" alt="Admin products table listing 39 cuts with category pills, stock bars, and pagination" width="800" />
 
 **Mobile catalog (iPhone 12 Pro)**
 
-<img src="docs/screenshots/mobile-products.jpeg" alt="Mobile-first catalog stack with category chips and featured tags" width="320" />
+<img src="docs/screenshots/mobile-products.jpeg" alt="Mobile catalog with sticky filter row, in-stock toggle, and product cards" width="300" />
 
 ---
 
@@ -81,20 +89,19 @@ This repository is a **TypeScript redesign** of the original JavaScript app — 
 
 | Layer | Choice | Version |
 |---|---|---|
-| Framework | Next.js (App Router) | ^16.2.4 |
+| Framework | Next.js (App Router) | ^16.2.10 |
 | Language | TypeScript (strict mode) | ^6.0.3 |
-| UI Library | React | ^19.2.5 |
+| UI Library | React | ^19.2.7 |
 | Styling | Tailwind CSS v4 | ^4.2.4 |
-| UI Primitives | Headless UI | ^2.2.10 |
-| Icons | React Icons | ^5.6.0 |
-| Database | MongoDB Atlas + Mongoose | ^9.6.1 |
+| Icons | React Icons | ^5.7.0 |
+| Database | MongoDB Atlas + Mongoose | ^9.7.4 |
 | Auth | NextAuth.js | ^4.24.14 |
 | Image Hosting | Cloudinary | ^2.10.0 |
-| Payments | Stripe | — |
+| Payments | Stripe | ^22.3.2 |
 | Validation | Zod | ^4.4.3 |
-| Testing | Vitest | ^4.1.6 |
+| Testing | Vitest | ^4.1.10 |
 | Notifications | Sonner | ^2.0.7 |
-| Image Gallery | react-photoswipe-gallery | ^4.0.0 |
+| Image Gallery | PhotoSwipe | ^5.4.4 |
 | Deployment | Vercel | — |
 
 ---
@@ -138,6 +145,7 @@ src/
 ├── models/                 # Mongoose schemas (User, Product, Order, Cart, …)
 ├── config/                 # DB connection, Cloudinary setup
 ├── hooks/                  # useHandleAddToCart, useCartExpiry, useReveal, …
+│   └── admin/              # Dashboard-only hooks (table state, bulk actions)
 ├── context/                # CartContext, CheckoutContext, ShopSettingsContext
 ├── actions/                # Server Actions (addresses, promos)
 ├── jobs/                   # The dormancy scan (other cron bodies live in lib/)
@@ -170,7 +178,7 @@ they cover as `*.test.ts` rather than in a separate tree.
 {
   name: string
   slug: string            // stable URL key, survives renames
-  category: 'Beef' | 'Chicken' | 'Pork' | 'Charcuterie' | 'Sausage' | 'Prepared' | 'Bundles' | 'Other'
+  category: 'Beef' | 'Chicken' | 'Pork' | 'Lamb' | 'Sausage' | 'Prepared' | 'Bundles' | 'Charcuterie' | 'Other'
   description: string
   pricingType: 'fixed' | 'per_lb' | 'whole' | 'individual' | 'bundle'
   price: number           // cents (estimate for per_lb / whole)
@@ -359,22 +367,40 @@ User → /login → NextAuth Credentials Provider
 - Passwords are hashed with bcryptjs (max length: 128 chars)
 - Session data is stored in a signed JWT (not a database session)
 - `isAdmin` is set at registration and is immutable
-- Only authenticated users can add to cart or check out
+- Guests can browse, build a cart, and check out; signing in adds rewards,
+  saved cuts, and order history. Registering with the email used on a guest
+  order claims that order into the new account
+- Two seeded demo accounts sign in from `/demo` in one click, with no password
+  sent to the browser. Their state is restored nightly
 
 ---
 
 ## Checkout Flow
 
 ```
-Cart → auth check → Review order
+Cart → Review details, pickup slot, promo/points
+                       ↓
+       Write Order (orderStatus: Pending, isPaid: false)
+       — no stock decrement, no points deducted yet
                        ↓
                Create Stripe Checkout Session
                        ↓
                Stripe-hosted checkout page
                        ↓
-               Stripe webhook → create Order (status: Paid)
+       Stripe webhook flips that same order → isPaid: true
+       — decrements stock, settles points and the promo seat,
+         idempotent so a retried webhook can't double-apply
                        ↓
                Confirmation page
 ```
+
+The order is written *before* the redirect and the webhook updates it, rather
+than the webhook creating it — so an abandoned checkout leaves a Pending row
+rather than nothing. Payment state lives on `isPaid` and `paymentResult`;
+`orderStatus` tracks fulfillment (Pending → Ready for Pickup → Completed).
+
+Without `STRIPE_SECRET_KEY` set, checkout routes through a local stub that
+mirrors the same complete/cancel paths, so the flow works end to end with no
+Stripe credentials.
 
 Fulfillment is pickup-only. No shipping in the current version.
