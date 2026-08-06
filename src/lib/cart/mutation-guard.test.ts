@@ -23,7 +23,9 @@ import { isCartMutationCurrent } from './mutation-guard';
 // would pass against a guard collapsed to either half alone — which is exactly
 // the shape of the mutation that survived.
 
-const current = (over: Partial<Parameters<typeof isCartMutationCurrent>[0]> = {}) =>
+const current = (
+  over: Partial<Parameters<typeof isCartMutationCurrent>[0]> = {},
+) =>
   isCartMutationCurrent({
     seq: 3,
     currentSeq: 3,
@@ -64,7 +66,12 @@ describe('isCartMutationCurrent — identity', () => {
   // mutation is still the newest one.
   it('rejects a mutation whose account has been signed out from under it', () => {
     expect(
-      current({ seq: 3, currentSeq: 3, owner: 'user-a', currentOwner: 'user-b' }),
+      current({
+        seq: 3,
+        currentSeq: 3,
+        owner: 'user-a',
+        currentOwner: 'user-b',
+      }),
     ).toBe(false);
   });
 
@@ -85,20 +92,35 @@ describe('isCartMutationCurrent — neither half is redundant', () => {
   // returns true and the test fails. A suite that only checked "both differ"
   // would pass against both collapses.
   it('rejects on recency alone, with the account unchanged', () => {
-    expect(current({ seq: 1, currentSeq: 2, owner: 'user-a', currentOwner: 'user-a' })).toBe(
-      false,
-    );
+    expect(
+      current({
+        seq: 1,
+        currentSeq: 2,
+        owner: 'user-a',
+        currentOwner: 'user-a',
+      }),
+    ).toBe(false);
   });
 
   it('rejects on identity alone, with the sequence unchanged', () => {
-    expect(current({ seq: 2, currentSeq: 2, owner: 'user-a', currentOwner: 'user-b' })).toBe(
-      false,
-    );
+    expect(
+      current({
+        seq: 2,
+        currentSeq: 2,
+        owner: 'user-a',
+        currentOwner: 'user-b',
+      }),
+    ).toBe(false);
   });
 
   it('rejects when both differ', () => {
-    expect(current({ seq: 1, currentSeq: 2, owner: 'user-a', currentOwner: 'user-b' })).toBe(
-      false,
-    );
+    expect(
+      current({
+        seq: 1,
+        currentSeq: 2,
+        owner: 'user-a',
+        currentOwner: 'user-b',
+      }),
+    ).toBe(false);
   });
 });
