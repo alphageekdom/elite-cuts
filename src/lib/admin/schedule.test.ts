@@ -24,7 +24,7 @@ import { mondayOfShopDay } from '@/lib/shifts/schedule';
 // restored. Measured: reverting the getters fails 6 of these under
 // `America/Los_Angeles` and 0 under both `UTC` and `Australia/Sydney`.
 //
-// So the west-of-UTC default pinned in vitest.config.ts, and the Pacific leg of
+// So the west-of-UTC default pinned in vitest.config.mts, and the Pacific leg of
 // `npm run test:tz`, are load-bearing rather than incidental. Removing either
 // leaves this file green against the exact regression it was written for.
 
