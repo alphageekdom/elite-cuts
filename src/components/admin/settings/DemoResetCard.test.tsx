@@ -13,7 +13,7 @@ import { createRoot, type Root } from 'react-dom/client';
 // misbehaved. A flat success here is what sends an admin away believing the
 // repair worked when some ratings are still stale.
 //
-// Needs the jsdom tier (see vitest.config.ts) rather than the static-render
+// Needs the jsdom tier (see vitest.config.mts) rather than the static-render
 // one — the toast is raised from an async click handler, so nothing short of a
 // real event and a settled promise reaches it.
 

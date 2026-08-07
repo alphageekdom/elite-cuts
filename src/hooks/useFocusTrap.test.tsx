@@ -8,7 +8,7 @@ import { useFocusTrap } from './useFocusTrap';
 // ── What this covers ────────────────────────────────────────────────────
 // `useFocusTrap` end to end, rendered for real. It is the first file in this
 // repo to opt into jsdom (see the docblock above and the note in
-// vitest.config.ts) because the hook is *entirely* DOM manipulation — unlike
+// vitest.config.mts) because the hook is *entirely* DOM manipulation — unlike
 // `useDismissOnEscape` or `useRewardsStanding`, there is no module-level logic
 // to lift into a `.ts` file and test in the node suite. A DOM is the whole
 // subject.
