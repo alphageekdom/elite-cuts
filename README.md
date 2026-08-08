@@ -89,15 +89,15 @@ This repository is a **TypeScript redesign** of the original JavaScript app — 
 
 | Layer | Choice | Version |
 |---|---|---|
-| Framework | Next.js (App Router) | ^16.2.10 |
+| Framework | Next.js (App Router) | ^16.3.0 |
 | Language | TypeScript (strict mode) | ^6.0.3 |
-| UI Library | React | ^19.2.7 |
+| UI Library | React | ^19.2.8 |
 | Styling | Tailwind CSS v4 | ^4.2.4 |
 | Icons | React Icons | ^5.7.0 |
-| Database | MongoDB Atlas + Mongoose | ^9.7.4 |
-| Auth | NextAuth.js | ^4.24.14 |
+| Database | MongoDB Atlas + Mongoose | ^9.9.1 |
+| Auth | NextAuth.js | ^4.24.15 |
 | Image Hosting | Cloudinary | ^2.10.0 |
-| Payments | Stripe | ^22.3.2 |
+| Payments | Stripe | ^22.4.0 |
 | Validation | Zod | ^4.4.3 |
 | Testing | Vitest | ^4.1.10 |
 | Notifications | Sonner | ^2.0.7 |
@@ -332,7 +332,7 @@ cp .env.example .env
 ```
 
 ```env
-MONGODB_URI=mongodb+srv://<user>:<password>@<cluster>.mongodb.net/<dbname>
+MONGODB_URI=mongodb+srv://<user>:<password>@<cluster>.mongodb.net/elite-cuts-dev
 NEXTAUTH_URL=http://localhost:3000  # next-auth reads this itself, not src
 NEXTAUTH_SECRET=                    # openssl rand -base64 32
 
@@ -349,6 +349,34 @@ NEXT_PUBLIC_SITE_URL=
 
 ENABLE_DEMO_CARD_TILE=              # 'true' enables the no-charge demo checkout tile
 ```
+
+### Which database each environment uses
+
+One Atlas cluster, one database per environment, selected by the path segment of
+`MONGODB_URI` — that value **is** the separation, so it is worth being deliberate
+about:
+
+| Environment | Database         |
+| ----------- | ---------------- |
+| Production  | `elite-cuts`     |
+| Preview     | `elite-cuts-dev` |
+| Local       | `elite-cuts-dev` |
+
+Set these per environment in Vercel. Only Production should ever point at
+`elite-cuts`; before 2026-08-08 local and production shared it, which made every
+local write a production write.
+
+Two consequences worth knowing before pointing at a fresh database:
+
+- **It starts empty, and an empty database renders an empty shop.** Seeding is
+  not a single command — the seed scripts live outside the repository, and the
+  one that looks like the obvious all-in-one writes a product shape that predates
+  the current pricing model, which makes every product page 404.
+- **Indexes build themselves, but per model and lazily.** `autoIndex` is on in
+  every environment, so there is no deploy-time index step — but `Model.init()`
+  fires when a model module is first imported, not at connect, so indexes appear
+  as routes are exercised rather than all at once. A failed build is swallowed
+  silently, so read the database back rather than trusting a quiet startup.
 
 ---
 

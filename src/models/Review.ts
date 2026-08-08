@@ -104,9 +104,10 @@ const ReviewModel =
 // index absent from the schema on every cold start.
 //
 // What maintains these indexes now: `autoIndex`, which `src/config/database.ts`
-// enables outside production. Local development and production share one Atlas
-// database, so a local run builds anything declared here. That is load-bearing
-// and easy to break — on a genuinely separate production database nothing would
-// build these at all.
+// enables in every environment. It was off in production until 2026-08-08 —
+// safe only while dev and production share one database, because a local run is
+// then what builds them. Separating the two is what forced the setting to
+// change; see the comment on it, which also records the two ways autoIndex can
+// silently not run.
 
 export default ReviewModel;

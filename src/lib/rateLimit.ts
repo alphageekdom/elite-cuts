@@ -61,7 +61,12 @@ export type RateLimitResult = {
 // the map without bound for the life of the process. Sweeping on a counter
 // rather than a timer keeps the module free of intervals it would have to
 // clean up.
-const SWEEP_EVERY_CALLS = 500;
+// Exported so tests can drive enough calls to guarantee a sweep without
+// assuming `callsSinceSweep` starts at zero. It does not: the counter is
+// module state shared by every test in the file, so hardcoding a number here
+// and a matching number there made the sweep test pass only in the order the
+// file happened to declare its tests (6 of 8 shuffled runs failed).
+export const SWEEP_EVERY_CALLS = 500;
 let callsSinceSweep = 0;
 
 function sweepExpired(store: Map<string, Bucket>, now: number): void {

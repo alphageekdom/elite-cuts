@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { clientIpFromHeaders, rateLimit } from './rateLimit';
+import { clientIpFromHeaders, rateLimit, SWEEP_EVERY_CALLS } from './rateLimit';
 
 // `rateLimit` is the only abuse control in front of sign-in, registration,
 // promo application, review creation and the checkout-session route, and it
@@ -83,16 +83,42 @@ describe('rateLimit — expired buckets are evicted', () => {
     // Buckets were only ever overwritten when the same key came back, so a
     // stream of one-off keys (a per-user throttle across many users) left the
     // map growing for the life of the process.
-    const before = store()?.size ?? 0;
+    //
+    // Count only THIS test's keys, never `store().size`. The store is shared
+    // with every other test in the file, so a total is not this test's to
+    // assert on: the sibling below leaves 600 expired `noise-*` buckets, and a
+    // sweep landing inside the loop here deletes them, so the total could shrink
+    // while this test's own keys were all being added correctly. That is what
+    // "expected 401 to be greater than 601" meant.
+    // `store()` is undefined until the first `rateLimit()` call creates it
+    // lazily, which is the case when this test happens to run first — so the
+    // optional chain is load-bearing, not defensive padding.
+    const mine = () =>
+      [...(store()?.keys() ?? [])].filter((k) => String(k).startsWith('sweep-'))
+        .length;
+
+    expect(mine()).toBe(0);
     for (let i = 0; i < 400; i++) {
       rateLimit({ key: `sweep-${i}`, max: 1, windowMs: 1_000 });
     }
-    expect(store().size).toBeGreaterThan(before);
+    // All 400 are inside their window, so no sweep can evict them yet.
+    expect(mine()).toBe(400);
 
     // Past every window, then enough further calls to cross the sweep
     // threshold.
+    //
+    // This must be a FULL `SWEEP_EVERY_CALLS`, not the difference between it
+    // and the loop above. `callsSinceSweep` is module state shared with every
+    // other test in this file, so its value here depends on how many rate-limit
+    // calls have already run — which depends on test order. The original 120
+    // assumed a start of zero and passed only in declaration order; under
+    // `--sequence.shuffle` the sweep fired during the 400-loop instead and this
+    // batch never reached the threshold again (6 of 8 shuffled runs failed).
+    //
+    // Any window of `SWEEP_EVERY_CALLS` consecutive calls contains a sweep
+    // regardless of the starting offset, so this holds in any order.
     vi.advanceTimersByTime(5_000);
-    for (let i = 0; i < 120; i++) {
+    for (let i = 0; i < SWEEP_EVERY_CALLS; i++) {
       rateLimit({ key: `post-sweep-${i}`, max: 1, windowMs: 1_000 });
     }
 
