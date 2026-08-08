@@ -1,4 +1,4 @@
-import mongoose, {
+import {
   Schema,
   model,
   models,
@@ -77,10 +77,14 @@ ReviewSchema.index(
 
 // Every product page lists its reviews, and every review create / edit / delete
 // re-runs the rating aggregate — both filter on `product` alone, which the
-// user-leading unique index above cannot serve. This has to be declared here
-// rather than added by hand in Atlas: `syncIndexes()` below drops anything not
-// in the schema, so an out-of-band index would be reverted on the next cold
-// start.
+// user-leading unique index above cannot serve.
+//
+// Declared here rather than added by hand in Atlas because a hand-added index is
+// invisible to code review and to every other environment. The original reason
+// given was stronger and is no longer true: it said the `syncIndexes()` below
+// would revert an out-of-band index on the next cold start. That call was
+// removed on 2026-08-07 (see the note further down), so nothing reverts anything
+// now — the argument is convention, not enforcement.
 ReviewSchema.index({ product: 1, createdAt: -1 });
 
 if (process.env.NODE_ENV !== 'production' && models.Review) {
@@ -91,40 +95,18 @@ const ReviewModel =
   (models.Review as Model<Review> | undefined) ||
   model<Review>('Review', ReviewSchema);
 
-// Account-deletion swap: the unique index moved from `{user, product}` strict
-// to a partial filter on `user: { $type: 'objectId' }`. Mongoose's autoIndex
-// only *adds* indexes — it won't drop the old strict one — so a dev DB built
-// before the swap keeps both indexes and rejects anonymized rows.
+// Do not re-add the `syncIndexes()` call that used to run here on module load;
+// the 2026-08-07 database audit removed it. It performed a one-time migration
+// (swapping this model's unique index to the partial-filter form above, which
+// autoIndex cannot do because it only ever adds). That migration is finished —
+// the live collection was listed before removal and holds exactly the two
+// indexes declared above — so the call had become a no-op that still DROPPED any
+// index absent from the schema on every cold start.
 //
-// Run syncIndexes() once per process to drop diverged indexes and rebuild
-// the schema-current set. Guarded by a globalThis flag so hot-reloads don't
-// pile listeners.
-//
-// **Production migration:** the prod guard runs the sync there too, but only
-// the first cold start after this change deploys actually changes anything —
-// every subsequent start sees the indexes already in sync and the call is a
-// no-op. If a deploy environment forbids index changes at boot, drop the
-// strict index manually one time with:
-//
-//   db.reviews.dropIndex({ user: 1, product: 1 })
-//
-// and the next request will rebuild the partial-filter version via autoIndex.
-declare global {
-  var __reviewIndexesSyncRequested: boolean | undefined;
-}
-
-if (!globalThis.__reviewIndexesSyncRequested) {
-  globalThis.__reviewIndexesSyncRequested = true;
-  const syncReviewIndexes = () => {
-    ReviewModel.syncIndexes().catch((err) => {
-      console.error('[Review] syncIndexes failed:', err);
-    });
-  };
-  if (mongoose.connection.readyState === 1) {
-    syncReviewIndexes();
-  } else {
-    mongoose.connection.once('connected', syncReviewIndexes);
-  }
-}
+// What maintains these indexes now: `autoIndex`, which `src/config/database.ts`
+// enables outside production. Local development and production share one Atlas
+// database, so a local run builds anything declared here. That is load-bearing
+// and easy to break — on a genuinely separate production database nothing would
+// build these at all.
 
 export default ReviewModel;

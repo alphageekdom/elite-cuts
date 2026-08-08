@@ -1,8 +1,10 @@
 // Pure review-list helpers for the product detail page. The client review
 // list owns sort state and a capped initial render; these keep the sort
 // comparisons and the derived "most helpful" pick out of the component so
-// they can be unit-tested (the component itself can't be — vitest is
-// node-only here).
+// they can be unit-tested without rendering anything. That is a preference for
+// testing pure functions cheaply, not a workaround: components *can* be tested
+// here, by opting a file into jsdom with a `// @vitest-environment jsdom`
+// docblock. (This note claimed the opposite until 2026-08-07.)
 
 export const REVIEW_SORTS = ['recent', 'highest', 'lowest', 'helpful'] as const;
 export type ReviewSort = (typeof REVIEW_SORTS)[number];

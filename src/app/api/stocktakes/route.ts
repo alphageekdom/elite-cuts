@@ -103,12 +103,15 @@ export const GET = withAdmin(async (req) => {
       100,
       Math.max(1, Number.parseInt(new URL(req.url).searchParams.get('limit') ?? '20', 10) || 20),
     );
-    const docs = await StocktakeModel.find({})
-      .sort({ createdAt: -1 })
-      .limit(limit)
-      .lean()
-      .exec();
-    return NextResponse.json({ items: docs, total: docs.length });
+    // `total` is the collection count, not the page size. It returned
+    // `docs.length` until the 2026-08-07 database audit, which meant it equalled
+    // `limit` on every full page — so anything deriving a page count from the
+    // documented list envelope got the wrong answer.
+    const [docs, total] = await Promise.all([
+      StocktakeModel.find({}).sort({ createdAt: -1 }).limit(limit).lean().exec(),
+      StocktakeModel.countDocuments({}),
+    ]);
+    return NextResponse.json({ items: docs, total });
   } catch (error) {
     console.error('[stocktakes GET]', error);
     return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
