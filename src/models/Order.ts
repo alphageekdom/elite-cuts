@@ -524,9 +524,10 @@ OrderSchema.pre('save', function () {
 //
 // Do NOT move `anonymisedAt` into the partialFilterExpression. It would narrow
 // a general-purpose index to a single query for no measurable gain, and it
-// would not take effect anyway: `autoIndex` is off in production and this
-// project has no deploy-time index step, so changing the options on an existing
-// index silently never happens (or raises IndexOptionsConflict in dev).
+// would not take effect anyway: `createIndex` cannot re-spec an index that
+// already exists. It raises IndexOptionsConflict, and autoIndex swallows that
+// (see `src/config/database.ts`), so the change would look applied and not be.
+// Re-specing an existing index means dropping and rebuilding it by hand.
 OrderSchema.index(
   { 'guestContact.email': 1 },
   { partialFilterExpression: { user: null } },

@@ -40,9 +40,9 @@ import User from './User';
 // forever. Reading what an environment actually has:
 // `db.<collection>.getIndexes()` in mongosh.
 //
-// Adding an index needs no database action (autoIndex creates it outside
-// production, and dev shares the production database), so for additions just
-// update the expectation below.
+// Adding an index needs no database action — `autoIndex` is on in every
+// environment as of 2026-08-08, so running the app builds it. Only removals
+// need hands. For an addition, just update the expectation below.
 //
 // The five models declaring no index today — AgingCut, DemoResetLock,
 // ShopHours, ShopSettings, StaffMember — are absent from `EXPECTED` rather than
