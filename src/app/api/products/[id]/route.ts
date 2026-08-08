@@ -15,6 +15,7 @@ import {
   type RouteContext,
 } from '@/lib/api-handler';
 import { deleteCloudinaryImages } from '@/lib/products/cloudinary-cleanup';
+import { REVIEW_DISPLAY_CAP } from '@/lib/reviews/constants';
 import {
   coerceProductInput,
   productRecordFromFormData,
@@ -51,7 +52,19 @@ export const GET = async (_request: NextRequest, { params }: Ctx) => {
 
     // Exclude helpfulVoters — the voter id list is private. Consumers only
     // ever need the count, which the client derives from the array elsewhere.
-    const reviews = await Review.find({ product: id }).select('-helpfulVoters');
+    //
+    // Bounded and leaned to match the product page, which always capped this
+    // read. What the bound protects is the anonymous caller, not an internal
+    // one: nothing in this app calls this GET (every in-repo fetch to
+    // `/api/products/<id>` sets PUT/POST/PATCH/DELETE), but the handler is
+    // unauthenticated, so an unbounded version let anyone pull a product's
+    // entire review history per request. Newest-first, which
+    // `{product: 1, createdAt: -1}` on the model serves exactly.
+    const reviews = await Review.find({ product: id })
+      .select('-helpfulVoters')
+      .sort({ createdAt: -1 })
+      .limit(REVIEW_DISPLAY_CAP)
+      .lean();
 
     return NextResponse.json({ ...product.toJSON(), reviews });
   } catch (error) {

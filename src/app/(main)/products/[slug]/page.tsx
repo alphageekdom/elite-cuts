@@ -32,6 +32,7 @@ import { shopDateKey } from '@/lib/shop-settings/pickup-format';
 import ReviewForm from './ReviewForm';
 import ReviewList, { type DetailReview, type UserTier } from './ReviewList';
 import { FORMER_CUSTOMER_NAME } from '@/lib/auth/account-deletion-constants';
+import { REVIEW_DISPLAY_CAP } from '@/lib/reviews/constants';
 import PinIcon from '@/components/ui/icons/PinIcon';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -151,7 +152,9 @@ function getUserTier(pts: number): UserTier {
 // Ceiling on the reviews fetched for client-side display + sorting. Summary
 // stats are computed separately over all reviews, so this only bounds the
 // interactive list, never the average / distribution / total count.
-const REVIEW_DISPLAY_CAP = 200;
+//
+// Shared with `GET /api/products/:id` since 2026-08-07 — see the constant's own
+// note for why the two must not carry separate literals.
 
 export default async function ProductPage({ params }: PageProps) {
   const { slug } = await params;
