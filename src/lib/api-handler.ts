@@ -129,7 +129,7 @@ type CronJob<TResult> = () => Promise<TResult>;
  * the result was the alternative and was rejected — the job knows what a
  * failure means, the generic wrapper does not.
  *
- * All three crons pass it. This used to name the demo reset as a job that
+ * All four crons pass it. This used to name the demo reset as a job that
  * "either succeeds or throws outright", which was wrong — it swallows
  * per-product rating-recompute failures by design — and that sentence is what
  * licensed the omission that let a fully failed run report 200. If a future job
@@ -162,7 +162,7 @@ export function withCronSecret<TResult extends Record<string, unknown>>(
     if (!ok) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
-    // Tagged with the route path so a log triage can tell the three schedules
+    // Tagged with the route path so a log triage can tell the cron routes
     // apart. The wrapper is shared, so a bare '[cron]' left a 500 unattributable
     // without correlating timestamps against vercel.json.
     const tag = `[cron ${request.nextUrl.pathname}]`;

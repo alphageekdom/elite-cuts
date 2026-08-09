@@ -1,24 +1,14 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { readdirSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
-import AccountDeletionAudit from './AccountDeletionAudit';
-import AgingCut from './AgingCut';
-import Cart from './Cart';
-import DemoResetLock from './DemoResetLock';
-import Delivery from './Delivery';
-import Event from './Event';
-import Message from './Message';
-import Notification from './Notification';
-import Order from './Order';
-import Product from './Product';
-import Promo from './Promo';
-import Review from './Review';
-import SavedCard from './SavedCard';
-import Shift from './Shift';
-import ShopHours from './ShopHours';
-import ShopSettings from './ShopSettings';
-import StaffMember from './StaffMember';
-import Stocktake from './Stocktake';
-import User from './User';
+// The barrel is `server-only` so a stray client import cannot pull mongoose and
+// nineteen schemas into a browser bundle. Same mock every server-module test in
+// this project uses.
+vi.mock('server-only', () => ({}));
+
+
+import { ALL_MODELS } from './all';
 
 // ── Why this exists ─────────────────────────────────────────────────────
 // Removing an index declaration does NOT remove the index. `autoIndex` only
@@ -100,53 +90,26 @@ const EXPECTED: Record<string, DeclaredIndex[]> = {
   User: [[{ email: 1 }, { unique: true }], [{ createdAt: -1 }, {}]],
 };
 
-const MODELS = {
-  AccountDeletionAudit,
-  Cart,
-  Delivery,
-  Event,
-  Message,
-  Notification,
-  Order,
-  Product,
-  Promo,
-  Review,
-  SavedCard,
-  Shift,
-  Stocktake,
-  User,
-};
-
-// Every model in the project, listed explicitly — deliberately NOT
-// `{ ...MODELS, ...the rest }`. Spreading `MODELS` was the second failed attempt
-// at this guard: it made the "independent" set shrink in lockstep with the map
-// it was supposed to check, so the same deletion sailed through again. Only a
-// standalone list is actually independent.
-const ALL_MODELS = {
-  AccountDeletionAudit,
-  AgingCut,
-  Cart,
-  Delivery,
-  DemoResetLock,
-  Event,
-  Message,
-  Notification,
-  Order,
-  Product,
-  Promo,
-  Review,
-  SavedCard,
-  Shift,
-  ShopHours,
-  ShopSettings,
-  StaffMember,
-  Stocktake,
-  User,
-};
+// There used to be a hand-written `MODELS` map here, pairing the fourteen
+// index-declaring model names with their models so the loop below could run.
+// It is gone: the names are `Object.keys(EXPECTED)` and the models are
+// `ALL_MODELS`, so it was a third list maintained by hand for no reason — and a
+// dangerous one. Nothing anchored it, so deleting an entry from it silently
+// removed that model's assertion while every remaining test, including the
+// guard, stayed green. That is the same "silently ending coverage" failure the
+// guard below was written to prevent, reached through the one list nobody was
+// checking.
+//
+// With it gone the project holds ONE hand-maintained list of models — `./all` —
+// and `EXPECTED`, which is a list of index declarations rather than of models.
 
 describe('declared schema indexes', () => {
-  for (const [name, model] of Object.entries(MODELS)) {
+  for (const name of Object.keys(EXPECTED)) {
     it(`${name} declares exactly the expected indexes`, () => {
+      const model = ALL_MODELS[name as keyof typeof ALL_MODELS];
+      // A name in `EXPECTED` with no model in `./all` fails here rather than
+      // silently skipping, which is the direction that matters.
+      expect(model, `${name} is in EXPECTED but not in ./all`).toBeDefined();
       expect(model.schema.indexes()).toEqual(EXPECTED[name]);
     });
   }
@@ -165,5 +128,29 @@ describe('declared schema indexes', () => {
       .map(([name]) => name)
       .sort();
     expect(Object.keys(EXPECTED).sort()).toEqual(declaring);
+  });
+
+  // Anchors `./all` to the filesystem, which is the one thing here that is not
+  // hand-maintained.
+  //
+  // The guard above cannot do this, and a comment in `./all` used to claim it
+  // could. `declaring` is derived FROM `ALL_MODELS`, so a model missing from
+  // that file never appears in it, is never added to `EXPECTED` either, and both
+  // sides stay equal — the list vouching for itself, which is the exact pattern
+  // this file's history records failing twice before.
+  //
+  // The stakes rose when `lib/db/ensure-indexes` started building from the same
+  // list: a model omitted from `./all` is not merely unwatched, it silently
+  // falls back to lazy per-process `autoIndex` — reintroducing the problem that
+  // module exists to close, invisibly.
+  it('lists every model file in ./all', () => {
+    const dir = fileURLToPath(new URL('.', import.meta.url));
+    const onDisk = readdirSync(dir)
+      .filter((f) => f.endsWith('.ts'))
+      .filter((f) => f !== 'all.ts' && !f.endsWith('.test.ts'))
+      .map((f) => f.replace(/\.ts$/, ''))
+      .sort();
+
+    expect(Object.keys(ALL_MODELS).sort()).toEqual(onDisk);
   });
 });
