@@ -238,12 +238,15 @@ they cover as `*.test.ts` rather than in a separate tree.
 
 ## API Routes
 
-The core domains are below. The full surface is larger (53 handlers) — checkout
+The core domains are below. The full surface is larger (54 handlers) — checkout
 and Stripe webhooks, orders, promos, reviews, messages, staff, shifts, events,
 inventory/deliveries/stocktakes, notifications, settings, CSV import/export and
 the cron jobs all have their own routes under `src/app/api/`. `vercel.json` is
 the authoritative list of what runs on a schedule and when — three jobs, all
-behind the same bearer gate.
+behind the same bearer gate. A fourth bearer-gated endpoint,
+`/api/cron/ensure-indexes`, is deliberately unscheduled: it rides on the nightly
+demo reset rather than taking its own entry, and exists to be called on demand
+after deploying a new index declaration.
 
 ### Auth
 | Method | Route | Description |
@@ -343,7 +346,7 @@ CLOUDINARY_API_SECRET=
 STRIPE_SECRET_KEY=                  # test-mode only (sk_test_...); unset = local stub
 STRIPE_WEBHOOK_SECRET=
 
-CRON_SECRET=                        # shared bearer for all three cron endpoints (dormancy, purge, demo reset)
+CRON_SECRET=                        # shared bearer for the cron endpoints (dormancy, purge, demo reset, ensure-indexes)
 
 NEXT_PUBLIC_SITE_URL=
 

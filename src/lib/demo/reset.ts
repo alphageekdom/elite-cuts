@@ -68,6 +68,27 @@ export type ResetCounts = {
 // so the toast / log can report what the run actually cleared.
 export type DemoResetCounts = ResetCounts & CatalogCounts & CustomerSeedCounts;
 
+// The zero state, in one place. Two callers: the no-demo-customer early return
+// below, and the cron route's lock-contention path, which needs a full
+// `DemoResetCounts` so the wrapper's `failureCount` selector does not read
+// `undefined` off a partial object and compute NaN.
+export const emptyResetCounts = (): ResetCounts => ({
+  ordersDeleted: 0,
+  cartDeleted: 0,
+  savedCardsDeleted: 0,
+  notificationsDeleted: 0,
+  reviewsDeleted: 0,
+  messagesDeleted: 0,
+  userReset: false,
+  ratingRecomputeFailures: 0,
+});
+
+export const emptyDemoResetCounts = (): DemoResetCounts => ({
+  ...emptyResetCounts(),
+  ...emptyCatalogCounts(),
+  ...emptyCustomerSeedCounts(),
+});
+
 // Idempotent wipe of every Mongo record owned by the seeded demo customer.
 // Composed by `resetDemoData` below alongside `restoreDemoCatalog`; the
 // cron route and admin "Reset demo data" button both call the top-level
@@ -92,16 +113,7 @@ export async function resetDemoCustomerState(): Promise<ResetCounts> {
   }).select('_id');
 
   if (!demo) {
-    return {
-      ordersDeleted: 0,
-      cartDeleted: 0,
-      savedCardsDeleted: 0,
-      notificationsDeleted: 0,
-      reviewsDeleted: 0,
-      messagesDeleted: 0,
-      userReset: false,
-      ratingRecomputeFailures: 0,
-    };
+    return emptyResetCounts();
   }
 
   const demoId = demo._id;
