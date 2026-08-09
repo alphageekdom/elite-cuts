@@ -120,7 +120,16 @@ export function withAuth<TParams = Record<string, string>>(
  * missing/incorrect header, and forwards the job's result body verbatim
  * under `{ message: successMessage, ...result }` on success.
  */
-type CronJob<TResult> = () => Promise<TResult>;
+// The request is passed through so a job can read query params — the demo
+// reset and its dry-run sibling use it for `?trigger=cli`.
+//
+// Pass a job by reference and whatever arrives here lands in its first
+// parameter. Two sibling crons take an optional `now?: Date` for test
+// injection, so this would have put a NextRequest there and quietly corrupted
+// their date arithmetic. Both were wrapped in explicit zero-arg arrows when
+// this changed — the type checker cannot see that class of mistake, because a
+// `Date` parameter and a `NextRequest` argument are incompatible only by luck.
+type CronJob<TResult> = (request: NextRequest) => Promise<TResult>;
 /**
  * Wraps a scheduled job behind the shared bearer gate.
  *
@@ -167,7 +176,7 @@ export function withCronSecret<TResult extends Record<string, unknown>>(
     // without correlating timestamps against vercel.json.
     const tag = `[cron ${request.nextUrl.pathname}]`;
     try {
-      const result = await job();
+      const result = await job(request);
       const failed = opts?.failureCount?.(result) ?? 0;
       if (failed > 0) {
         // Deliberately a 500, not a 207. These jobs collect per-item failures

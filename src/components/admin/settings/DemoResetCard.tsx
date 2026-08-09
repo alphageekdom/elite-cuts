@@ -52,7 +52,31 @@ export default function DemoResetCard() {
         // for when the nightly run misbehaved — reporting a plain success here
         // is what sent them away thinking it was fixed.
         const failed = counts.ratingRecomputeFailures;
-        if (failed > 0) {
+        // Post-run verification outranks the rating warning. Both can be true
+        // at once, and a missing cut or an empty staff roster is the more
+        // serious of the two — it means the demo the next visitor opens is
+        // genuinely incomplete, not merely showing a stale star average.
+        //
+        // The identifiers are named rather than counted, for the same reason
+        // the log names them: "2 checks failed" sends an admin to comb the
+        // dashboards, `product:dry-aged-ribeye` sends them to the row. Capped
+        // at three so a wholesale failure does not produce a toast the width
+        // of the screen.
+        // `?? []` here while the API route reads `.length` unguarded, and that
+        // asymmetry is deliberate rather than an oversight. The route builds the
+        // object in-process, so the key cannot be absent. This reads it as JSON
+        // off the wire, where the server may be an older deployment that
+        // predates the field — which is the failure mode this whole feature
+        // exists because of. Reading `.length` off undefined here would throw
+        // inside the click handler and the admin would see nothing at all.
+        const gaps = counts.validationFailures ?? [];
+        if (gaps.length > 0) {
+          const shown = gaps.slice(0, 3).join(', ');
+          const rest = gaps.length > 3 ? ` and ${gaps.length - 3} more` : '';
+          toast.warning(
+            `${summary} Verification failed: ${shown}${rest}. The demo may be incomplete — run it again.`,
+          );
+        } else if (failed > 0) {
           toast.warning(
             `${summary} ${failed} rating${failed === 1 ? '' : 's'} could not be recomputed — run it again.`,
           );

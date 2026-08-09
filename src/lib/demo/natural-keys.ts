@@ -1,4 +1,22 @@
 import { isDemoAdmin, type DemoCheckable } from '@/lib/auth/demo-permissions';
+import { slugify } from '@/lib/slugify';
+import { DEMO_PRODUCTS } from './seed/products';
+import { DEMO_PROMOS } from './seed/promos';
+
+// The snapshot's natural keys, derived in one place.
+//
+// `restore.ts` upserts on these, `verify.ts` asserts against them and
+// `dry-run.ts` counts against them — three independent derivations of the one
+// link this file's comment below calls "the only link between a live row and
+// its snapshot entry". Two of them were byte-identical copies.
+//
+// The product seed carries no slug: the model derives it from `name` in a
+// pre-validate hook, so anything comparing against the snapshot has to derive
+// it the same way. That is exactly the sort of rule that should exist once.
+export const expectedProductSlugs = (): string[] =>
+  DEMO_PRODUCTS.map((p) => slugify(p.name));
+
+export const expectedPromoCodes = (): string[] => DEMO_PROMOS.map((p) => p.code);
 
 // The nightly demo restore matches a seeded row on its natural key — a
 // product's `slug`, a promo's `code`. Those keys are the only link between a

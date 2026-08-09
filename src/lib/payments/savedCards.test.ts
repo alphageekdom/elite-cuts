@@ -8,25 +8,39 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('server-only', () => ({}));
 vi.mock('@/config/database', () => ({ default: vi.fn(async () => undefined) }));
 vi.mock('@/models/SavedCard', () => ({ default: {} }));
-vi.mock('@/models/User', () => ({ default: {} }));
 
 const mocks = vi.hoisted(() => ({
   customersDel: vi.fn(),
+  customersCreate: vi.fn(),
   isStubMode: vi.fn(),
+  userFindById: vi.fn(),
+  userFindOneAndUpdate: vi.fn(),
+}));
+
+vi.mock('@/models/User', () => ({
+  default: {
+    findById: mocks.userFindById,
+    findOneAndUpdate: mocks.userFindOneAndUpdate,
+  },
 }));
 
 vi.mock('@/lib/payments/stripe', () => ({
-  getStripe: () => ({ customers: { del: mocks.customersDel } }),
+  getStripe: () => ({
+    customers: { del: mocks.customersDel, create: mocks.customersCreate },
+  }),
   isStubMode: mocks.isStubMode,
   dollarsToCents: (d: number) => Math.round(d * 100),
 }));
 
-const { deleteStripeCustomer } = await import('./savedCards');
+const { deleteStripeCustomer, getOrCreateStripeCustomer } = await import(
+  './savedCards'
+);
 
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.isStubMode.mockReturnValue(false);
   mocks.customersDel.mockResolvedValue({ deleted: true });
+  mocks.customersCreate.mockResolvedValue({ id: 'cus_new' });
 });
 
 describe('deleteStripeCustomer', () => {
@@ -91,4 +105,91 @@ describe('deleteStripeCustomer', () => {
     }
     expect(mocks.customersDel).not.toHaveBeenCalled();
   });
+});
+
+// ── Demo accounts never get a Stripe Customer ──────────────────────────
+// Two demo accounts are shared by every visitor for the life of the deploy, so
+// a Customer created for one is never replaced and every card any visitor
+// saves against it attaches permanently. The nightly reset clears the local
+// SavedCard mirror and used to leave the Stripe side untouched.
+describe('getOrCreateStripeCustomer — demo accounts', () => {
+  // The real call chains `.select(...)` off `findById`, and this stub HONOURS
+  // the projection rather than handing back a complete fixture.
+  //
+  // That is the whole reason the behavioural tests below are load-bearing.
+  // `select('name email stripeCustomerId')` is an inclusive projection, so
+  // dropping `isDemo` from it leaves `user.isDemo === undefined` and the guard
+  // never fires — demo accounts silently resume minting Stripe Customers. With
+  // a projection-blind stub the fixture supplied `isDemo: true` regardless and
+  // every test here passed straight through that regression.
+  const selectChain = (result: unknown) => ({
+    select: (fields?: string) => {
+      if (!fields || result === null || typeof result !== 'object') {
+        return Promise.resolve(result);
+      }
+      const keep = new Set([...fields.split(/\s+/).filter(Boolean), '_id']);
+      return Promise.resolve(
+        Object.fromEntries(
+          Object.entries(result as Record<string, unknown>).filter(([k]) =>
+            keep.has(k),
+          ),
+        ),
+      );
+    },
+  });
+
+  it('returns null for a demo account and creates nothing at Stripe', async () => {
+    mocks.userFindById.mockReturnValue(
+      selectChain({ _id: 'demo-1', email: 'demo@x.test', name: 'Demo', isDemo: true }),
+    );
+
+    await expect(getOrCreateStripeCustomer('demo-1')).resolves.toBeNull();
+    expect(mocks.customersCreate).not.toHaveBeenCalled();
+    expect(mocks.userFindOneAndUpdate).not.toHaveBeenCalled();
+  });
+
+  it('returns null even when a Customer id is already persisted', async () => {
+    // One rule ("demo sessions have no Stripe Customer") rather than two. An
+    // id left over from before this guard must not pick up new cards while the
+    // reset is getting round to deleting it.
+    mocks.userFindById.mockReturnValue(
+      selectChain({
+        _id: 'demo-1',
+        email: 'demo@x.test',
+        name: 'Demo',
+        isDemo: true,
+        stripeCustomerId: 'cus_legacy',
+      }),
+    );
+
+    await expect(getOrCreateStripeCustomer('demo-1')).resolves.toBeNull();
+    expect(mocks.customersCreate).not.toHaveBeenCalled();
+  });
+
+  it('still creates and persists one for a real customer', async () => {
+    // The guard has to be narrow. A version that returned null for everyone
+    // would pass both tests above and silently stop every real shopper's card
+    // from being saved.
+    mocks.userFindById.mockReturnValue(
+      selectChain({ _id: 'real-1', email: 'real@x.test', name: 'Real', isDemo: false }),
+    );
+    mocks.userFindOneAndUpdate.mockReturnValue(
+      selectChain({ stripeCustomerId: 'cus_new' }),
+    );
+
+    await expect(getOrCreateStripeCustomer('real-1')).resolves.toBe('cus_new');
+    expect(mocks.customersCreate).toHaveBeenCalledOnce();
+  });
+
+  // There was a test here asserting the projection STRING contained `isDemo`.
+  // It is gone, and deliberately so rather than by oversight.
+  //
+  // It existed because the stub above used to ignore projections, which left
+  // the string as the only thing catching a silent, security-relevant
+  // regression. Now that the stub honours the projection, the two behavioural
+  // tests above fail on exactly that change — verified by removing `isDemo`
+  // from the projection and watching both go red. Asserting the string as well
+  // buys nothing and costs something: it would false-fail if the projection
+  // ever moved to object form (`.select({ isDemo: 1 })`), reporting a break
+  // where none exists.
 });

@@ -33,12 +33,19 @@ const mocks = vi.hoisted(() => ({
   recomputeProductRating: vi.fn(),
   lockFindOneAndUpdate: vi.fn(),
   lockUpdateOne: vi.fn(),
+  userUpdateMany: vi.fn(),
+  assertDemoResetTarget: vi.fn(),
+  verifyDemoState: vi.fn(),
+  recordDemoResetRun: vi.fn(),
+  planDemoReset: vi.fn(),
+  deleteStripeCustomer: vi.fn(),
 }));
 
 vi.mock('@/models/User', () => ({
   default: {
     findOne: mocks.userFindOne,
     updateOne: mocks.userUpdateOne,
+    updateMany: mocks.userUpdateMany,
   },
 }));
 
@@ -81,6 +88,36 @@ vi.mock('@/models/DemoResetLock', () => ({
   },
   DEMO_RESET_LOCK_ID: 'demo-reset',
   DEMO_RESET_LOCK_STALE_AFTER_MS: 10 * 60 * 1000,
+}));
+
+// The target-database guard has its own suite in ./target-guard.test.ts. Here
+// it is stubbed to pass, so these tests exercise the orchestration rather than
+// re-testing the guard — except in the one case below that asserts a refusal
+// stops the run, which overrides this.
+vi.mock('./target-guard', async () => {
+  const actual = await vi.importActual<typeof import('./target-guard')>(
+    './target-guard',
+  );
+  return {
+    ...actual,
+    assertDemoResetTarget: mocks.assertDemoResetTarget,
+  };
+});
+
+vi.mock('./verify', () => ({
+  verifyDemoState: mocks.verifyDemoState,
+}));
+
+vi.mock('./run-history', () => ({
+  recordDemoResetRun: mocks.recordDemoResetRun,
+}));
+
+vi.mock('./dry-run', () => ({
+  planDemoReset: mocks.planDemoReset,
+}));
+
+vi.mock('@/lib/payments/savedCards', () => ({
+  deleteStripeCustomer: mocks.deleteStripeCustomer,
 }));
 
 // The catalog half is exercised in ./restore.test.ts; here it only needs to
@@ -162,6 +199,16 @@ beforeEach(() => {
   // `.catch` to it; a bare `vi.fn()` resolving `undefined` would diverge from
   // that contract and blow up on the attach.
   mocks.recomputeProductRating.mockResolvedValue(undefined);
+
+  // Defaults for the collaborators the orchestrator gained. Each returns the
+  // healthy shape so a test only has to override the one thing it is about.
+  // `verifyDemoState` in particular is destructured, so a bare reset (which
+  // resolves `undefined`) would throw before the assertion ran.
+  mocks.assertDemoResetTarget.mockReturnValue('elite-cuts-test');
+  mocks.verifyDemoState.mockResolvedValue([]);
+  mocks.recordDemoResetRun.mockResolvedValue(undefined);
+  mocks.deleteStripeCustomer.mockResolvedValue(undefined);
+  mocks.userUpdateMany.mockResolvedValue({ modifiedCount: 0 });
 });
 
 describe('resetDemoCustomerState — demo customer not found', () => {
@@ -180,6 +227,7 @@ describe('resetDemoCustomerState — demo customer not found', () => {
       messagesDeleted: 0,
       userReset: false,
       ratingRecomputeFailures: 0,
+      stripeCustomersCleared: 0,
     });
 
     // Critical guarantee: when the demo customer isn't found, NONE of the
@@ -339,6 +387,7 @@ describe('resetDemoCustomerState — demo customer found', () => {
       messagesDeleted: 4,
       userReset: true,
       ratingRecomputeFailures: 0,
+      stripeCustomersCleared: 0,
     });
   });
 
@@ -349,6 +398,86 @@ describe('resetDemoCustomerState — demo customer found', () => {
 
     expect(counts.ordersDeleted).toBe(0);
     expect(counts.userReset).toBe(true);
+  });
+});
+
+// ── Stripe Customers attached to the shared demo accounts ──────────────
+// The SavedCard delete only clears the LOCAL mirror. Cards saved through
+// Stripe's hosted page attach to a Stripe Customer, and two accounts are shared
+// by every visitor for the life of the deploy — so that PaymentMethod list grew
+// without bound while the profile tab, reading the wiped mirror, showed nothing.
+describe('resetDemoCustomerState — Stripe cleanup', () => {
+  beforeEach(() => {
+    mocks.orderDeleteMany.mockResolvedValue({ deletedCount: 0 });
+    mocks.cartDeleteMany.mockResolvedValue({ deletedCount: 0 });
+    mocks.savedCardDeleteMany.mockResolvedValue({ deletedCount: 0 });
+    mocks.notificationDeleteMany.mockResolvedValue({ deletedCount: 0 });
+    mocks.messageDeleteMany.mockResolvedValue({ deletedCount: 0 });
+    mocks.reviewUpdateMany.mockResolvedValue({ modifiedCount: 0 });
+    mocks.reviewFind.mockReturnValue({ select: () => ({ lean: async () => [] }) });
+    mocks.reviewDeleteMany.mockResolvedValue({ deletedCount: 0 });
+    mocks.userUpdateOne.mockResolvedValue({ modifiedCount: 1 });
+  });
+
+  it('deletes the Stripe Customer for both demo accounts and clears the local id', async () => {
+    mockCustomerThenAdmin(
+      { _id: 'demo-customer', stripeCustomerId: 'cus_customer' },
+      { _id: 'demo-admin', stripeCustomerId: 'cus_admin' },
+    );
+
+    const { resetDemoCustomerState } = await import('./reset');
+    const counts = await resetDemoCustomerState();
+
+    expect(mocks.deleteStripeCustomer).toHaveBeenCalledWith('cus_customer');
+    expect(mocks.deleteStripeCustomer).toHaveBeenCalledWith('cus_admin');
+    expect(mocks.userUpdateMany).toHaveBeenCalledWith(
+      { _id: { $in: ['demo-customer', 'demo-admin'] } },
+      { $unset: { stripeCustomerId: '' } },
+    );
+    expect(counts.stripeCustomersCleared).toBe(2);
+  });
+
+  it('deletes at Stripe before clearing the local id', async () => {
+    mockCustomerThenAdmin({ _id: 'demo-customer', stripeCustomerId: 'cus_customer' });
+
+    const { resetDemoCustomerState } = await import('./reset');
+    await resetDemoCustomerState();
+
+    // Reversed, a failure between the two drops the only pointer to a live
+    // Customer — which is precisely the leak being closed. This way the same
+    // failure leaves the id in place and the next night retries it.
+    expect(mocks.deleteStripeCustomer.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.userUpdateMany.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('does nothing when neither account has a Stripe Customer', async () => {
+    // The expected steady state once `getOrCreateStripeCustomer` stops minting
+    // one for demo accounts: this becomes a permanent no-op rather than an
+    // ongoing sweep.
+    mockCustomerThenAdmin({ _id: 'demo-customer' }, { _id: 'demo-admin' });
+
+    const { resetDemoCustomerState } = await import('./reset');
+    const counts = await resetDemoCustomerState();
+
+    expect(mocks.deleteStripeCustomer).not.toHaveBeenCalled();
+    expect(mocks.userUpdateMany).not.toHaveBeenCalled();
+    expect(counts.stripeCustomersCleared).toBe(0);
+  });
+
+  it('clears only the account that actually has one', async () => {
+    mockCustomerThenAdmin({ _id: 'demo-customer' }, { _id: 'demo-admin', stripeCustomerId: 'cus_admin' });
+
+    const { resetDemoCustomerState } = await import('./reset');
+    const counts = await resetDemoCustomerState();
+
+    expect(mocks.deleteStripeCustomer).toHaveBeenCalledTimes(1);
+    expect(mocks.deleteStripeCustomer).toHaveBeenCalledWith('cus_admin');
+    expect(mocks.userUpdateMany).toHaveBeenCalledWith(
+      { _id: { $in: ['demo-admin'] } },
+      { $unset: { stripeCustomerId: '' } },
+    );
+    expect(counts.stripeCustomersCleared).toBe(1);
   });
 });
 
@@ -520,9 +649,94 @@ describe('resetDemoData', () => {
     mocks.lockUpdateOne.mockResolvedValue({ modifiedCount: 1 });
   });
 
+  it('verifies the target database before claiming the lock', async () => {
+    const { resetDemoData } = await import('./reset');
+    await resetDemoData({ trigger: 'cron' });
+
+    // Strictly before the lock claim, not merely before the deletes. The claim
+    // is itself a write — an upsert into DemoResetLock — so a guard that ran
+    // after it would already have touched the database it is deciding whether
+    // to touch.
+    expect(mocks.assertDemoResetTarget.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.lockFindOneAndUpdate.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('does nothing at all when the target guard refuses', async () => {
+    const { DemoResetTargetError } = await import('./target-guard');
+    mocks.assertDemoResetTarget.mockImplementation(() => {
+      throw new DemoResetTargetError('wrong-database');
+    });
+
+    const { resetDemoData } = await import('./reset');
+    await expect(resetDemoData({ trigger: 'cron' })).rejects.toBeInstanceOf(
+      DemoResetTargetError,
+    );
+
+    // Not one write, including the lock and including the run history — a
+    // refusal means this is not the declared database, and recording a row in
+    // it would be the reset touching what it just refused to touch.
+    expect(mocks.lockFindOneAndUpdate).not.toHaveBeenCalled();
+    expect(mocks.orderDeleteMany).not.toHaveBeenCalled();
+    expect(mocks.userUpdateOne).not.toHaveBeenCalled();
+    expect(mocks.recordDemoResetRun).not.toHaveBeenCalled();
+  });
+
+  it('runs the guard on a dry run too, and writes nothing when it refuses', async () => {
+    const { DemoResetTargetError } = await import('./target-guard');
+    mocks.assertDemoResetTarget.mockImplementation(() => {
+      throw new DemoResetTargetError('not-configured');
+    });
+
+    const { dryRunDemoReset } = await import('./reset');
+    await expect(dryRunDemoReset({ trigger: 'cli' })).rejects.toBeInstanceOf(
+      DemoResetTargetError,
+    );
+    expect(mocks.planDemoReset).not.toHaveBeenCalled();
+    expect(mocks.recordDemoResetRun).not.toHaveBeenCalled();
+  });
+
+  it('records a failure row when planning throws, then rethrows', async () => {
+    // Without this the two paths were asymmetric: a failed real run recorded
+    // `failure`, a failed plan recorded nothing at all — in exactly the case
+    // where "was a dry run all anyone did last night?" is interesting.
+    const original = new Error('target unreachable');
+    mocks.planDemoReset.mockRejectedValue(original);
+
+    const { dryRunDemoReset } = await import('./reset');
+    await expect(dryRunDemoReset({ trigger: 'cli' })).rejects.toBe(original);
+
+    expect(mocks.recordDemoResetRun).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: 'failure', error: original }),
+    );
+  });
+
+  it('takes no lock and makes no wipe writes on a dry run', async () => {
+    mocks.planDemoReset.mockResolvedValue({
+      database: 'elite-cuts-test',
+      wouldDelete: { orders: 3 },
+      wouldRestore: { staff: 6 },
+      cannotPredict: ['something'],
+    });
+
+    const { dryRunDemoReset } = await import('./reset');
+    const plan = await dryRunDemoReset({ trigger: 'cli' });
+
+    expect(plan.wouldDelete).toEqual({ orders: 3 });
+    // The lock is a write, and a dry run that took it would block the nightly
+    // cron for its duration.
+    expect(mocks.lockFindOneAndUpdate).not.toHaveBeenCalled();
+    expect(mocks.orderDeleteMany).not.toHaveBeenCalled();
+    expect(mocks.userUpdateOne).not.toHaveBeenCalled();
+    // The single deliberate exception: its own history row.
+    expect(mocks.recordDemoResetRun).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: 'dry-run', trigger: 'cli' }),
+    );
+  });
+
   it('claims the advisory lock before touching anything, and releases it after', async () => {
     const { resetDemoData } = await import('./reset');
-    await resetDemoData();
+    await resetDemoData({ trigger: 'cron' });
 
     // Claim strictly precedes the first destructive call — the lock exists
     // because two overlapping runs interleave the wipe/seed pairs into
@@ -546,7 +760,7 @@ describe('resetDemoData', () => {
     // A distinct type, not a message: the admin route answers 409 for this
     // and 500 for everything else, and it used to tell them apart with a
     // regex over the message text.
-    await expect(resetDemoData()).rejects.toBeInstanceOf(DemoResetInProgressError);
+    await expect(resetDemoData({ trigger: 'cron' })).rejects.toBeInstanceOf(DemoResetInProgressError);
 
     // The loser must do NO work — a half-run is the exact corruption the
     // lock exists to prevent.
@@ -558,7 +772,7 @@ describe('resetDemoData', () => {
     mocks.orderDeleteMany.mockRejectedValue(new Error('mongo hiccup'));
 
     const { resetDemoData } = await import('./reset');
-    await expect(resetDemoData()).rejects.toThrow('mongo hiccup');
+    await expect(resetDemoData({ trigger: 'cron' })).rejects.toThrow('mongo hiccup');
 
     expect(mocks.lockUpdateOne).toHaveBeenCalledWith(
       { _id: 'demo-reset' },
@@ -573,12 +787,12 @@ describe('resetDemoData', () => {
     mocks.lockFindOneAndUpdate.mockRejectedValue(new Error('connection refused'));
 
     const { resetDemoData } = await import('./reset');
-    await expect(resetDemoData()).rejects.toThrow('connection refused');
+    await expect(resetDemoData({ trigger: 'cron' })).rejects.toThrow('connection refused');
   });
 
   it('merges the customer wipe and the catalog restore into one envelope', async () => {
     const { resetDemoData } = await import('./reset');
-    const counts = await resetDemoData();
+    const counts = await resetDemoData({ trigger: 'cron' });
 
     // `toEqual`, not `toMatchObject`, so a key silently disappearing from
     // either half fails here rather than passing.
@@ -591,6 +805,7 @@ describe('resetDemoData', () => {
       messagesDeleted: 4,
       userReset: true,
       ratingRecomputeFailures: 0,
+      stripeCustomersCleared: 0,
       productsRestored: 39,
       productsDeleted: 0,
       promosRestored: 5,
@@ -604,13 +819,131 @@ describe('resetDemoData', () => {
       savedCutsSeeded: 3,
       savedCardsSeeded: 2,
       addressesSeeded: 2,
+      validationFailures: [],
     });
   });
 
+  it('zero-state carries exactly the keys a real run returns', async () => {
+    // `emptyDemoResetCounts` is what the cron route returns on lock contention,
+    // and the route's `failureCount` reads `validationFailures.length` off it.
+    // Lose that key and every contended night throws a TypeError inside the
+    // selector, the wrapper's catch fires, and the route answers 500 on exactly
+    // the nights it should answer a clean 200 with the index report.
+    //
+    // The route's own test cannot catch that — it MOCKS `emptyDemoResetCounts`,
+    // so the mock supplies the completeness the test claims to prove. Pinned
+    // here against the real function and a real result, structurally, so it
+    // does not restate today's field list.
+    const { resetDemoData, emptyDemoResetCounts } = await import('./reset');
+    const real = await resetDemoData({ trigger: 'cron' });
+
+    expect(Object.keys(emptyDemoResetCounts()).sort()).toEqual(
+      Object.keys(real).sort(),
+    );
+  });
+
+  it('surfaces post-run verification failures on the returned counts', async () => {
+    // The whole point of G3: "every step ran" and "the demo works" are
+    // different claims. These identifiers feed the cron wrapper's
+    // `failureCount`, which is what turns a broken demo into a 500.
+    mocks.verifyDemoState.mockResolvedValue([
+      'product:dry-aged-ribeye',
+      'staff:Tomás Reyes',
+    ]);
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { resetDemoData } = await import('./reset');
+    const counts = await resetDemoData({ trigger: 'cron' });
+
+    expect(counts.validationFailures).toEqual([
+      'product:dry-aged-ribeye',
+      'staff:Tomás Reyes',
+    ]);
+    // Named in the log, not just counted — the identifier is what sends
+    // someone to the row instead of to the whole collection.
+    expect(logged).toHaveBeenCalledWith(
+      expect.stringContaining('product:dry-aged-ribeye'),
+    );
+    logged.mockRestore();
+  });
+
+  it('verifies after the work, not instead of it', async () => {
+    const { resetDemoData } = await import('./reset');
+    await resetDemoData({ trigger: 'cron' });
+
+    // A partially restored demo still beats none, and the operator needs to
+    // know which identifiers are missing — so the run completes first.
+    expect(mocks.verifyDemoState.mock.invocationCallOrder[0]).toBeGreaterThan(
+      mocks.orderDeleteMany.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('records a failure row when verification finds a gap, despite every write succeeding', async () => {
+    mocks.verifyDemoState.mockResolvedValue(['promo:WELCOME10']);
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { resetDemoData } = await import('./reset');
+    await resetDemoData({ trigger: 'cron' });
+
+    expect(mocks.recordDemoResetRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        outcome: 'failure',
+        validationFailures: ['promo:WELCOME10'],
+        database: 'elite-cuts-test',
+      }),
+    );
+  });
+
+  it('records a success row on a clean run, labelled with its trigger', async () => {
+    const { resetDemoData } = await import('./reset');
+    await resetDemoData({ trigger: 'cli' });
+
+    expect(mocks.recordDemoResetRun).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: 'success', trigger: 'cli', error: null }),
+    );
+  });
+
+  it('records a failure row when the run throws, then rethrows the ORIGINAL error', async () => {
+    // `toBe`, not `toThrow`: the failure path records a row and then rethrows,
+    // and the run's actual cause must survive that — a row written after the
+    // rethrow, or an error re-wrapped on the way out, would replace the one
+    // thing a failure row exists to preserve.
+    //
+    // `recordDemoResetRun` swallowing its own write errors is what makes this
+    // hold; that contract is asserted where it lives, in `run-history.test.ts`,
+    // rather than restated here against a mock that could be made to violate it
+    // and prove nothing.
+    const original = new Error('mongo hiccup');
+    mocks.orderDeleteMany.mockRejectedValue(original);
+
+    const { resetDemoData } = await import('./reset');
+    await expect(resetDemoData({ trigger: 'cron' })).rejects.toBe(original);
+
+    expect(mocks.recordDemoResetRun).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: 'failure' }),
+    );
+  });
+
+  it('records a skipped row when another run holds the lock', async () => {
+    // Distinguishable afterwards from a night the cron never fired at all,
+    // which is otherwise the same absence of evidence.
+    mocks.lockFindOneAndUpdate.mockRejectedValue(
+      Object.assign(new Error('E11000 duplicate key'), { code: 11000 }),
+    );
+
+    const { resetDemoData } = await import('./reset');
+    await expect(resetDemoData({ trigger: 'cron' })).rejects.toThrow();
+
+    expect(mocks.recordDemoResetRun).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: 'skipped' }),
+    );
+  });
+
+
   it('produces the same end state when run twice in a row (idempotency)', async () => {
     const { resetDemoData } = await import('./reset');
-    const first = await resetDemoData();
-    const second = await resetDemoData();
+    const first = await resetDemoData({ trigger: 'cron' });
+    const second = await resetDemoData({ trigger: 'cron' });
     expect(second).toEqual(first);
   });
 
@@ -625,7 +958,7 @@ describe('resetDemoData', () => {
     vi.mocked(restore.restoreDemoCatalog).mockClear();
     vi.mocked(seed.seedDemoCustomerData).mockClear();
 
-    const counts = await resetDemoData();
+    const counts = await resetDemoData({ trigger: 'cron' });
 
     // No demo customer means the demo seed never ran here, so restoring would
     // overwrite this install's real products, staff, shifts and settings with
@@ -649,7 +982,7 @@ describe('resetDemoData', () => {
     vi.mocked(restore.restoreDemoCatalog).mockClear();
     vi.mocked(seed.seedDemoCustomerData).mockClear();
 
-    await resetDemoData();
+    await resetDemoData({ trigger: 'cron' });
 
     // Order lines hold product ids. The restore upserts on a natural key, so
     // running the seed first would race the step that settles those ids.
@@ -661,7 +994,7 @@ describe('resetDemoData', () => {
 
   it('replaces the fallback ledger entry with one row per seeded order', async () => {
     const { resetDemoData } = await import('./reset');
-    await resetDemoData();
+    await resetDemoData({ trigger: 'cron' });
 
     // The wipe writes a fallback entry, then the orchestrator overwrites it
     // with the real history. The fallback exists so `resetDemoCustomerState`
@@ -674,7 +1007,7 @@ describe('resetDemoData', () => {
 
   it('banks the sum of the seeded awards, not the fallback constant', async () => {
     const { resetDemoData, DEMO_FALLBACK_POINTS } = await import('./reset');
-    await resetDemoData();
+    await resetDemoData({ trigger: 'cron' });
 
     const secondWrite = [null, lastCustomerWrite()] as const;
     // 89 + 27 from the seed mock. The balance used to be a fixed number the
@@ -703,7 +1036,7 @@ describe('resetDemoData', () => {
     } as unknown as Awaited<ReturnType<typeof seed.seedDemoCustomerData>>);
 
     const { resetDemoData } = await import('./reset');
-    await resetDemoData();
+    await resetDemoData({ trigger: 'cron' });
 
     // An empty catalog seeds no orders. Writing a zero balance over the
     // fallback would leave the rewards tab with nothing to demonstrate, so

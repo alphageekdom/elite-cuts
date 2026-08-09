@@ -38,6 +38,13 @@ vi.mock('@/lib/demo/reset', () => ({
   resetDemoData: mocks.resetDemoData,
   DemoResetInProgressError: class DemoResetInProgressError extends Error {},
 }));
+
+// The guard module is also `server-only`, but unlike the reset it is worth
+// importing for real: the route branches on `instanceof DemoResetTargetError`
+// to answer 503 rather than 500, and a locally-redeclared class would satisfy
+// that check whatever the real one did. Stubbing the `server-only` marker is
+// enough — the rest of the module is a pure comparison plus a mongoose read.
+vi.mock('server-only', () => ({}));
 vi.mock('@/config/database', () => ({ default: vi.fn(async () => undefined) }));
 vi.mock('@/lib/auth/session', () => ({ getSessionUser: mocks.getSessionUser }));
 vi.mock('@/lib/auth/demo-permissions', () => ({
@@ -46,12 +53,16 @@ vi.mock('@/lib/auth/demo-permissions', () => ({
 
 const req = () => ({}) as unknown as NextRequest;
 
-const counts = (ratingRecomputeFailures: number) => ({
+const counts = (
+  ratingRecomputeFailures: number,
+  validationFailures: string[] = [],
+) => ({
   ordersDeleted: 6,
   ordersSeeded: 6,
   productsRestored: 39,
   userReset: true,
   ratingRecomputeFailures,
+  validationFailures,
 });
 
 beforeEach(() => {
@@ -99,6 +110,43 @@ describe('POST /api/admin/demo/reset', () => {
 
     expect(res.status).toBe(200);
     expect(body.message).toBe('Demo data reset');
+  });
+
+  it('says the result failed verification, and prefers that over the rating warning', async () => {
+    // A demo missing a whole cut is the more serious finding, and both can be
+    // true at once — the message has to name the one that matters.
+    mocks.resetDemoData.mockResolvedValue(counts(2, ['product:dry-aged-ribeye']));
+    const { POST } = await import('./route');
+
+    const res = await POST(req(), undefined as never);
+    const body = await res.json();
+
+    // Still 200: the wipe and restore genuinely ran, and a 500 would send the
+    // card down its `!res.ok` branch and discard the counts.
+    expect(res.status).toBe(200);
+    expect(body.message).toBe('Demo data reset, but the result failed verification');
+    expect(body.data.validationFailures).toEqual(['product:dry-aged-ribeye']);
+  });
+
+  it('answers 503 when the target guard refuses, not 500', async () => {
+    // Nothing is broken — the deployment is misconfigured, and the admin needs
+    // to be told which of those it is. The real error class is imported here
+    // rather than redeclared, because a local stand-in would satisfy the
+    // route's `instanceof` whatever the real one did.
+    const { DemoResetTargetError } = await import('@/lib/demo/target-guard');
+    mocks.resetDemoData.mockRejectedValue(
+      new DemoResetTargetError('not-configured'),
+    );
+    const { POST } = await import('./route');
+
+    const res = await POST(req(), undefined as never);
+    const body = await res.json();
+
+    expect(res.status).toBe(503);
+    // Generic on purpose: the body reaches a browser, and the database names
+    // are already in the server log where the operator is.
+    expect(body.message).toContain('could not be verified');
+    expect(body.message).not.toContain('elite-cuts');
   });
 
   it('still refuses a demo-admin session, which must not be able to reset itself', async () => {
