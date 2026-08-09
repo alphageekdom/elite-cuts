@@ -5,6 +5,7 @@ import AgingCut from './AgingCut';
 import Cart from './Cart';
 import Delivery from './Delivery';
 import DemoResetLock from './DemoResetLock';
+import DemoResetRun from './DemoResetRun';
 import Event from './Event';
 import Message from './Message';
 import Notification from './Notification';
@@ -61,6 +62,7 @@ export const ALL_MODELS = {
   Cart,
   Delivery,
   DemoResetLock,
+  DemoResetRun,
   Event,
   Message,
   Notification,

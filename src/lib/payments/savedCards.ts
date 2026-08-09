@@ -44,9 +44,35 @@ export const getOrCreateStripeCustomer = async (
 
   await connectDB();
   const user = await User.findById(userId).select(
-    'name email stripeCustomerId',
+    'name email stripeCustomerId isDemo',
   );
   if (!user) return null;
+
+  // Demo accounts never get one. Reachability was checked rather than assumed:
+  // this function has exactly one caller (`/api/checkout/session`), reached
+  // only when a real Stripe key is set AND the visitor picks the Stripe tile
+  // over the no-charge Card tile — so the demo card path short-circuits most
+  // demo checkouts, but not all of them. How OFTEN a real visitor takes that
+  // branch is not knowable from here: this project carries no analytics, and
+  // Stripe stays permanently in test mode, so there is no production signal to
+  // measure. Reachable-at-all is enough, because the accumulation is unbounded
+  // on one shared account.
+  //
+  // Two demo accounts are shared by every visitor for the life of the deploy.
+  // A Stripe Customer created for one is never replaced, and every card any
+  // visitor saves against it attaches permanently — the nightly reset clears
+  // the local `SavedCard` mirror and used to leave the Stripe side untouched,
+  // so the test-mode PaymentMethod list grew forever with nothing pruning it.
+  //
+  // Returning null rather than reading a persisted id is deliberate: it is one
+  // rule ("demo sessions have no Stripe Customer") instead of two, and it means
+  // an id left over from before this line cannot pick up new cards while the
+  // reset is getting round to deleting it. Checkout handles null already — it
+  // falls back to `customer_email` and drops `setup_future_usage`, so the demo
+  // still completes a Stripe payment end to end and simply does not save the
+  // card, which is what the no-charge Card tile is there to demonstrate.
+  if (user.isDemo) return null;
+
   if (user.stripeCustomerId) return user.stripeCustomerId;
 
   const stripe = getStripe();
@@ -78,7 +104,13 @@ export const getOrCreateStripeCustomer = async (
   return winner?.stripeCustomerId ?? null;
 };
 
-// Removes the Stripe Customer created above, for account deletion.
+// Removes the Stripe Customer created above.
+//
+// **Two callers, and their properties differ.** `hardDeleteUser` runs it as
+// part of the account-deletion cascade; the nightly demo reset runs it to stop
+// the two shared demo accounts accumulating test-mode PaymentMethods forever.
+// Anything below that talks about "the caller" is true of both; anything
+// specific to deletion says so.
 //
 // Deleting the Customer takes its attached PaymentMethods with it, which is
 // what the profile's per-card "delete" does one at a time. Hard-delete used to
@@ -93,11 +125,13 @@ export const getOrCreateStripeCustomer = async (
 // runs regardless — a Stripe object left behind is recoverable from their
 // dashboard, an aborted cascade is not.
 //
-// The cost of that choice: the caller destroys `stripeCustomerId` moments
-// later, and the purge cron skips users whose `User` doc is already gone, so a
-// failure here orphans the Customer permanently with no retry path. The log
-// below therefore carries the id itself — it is the only remaining way to find
-// the object, and a human with the Stripe dashboard can act on it.
+// The cost of that choice: both callers destroy `stripeCustomerId` moments
+// later, so a failure here orphans the Customer with no retry path. For the
+// deletion cascade that is permanent — the purge cron skips users whose `User`
+// doc is already gone. For the demo reset the account survives, but the id does
+// not, so the next night has nothing to retry with either. The log below
+// therefore carries the id itself — it is the only remaining way to find the
+// object, and a human with the Stripe dashboard can act on it.
 //
 // Returns nothing on purpose. An earlier version returned a boolean documented
 // as being "so the caller can log honestly", which no caller ever read; the
@@ -121,8 +155,13 @@ export const deleteStripeCustomer = async (
     // object by hand that Stripe deleted on the first pass.
     if ((err as { code?: string })?.code === 'resource_missing') return;
 
+    // Caller-agnostic since 2026-08-09. This had a second caller — the nightly
+    // demo reset — while still saying "during account deletion" and pointing at
+    // an `AccountDeletionAudit` row, which that caller deliberately never
+    // writes. So on the demo path it named a record that will never exist and
+    // called this line redundant, when it was the only record there was.
     console.error(
-      `[savedCards] failed to delete Stripe Customer ${stripeCustomerId} during account deletion — the local cascade continued, so this object is now orphaned and must be removed from the Stripe dashboard by hand. The id is also on the AccountDeletionAudit row for this user (stripeCustomerIdSnapshot), so it is recoverable without this log line.`,
+      `[savedCards] failed to delete Stripe Customer ${stripeCustomerId} — the caller continued regardless, so this object is now orphaned and must be removed from the Stripe dashboard by hand. Account deletion also snapshots the id on the AccountDeletionAudit row (stripeCustomerIdSnapshot); the demo reset does not, so for that caller this line is the only record.`,
       err,
     );
   }

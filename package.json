@@ -16,7 +16,9 @@
     "test:tz": "TZ=UTC vitest run && TZ=America/Los_Angeles vitest run && TZ=Australia/Sydney vitest run",
     "test:watch": "vitest",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "demo:reset": "node --env-file=.env tools/demo-reset.mjs",
+    "demo:reset:dry": "node --env-file=.env tools/demo-reset.mjs --dry-run"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

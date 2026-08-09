@@ -28,7 +28,13 @@ export default defineConfig({
   test: {
     environment: 'node',
     // `.test.tsx` needs its own entry: `*.test.ts` does not match it.
-    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    //
+    // `tools/` is here for one file. `tools/demo-reset.mjs` is plain Node (it
+    // has to be — it runs outside Next, with no bundler and no `@/` aliases),
+    // so it cannot live under `src/`. It carries two safety decisions that
+    // failed in production on 2026-08-09, and safety logic this project cannot
+    // test is safety logic it has already learned not to trust.
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'tools/**/*.test.mjs'],
     globals: false,
     // Pin a shop-zone default so a plain `vitest` run sits WEST of UTC. Date
     // bugs in this codebase are zone-shaped — a UTC-midnight calendar value

@@ -34,7 +34,7 @@ import { ALL_MODELS } from './all';
 // environment as of 2026-08-08, so running the app builds it. Only removals
 // need hands. For an addition, just update the expectation below.
 //
-// The five models declaring no index today — AgingCut, DemoResetLock,
+// The models declaring no index today — AgingCut, DemoResetLock,
 // ShopHours, ShopSettings, StaffMember — are absent from `EXPECTED` rather than
 // listed as empty. That choice is cosmetic, not behavioural: if one of them
 // gains its first index, the guard at the bottom fails either way. (An earlier
@@ -47,6 +47,12 @@ const EXPECTED: Record<string, DeclaredIndex[]> = {
   AccountDeletionAudit: [[{ userId: 1 }, {}], [{ performedAt: 1 }, {}]],
   Cart: [[{ user: 1 }, { unique: true }]],
   Delivery: [[{ productId: 1 }, {}]],
+  // TTL, so `expireAfterSeconds` is load-bearing and is asserted rather than
+  // just the key. An index of this name without the option would look applied
+  // and retain rows forever. Retention IS the query it serves — nothing reads
+  // this collection, so an earlier claim here that it "doubles as the sort
+  // index for recent runs" named a query that does not exist.
+  DemoResetRun: [[{ startedAt: 1 }, { expireAfterSeconds: 30 * 24 * 60 * 60 }]],
   Event: [[{ status: 1 }, {}], [{ date: 1, status: 1 }, {}]],
   Message: [[{ user: 1, createdAt: -1 }, {}]],
   Notification: [

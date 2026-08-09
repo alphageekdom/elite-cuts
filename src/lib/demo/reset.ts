@@ -1,5 +1,7 @@
 import 'server-only';
 
+import { randomUUID } from 'crypto';
+
 import connectDB from '@/config/database';
 import User from '@/models/User';
 import Order from '@/models/Order';
@@ -12,7 +14,9 @@ import DemoResetLock, {
   DEMO_RESET_LOCK_ID,
   DEMO_RESET_LOCK_STALE_AFTER_MS,
 } from '@/models/DemoResetLock';
+import type { DemoResetOutcome, DemoResetTrigger } from '@/models/DemoResetRun';
 import { recomputeProductRating } from '@/lib/reviews/recompute';
+import { deleteStripeCustomer } from '@/lib/payments/savedCards';
 import {
   restoreDemoCatalog,
   emptyCatalogCounts,
@@ -24,6 +28,11 @@ import {
   type CustomerSeedCounts,
 } from './seed-customer';
 import { DEMO_HISTORY_DAYS } from './seed/orders';
+import { DEMO_ADMIN_FILTER, DEMO_CUSTOMER_FILTER, demoOwnerIds } from './accounts';
+import { assertDemoResetTarget } from './target-guard';
+import { planDemoReset, type DemoResetPlan } from './dry-run';
+import { recordDemoResetRun, type DemoResetRunRecord } from './run-history';
+import { verifyDemoState } from './verify';
 
 /**
  * Balance left behind when `resetDemoCustomerState` runs on its own.
@@ -62,11 +71,25 @@ export type ResetCounts = {
   // to report a clean 200, which is the exact defect the other two crons'
   // `failureCount` exists to prevent.
   ratingRecomputeFailures: number;
+  // Stripe Customers detached from the two demo accounts on this run. Expected
+  // to be 0 on every run after the first: `getOrCreateStripeCustomer` no longer
+  // creates one for a demo account, so this is a cleanup for ids that already
+  // exist rather than an ongoing sweep.
+  stripeCustomersCleared: number;
 };
 
 // Shape returned by `resetDemoData` — surfaced by the cron + admin endpoint
 // so the toast / log can report what the run actually cleared.
-export type DemoResetCounts = ResetCounts & CatalogCounts & CustomerSeedCounts;
+//
+// `validationFailures` rides along rather than living in its own return value
+// so that every consumer that already destructures the counts sees it without
+// changing shape. Empty on a healthy run; each entry is a `kind:identifier`
+// string naming exactly what post-run verification could not find.
+type DemoResetWorkCounts = ResetCounts & CatalogCounts & CustomerSeedCounts;
+
+export type DemoResetCounts = DemoResetWorkCounts & {
+  validationFailures: string[];
+};
 
 // The zero state, in one place. Two callers: the no-demo-customer early return
 // below, and the cron route's lock-contention path, which needs a full
@@ -81,12 +104,14 @@ export const emptyResetCounts = (): ResetCounts => ({
   messagesDeleted: 0,
   userReset: false,
   ratingRecomputeFailures: 0,
+  stripeCustomersCleared: 0,
 });
 
 export const emptyDemoResetCounts = (): DemoResetCounts => ({
   ...emptyResetCounts(),
   ...emptyCatalogCounts(),
   ...emptyCustomerSeedCounts(),
+  validationFailures: [],
 });
 
 // Idempotent wipe of every Mongo record owned by the seeded demo customer.
@@ -101,16 +126,41 @@ export const emptyDemoResetCounts = (): DemoResetCounts => ({
 // logs (AccountDeletionAudit) are deliberately untouched per the Phase
 // C spec.
 //
-// Returns zeros on every count if the demo customer doesn't exist
-// (a fresh DB where the seed hasn't run yet) so the cron / admin call
-// succeeds gracefully instead of throwing.
+// Returns zeros on every count if the demo customer doesn't exist, rather
+// than throwing — a fresh database where the seed has not run yet is a
+// coherent state for this function, not an error.
+//
+// **The overall RUN no longer succeeds in that case, and that is deliberate.**
+// This comment used to end "so the cron / admin call succeeds gracefully",
+// which stopped being true when post-run verification landed:
+// `verifyDemoState` reports `account:demo-customer`, that feeds the cron's
+// `failureCount`, and the endpoint answers 500.
+//
+// Kept that way on purpose. A demo with no demo accounts is broken, and saying
+// so is the entire job of the verification pass — a quiet 200 over an empty
+// shop is the "reported success on a failed run" defect this subsystem has
+// already been bitten by twice. The cost lands only on a freshly seeded dev
+// database, which does not run the cron; Vercel schedules it on Production
+// only, and Production always has the demo seeded. See
+// `docs/database-environments.md` for the bootstrap order.
 export async function resetDemoCustomerState(): Promise<ResetCounts> {
   await connectDB();
 
-  const demo = await User.findOne({
-    isDemo: true,
-    demoType: 'customer',
-  }).select('_id');
+  // Guarded here as well as in `resetDemoData`, even though the only caller
+  // today is `runDemoReset` one screen down.
+  //
+  // This function is exported and destructive — an owner-scoped wipe of six
+  // collections plus a Stripe Customer deletion — and nothing about its
+  // signature says a guard is required. A future caller (a script, a server
+  // action, a repair endpoint) would get an unguarded path to production with
+  // no compile-time signal. The check is a string comparison against an env
+  // var; making it a property of the function rather than of one caller costs
+  // nothing and removes the class of mistake.
+  assertDemoResetTarget();
+
+  const demo = await User.findOne(DEMO_CUSTOMER_FILTER).select(
+    '_id stripeCustomerId',
+  );
 
   if (!demo) {
     return emptyResetCounts();
@@ -130,12 +180,11 @@ export async function resetDemoCustomerState(): Promise<ResetCounts> {
   //
   // Absent on an install seeded before the admin demo account existed, so the
   // list is built defensively rather than assuming both are present.
-  const demoAdmin = await User.findOne({
-    isDemo: true,
-    demoType: 'admin',
-  }).select('_id');
+  const demoAdmin = await User.findOne(DEMO_ADMIN_FILTER).select(
+    '_id stripeCustomerId',
+  );
   const demoAdminId = demoAdmin?._id ?? null;
-  const ownerIds = [demoId, ...(demoAdminId ? [demoAdminId] : [])];
+  const ownerIds = demoOwnerIds(demo, demoAdmin);
 
   // Reviews either demo account *authored*. These are public — they render on
   // the product page for every later visitor — and nothing else in the reset
@@ -196,6 +245,56 @@ export async function resetDemoCustomerState(): Promise<ResetCounts> {
         { $pull: { helpfulVoters: { $in: ownerIds } } },
       ),
     ]);
+
+  // Stripe Customers attached to either demo account.
+  //
+  // The `SavedCard` delete above only clears the LOCAL mirror. Anything a
+  // visitor saved through Stripe's hosted page attaches to a Stripe Customer,
+  // and the two demo accounts are shared by every visitor for the life of the
+  // deploy — so that Customer's PaymentMethod list grew without bound while the
+  // profile tab, reading the wiped mirror, showed nothing. Deleting the
+  // Customer takes its cards with it, which is what the profile's per-card
+  // delete does one at a time.
+  //
+  // `deleteStripeCustomer` never throws and no-ops in stub mode, so this cannot
+  // fail the run — matching the account-deletion cascade's reasoning, and the
+  // reason this is safe in a nightly job on a platform that does not retry. A
+  // Stripe failure leaves the object orphaned, which the helper logs.
+  //
+  // The local id is cleared regardless of whether Stripe answered. Leaving it
+  // would let the next session attach cards to a Customer this run has already
+  // asked Stripe to delete.
+  //
+  // Ordering: Stripe first, then the local unset. That is the right order for a
+  // CRASH between the two — the id survives and the next night tries again.
+  //
+  // It is **not** a retry path for a Stripe API failure, which is what this
+  // comment used to claim. `deleteStripeCustomer` swallows its errors and
+  // returns void, so the `$unset` below runs either way: a failed delete
+  // orphans the Customer and destroys the pointer in the same run, and the log
+  // line inside that helper is the only remaining record of the id. The
+  // sentence above it here said the opposite while the line three above said
+  // "cleared regardless" — both could not be true.
+  //
+  // Accepted rather than fixed: making the unset conditional would mean
+  // `deleteStripeCustomer` reporting an outcome, which it deliberately does not
+  // (see its header). These are test-mode Customers on two shared demo
+  // accounts, so an orphan costs nothing real.
+  //
+  // Expected to be a no-op after the first run: `getOrCreateStripeCustomer`
+  // returns null for `isDemo` accounts, so no new Customer is ever minted.
+  const stripeHolders = [demo, demoAdmin].filter(
+    (u): u is NonNullable<typeof u> => Boolean(u?.stripeCustomerId),
+  );
+  for (const holder of stripeHolders) {
+    await deleteStripeCustomer(holder.stripeCustomerId);
+  }
+  if (stripeHolders.length > 0) {
+    await User.updateMany(
+      { _id: { $in: stripeHolders.map((u) => u._id) } },
+      { $unset: { stripeCustomerId: '' } },
+    );
+  }
 
   // The demo admin's own storefront leftovers. Only the shopping fields are
   // cleared — its admin identity and flags are untouched, and it gets no
@@ -268,6 +367,7 @@ export async function resetDemoCustomerState(): Promise<ResetCounts> {
     messagesDeleted: messagesRes.deletedCount ?? 0,
     userReset: true,
     ratingRecomputeFailures,
+    stripeCustomersCleared: stripeHolders.length,
   };
 }
 
@@ -294,10 +394,87 @@ export async function resetDemoCustomerState(): Promise<ResetCounts> {
 // down to an empty roster. The loser of the claim throws rather than
 // pretending to have reset anything — its caller answers 500, which is true:
 // that invocation did no work.
-export async function resetDemoData(): Promise<DemoResetCounts> {
+//
+// ── Transaction boundaries: there are none, on purpose ──────────────────
+// `withOptionalTransaction` exists in this codebase (`src/lib/db/transaction.ts`)
+// and three routes use it. It is deliberately NOT used here, and the reasons
+// are recorded rather than rediscovered:
+//
+//   * **It would not fit.** MongoDB's `transactionLifetimeLimitSeconds`
+//     defaults to 60s. This job is ~110 sequential round-trips and runs under a
+//     300s function ceiling — which the route declares to stop a change to the
+//     project default lowering it, not because 300 was raised for this job (300
+//     IS the platform default; see the note on `maxDuration` there). Either way
+//     the run is permitted to take minutes and sometimes does, so a transaction
+//     spanning it would abort partway through on a slow night — converting an
+//     ordinary partial failure into a guaranteed total one.
+//   * **The unit of work is not one document set.** The run spans most of the
+//     schema — take the list from the imports at the top of this file and
+//     `restore.ts` rather than from a number here, which is how "twelve
+//     collections" sat in this comment while the real figure was thirteen. It
+//     also interleaves third-party calls (Cloudinary image deletion, and now
+//     Stripe) that no database transaction can roll back. A "transactional"
+//     reset would still leave those half-done while reporting atomicity, which
+//     is worse than reporting neither.
+//   * **Idempotence is the better property, and this run already has it.**
+//     Proved against a real database on 2026-07-25. Re-running repairs a
+//     partial state; a rollback merely returns to the previous partial state,
+//     which for a reset is the *broken* one it was invoked to fix.
+//
+// **Stated partial-failure behaviour**, which is what the spec actually asks
+// for: a throw anywhere aborts the remaining steps, leaves everything already
+// written in place, releases the lock, records a `failure` row in the run
+// history, and answers 500. The demo is then in a mixed state until the next
+// run — nightly by cron, or immediately via the admin button or the CLI. The
+// two orderings that would make a mixed state *visibly broken* rather than
+// merely stale are handled individually where they occur, each with its own
+// note: the staff roster inserts before it prunes, and the shift week upserts
+// before it prunes, so neither can leave the schedule blank for a day.
+//
+// The two writes that are genuinely atomic are the ones that need to be, and
+// they get there without a transaction: the lock claim is a single
+// `findOneAndUpdate` upsert, and each product restore is one `save()`.
+export type DemoResetOptions = {
+  /** Recorded verbatim in the run history. */
+  trigger: DemoResetTrigger;
+};
+
+export async function resetDemoData(
+  options: DemoResetOptions,
+): Promise<DemoResetCounts> {
   await connectDB();
 
-  const now = new Date();
+  // Before the lock claim, which is itself a write. Throws
+  // `DemoResetTargetError` when the connected database is not the one this
+  // environment declared — see `./target-guard` for why that cannot be
+  // inferred and has to be configured.
+  const database = assertDemoResetTarget();
+
+  const startedAt = new Date();
+  const runId = randomUUID();
+
+  // The three history writes below differ only in outcome, counts and error;
+  // everything else is fixed for the invocation. Closed over rather than
+  // copied, so the three cannot drift on `database` or `runId` — which would
+  // be invisible, because a row with the wrong id still looks like a row.
+  const record = (
+    outcome: DemoResetOutcome,
+    extra: Partial<Pick<DemoResetRunRecord, 'counts' | 'validationFailures' | 'error'>> = {},
+  ) =>
+    recordDemoResetRun({
+      runId,
+      trigger: options.trigger,
+      outcome,
+      startedAt,
+      finishedAt: new Date(),
+      database,
+      counts: {},
+      validationFailures: [],
+      error: null,
+      ...extra,
+    });
+
+  const now = startedAt;
   try {
     // Claims a free lock, or steals one whose holder started longer ago than
     // any live run can still be working (see the model for the arithmetic).
@@ -317,13 +494,52 @@ export async function resetDemoData(): Promise<DemoResetCounts> {
     );
   } catch (error) {
     if (isDuplicateKeyError(error)) {
+      // Safe to record because THIS invocation verified the target a few lines
+      // up, before ever reaching the lock — not, as this comment first said,
+      // because whichever run holds the lock verified it. That reasoning leaned
+      // on another process; this one does not need to.
+      //
+      // Worth writing at all because it is the only way a skipped night is
+      // distinguishable afterwards from a night the cron never fired.
+      await record('skipped');
       throw new DemoResetInProgressError();
     }
     throw error;
   }
 
   try {
-    return await runDemoReset();
+    const counts = await runDemoReset();
+
+    // Verify the state the run claims to have produced. "The steps ran" and
+    // "the demo works" are different claims and only the first was ever
+    // checked — see `./verify` for what is asserted and why it is asserted
+    // against identifiers rather than counts.
+    //
+    // A verification failure fails the run: `validationFailures` feeds the cron
+    // wrapper's `failureCount`, so the endpoint answers 500 and the row below
+    // records `failure`. It runs after the work rather than instead of it — a
+    // partially restored demo is still better than none, and the operator needs
+    // to know which identifiers are missing, not merely that something is.
+    const failures = await verifyDemoState();
+    if (failures.length > 0) {
+      console.error(
+        `[demo reset] post-run verification failed: ${failures.join(', ')}`,
+      );
+    }
+
+    const result = { ...counts, validationFailures: failures };
+
+    await record(
+      failures.length > 0 || counts.ratingRecomputeFailures > 0
+        ? 'failure'
+        : 'success',
+      { counts, validationFailures: failures },
+    );
+
+    return result;
+  } catch (error) {
+    await record('failure', { error });
+    throw error;
   } finally {
     // Release even when the reset throws — the stale-takeover threshold is
     // the backstop for a crashed process, not the routine path. A failed
@@ -336,6 +552,69 @@ export async function resetDemoData(): Promise<DemoResetCounts> {
       console.error('[demo reset] lock release failed', releaseError);
     });
   }
+}
+
+/**
+ * Reports what `resetDemoData` would do, without doing any of it.
+ *
+ * A SECOND entry point, not a path through `resetDemoData` — it calls
+ * `assertDemoResetTarget` itself, a few lines down. That distinction matters:
+ * the guard's protection here rests on this call, and deleting it would let a
+ * dry run reach an undeclared database while `resetDemoData` still looked
+ * protected. Both entry points check; neither delegates to the other.
+ *
+ * It takes no lock and writes no records — one history row, and whatever
+ * `autoIndex` builds on first model import. See `./dry-run` for what it
+ * deliberately cannot predict.
+ */
+export async function dryRunDemoReset(
+  options: DemoResetOptions,
+): Promise<DemoResetPlan> {
+  await connectDB();
+
+  const database = assertDemoResetTarget();
+  const startedAt = new Date();
+  const runId = randomUUID();
+
+  let plan: DemoResetPlan;
+  try {
+    plan = await planDemoReset(database);
+  } catch (error) {
+    // Recorded, then rethrown. Without this a failed plan left no trace at all
+    // while a failed real run recorded `failure` — an asymmetry that made "was
+    // a dry run all anyone did last night?" unanswerable in exactly the case
+    // where the answer is interesting.
+    await recordDemoResetRun({
+      runId,
+      trigger: options.trigger,
+      outcome: 'failure',
+      startedAt,
+      finishedAt: new Date(),
+      database,
+      counts: {},
+      validationFailures: [],
+      error,
+    });
+    throw error;
+  }
+
+  // The one record a dry run writes. Worth the exception: without it a plan
+  // leaves no trace, and "was a dry run all anyone did last night?" is a
+  // question the history exists to answer. The counts are flattened because
+  // the row holds numbers, not nested objects.
+  await recordDemoResetRun({
+    runId,
+    trigger: options.trigger,
+    outcome: 'dry-run',
+    startedAt,
+    finishedAt: new Date(),
+    database,
+    counts: { ...plan.wouldDelete, ...plan.wouldRestore },
+    validationFailures: [],
+    error: null,
+  });
+
+  return plan;
 }
 
 // Thrown when another reset holds the advisory lock. A distinct type rather
@@ -359,7 +638,7 @@ function isDuplicateKeyError(error: unknown): boolean {
   );
 }
 
-async function runDemoReset(): Promise<DemoResetCounts> {
+async function runDemoReset(): Promise<DemoResetWorkCounts> {
   const customer = await resetDemoCustomerState();
 
   // No demo customer means the demo seed has never run here, and the catalog
@@ -378,10 +657,7 @@ async function runDemoReset(): Promise<DemoResetCounts> {
 
   // Order history goes back last, after the catalog restore has settled every
   // product `_id` an order line points at.
-  const demo = await User.findOne({
-    isDemo: true,
-    demoType: 'customer',
-  }).select('_id');
+  const demo = await User.findOne(DEMO_CUSTOMER_FILTER).select('_id');
 
   if (!demo) {
     return { ...customer, ...catalog, ...emptyCustomerSeedCounts() };

@@ -39,12 +39,16 @@ let container: HTMLDivElement;
 let root: Root;
 
 /** Only the fields the card reads when building its summary. */
-const counts = (ratingRecomputeFailures: number) => ({
+const counts = (
+  ratingRecomputeFailures: number,
+  validationFailures: string[] = [],
+) => ({
   userReset: true,
   ordersDeleted: 6,
   ordersSeeded: 6,
   productsRestored: 39,
   ratingRecomputeFailures,
+  validationFailures,
 });
 
 const respondWith = (body: unknown, ok = true) => {
@@ -119,6 +123,66 @@ describe('after a reset that partly failed', () => {
     expect(String(mocks.warning.mock.calls[0][0])).toContain(
       '1 rating could not be recomputed',
     );
+  });
+});
+
+describe('when post-run verification found a gap', () => {
+  it('names the identifiers rather than counting them', async () => {
+    // This button is the recovery path an admin reaches for after a bad
+    // night. A count sends them to comb the dashboards; an identifier sends
+    // them to the row.
+    respondWith({ data: counts(0, ['product:dry-aged-ribeye', 'staff:Sam Okafor']) });
+    await runReset();
+
+    expect(mocks.warning).toHaveBeenCalledTimes(1);
+    const text = String(mocks.warning.mock.calls[0][0]);
+    expect(text).toContain('product:dry-aged-ribeye');
+    expect(text).toContain('staff:Sam Okafor');
+    expect(text).toContain('run it again');
+    // The counts still ride along — the admin needs to see the reset ran.
+    expect(text).toContain('39 cuts restored');
+  });
+
+  it('caps the list so a wholesale failure does not fill the screen', async () => {
+    // Distinctive identifiers rather than single letters — the summary the
+    // list is appended to already contains "cleared,", so a one-character
+    // absence assertion matches the wrong half of the string.
+    respondWith({
+      data: counts(0, ['one:1', 'two:2', 'three:3', 'four:4', 'five:5']),
+    });
+    await runReset();
+
+    const text = String(mocks.warning.mock.calls[0][0]);
+    expect(text).toContain('one:1, two:2, three:3');
+    expect(text).toContain('and 2 more');
+    expect(text).not.toContain('four:4');
+    expect(text).not.toContain('five:5');
+  });
+
+  it('outranks the rating warning when both are true', async () => {
+    // A missing cut means the demo the next visitor opens is incomplete; a
+    // stale star average does not. Only one toast fires, so it has to be the
+    // more serious one.
+    respondWith({ data: counts(3, ['promo:WELCOME10']) });
+    await runReset();
+
+    expect(mocks.warning).toHaveBeenCalledTimes(1);
+    const text = String(mocks.warning.mock.calls[0][0]);
+    expect(text).toContain('promo:WELCOME10');
+    expect(text).not.toContain('could not be recomputed');
+  });
+
+  it('falls back to a plain success when the field is absent entirely', async () => {
+    // An older deploy answering a newer card. Reading `.length` off undefined
+    // would throw inside the click handler and the admin would see nothing at
+    // all — worse than the missing warning.
+    respondWith({
+      data: { userReset: true, ordersDeleted: 6, ordersSeeded: 6, productsRestored: 39, ratingRecomputeFailures: 0 },
+    });
+    await runReset();
+
+    expect(mocks.success).toHaveBeenCalledTimes(1);
+    expect(mocks.warning).not.toHaveBeenCalled();
   });
 });
 
